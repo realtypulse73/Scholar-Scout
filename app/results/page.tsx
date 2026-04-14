@@ -1,17 +1,20 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { matchStudentToOpportunities } from '../../lib/recommendationEngine'
 import { opportunities } from '../../lib/mockOpportunities'
 import { MatchResult } from '../../lib/types'
 
 const STORAGE_KEY = 'scholarscout-profile'
+const FAVORITES_KEY = 'scholarscout-favorites'
 
 type CostFilter = 'all' | 'lower_cost' | 'standard_cost'
 type SortOption = 'best_match' | 'pathway' | 'location'
 
 export default function Results() {
   const [matches, setMatches] = useState<MatchResult[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
   const [pathwayFilter, setPathwayFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [costFilter, setCostFilter] = useState<CostFilter>('all')
@@ -19,6 +22,11 @@ export default function Results() {
 
   useEffect(() => {
     try {
+      const storedFavorites = sessionStorage.getItem(FAVORITES_KEY)
+      if (storedFavorites) {
+        setFavoriteIds(JSON.parse(storedFavorites))
+      }
+
       const stored = sessionStorage.getItem(STORAGE_KEY)
       if (!stored) {
         setMatches([])
@@ -32,6 +40,22 @@ export default function Results() {
       setMatches([])
     }
   }, [])
+
+  function toggleFavorite(id: string) {
+    setFavoriteIds((current) => {
+      const next = current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+
+      try {
+        sessionStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
+      } catch {
+        // Ignore browser storage failures.
+      }
+
+      return next
+    })
+  }
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.filter((match) => {
@@ -58,7 +82,12 @@ export default function Results() {
 
   return (
     <main className="mx-auto max-w-md p-4">
-      <h1 className="mb-4 text-xl font-bold">Your Matches</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Your Matches</h1>
+        <Link href="/favorites" className="rounded border bg-white px-3 py-2 text-sm font-medium">
+          Favorites ({favoriteIds.length})
+        </Link>
+      </div>
 
       {matches.length > 0 && (
         <section className="mb-4 rounded border bg-white p-3">
@@ -67,11 +96,7 @@ export default function Results() {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-gray-700">
               <div className="mb-1">Pathway</div>
-              <select
-                value={pathwayFilter}
-                onChange={(e) => setPathwayFilter(e.target.value)}
-                className="w-full rounded border p-2"
-              >
+              <select value={pathwayFilter} onChange={(e) => setPathwayFilter(e.target.value)} className="w-full rounded border p-2">
                 <option value="all">All pathways</option>
                 <option value="college">College</option>
                 <option value="trade">Trade</option>
@@ -83,11 +108,7 @@ export default function Results() {
 
             <label className="text-sm text-gray-700">
               <div className="mb-1">Location</div>
-              <select
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full rounded border p-2"
-              >
+              <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className="w-full rounded border p-2">
                 <option value="all">All locations</option>
                 <option value="near_home">Near home</option>
                 <option value="in_state">In state</option>
@@ -99,11 +120,7 @@ export default function Results() {
 
             <label className="text-sm text-gray-700">
               <div className="mb-1">Cost</div>
-              <select
-                value={costFilter}
-                onChange={(e) => setCostFilter(e.target.value as CostFilter)}
-                className="w-full rounded border p-2"
-              >
+              <select value={costFilter} onChange={(e) => setCostFilter(e.target.value as CostFilter)} className="w-full rounded border p-2">
                 <option value="all">All cost levels</option>
                 <option value="lower_cost">Lower cost</option>
                 <option value="standard_cost">Standard cost</option>
@@ -112,11 +129,7 @@ export default function Results() {
 
             <label className="text-sm text-gray-700">
               <div className="mb-1">Sort by</div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="w-full rounded border p-2"
-              >
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="w-full rounded border p-2">
                 <option value="best_match">Best match</option>
                 <option value="pathway">Pathway</option>
                 <option value="location">Location</option>
@@ -138,21 +151,34 @@ export default function Results() {
         </div>
       )}
 
-      {filteredMatches.map((m) => (
-        <div key={m.id} className="mb-3 rounded border bg-white p-3">
-          <div className="font-semibold">{m.name}</div>
-          <div className="text-sm text-gray-500">Score: {m.score}</div>
-          <div className="text-sm">{m.description}</div>
-          <div className="mt-2 text-xs text-gray-500">
-            {m.pathway} · {m.locationType} · {m.lowCost ? 'lower cost' : 'standard cost'}
+      {filteredMatches.map((m) => {
+        const saved = favoriteIds.includes(m.id)
+
+        return (
+          <div key={m.id} className="mb-3 rounded border bg-white p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="font-semibold">{m.name}</div>
+              <button
+                type="button"
+                onClick={() => toggleFavorite(m.id)}
+                className={`rounded px-3 py-1 text-xs font-medium ${saved ? 'bg-black text-white' : 'border'}`}
+              >
+                {saved ? 'Saved' : 'Save'}
+              </button>
+            </div>
+            <div className="text-sm text-gray-500">Score: {m.score}</div>
+            <div className="text-sm">{m.description}</div>
+            <div className="mt-2 text-xs text-gray-500">
+              {m.pathway} · {m.locationType} · {m.lowCost ? 'lower cost' : 'standard cost'}
+            </div>
+            <ul className="mt-2 text-xs">
+              {m.reasons.map((r) => (
+                <li key={r}>• {r}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="mt-2 text-xs">
-            {m.reasons.map((r) => (
-              <li key={r}>• {r}</li>
-            ))}
-          </ul>
-        </div>
-      ))}
+        )
+      })}
     </main>
   )
 }
