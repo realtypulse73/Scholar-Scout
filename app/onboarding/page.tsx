@@ -1,8 +1,9 @@
-export default function Onboarding() {
+import OnboardingWizard from '@/components/onboarding/OnboardingWizard'
+
+export default function OnboardingPage() {
   return (
-    <main className="p-6">
-      <h1>Onboarding</h1>
-      <p>Wizard coming next.</p>
+    <main className="min-h-screen">
+      <OnboardingWizard />
     </main>
   )
 }
