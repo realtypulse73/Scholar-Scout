@@ -1,29 +1,39 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { readEvents, summarizeEvents } from '../../lib/analytics'
 
 export default function AnalyticsPage() {
-  const [summary, setSummary] = useState<any>(null)
+  const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    const events = readEvents()
-    setSummary(summarizeEvents(events))
+    fetch('/api/analytics')
+      .then(res => res.json())
+      .then(setData)
   }, [])
 
-  if (!summary) return null
+  if (!data) return <div className="p-4">Loading...</div>
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="text-xl font-bold">Analytics</h1>
+    <main className="p-4 max-w-md mx-auto">
+      <h1 className="text-xl font-bold">Analytics Dashboard</h1>
 
-      <div className="mt-4 space-y-2 text-sm">
-        <div>Total Events: {summary.totalEvents}</div>
-        <div>Program Views: {summary.programViews}</div>
-        <div>Saves: {summary.saves}</div>
-        <div>Explores: {summary.explores}</div>
-        <div>Apply Starts: {summary.applyStarts}</div>
-        <div>Applications Submitted: {summary.applyCompletes}</div>
+      <div className="mt-4 text-sm space-y-1">
+        <div>Total Events: {data.totalEvents}</div>
+        <div>Views: {data.programViews}</div>
+        <div>Saves: {data.saves}</div>
+        <div>Compares: {data.compares}</div>
+        <div>Explores: {data.explores}</div>
+        <div>Apply Starts: {data.applyStarts}</div>
+        <div>Applications: {data.applyCompletes}</div>
+      </div>
+
+      <div className="mt-4">
+        <h2 className="font-semibold">Top Programs</h2>
+        {data.topPrograms.map((p: any) => (
+          <div key={p.programId} className="text-sm">
+            {p.programId} ({p.count})
+          </div>
+        ))}
       </div>
     </main>
   )
