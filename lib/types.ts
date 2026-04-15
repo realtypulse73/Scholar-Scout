@@ -17,6 +17,13 @@ export interface Opportunity {
   lowCost: boolean
   minGpaBand: string
   description: string
+  duration?: string
+  tuitionEstimate?: number
+  medianStartingSalary?: number
+  campusAddress?: string
+  commuteTimeMinutes?: number
+  exploreUrl?: string
+  applyUrl?: string
 }
 
 export interface MatchResult extends Opportunity {

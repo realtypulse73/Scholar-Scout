@@ -10,7 +10,12 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'financial aid'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Affordable local IT pathway with transfer options and strong academic support.'
+    description: 'Affordable local IT pathway with transfer options and strong academic support.',
+    duration: '2 years',
+    tuitionEstimate: 9800,
+    medianStartingSalary: 48000,
+    campusAddress: '1 Community College Way, Buffalo, NY',
+    commuteTimeMinutes: 18
   },
   {
     id: 'college-2',
@@ -21,7 +26,12 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'financial aid'],
     lowCost: false,
     minGpaBand: '2_2_5',
-    description: 'Business-focused four-year pathway with advising and internship support.'
+    description: 'Business-focused four-year pathway with advising and internship support.',
+    duration: '4 years',
+    tuitionEstimate: 26500,
+    medianStartingSalary: 56000,
+    campusAddress: '500 State University Plaza, Albany, NY',
+    commuteTimeMinutes: 155
   },
   {
     id: 'college-3',
@@ -32,7 +42,12 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'mentorship', 'flex schedule'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Flexible education pathway for students interested in teaching and youth development.'
+    description: 'Flexible education pathway for students interested in teaching and youth development.',
+    duration: '2 years + transfer',
+    tuitionEstimate: 11200,
+    medianStartingSalary: 45000,
+    campusAddress: '85 City Campus Drive, Buffalo, NY',
+    commuteTimeMinutes: 22
   },
   {
     id: 'trade-1',
@@ -43,7 +58,12 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'job placement'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Hands-on paid training pathway into electrical work and union careers.'
+    description: 'Hands-on paid training pathway into electrical work and union careers.',
+    duration: '4 years paid apprenticeship',
+    tuitionEstimate: 2500,
+    medianStartingSalary: 61000,
+    campusAddress: '240 Skilled Trades Blvd, Rochester, NY',
+    commuteTimeMinutes: 75
   },
   {
     id: 'trade-2',
@@ -54,7 +74,12 @@ export const opportunities: Opportunity[] = [
     support: ['job placement', 'financial aid'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Short-term manufacturing training with job placement support.'
+    description: 'Short-term manufacturing training with job placement support.',
+    duration: '9 months',
+    tuitionEstimate: 6400,
+    medianStartingSalary: 50000,
+    campusAddress: '120 Innovation Park, Buffalo, NY',
+    commuteTimeMinutes: 28
   },
   {
     id: 'trade-3',
@@ -65,7 +90,12 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'job placement', 'flex schedule'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Entry pathway into construction and skilled labor opportunities.'
+    description: 'Entry pathway into construction and skilled labor opportunities.',
+    duration: '6 months',
+    tuitionEstimate: 3800,
+    medianStartingSalary: 44000,
+    campusAddress: '42 Builder Lane, Buffalo, NY',
+    commuteTimeMinutes: 20
   },
   {
     id: 'health-1',
@@ -76,7 +106,12 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'financial aid'],
     lowCost: false,
     minGpaBand: '2_2_5',
-    description: 'Career-focused healthcare credential with licensing preparation.'
+    description: 'Career-focused healthcare credential with licensing preparation.',
+    duration: '12 months',
+    tuitionEstimate: 21000,
+    medianStartingSalary: 59000,
+    campusAddress: '77 Health Sciences Road, Syracuse, NY',
+    commuteTimeMinutes: 145
   },
   {
     id: 'health-2',
@@ -87,7 +122,12 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'job placement'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Short-term allied health training designed for fast workforce entry.'
+    description: 'Short-term allied health training designed for fast workforce entry.',
+    duration: '10 months',
+    tuitionEstimate: 7800,
+    medianStartingSalary: 43000,
+    campusAddress: '19 Allied Health Center, Buffalo, NY',
+    commuteTimeMinutes: 24
   },
   {
     id: 'creative-1',
@@ -98,7 +138,13 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'flex schedule'],
     lowCost: false,
     minGpaBand: '2_2_5',
-    description: 'Remote design-focused certificate for digital product and UX careers.'
+    description: 'Remote design-focused certificate for digital product and UX careers.',
+    duration: '8 months',
+    tuitionEstimate: 14500,
+    medianStartingSalary: 62000,
+    commuteTimeMinutes: 0,
+    exploreUrl: 'https://example.com/programs/ux-design',
+    applyUrl: 'https://example.com/apply/ux-design'
   },
   {
     id: 'creative-2',
@@ -109,7 +155,12 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'flex schedule'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Project-based digital media training with portfolio development.'
+    description: 'Project-based digital media training with portfolio development.',
+    duration: '6 months',
+    tuitionEstimate: 6900,
+    medianStartingSalary: 46000,
+    commuteTimeMinutes: 0,
+    exploreUrl: 'https://example.com/programs/digital-media'
   },
   {
     id: 'law-1',
@@ -120,7 +171,12 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'mentorship'],
     lowCost: false,
     minGpaBand: '2_2_5',
-    description: 'Legal studies pathway with practical office and court-support training.'
+    description: 'Legal studies pathway with practical office and court-support training.',
+    duration: '2 years',
+    tuitionEstimate: 23200,
+    medianStartingSalary: 47000,
+    campusAddress: '300 Justice Square, New York, NY',
+    commuteTimeMinutes: 165
   },
   {
     id: 'military-1',
@@ -131,7 +187,12 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'job placement', 'financial aid'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Service-oriented pathway with training, career structure, and education benefits.'
+    description: 'Service-oriented pathway with training, career structure, and education benefits.',
+    duration: 'Varies by branch',
+    tuitionEstimate: 0,
+    medianStartingSalary: 42000,
+    commuteTimeMinutes: 0,
+    exploreUrl: 'https://example.com/programs/military-readiness'
   },
   {
     id: 'online-1',
@@ -142,7 +203,12 @@ export const opportunities: Opportunity[] = [
     support: ['flex schedule', 'job placement'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Remote-ready certificate for students seeking flexible work options.'
+    description: 'Remote-ready certificate for students seeking flexible work options.',
+    duration: '4 months',
+    tuitionEstimate: 3200,
+    medianStartingSalary: 39000,
+    commuteTimeMinutes: 0,
+    applyUrl: 'https://example.com/apply/customer-support'
   },
   {
     id: 'online-2',
@@ -153,7 +219,13 @@ export const opportunities: Opportunity[] = [
     support: ['tutoring', 'mentorship'],
     lowCost: false,
     minGpaBand: '2_5_3',
-    description: 'Entry-level cyber training pathway for students pursuing secure tech careers.'
+    description: 'Entry-level cyber training pathway for students pursuing secure tech careers.',
+    duration: '10 months',
+    tuitionEstimate: 17800,
+    medianStartingSalary: 70000,
+    commuteTimeMinutes: 0,
+    exploreUrl: 'https://example.com/programs/cyber-foundations',
+    applyUrl: 'https://example.com/apply/cyber-foundations'
   },
   {
     id: 'business-1',
@@ -164,6 +236,11 @@ export const opportunities: Opportunity[] = [
     support: ['mentorship', 'flex schedule'],
     lowCost: true,
     minGpaBand: 'below_2',
-    description: 'Small-business and startup fundamentals with coaching and flexible delivery.'
+    description: 'Small-business and startup fundamentals with coaching and flexible delivery.',
+    duration: '5 months',
+    tuitionEstimate: 5400,
+    medianStartingSalary: 45000,
+    campusAddress: '15 Startup Hub Avenue, Buffalo, NY',
+    commuteTimeMinutes: 17
   }
 ]
