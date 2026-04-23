@@ -1,34 +1,24 @@
 {
-  "name": "scholar-scout",
-  "version": "0.1.0",
+  "name": "scholarscout",
   "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch"
-  },
-  "dependencies": {
-    "next": "^15.5.15",
-    "react": "^18",
-    "react-dom": "^18"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "^15.5.15",
-    "jest": "^30.3.0",
-    "jest-environment-jsdom": "^30.3.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "ts-jest": "^29.4.9",
-    "typescript": "^5"
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "dev:web": "npm --workspace @scholarscout/web run dev",
+    "build:web": "npm --workspace @scholarscout/web run build",
+    "dev:api": "npm --workspace @scholarscout/api run start:dev",
+    "build:api": "npm --workspace @scholarscout/api run build",
+    "dev:admin": "npm --workspace @scholarscout/admin run dev",
+    "build:admin": "npm --workspace @scholarscout/admin run build",
+    "prisma:generate": "npm --workspace @scholarscout/api run prisma:generate",
+    "prisma:migrate": "npm --workspace @scholarscout/api run prisma:migrate",
+    "prisma:seed": "npm --workspace @scholarscout/api run prisma:seed"
   }
 }
