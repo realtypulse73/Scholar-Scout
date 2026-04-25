@@ -130,11 +130,16 @@ export default function InboxPage() {
   }, [isLoaded, isSignedIn, user]);
 
   async function handleMarkRead(item: InboxItem) {
+    if (!backendUserId) {
+      setStatus('Sign in to manage inbox items.');
+      return;
+    }
+
     try {
       if (item.kind === 'notification') {
-        await markNotificationRead(item.id);
+        await markNotificationRead(item.id, backendUserId);
       } else {
-        await markMessageRead(item.id);
+        await markMessageRead(item.id, backendUserId);
       }
 
       setItems((current) =>
@@ -162,7 +167,7 @@ export default function InboxPage() {
       if (!conversationId) {
         const conversation = await createConversation({
           participantIds: [backendUserId, 'support'],
-        });
+        }, backendUserId);
         conversationId = conversation.id;
         setActiveConversationId(conversation.id);
       }
@@ -171,7 +176,7 @@ export default function InboxPage() {
         conversationId,
         senderId: backendUserId,
         body: draft.trim(),
-      });
+      }, backendUserId);
       setDraft('');
       setStatus('Message sent.');
     } catch {

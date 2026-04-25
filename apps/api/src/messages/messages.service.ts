@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -12,13 +17,17 @@ export class MessagesService {
     private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
-  createConversation(dto: CreateConversationDto) {
+  createConversation(dto: CreateConversationDto, currentUserId: string) {
     const participantIds = [...new Set(dto.participantIds)];
 
     if (participantIds.length < 2) {
       throw new BadRequestException(
         'A conversation requires at least two unique participants.',
       );
+    }
+
+    if (!participantIds.includes(currentUserId)) {
+      throw new ForbiddenException('Cannot create conversations for other users.');
     }
 
     return this.prisma.conversation.create({
@@ -47,13 +56,21 @@ export class MessagesService {
     });
   }
 
-  async createMessage(dto: CreateMessageDto) {
+  async createMessage(dto: CreateMessageDto, currentUserId: string) {
+    if (dto.senderId !== currentUserId) {
+      throw new ForbiddenException('Cannot send messages as another user.');
+    }
+
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: dto.conversationId },
     });
 
     if (!conversation) {
       throw new NotFoundException('Conversation not found.');
+    }
+
+    if (!conversation.participantIds.includes(currentUserId)) {
+      throw new ForbiddenException('Cannot write to another user conversation.');
     }
 
     const message = await this.prisma.message.create({
@@ -68,22 +85,28 @@ export class MessagesService {
     for (const participantId of conversation.participantIds) {
       this.realtimeGateway.emitInboxMessage(participantId, {
         id: message.id,
-        conversationId: dto.conversationId,
-        senderId: dto.senderId,
-        body: dto.body,
-      });
-    }
+          conversationId: dto.conversationId,
+          senderId: dto.senderId,
+          body: dto.body,
+          createdAt: message.createdAt,
+        });
+      }
 
     return message;
   }
 
-  async markMessageRead(id: string) {
+  async markMessageRead(id: string, currentUserId: string) {
     const message = await this.prisma.message.findUnique({
       where: { id },
+      include: { conversation: true },
     });
 
     if (!message) {
       throw new NotFoundException('Message not found.');
+    }
+
+    if (!message.conversation.participantIds.includes(currentUserId)) {
+      throw new ForbiddenException('Cannot update another user message.');
     }
 
     return this.prisma.message.update({

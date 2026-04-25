@@ -1,5 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
+import { CurrentUserId } from '../auth/current-user.decorator';
+import { HeaderUserGuard } from '../auth/header-user.guard';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -8,7 +19,15 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get(':userId')
-  findByUser(@Param('userId') userId: string) {
+  @UseGuards(HeaderUserGuard)
+  findByUser(
+    @Param('userId') userId: string,
+    @CurrentUserId() currentUserId: string,
+  ) {
+    if (userId !== currentUserId) {
+      throw new ForbiddenException('Cannot read another user notifications.');
+    }
+
     return this.notificationsService.findByUser(userId);
   }
 
@@ -18,7 +37,8 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  markRead(@Param('id') id: string) {
-    return this.notificationsService.markRead(id);
+  @UseGuards(HeaderUserGuard)
+  markRead(@Param('id') id: string, @CurrentUserId() currentUserId: string) {
+    return this.notificationsService.markRead(id, currentUserId);
   }
 }

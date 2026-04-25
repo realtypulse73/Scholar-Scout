@@ -60,6 +60,12 @@ Run the web app:
 npm run dev:web
 ```
 
+Run API tests:
+
+```bash
+npm run test:api
+```
+
 ## Current Stage
 
 Phase 1 is the MVP foundation:
@@ -81,6 +87,8 @@ The next logical stage is Phase 2 messaging:
 - read-status tracking for notifications and messages
 
 After that, the next stage should add authenticated backend guards, real support/school users, and automated tests around the matching and messaging flows.
+
+The current branch includes the first hardening pass for that stage: protected inbox/message routes, frontend auth-header wiring, API unit tests, and GitHub Actions CI. See `docs/phase-2-hardening.md` for details and remaining production-auth work.
 
 ## Important Note
 

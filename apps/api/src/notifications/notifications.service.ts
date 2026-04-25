@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -17,10 +17,11 @@ export class NotificationsService {
     });
 
     this.realtimeGateway.emitNotification(dto.userId, {
-      id: notification.id,
-      title: dto.title,
-      body: dto.body,
-    });
+        id: notification.id,
+        title: dto.title,
+        body: dto.body,
+        createdAt: notification.createdAt,
+      });
 
     return notification;
   }
@@ -32,13 +33,17 @@ export class NotificationsService {
     });
   }
 
-  async markRead(id: string) {
+  async markRead(id: string, currentUserId: string) {
     const notification = await this.prisma.notification.findUnique({
       where: { id },
     });
 
     if (!notification) {
       throw new NotFoundException('Notification not found.');
+    }
+
+    if (notification.userId !== currentUserId) {
+      throw new ForbiddenException('Cannot update another user notification.');
     }
 
     return this.prisma.notification.update({

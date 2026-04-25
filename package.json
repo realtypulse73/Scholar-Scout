@@ -15,6 +15,7 @@
     "build:web": "npm --workspace @scholarscout/web run build",
     "dev:api": "npm --workspace @scholarscout/api run start:dev",
     "build:api": "npm --workspace @scholarscout/api run build",
+    "test:api": "npm --workspace @scholarscout/api run test",
     "dev:admin": "npm --workspace @scholarscout/admin run dev",
     "build:admin": "npm --workspace @scholarscout/admin run build",
     "prisma:generate": "npm --workspace @scholarscout/api run prisma:generate",

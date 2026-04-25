@@ -9,7 +9,8 @@
     "prisma:generate": "prisma generate --schema ../../infra/db/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema ../../infra/db/schema.prisma",
     "prisma:seed": "ts-node ../../infra/db/seed.ts",
-    "lint": "eslint \"src/**/*.ts\""
+    "lint": "eslint \"src/**/*.ts\"",
+    "test": "jest --config jest.config.ts --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.2",
@@ -29,8 +30,11 @@
     "@nestjs/cli": "^10.4.5",
     "@nestjs/schematics": "^10.1.4",
     "@nestjs/testing": "^10.4.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.7.4",
+    "jest": "^30.3.0",
     "prisma": "^5.20.0",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2"
   }
