@@ -7,6 +7,7 @@ import { PropsWithChildren } from 'react';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/profile', label: 'Profile' },
+  { href: '/programs', label: 'Programs' },
   { href: '/matches', label: 'Matches' },
   { href: '/inbox', label: 'Inbox' },
   { href: '/dashboard', label: 'Dashboard' },

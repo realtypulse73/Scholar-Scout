@@ -1,4 +1,5 @@
 import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
+import Link from 'next/link';
 import { Shell } from '../components/shell';
 
 export default function HomePage() {
@@ -21,7 +22,21 @@ export default function HomePage() {
           </SignInButton>
         </SignedOut>
         <SignedIn>
-          <p style={{ color: '#355e3b', fontWeight: 700 }}>You are signed in and ready to build your profile.</p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <p style={{ color: '#355e3b', fontWeight: 700, margin: 0 }}>
+              You are signed in and ready to build your profile.
+            </p>
+            <Link
+              href="/programs"
+              style={{
+                color: '#355e3b',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Browse programs
+            </Link>
+          </div>
         </SignedIn>
       </section>
     </Shell>
