@@ -41,6 +41,19 @@ Before committing Phase 1 work:
 - ensure the web app talks to the API instead of using local-only placeholders
 - ensure Prisma client generation, migrations, seed, API tests, and builds succeed
 
+## Operating Loop
+
+ScholarScout development should follow this repeating loop:
+
+1. ChatGPT defines the feature, requirement, or architecture direction.
+2. `docs/AGENTS.md` is updated in GitHub to reflect the current contract.
+3. Codex reads the repository state and builds the required code.
+4. Codex commits implementation updates back to GitHub.
+5. GitHub becomes the source of truth for the latest agreed state.
+6. Repeat from the next feature or architecture update.
+
+When there is tension between chat context and repository state, prefer the latest committed GitHub state unless a newer architecture instruction has been deliberately written back into `docs/AGENTS.md`.
+
 ## Current Notes
 
 - `docs/alignment.md` records the current GitHub and local branch relationship.
