@@ -1,78 +1,82 @@
 # ScholarScout Alignment
 
-This document links the current state of the ScholarScout work across Codex/local files, GitHub, and the planned draft PR.
+This document links the current state of ScholarScout across ChatGPT, Codex, and GitHub so the repository carries the working truth instead of leaving it split across chat threads.
 
 ## GitHub Repository
 
 - Repository: https://github.com/realtypulse73/Scholar-Scout
 - Default branch: `main`
 - Draft PR: https://github.com/realtypulse73/Scholar-Scout/pull/2
+- Active integration branch: `codex/monorepo-scaffold`
+- Current integration commit: `b5e29a1`
 - Tracking issues:
   - https://github.com/realtypulse73/Scholar-Scout/issues/3
   - https://github.com/realtypulse73/Scholar-Scout/issues/4
   - https://github.com/realtypulse73/Scholar-Scout/issues/5
-- Current remote shape: single Next.js app with onboarding wizard work.
-- Existing remote branches:
-  - `main`
-  - `copilot/build-mobile-first-onboarding-wizard`
-- Recent remote commits:
-  - `a5dfab1`: Next.js security upgrade to `15.5.15`
-  - `f0c8c78`: ScholarScout branding metadata update
-  - `34e907f`: mobile-first onboarding wizard
+- Current comparison target:
+  - `main` still represents the earlier single-app Next.js repository state
+  - `codex/monorepo-scaffold` contains the aligned Phase 1 monorepo MVP plus Phase 2 hardening work
 
-## Codex Local Scaffold
+## Repository Truth
 
-The current Codex workspace contains a proposed monorepo direction under `scholarscout/`.
+GitHub is the system of record once changes are committed and pushed. ChatGPT should define architecture and features, but the latest committed GitHub state wins unless `docs/AGENTS.md` is deliberately updated with a newer contract first.
+
+## Current Implemented State
+
+The current Codex workspace at `C:\Users\spdav\Documents\New project\scholarscout` matches the pushed `codex/monorepo-scaffold` branch.
 
 Key local files:
 
 - `package.json`: monorepo scripts and Docker/Postgres helpers.
 - `docker-compose.yml`: local PostgreSQL container.
-- `apps/api`: NestJS API with Prisma, matching, users, profiles, programs, notifications, and realtime gateway.
-- `apps/web`: Next.js frontend with Clerk auth, profile UI, match results, inbox, and dashboard.
+- `apps/api`: NestJS API with Prisma, users, student profiles, programs, matching, notifications, conversations, messages, and realtime gateway.
+- `apps/web`: Next.js frontend with Clerk auth, profile UI, programs catalog, match results, inbox, and dashboard.
 - `apps/admin`: initial school analytics dashboard shell.
 - `infra/db/schema.prisma`: PostgreSQL schema for User, StudentProfile, Program, Match, Notification, Conversation, and Message.
+- `infra/db/migrations`: committed baseline Prisma migration for fresh setup.
 - `services/*`: foundations for messaging, billing, ML, simulation, and governance.
 - `docs/architecture.md`: platform architecture.
 - `docs/api-spec.md`: API contract.
 - `docs/roadmap.md`: phased roadmap.
-
-## Publish Plan
-
-The safe GitHub publishing plan is:
-
-1. Create branch `codex/monorepo-scaffold` from `main`.
-2. Push the local monorepo scaffold to that branch.
-3. Open a draft PR into `main`.
-4. Use the draft PR to compare the existing single-app Next.js repo with the proposed monorepo architecture before merging anything.
+- `docs/AGENTS.md`: the operating contract for ChatGPT, Codex, and GitHub handoff.
+- `docs/phase-2-hardening.md`: the current messaging hardening status and next implementation targets.
 
 ## Current Tooling Status
 
-- Local `git` is not available in this shell.
 - Local project-scoped `git` is available through `.tools`.
-- Local project-scoped `gh` is available through `.tools`, but is not authenticated yet.
+- Local project-scoped `gh` is available through `.tools`, but is not authenticated right now.
 - Docker is not available in this shell.
 - Node/npm are available through `.tools`.
-- GitHub connector access is available for `realtypulse73/Scholar-Scout`.
+- The GitHub connector token used by ChatGPT/Codex is currently expired.
 
 Updated toolchain status:
 
 - `npm install` completed.
 - `npm run prisma:generate` completed.
+- `npm run test:api` completed.
 - `npm run build:api` completed.
 - `npm run build:web` completed.
 - `npm run build:admin` completed.
 
-## Alignment Note
+## Alignment Status
 
-Until the draft PR is opened, GitHub `main` remains the source of truth for the existing production repo, while this Codex workspace is the source of truth for the proposed monorepo scaffold.
+- `docs/AGENTS.md` defines the operating loop.
+- `docs/alignment.md` records the current shared state.
+- `codex/monorepo-scaffold` is the current implementation branch.
+- Draft PR #2 is the review surface comparing the old single-app repo against the current monorepo direction.
+
+## Auth Gap To Resolve
+
+To fully reconnect GitHub and ChatGPT/Codex:
+
+1. Reauthenticate local GitHub CLI with `gh auth login`.
+2. Reauthenticate the GitHub connector inside Codex/ChatGPT so plugin calls stop returning `token_expired`.
+3. After both are restored, use the draft PR and repository comments as the shared coordination surface instead of relying on chat memory alone.
 
 ## Next Stage Readiness
 
-The local scaffold has been adjusted so the next logical stage is Phase 2 messaging:
+Phase 1 MVP is present on the integration branch, and the repository is ready for the next delivery stage:
 
-- notifications are now persisted in Prisma
-- conversations and messages are now persisted in Prisma
-- realtime delivery remains available through the NestJS WebSocket gateway
-- the inbox UI consumes notification and conversation API data, listens for live events, sends support messages, and marks items read
-- seeded programs give the matching endpoint useful development data
+- Phase 2 messaging hardening is already in place
+- the next logical implementation step is replacing the temporary `x-user-id` development guard with real Clerk JWT verification in NestJS
+- after auth hardening, the next step is e2e coverage against Docker PostgreSQL and richer support/school role flows
