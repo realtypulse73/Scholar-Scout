@@ -19,6 +19,12 @@ npm run prisma:migrate
 npm run prisma:seed
 ```
 
+For schema iteration during development:
+
+```bash
+npm run prisma:migrate:dev
+```
+
 To stop the database:
 
 ```bash
@@ -35,3 +41,4 @@ npm run db:logs
 
 - Data is persisted in the `postgres_data` Docker volume.
 - If you need a clean reset, run `docker compose down -v` from the repo root.
+- `prisma:migrate` applies committed migrations from `infra/db/migrations`.

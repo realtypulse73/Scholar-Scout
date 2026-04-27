@@ -20,6 +20,7 @@
     "build:admin": "npm --workspace @scholarscout/admin run build",
     "prisma:generate": "npm --workspace @scholarscout/api run prisma:generate",
     "prisma:migrate": "npm --workspace @scholarscout/api run prisma:migrate",
+    "prisma:migrate:dev": "npm --workspace @scholarscout/api run prisma:migrate:dev",
     "prisma:seed": "npm --workspace @scholarscout/api run prisma:seed"
   }
 }

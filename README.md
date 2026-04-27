@@ -48,6 +48,12 @@ npm run prisma:migrate
 npm run prisma:seed
 ```
 
+If you change the schema locally and need to create a new migration:
+
+```bash
+npm run prisma:migrate:dev
+```
+
 Run the API:
 
 ```bash
@@ -76,6 +82,7 @@ Phase 1 is the MVP foundation:
 - matching endpoint
 - dashboard and inbox UI
 - Docker-backed local PostgreSQL
+- committed Prisma migrations in `infra/db/migrations`
 
 The next logical stage is Phase 2 messaging:
 
@@ -89,6 +96,8 @@ The next logical stage is Phase 2 messaging:
 After that, the next stage should add authenticated backend guards, real support/school users, and automated tests around the matching and messaging flows.
 
 The current branch includes the first hardening pass for that stage: protected inbox/message routes, frontend auth-header wiring, API unit tests, and GitHub Actions CI. See `docs/phase-2-hardening.md` for details and remaining production-auth work.
+
+`docs/AGENTS.md` is the repository contract for keeping the Phase 1 MVP aligned across `apps/web`, `apps/api`, `infra/db`, and `docs`.
 
 ## Important Note
 
