@@ -58,4 +58,5 @@ When there is tension between chat context and repository state, prefer the late
 
 - `docs/alignment.md` records the current GitHub and local branch relationship.
 - `docs/phase-2-hardening.md` documents the current Phase 2 messaging hardening pass.
-- Clerk JWT verification in NestJS is still a future improvement; the current MVP uses a lightweight header-based development guard for protected inbox flows.
+- Protected inbox flows now use Clerk bearer-token verification in NestJS.
+- `CLERK_AUTHORIZED_PARTIES` should be configured in the API environment for the allowed web origins.

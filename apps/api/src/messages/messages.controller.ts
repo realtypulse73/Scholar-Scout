@@ -9,14 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { ClerkAuthGuard } from '../auth/clerk-auth.guard';
 import { CurrentUserId } from '../auth/current-user.decorator';
-import { HeaderUserGuard } from '../auth/header-user.guard';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessagesService } from './messages.service';
 
 @Controller('messages')
-@UseGuards(HeaderUserGuard)
+@UseGuards(ClerkAuthGuard)
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 

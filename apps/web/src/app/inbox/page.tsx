@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { FormEvent, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -27,6 +27,7 @@ type InboxItem = {
 };
 
 export default function InboxPage() {
+  const { getToken } = useAuth();
   const { isLoaded, isSignedIn, user } = useUser();
   const [items, setItems] = useState<InboxItem[]>([]);
   const [backendUserId, setBackendUserId] = useState<string | null>(null);
@@ -47,8 +48,14 @@ export default function InboxPage() {
         id: user.id,
         email: user.primaryEmailAddress.emailAddress,
       });
-      const notifications = await getNotifications(backendUser.id);
-      const conversations = await getConversations(backendUser.id);
+      const authToken = await getToken();
+
+      if (!authToken) {
+        throw new Error('Missing Clerk session token.');
+      }
+
+      const notifications = await getNotifications(backendUser.id, authToken);
+      const conversations = await getConversations(backendUser.id, authToken);
       const messageItems = conversations.flatMap((conversation) =>
         conversation.messages.map((message) => ({
           id: message.id,
@@ -127,7 +134,7 @@ export default function InboxPage() {
     return () => {
       socket?.disconnect();
     };
-  }, [isLoaded, isSignedIn, user]);
+  }, [getToken, isLoaded, isSignedIn, user]);
 
   async function handleMarkRead(item: InboxItem) {
     if (!backendUserId) {
@@ -136,10 +143,16 @@ export default function InboxPage() {
     }
 
     try {
+      const authToken = await getToken();
+
+      if (!authToken) {
+        throw new Error('Missing Clerk session token.');
+      }
+
       if (item.kind === 'notification') {
-        await markNotificationRead(item.id, backendUserId);
+        await markNotificationRead(item.id, authToken);
       } else {
-        await markMessageRead(item.id, backendUserId);
+        await markMessageRead(item.id, authToken);
       }
 
       setItems((current) =>
@@ -162,12 +175,18 @@ export default function InboxPage() {
     }
 
     try {
+      const authToken = await getToken();
+
+      if (!authToken) {
+        throw new Error('Missing Clerk session token.');
+      }
+
       let conversationId = activeConversationId;
 
       if (!conversationId) {
         const conversation = await createConversation({
           participantIds: [backendUserId, 'support'],
-        }, backendUserId);
+        }, authToken);
         conversationId = conversation.id;
         setActiveConversationId(conversation.id);
       }
@@ -176,7 +195,7 @@ export default function InboxPage() {
         conversationId,
         senderId: backendUserId,
         body: draft.trim(),
-      }, backendUserId);
+      }, authToken);
       setDraft('');
       setStatus('Message sent.');
     } catch {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { useEffect, useState } from 'react';
 
 import { Shell } from '../../components/shell';
@@ -13,6 +13,7 @@ import {
 } from '../../lib/api';
 
 export default function DashboardPage() {
+  const { getToken } = useAuth();
   const { isLoaded, isSignedIn, user } = useUser();
   const [cards, setCards] = useState<Array<[string, string]>>([
     ['Profile status', 'Loading'],
@@ -37,9 +38,15 @@ export default function DashboardPage() {
         id: user.id,
         email: user.primaryEmailAddress.emailAddress,
       });
+      const authToken = await getToken();
+
+      if (!authToken) {
+        throw new Error('Missing Clerk session token.');
+      }
+
       const [profile, notifications, programs] = await Promise.all([
         getStudentProfile(backendUser.id),
-        getNotifications(backendUser.id),
+        getNotifications(backendUser.id, authToken),
         getPrograms(),
       ]);
 
@@ -61,7 +68,7 @@ export default function DashboardPage() {
         ['Programs available', 'Error'],
       ]);
     });
-  }, [isLoaded, isSignedIn, user]);
+  }, [getToken, isLoaded, isSignedIn, user]);
 
   return (
     <Shell>

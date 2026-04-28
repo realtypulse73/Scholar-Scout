@@ -30,7 +30,7 @@ Key local files:
 - `package.json`: monorepo scripts and Docker/Postgres helpers.
 - `docker-compose.yml`: local PostgreSQL container.
 - `apps/api`: NestJS API with Prisma, users, student profiles, programs, matching, notifications, conversations, messages, and realtime gateway.
-- `apps/web`: Next.js frontend with Clerk auth, profile UI, programs catalog, match results, inbox, and dashboard.
+- `apps/web`: Next.js frontend with Clerk auth, profile UI, programs catalog, match results, inbox, dashboard, and bearer-token API calls for protected inbox flows.
 - `apps/admin`: initial school analytics dashboard shell.
 - `infra/db/schema.prisma`: PostgreSQL schema for User, StudentProfile, Program, Match, Notification, Conversation, and Message.
 - `infra/db/migrations`: committed baseline Prisma migration for fresh setup.
@@ -78,5 +78,5 @@ To fully reconnect GitHub and ChatGPT/Codex:
 Phase 1 MVP is present on the integration branch, and the repository is ready for the next delivery stage:
 
 - Phase 2 messaging hardening is already in place
-- the next logical implementation step is replacing the temporary `x-user-id` development guard with real Clerk JWT verification in NestJS
-- after auth hardening, the next step is e2e coverage against Docker PostgreSQL and richer support/school role flows
+- Clerk verification now protects inbox/message routes in NestJS
+- the next step is e2e coverage against Docker PostgreSQL and richer support/school role flows

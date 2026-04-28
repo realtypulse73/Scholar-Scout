@@ -53,20 +53,20 @@ const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 type ApiRequestInit = RequestInit & {
-  userId?: string;
+  authToken?: string;
 };
 
 async function apiRequest<T>(
   path: string,
   init?: ApiRequestInit,
 ): Promise<T> {
-  const { userId, headers, ...requestInit } = init || {};
+  const { authToken, headers, ...requestInit } = init || {};
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...requestInit,
     headers: {
       'Content-Type': 'application/json',
-      ...(userId ? { 'x-user-id': userId } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(headers || {}),
     },
     cache: 'no-store',
@@ -142,23 +142,25 @@ export function getMatches(studentProfileId: string, limit = 10) {
   });
 }
 
-export function getNotifications(userId: string) {
-  return apiRequest<NotificationItem[]>(`/notifications/${userId}`, { userId });
+export function getNotifications(userId: string, authToken: string) {
+  return apiRequest<NotificationItem[]>(`/notifications/${userId}`, {
+    authToken,
+  });
 }
 
-export function getConversations(userId: string) {
+export function getConversations(userId: string, authToken: string) {
   return apiRequest<Conversation[]>(`/messages/conversations/${userId}`, {
-    userId,
+    authToken,
   });
 }
 
 export function createConversation(
   input: { participantIds: string[] },
-  userId: string,
+  authToken: string,
 ) {
   return apiRequest<Conversation>('/messages/conversations', {
     method: 'POST',
-    userId,
+    authToken,
     body: JSON.stringify(input),
   });
 }
@@ -169,25 +171,25 @@ export function createMessage(
     senderId: string;
     body: string;
   },
-  userId: string,
+  authToken: string,
 ) {
   return apiRequest<Conversation['messages'][number]>('/messages', {
     method: 'POST',
-    userId,
+    authToken,
     body: JSON.stringify(input),
   });
 }
 
-export function markNotificationRead(id: string, userId: string) {
+export function markNotificationRead(id: string, authToken: string) {
   return apiRequest<NotificationItem>(`/notifications/${id}/read`, {
     method: 'PATCH',
-    userId,
+    authToken,
   });
 }
 
-export function markMessageRead(id: string, userId: string) {
+export function markMessageRead(id: string, authToken: string) {
   return apiRequest<Conversation['messages'][number]>(`/messages/${id}/read`, {
     method: 'PATCH',
-    userId,
+    authToken,
   });
 }

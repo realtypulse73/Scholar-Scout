@@ -10,7 +10,7 @@ From the repo root:
 powershell -ExecutionPolicy Bypass -File .\scripts\activate-toolchain.ps1
 ```
 
-This prepends the local Node, Git, and GitHub CLI directories to `PATH` for the current PowerShell session and prints active tool versions.
+This prepends the local Node, Git, and GitHub CLI directories to `PATH` for the current PowerShell session, points GitHub CLI at the repo-local `.local/gh` config directory, and prints active tool versions.
 
 To run one command with the local toolchain without changing your parent shell:
 
@@ -34,7 +34,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-git-gh-toolchain.ps1
 To authenticate GitHub CLI after activation:
 
 ```powershell
-gh auth login
+gh auth login --hostname github.com --git-protocol https --web
 ```
 
 To check the available toolchain:

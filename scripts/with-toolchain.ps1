@@ -4,6 +4,7 @@ param(
 )
 
 $ToolRoot = Join-Path $PSScriptRoot '..\.tools'
+$GhConfigDir = Join-Path $PSScriptRoot '..\.local\gh'
 $NodeDir = Get-ChildItem -Path $ToolRoot -Directory -Filter 'node-*-win-x64' |
   Sort-Object Name -Descending |
   Select-Object -First 1
@@ -27,5 +28,10 @@ if ($GhExe) {
 
 $env:PATH = "$($PathParts -join ';');$env:PATH"
 
-& $Command[0] @($Command | Select-Object -Skip 1)
+if (-not (Test-Path $GhConfigDir)) {
+  New-Item -ItemType Directory -Path $GhConfigDir -Force | Out-Null
+}
 
+$env:GH_CONFIG_DIR = (Resolve-Path $GhConfigDir).Path
+
+& $Command[0] @($Command | Select-Object -Skip 1)

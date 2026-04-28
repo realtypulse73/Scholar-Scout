@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { ClerkAuthGuard } from '../auth/clerk-auth.guard';
 import { CurrentUserId } from '../auth/current-user.decorator';
-import { HeaderUserGuard } from '../auth/header-user.guard';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -19,7 +19,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get(':userId')
-  @UseGuards(HeaderUserGuard)
+  @UseGuards(ClerkAuthGuard)
   findByUser(
     @Param('userId') userId: string,
     @CurrentUserId() currentUserId: string,
@@ -37,7 +37,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  @UseGuards(HeaderUserGuard)
+  @UseGuards(ClerkAuthGuard)
   markRead(@Param('id') id: string, @CurrentUserId() currentUserId: string) {
     return this.notificationsService.markRead(id, currentUserId);
   }

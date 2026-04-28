@@ -95,7 +95,7 @@ The next logical stage is Phase 2 messaging:
 
 After that, the next stage should add authenticated backend guards, real support/school users, and automated tests around the matching and messaging flows.
 
-The current branch includes the first hardening pass for that stage: protected inbox/message routes, frontend auth-header wiring, API unit tests, and GitHub Actions CI. See `docs/phase-2-hardening.md` for details and remaining production-auth work.
+The current branch includes the first hardening pass for that stage: Clerk-backed protected inbox/message routes, frontend bearer-token wiring, API unit tests, and GitHub Actions CI. See `docs/phase-2-hardening.md` for details and remaining auth follow-up work.
 
 `docs/AGENTS.md` is the repository contract for keeping the Phase 1 MVP aligned across `apps/web`, `apps/api`, `infra/db`, and `docs`.
 
