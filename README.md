@@ -1,112 +1,104 @@
-# Scholar-Scout
+# ScholarScout
 
-ScholarScout is a **rejection-free post-secondary discovery platform** that matches students with programmes that fit their goals, budget, and life circumstances.
+ScholarScout is moving from a single-app prototype toward a monorepo with a student-facing web app, NestJS API, Prisma/PostgreSQL data layer, and service foundations for messaging, billing, ML, simulation, and governance.
 
----
+## Local Setup
 
-## Getting Started
+Prerequisites:
 
-### Prerequisites
+- Node.js 20+ and npm, or the project-local `.tools` toolchain
+- Docker Desktop
 
-- Node.js 18+ and npm
+Activate the local Node/npm/Git/GitHub CLI toolchain if system tools are unavailable:
 
-### Install dependencies
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\activate-toolchain.ps1
+```
+
+If `.tools` has not been created yet:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-node-toolchain.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\install-git-gh-toolchain.ps1
+```
+
+Start PostgreSQL:
+
+```bash
+npm run db:up
+```
+
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-### Run the development server
+Create API environment:
 
 ```bash
-npm run dev
+cp apps/api/.env.example apps/api/.env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. Click **Get Started** to launch the onboarding wizard at [http://localhost:3000/onboarding](http://localhost:3000/onboarding).
-
-### Build for production
+Generate and migrate Prisma:
 
 ```bash
-npm run build
-npm start
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
 ```
 
-### Lint
+If you change the schema locally and need to create a new migration:
 
 ```bash
-npm run lint
+npm run prisma:migrate:dev
 ```
 
-### Run tests
+Run the API:
 
 ```bash
-npm test
+npm run dev:api
 ```
 
-Watch mode:
+Run the web app:
 
 ```bash
-npm run test:watch
+npm run dev:web
 ```
 
----
+Run API tests:
 
-## Project Structure
-
-```
-app/
-  page.tsx                         # Landing / home page
-  onboarding/
-    page.tsx                       # Onboarding wizard page (/onboarding)
-components/
-  onboarding/
-    OnboardingWizard.tsx           # Wizard root – state, validation, navigation
-    ProgressIndicator.tsx          # Step progress indicator
-    StepGpa.tsx                    # Step 1: GPA band selection
-    StepInterests.tsx              # Step 2: Interests multi-select
-    StepLocation.tsx               # Step 3: Location preference
-    StepPathway.tsx                # Step 4: Pathway preference
-    StepAffordability.tsx          # Step 5: Affordability slider
-    StepSupportNeeds.tsx           # Step 6: Support needs
-    OnboardingSummary.tsx          # Post-submit summary screen
-lib/
-  onboarding-types.ts              # TypeScript types, enums, and label maps
-  onboarding-validation.ts         # Per-step and full-form validation
-__tests__/
-  lib/
-    onboarding-validation.test.ts  # Validation logic tests
-  components/
-    StepGpa.test.tsx
-    StepInterests.test.tsx
-    StepAffordability.test.tsx
-    StepSupportNeeds.test.tsx
-    OnboardingWizard.test.tsx      # Full wizard integration tests
-docs/
-  codex-backlog.md                 # Sprint backlog and task definitions
+```bash
+npm run test:api
 ```
 
----
+## Current Stage
 
-## Onboarding Wizard
+Phase 1 is the MVP foundation:
 
-The wizard collects six student-preference signals across six steps:
+- Clerk-authenticated web shell
+- student profile form
+- program model
+- matching endpoint
+- dashboard and inbox UI
+- Docker-backed local PostgreSQL
+- committed Prisma migrations in `infra/db/migrations`
 
-| Step | Field | Type |
-|---|---|---|
-| 1 | GPA Band | Single-select chip |
-| 2 | Interests | Multi-select chips |
-| 3 | Location Preference | Radio group |
-| 4 | Pathway Preference | Radio group |
-| 5 | Affordability Sensitivity | Labelled 1–5 slider |
-| 6 | Support Needs | Multi-select checklist |
+The next logical stage is Phase 2 messaging:
 
-All required steps (1–4) include inline validation with accessible `role="alert"` error messages. Steps 5 and 6 are always valid (slider has a default; support needs are optional).
+- persisted notifications
+- persisted conversations and messages
+- realtime WebSocket delivery
+- inbox UI connected to API data
+- inbox message composer
+- read-status tracking for notifications and messages
 
----
+After that, the next stage should add authenticated backend guards, real support/school users, and automated tests around the matching and messaging flows.
 
-## Tech Stack
+The current branch includes the first hardening pass for that stage: Clerk-backed protected inbox/message routes, frontend bearer-token wiring, API unit tests, and GitHub Actions CI. See `docs/phase-2-hardening.md` for details and remaining auth follow-up work.
 
-- **Next.js 14** (App Router)
-- **TypeScript**
-- **Tailwind CSS**
-- **Jest** + **React Testing Library**
+`docs/AGENTS.md` is the repository contract for keeping the Phase 1 MVP aligned across `apps/web`, `apps/api`, `infra/db`, and `docs`.
+
+## Important Note
+
+The GitHub `main` branch currently contains the earlier single Next.js onboarding prototype. This monorepo should be compared in a draft PR before replacing that structure.
