@@ -13,7 +13,7 @@ Generated: 2026-05-11T08:31:12.657Z
 2. Confirm Vercel permissions with `docs/vercel-permissions-handoff.md`.
 3. In Vercel Project Settings, set environment variables from `.env.production.local` for Production and Preview as appropriate.
 4. In Vercel Storage, create a Private Blob store connected to the project and copy its read-write token into `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` or `BLOB_READ_WRITE_TOKEN`.
-5. Create a Google or GitHub OAuth client. Use the deployed callback URL:
+5. Create a Google or GitHub OAuth client. Use `docs/google-oauth-permissions-handoff.md` for the Google access request. Use the deployed callback URL:
    - Google: `https://YOUR_DOMAIN/api/auth/callback/google`
    - GitHub: `https://YOUR_DOMAIN/api/auth/callback/github`
 6. Copy OAuth client id/secret into Vercel environment variables.

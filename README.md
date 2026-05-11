@@ -31,6 +31,7 @@ Vercel access and role requirements are captured in [`docs/vercel-permissions-ha
 
 Before enabling production traffic, use the OAuth, staff allowlist, and durable data-store checklist in [`docs/production-readiness-checklist.md`](docs/production-readiness-checklist.md).
 Provider-specific production secret setup notes live in [`docs/production-secret-provider-notes.md`](docs/production-secret-provider-notes.md).
+Google OAuth access requirements are captured in [`docs/google-oauth-permissions-handoff.md`](docs/google-oauth-permissions-handoff.md).
 The production release sequence lives in [`docs/production-release-runbook.md`](docs/production-release-runbook.md).
 Production incident response notes live in [`docs/production-incident-response.md`](docs/production-incident-response.md).
 Prelaunch evidence can use [`docs/prelaunch-evidence-template.md`](docs/prelaunch-evidence-template.md).

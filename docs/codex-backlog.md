@@ -2294,3 +2294,29 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **External admin action** - Only a Vercel owner/admin can grant Vercel team, project, and GitHub integration permissions.
+
+---
+
+### Task 98 - Google OAuth Permissions Handoff
+**Status:** Complete  
+**Description:** Create a Google Cloud permission request and admin-assisted setup checklist for ScholarScout Google sign-in.
+
+**Acceptance Criteria:**
+- [x] Google handoff names the OAuth client and consent configuration permissions needed.
+- [x] Handoff includes an admin-assisted setup path if direct Google Cloud access is not granted.
+- [x] Handoff includes the ScholarScout callback URL and required environment variable names.
+- [x] Provider notes and generated provider setup report link to the Google handoff.
+- [x] README links the Google OAuth permission handoff.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `docs/google-oauth-permissions-handoff.md` | Adds Google OAuth access request and setup checklist |
+| `README.md` | Links the Google handoff |
+| `docs/production-secret-provider-notes.md` | Links Google OAuth setup to the handoff |
+| `reports/production-provider-setup.md` | Points operators to the Google access request |
+| `scripts/provision-production-values.mjs` | Adds Google handoff to future generated provider reports |
+| `docs/codex-backlog.md` | Records the Google permissions handoff task |
+
+**Follow-up Risks:**
+1. **External admin action** - A Google Cloud or Workspace admin still has to grant access or create the OAuth client.

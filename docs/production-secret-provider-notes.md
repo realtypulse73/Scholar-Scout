@@ -38,6 +38,7 @@ Do not configure `SCHOLARSCOUT_DATA_ADAPTER=json` for production traffic.
 ## Google OAuth
 
 Configure the Google OAuth client as a web application.
+If you need a Google Cloud owner or Workspace admin to grant access, use [`google-oauth-permissions-handoff.md`](google-oauth-permissions-handoff.md).
 
 | Google value | ScholarScout value |
 |---|---|
