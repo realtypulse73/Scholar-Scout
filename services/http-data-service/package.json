@@ -1,0 +1,14 @@
+{
+  "name": "@scholar-scout/http-data-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.mjs",
+    "start": "node src/server.mjs",
+    "build": "node scripts/validate-fixture.mjs",
+    "lint": "node scripts/validate-fixture.mjs",
+    "test": "node --test test",
+    "typecheck": "node scripts/validate-fixture.mjs"
+  }
+}

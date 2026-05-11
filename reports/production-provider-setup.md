@@ -1,0 +1,36 @@
+# ScholarScout Provider Hosting Setup
+
+Generated: 2026-05-11T08:31:12.657Z
+
+## Files
+
+- Local production handoff file: `.env.production.local`
+- This file is ignored by git. Do not paste it into tickets or chat.
+
+## Provider Actions
+
+1. Create or access the Vercel project and deploy ScholarScout from this repository.
+2. In Vercel Project Settings, set environment variables from `.env.production.local` for Production and Preview as appropriate.
+3. In Vercel Storage, create a Private Blob store connected to the project and copy its read-write token into `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` or `BLOB_READ_WRITE_TOKEN`.
+4. Create a Google or GitHub OAuth client. Use the deployed callback URL:
+   - Google: `https://YOUR_DOMAIN/api/auth/callback/google`
+   - GitHub: `https://YOUR_DOMAIN/api/auth/callback/github`
+5. Copy OAuth client id/secret into Vercel environment variables.
+6. Add GitHub Actions repository secrets for readiness, smoke, and prelaunch workflows.
+7. Redeploy after environment variables are set.
+8. Run `npm run rehearse:prelaunch -- --env-file .env.production.local` locally or trigger the Prelaunch Rehearsal workflow.
+
+## GitHub Actions Secrets To Add
+
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` or `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+- `SCHOLARSCOUT_STAFF_EMAILS`
+- `SCHOLARSCOUT_HEALTH_TOKEN`
+- `SCHOLARSCOUT_DATA_ADAPTER`
+- `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` or `BLOB_READ_WRITE_TOKEN`
+- `SCHOLARSCOUT_BLOB_DATA_PATH`
+- `SCHOLARSCOUT_SMOKE_BASE_URL`
+- `SCHOLARSCOUT_SMOKE_HEALTH_TOKEN`
+- `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER`
+- `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS`

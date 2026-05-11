@@ -2,33 +2,36 @@
   "name": "scholar-scout",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch"
+  "packageManager": "npm@10",
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   },
-  "dependencies": {
-    "next": "^15.5.15",
-    "react": "^18",
-    "react-dom": "^18"
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @scholar-scout/web",
+    "dev:web": "npm run dev --workspace @scholar-scout/web",
+    "build": "npm run build --workspaces --if-present",
+    "build:web": "npm run build --workspace @scholar-scout/web",
+    "build:vercel": "npm run build --workspace @scholar-scout/web",
+    "vercel:docker-free": "npm install --ignore-scripts && npm run build:vercel",
+    "build:apps": "npm run build --workspace @scholar-scout/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "check:production-env": "node scripts/production-env-check.mjs",
+    "provision:env": "node scripts/provision-environment.mjs",
+    "provision:production-values": "node scripts/provision-production-values.mjs",
+    "rehearse:prelaunch": "node scripts/prelaunch-rehearsal.mjs",
+    "report:production": "node scripts/production-report-summary.mjs",
+    "smoke:production": "node scripts/production-smoke.mjs",
+    "test:production-tooling": "node --test scripts/test-production-tooling.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "^15.5.15",
-    "jest": "^30.3.0",
-    "jest-environment-jsdom": "^30.3.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "ts-jest": "^29.4.9",
-    "typescript": "^5"
+    "ts-node": "^10.9.2"
   }
 }

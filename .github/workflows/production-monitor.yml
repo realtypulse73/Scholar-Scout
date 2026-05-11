@@ -1,0 +1,63 @@
+name: ScholarScout Production Monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed ScholarScout URL to monitor
+        required: false
+        type: string
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: scholarscout-production-monitor
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Production smoke and data health
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ inputs.base_url || secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
+      SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
+      SCHOLARSCOUT_SMOKE_STAFF_COOKIE: ${{ secrets.SCHOLARSCOUT_SMOKE_STAFF_COOKIE }}
+      SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
+      SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install without postinstall scripts
+        run: npm install --ignore-scripts
+
+      - name: Run production smoke monitor
+        run: npm run smoke:production
+
+      - name: Write production smoke report
+        if: always()
+        run: npm run smoke:production -- --json > production-smoke-report.json
+        continue-on-error: true
+
+      - name: Summarize production smoke report
+        if: always()
+        run: npm run report:production -- --smoke-report production-smoke-report.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-report
+          path: production-smoke-report.json
+          retention-days: 14

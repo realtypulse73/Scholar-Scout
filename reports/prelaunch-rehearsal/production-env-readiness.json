@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "passed": 9,
+    "warnings": 3,
+    "failures": 0
+  },
+  "checks": [
+    {
+      "name": "NEXTAUTH_URL",
+      "detail": "Set to a local HTTP URL for rehearsal.",
+      "status": "pass"
+    },
+    {
+      "name": "NEXTAUTH_SECRET",
+      "detail": "Set and long enough for production use.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_STAFF_EMAILS",
+      "detail": "Contains at least one entry.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_HEALTH_TOKEN",
+      "detail": "Set and long enough for production use.",
+      "status": "pass"
+    },
+    {
+      "name": "Google OAuth",
+      "detail": "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set; this provider will be disabled.",
+      "status": "warn"
+    },
+    {
+      "name": "GitHub OAuth",
+      "detail": "GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are not set; this provider will be disabled.",
+      "status": "warn"
+    },
+    {
+      "name": "Production OAuth coverage",
+      "detail": "Credentials-only production sign-in was explicitly allowed.",
+      "status": "warn"
+    },
+    {
+      "name": "Data adapter",
+      "detail": "HTTP service adapter is selected.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_DATA_SERVICE_URL",
+      "detail": "Set to an HTTP(S) URL.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_DATA_SERVICE_TOKEN",
+      "detail": "Set and long enough for production use.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_SMOKE_BASE_URL",
+      "detail": "Set to an HTTP(S) URL.",
+      "status": "pass"
+    },
+    {
+      "name": "SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER",
+      "detail": "Set.",
+      "status": "pass"
+    }
+  ]
+}

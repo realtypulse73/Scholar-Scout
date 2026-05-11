@@ -1,0 +1,65 @@
+TAP version 13
+# Subtest: production env checker returns JSON without secret values
+ok 1 - production env checker returns JSON without secret values
+  ---
+  duration_ms: 86.709
+  ...
+# Subtest: production env checker fails local JSON adapter for production
+ok 2 - production env checker fails local JSON adapter for production
+  ---
+  duration_ms: 69.8929
+  ...
+# Subtest: production env checker rejects non-local HTTP production URL
+ok 3 - production env checker rejects non-local HTTP production URL
+  ---
+  duration_ms: 67.1814
+  ...
+# Subtest: production smoke JSON passes expected provider and health checks
+ok 4 - production smoke JSON passes expected provider and health checks
+  ---
+  duration_ms: 233.3696
+  ...
+# Subtest: production smoke fails missing expected providers
+ok 5 - production smoke fails missing expected providers
+  ---
+  duration_ms: 253.2992
+  ...
+# Subtest: production smoke JSON reports network failures without crashing
+ok 6 - production smoke JSON reports network failures without crashing
+  ---
+  duration_ms: 107.4661
+  ...
+# Subtest: production smoke retries transient request failures
+ok 7 - production smoke retries transient request failures
+  ---
+  duration_ms: 221.7433
+  ...
+# Subtest: production smoke can fail slow endpoint latency
+ok 8 - production smoke can fail slow endpoint latency
+  ---
+  duration_ms: 347.2912
+  ...
+# Subtest: production report summary renders env and smoke JSON as Markdown
+ok 9 - production report summary renders env and smoke JSON as Markdown
+  ---
+  duration_ms: 66.5913
+  ...
+# Subtest: prelaunch rehearsal writes readiness artifacts and summary
+ok 10 - prelaunch rehearsal writes readiness artifacts and summary
+  ---
+  duration_ms: 226.4472
+  ...
+# Subtest: portable npm PowerShell wrapper accepts direct npm arguments
+ok 11 - portable npm PowerShell wrapper accepts direct npm arguments
+  ---
+  duration_ms: 828.5151
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2613.138
