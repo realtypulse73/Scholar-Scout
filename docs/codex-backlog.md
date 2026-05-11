@@ -2268,3 +2268,29 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **Provider-console dependency** - The command prepares local values, but provider admins still need to create the deployed URL, OAuth apps, Blob token, and GitHub Actions secrets.
+
+---
+
+### Task 97 - Vercel Workaround Permissions Handoff
+**Status:** Complete  
+**Description:** Link the Docker-free Vercel workaround to an explicit permissions handoff for project creation, GitHub integration, environment variables, Blob storage, deployment, and logs.
+
+**Acceptance Criteria:**
+- [x] `vercel.json` uses the Docker-free install command.
+- [x] README links the Vercel permissions handoff.
+- [x] Vercel deployment docs link the permissions handoff.
+- [x] Vercel Docker workaround docs link the permissions handoff.
+- [x] Production provider setup report points operators to the permissions handoff.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `vercel.json` | Aligns cloud install command with the Docker-free workaround |
+| `docs/vercel-permissions-handoff.md` | Adds exact Vercel role and integration access request |
+| `README.md` | Links the Vercel permissions handoff |
+| `docs/vercel-deployment.md` | Links access requirements from deployment docs |
+| `docs/vercel-docker-workaround.md` | Links permissions from the workaround |
+| `scripts/provision-production-values.mjs` | Adds permissions handoff to generated provider setup report |
+
+**Follow-up Risks:**
+1. **External admin action** - Only a Vercel owner/admin can grant Vercel team, project, and GitHub integration permissions.

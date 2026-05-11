@@ -17,6 +17,8 @@ The workspace lockfile and package metadata live at the repository root. Keeping
 
 If Docker is unavailable locally or in a contributor environment, use the explicit Docker-free flow in [`vercel-docker-workaround.md`](vercel-docker-workaround.md). The Vercel project should still deploy from the repository root.
 
+If you need a Vercel owner or admin to grant access, use [`vercel-permissions-handoff.md`](vercel-permissions-handoff.md). It lists the required role, GitHub integration access, environment-variable permissions, and Blob storage permissions.
+
 ## Local Equivalent
 
 When Node.js/npm are available locally, this is the same build path Vercel will use:

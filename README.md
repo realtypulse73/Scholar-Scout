@@ -27,6 +27,7 @@ npm will install the workspace root plus every package under `apps/*`, `packages
 Docker is not required for the current frontend workspace. If Docker is unavailable, use the Node/npm workflow in [`docs/docker-free-development.md`](docs/docker-free-development.md).
 
 For cloud builds, deploy from the repository root with Vercel using [`docs/vercel-deployment.md`](docs/vercel-deployment.md). If Docker is unavailable, use the explicit Vercel workaround in [`docs/vercel-docker-workaround.md`](docs/vercel-docker-workaround.md).
+Vercel access and role requirements are captured in [`docs/vercel-permissions-handoff.md`](docs/vercel-permissions-handoff.md).
 
 Before enabling production traffic, use the OAuth, staff allowlist, and durable data-store checklist in [`docs/production-readiness-checklist.md`](docs/production-readiness-checklist.md).
 Provider-specific production secret setup notes live in [`docs/production-secret-provider-notes.md`](docs/production-secret-provider-notes.md).

@@ -13,6 +13,8 @@ ScholarScout does not need Docker for the current frontend deployment path. Verc
 
 The `--ignore-scripts` install command avoids local native install hooks during the cloud install step. The app currently uses pure frontend dependencies and does not rely on package postinstall scripts, so the production build remains the source of truth.
 
+If the Vercel project or GitHub integration has not been created yet, use [`vercel-permissions-handoff.md`](vercel-permissions-handoff.md) to request the required project, environment-variable, deployment, Blob storage, and repository-integration permissions.
+
 ## Local Smoke Test
 
 Use this command before deploying when Docker is not available:
