@@ -8,8 +8,15 @@ import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   getRankedProgrammeMatches,
   parseOnboardingProfile,
+  type RankedProgrammeMatch,
 } from '@/lib/preference-matching';
 import { buildPathwayRecommendations } from '@/lib/pathway-recommendations';
+import {
+  SIMULATION_RESULTS_STORAGE_KEY,
+  getSimulationRecommendationSignal,
+  parseSimulationResults,
+  type SimulationResultMap,
+} from '@/lib/simulation-recommendation-signals';
 import type { OnboardingData } from '@/lib/onboarding-types';
 import type { Programme } from '@/lib/programmes';
 
@@ -17,11 +24,20 @@ interface RecommendationDashboardProps {
   programmes: Programme[];
 }
 
+interface SimulationAwareMatch {
+  match: RankedProgrammeMatch;
+  simulationBoost: number;
+  simulationReasons: string[];
+  clarityScore: number;
+  finalScore: number;
+}
+
 export default function RecommendationDashboard({
   programmes,
 }: RecommendationDashboardProps) {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<OnboardingData | null>(null);
+  const [simulationResults, setSimulationResults] = useState<SimulationResultMap>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -30,6 +46,12 @@ export default function RecommendationDashboard({
         window.localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY),
       );
       setProfile(localProfile);
+      setSimulationResults(
+        parseSimulationResults(
+          window.localStorage.getItem(SIMULATION_RESULTS_STORAGE_KEY) ??
+            window.localStorage.getItem('simulation-result'),
+        ),
+      );
 
       if (session) {
         const response = await fetch('/api/account/onboarding');
@@ -49,14 +71,44 @@ export default function RecommendationDashboard({
     () => (profile ? getRankedProgrammeMatches(programmes, profile) : []),
     [programmes, profile],
   );
+  const simulationAwareMatches = useMemo<SimulationAwareMatch[]>(() => {
+    return rankedMatches
+      .map((match) => {
+        const signal = getSimulationRecommendationSignal(
+          match.programme,
+          simulationResults,
+        );
+
+        return {
+          match,
+          simulationBoost: signal.boost,
+          simulationReasons: signal.reasons,
+          clarityScore: signal.clarityScore,
+          finalScore: Math.min(100, match.fit.score + signal.boost),
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.finalScore - a.finalScore ||
+          b.simulationBoost - a.simulationBoost ||
+          b.match.fit.score - a.match.fit.score,
+      );
+  }, [rankedMatches, simulationResults]);
+  const simulationDrivenCount = simulationAwareMatches.filter(
+    (item) => item.simulationBoost > 0,
+  ).length;
+  const highestClarityScore = Math.max(
+    0,
+    ...Object.values(simulationResults).map((result) => result.clarityScore),
+  );
   const pathwayRecommendations = useMemo(
     () => buildPathwayRecommendations(
-      rankedMatches.slice(0, 5).map((match) => match.programme),
+      simulationAwareMatches.slice(0, 5).map((item) => item.match.programme),
       profile,
     ),
-    [rankedMatches, profile],
+    [simulationAwareMatches, profile],
   );
-  const topMatch = rankedMatches[0];
+  const topMatch = simulationAwareMatches[0];
   const bestPathway = pathwayRecommendations[0];
   const verificationCount = pathwayRecommendations.reduce(
     (count, recommendation) =>
@@ -116,8 +168,8 @@ export default function RecommendationDashboard({
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
               This dashboard combines onboarding signals, programme fit, access,
-              affordability, support needs, and pathway planning into a ranked
-              set of practical next steps.
+              affordability, support needs, pathway planning, and completed
+              career simulations into a ranked set of practical next steps.
             </p>
           </div>
           {topMatch ? (
@@ -126,13 +178,18 @@ export default function RecommendationDashboard({
                 Highest-fit recommendation
               </p>
               <h2 className="mt-2 text-xl font-extrabold text-ink-900">
-                {topMatch.programme.name}
+                {topMatch.match.programme.name}
               </h2>
               <p className="mt-1 text-sm font-semibold text-ink-600">
-                {topMatch.programme.school} · {topMatch.fit.score}% personal fit
+                {topMatch.match.programme.school} · {topMatch.finalScore}% final fit
               </p>
+              {topMatch.simulationBoost > 0 ? (
+                <Badge tone="success" className="mt-3">
+                  Based on your simulation results
+                </Badge>
+              ) : null}
               <Link
-                href={`/programmes/${topMatch.programme.id}`}
+                href={`/programmes/${topMatch.match.programme.id}`}
                 className="mt-4 inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
               >
                 View programme
@@ -142,12 +199,34 @@ export default function RecommendationDashboard({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4" aria-label="Dashboard metrics">
-        <MetricCard label="Ranked options" value={`${rankedMatches.length}`} />
-        <MetricCard label="Excellent / strong" value={`${rankedMatches.filter((match) => match.fit.score >= 72).length}`} />
-        <MetricCard label="Pathways built" value={`${pathwayRecommendations.length}`} />
+      <section className="grid gap-4 md:grid-cols-5" aria-label="Dashboard metrics">
+        <MetricCard label="Ranked options" value={`${simulationAwareMatches.length}`} />
+        <MetricCard label="Excellent / strong" value={`${simulationAwareMatches.filter((item) => item.finalScore >= 72).length}`} />
+        <MetricCard label="Simulation-driven" value={`${simulationDrivenCount}`} />
+        <MetricCard label="Clarity score" value={highestClarityScore ? `${highestClarityScore}%` : '—'} />
         <MetricCard label="Items to verify" value={`${verificationCount}`} />
       </section>
+
+      {simulationDrivenCount > 0 ? (
+        <section className="rounded-card border border-brand-200 bg-brand-50 p-5">
+          <Badge tone="brand" className="mb-3">
+            Simulation insight layer
+          </Badge>
+          <h2 className="text-xl font-extrabold text-ink-900">
+            Your completed simulations are changing the ranking
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-700">
+            ScholarScout is now giving extra weight to programmes that match the
+            environments, interests, and pathways you tested through simulations.
+          </p>
+          <Link
+            href="/explore"
+            className="mt-4 inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-white px-4 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+          >
+            Try another simulation
+          </Link>
+        </section>
+      ) : null}
 
       {bestPathway ? (
         <section className="rounded-card border border-success-100 bg-white p-5 shadow-card">
@@ -171,30 +250,6 @@ export default function RecommendationDashboard({
               Compare shortlist
             </Link>
           </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-4">
-            {bestPathway.phases.map((phase) => (
-              <article
-                key={phase.type}
-                className="rounded-card border border-ink-200 bg-ink-50 p-4"
-              >
-                <p className="text-xs font-bold uppercase text-ink-500">
-                  {phase.type}
-                </p>
-                <h3 className="mt-2 text-base font-extrabold text-ink-900">
-                  {phase.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-ink-600">
-                  {phase.description}
-                </p>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-ink-700">
-                  {phase.actions.slice(0, 2).map((action) => (
-                    <li key={action}>• {action}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
         </section>
       ) : null}
 
@@ -204,13 +259,13 @@ export default function RecommendationDashboard({
             Ranked recommendations
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            These are sorted by personal fit first, then baseline programme
-            strength and affordability.
+            These are sorted by personal fit plus simulation-driven boosts when
+            your completed scenarios point toward a pathway.
           </p>
           <div className="mt-5 space-y-3">
-            {rankedMatches.slice(0, 5).map((match, index) => (
+            {simulationAwareMatches.slice(0, 5).map((item, index) => (
               <article
-                key={match.programme.id}
+                key={item.match.programme.id}
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -219,22 +274,34 @@ export default function RecommendationDashboard({
                       #{index + 1} recommendation
                     </p>
                     <h3 className="mt-1 text-base font-extrabold text-ink-900">
-                      {match.programme.name}
+                      {item.match.programme.name}
                     </h3>
                     <p className="mt-1 text-sm font-semibold text-ink-500">
-                      {match.programme.school}
+                      {item.match.programme.school}
                     </p>
                   </div>
-                  <Badge tone={match.fit.score >= 72 ? 'success' : 'warning'}>
-                    {match.fit.score}%
-                  </Badge>
+                  <div className="text-right">
+                    <Badge tone={item.finalScore >= 72 ? 'success' : 'warning'}>
+                      {item.finalScore}%
+                    </Badge>
+                    {item.simulationBoost > 0 ? (
+                      <p className="mt-1 text-xs font-bold text-brand-700">
+                        +{item.simulationBoost} simulation
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-ink-700">
-                  {match.fit.reasons[0]}
+                  {item.match.fit.reasons[0]}
                 </p>
-                {match.fit.cautions[0] ? (
+                {item.simulationReasons.map((reason) => (
+                  <p key={reason} className="mt-2 text-sm font-semibold leading-6 text-brand-700">
+                    {reason}
+                  </p>
+                ))}
+                {item.match.fit.cautions[0] ? (
                   <p className="mt-2 text-sm leading-6 text-danger-700">
-                    Verify: {match.fit.cautions[0]}
+                    Verify: {item.match.fit.cautions[0]}
                   </p>
                 ) : null}
               </article>
@@ -268,21 +335,6 @@ export default function RecommendationDashboard({
                   <Badge tone={pathway.priority === 'high' ? 'success' : 'brand'}>
                     {pathway.priority} priority
                   </Badge>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {pathway.phases.slice(0, 2).map((phase) => (
-                    <div
-                      key={phase.type}
-                      className="rounded border border-ink-100 bg-ink-50 p-3"
-                    >
-                      <p className="text-[11px] font-bold uppercase text-ink-500">
-                        {phase.type}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-ink-800">
-                        {phase.actions[0]}
-                      </p>
-                    </div>
-                  ))}
                 </div>
               </article>
             ))}
