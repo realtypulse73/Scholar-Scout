@@ -1,0 +1,14 @@
+{
+  "name": "@scholar-scout/codex-webhook-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  }
+}
