@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createUser, type AccountRole } from '@/lib/server/data-store';
+import {
+  createUser,
+  getAccountRoleForEmail,
+  type AccountRole,
+} from '@/lib/server/data-store';
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -21,7 +25,7 @@ export async function POST(request: Request) {
       email: body.email,
       name: body.name ?? '',
       password: body.password,
-      role: body.role === 'staff' ? 'staff' : 'student',
+      role: getAccountRoleForEmail(body.email),
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
