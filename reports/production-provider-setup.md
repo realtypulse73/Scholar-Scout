@@ -21,6 +21,12 @@ Generated: 2026-05-11T08:31:12.657Z
 8. Redeploy after environment variables are set.
 9. Run `npm run rehearse:prelaunch -- --env-file .env.production.local` locally or trigger the Prelaunch Rehearsal workflow.
 
+## Active Launch-Blocker Issues
+
+- GitHub OAuth: https://github.com/realtypulse73/Scholar-Scout/issues/6
+- Vercel Blob and deployment environment variables: https://github.com/realtypulse73/Scholar-Scout/issues/7
+- GitHub Actions production secrets and readiness workflows: https://github.com/realtypulse73/Scholar-Scout/issues/8
+
 ## GitHub Actions Secrets To Add
 
 - `NEXTAUTH_URL`

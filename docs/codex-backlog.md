@@ -2386,3 +2386,30 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **External provider action** - Production readiness still needs a real GitHub OAuth app, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the Vercel Blob token.
+
+---
+
+### Task 101 - Production Launch Blocker Issues
+**Status:** Complete  
+**Description:** Convert the remaining external production blockers into GitHub issues with validation checklists and no secret values.
+
+**Acceptance Criteria:**
+- [x] GitHub OAuth first launch blocker is tracked.
+- [x] Vercel Blob and deployment env blocker is tracked.
+- [x] GitHub Actions secrets and workflow blocker is tracked.
+- [x] Provider setup report links to the active launch-blocker issues.
+- [x] Readiness was rerun and confirmed the two current local blockers.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `reports/production-provider-setup.md` | Added active launch-blocker issue links |
+| `docs/codex-backlog.md` | Recorded the launch blocker issue handoff |
+
+**GitHub Issues:**
+- `#6` Provision GitHub OAuth credentials for first production launch
+- `#7` Provision Vercel Blob token and deployment environment variables
+- `#8` Configure GitHub Actions production secrets and run readiness workflows
+
+**Follow-up Risks:**
+1. **External secrets** - These issues still require provider-console access and must not receive pasted secret values.
