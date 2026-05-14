@@ -2357,3 +2357,32 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 1. **Media realism** - Current feed media uses safe public sample media; production needs governed creator uploads or a CMS.
 2. **AI operations** - Advisor quality depends on setting `OPENAI_API_KEY`, selecting a production model, and adding abuse/rate controls.
 3. **Experiment governance** - A/B winner selection is deterministic scaffolding; real winner promotion should require minimum sample sizes and review.
+
+---
+
+### Task 100 - GitHub-First OAuth Launch Plan
+**Status:** Complete  
+**Description:** Switch production launch guidance from Google-first OAuth assumptions to GitHub OAuth first, with Google added later.
+
+**Acceptance Criteria:**
+- [x] Production env template expects `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github`.
+- [x] Production handoff generator defaults to GitHub-first smoke expectations.
+- [x] Provider setup report points operators to GitHub OAuth first and Google later.
+- [x] README, readiness checklist, release runbook, and secret provider notes explain the GitHub-first plan.
+- [x] A GitHub OAuth first handoff document exists.
+- [x] Production tooling tests pass.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `.env.production.example` | Defaults expected provider to GitHub |
+| `docs/github-oauth-first-handoff.md` | Adds GitHub OAuth first setup handoff |
+| `README.md` | Documents GitHub first and Google later |
+| `docs/production-readiness-checklist.md` | Updates launch provider expectations |
+| `docs/production-release-runbook.md` | Uses GitHub as the first smoke provider |
+| `docs/production-secret-provider-notes.md` | Clarifies GitHub-first OAuth order |
+| `reports/production-provider-setup.md` | Updates current provider setup report |
+| `scripts/provision-production-values.mjs` | Updates future provider reports and env handoff defaults |
+
+**Follow-up Risks:**
+1. **External provider action** - Production readiness still needs a real GitHub OAuth app, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the Vercel Blob token.

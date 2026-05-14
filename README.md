@@ -32,6 +32,7 @@ Vercel access and role requirements are captured in [`docs/vercel-permissions-ha
 Before enabling production traffic, use the OAuth, staff allowlist, and durable data-store checklist in [`docs/production-readiness-checklist.md`](docs/production-readiness-checklist.md).
 Provider-specific production secret setup notes live in [`docs/production-secret-provider-notes.md`](docs/production-secret-provider-notes.md).
 Google OAuth access requirements are captured in [`docs/google-oauth-permissions-handoff.md`](docs/google-oauth-permissions-handoff.md).
+GitHub-first OAuth setup lives in [`docs/github-oauth-first-handoff.md`](docs/github-oauth-first-handoff.md).
 The production release sequence lives in [`docs/production-release-runbook.md`](docs/production-release-runbook.md).
 Production incident response notes live in [`docs/production-incident-response.md`](docs/production-incident-response.md).
 Prelaunch evidence can use [`docs/prelaunch-evidence-template.md`](docs/prelaunch-evidence-template.md).
@@ -77,11 +78,11 @@ Auth and account-backed data:
 - Sign up: `/auth/sign-up`
 - Profile: `/profile`
 - Runtime env: set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for NextAuth.
-- Optional OAuth providers: set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and/or `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`. OAuth accounts are created in the active data store on first sign-in.
+- Optional OAuth providers: launch with `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` first; add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` later. OAuth accounts are created in the active data store on first sign-in.
 - Optional AI advisor: set server-only `OPENAI_API_KEY` and optionally `OPENAI_MODEL`. `/api/advisor-chat` uses the OpenAI Responses API when configured and falls back to a deterministic advisor reply when no key is present.
 - Optional staff allowlist: set `SCHOLARSCOUT_STAFF_EMAILS` as a comma-separated list for OAuth users who should receive staff access.
 - Optional health token: set `SCHOLARSCOUT_HEALTH_TOKEN` to enable bearer-token production data health checks at `/api/admin/data/health`.
-- Optional smoke provider expectation: set `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` as a comma-separated list such as `google,github` to verify Auth.js provider discovery during production smoke checks.
+- Optional smoke provider expectation: set `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` as a comma-separated list such as `github` for the first launch or `github,google` after Google is added.
 - Optional smoke timeout: set `SCHOLARSCOUT_SMOKE_TIMEOUT_MS` to tune per-request smoke-check timeouts; the default is 10000.
 - Optional smoke retry count: set `SCHOLARSCOUT_SMOKE_RETRIES` for transient network retries; the default is 1.
 - Optional smoke latency ceiling: set `SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS` to fail smoke checks when any successful request is slower than the configured milliseconds.

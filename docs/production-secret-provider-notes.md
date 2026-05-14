@@ -1,6 +1,6 @@
 # ScholarScout Production Secret Provider Notes
 
-Use these notes when creating production OAuth, data-store, and monitoring secrets. The provider console screens may change, but the ScholarScout environment variable names and callback paths below are stable.
+Use these notes when creating production OAuth, data-store, and monitoring secrets. Launch ScholarScout with GitHub OAuth first, then add Google OAuth later. The provider console screens may change, but the ScholarScout environment variable names and callback paths below are stable.
 
 Use [`../.env.production.example`](../.env.production.example) as the variable-name template when configuring hosting or GitHub Actions secrets. It contains placeholders only; keep real values in the provider or secret store.
 Use [`../.env.prelaunch.local.example`](../.env.prelaunch.local.example) only for local rehearsal workarounds. It intentionally uses localhost and credentials-only auth; do not use it as the public production configuration.
@@ -39,7 +39,7 @@ Do not configure `SCHOLARSCOUT_DATA_ADAPTER=json` for production traffic.
 
 ## Google OAuth
 
-Configure the Google OAuth client as a web application.
+Configure the Google OAuth client as a web application after the GitHub-first launch is working.
 If you need a Google Cloud owner or Workspace admin to grant access, use [`google-oauth-permissions-handoff.md`](google-oauth-permissions-handoff.md).
 
 | Google value | ScholarScout value |
@@ -66,7 +66,7 @@ Rotation:
 
 ## GitHub OAuth
 
-Configure the GitHub OAuth app for the production domain.
+Configure the GitHub OAuth app for the production domain first. Use [`github-oauth-first-handoff.md`](github-oauth-first-handoff.md) for the operator request.
 
 | GitHub value | ScholarScout value |
 |---|---|
@@ -168,7 +168,7 @@ Configure these repository secrets after production is live:
 | `SCHOLARSCOUT_SMOKE_HEALTH_TOKEN` | Same value as production `SCHOLARSCOUT_HEALTH_TOKEN`; preferred for scheduled data health checks |
 | `SCHOLARSCOUT_SMOKE_STAFF_COOKIE` | Optional staff session cookie for data export smoke checks |
 | `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER` | Expected adapter, such as `vercel-blob` or `http` |
-| `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` | Expected Auth.js provider ids, such as `google,github` |
+| `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` | Expected Auth.js provider ids; use `github` first, then `github,google` after Google is added |
 | `SCHOLARSCOUT_SMOKE_TIMEOUT_MS` | Optional per-request smoke timeout in milliseconds |
 | `SCHOLARSCOUT_SMOKE_RETRIES` | Optional transient request retry count |
 | `SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS` | Optional per-request latency ceiling in milliseconds |

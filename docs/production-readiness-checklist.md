@@ -25,8 +25,8 @@ Set these in the hosting environment:
 |---|---|---|
 | `NEXTAUTH_URL` | Canonical production URL | Update when the production domain changes |
 | `NEXTAUTH_SECRET` | Signs Auth.js session tokens | Rotate by setting a new value and requiring fresh sign-in |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Enables Google OAuth | Rotate from the Google Cloud OAuth client |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Enables GitHub OAuth | Rotate from the GitHub OAuth app |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Enables first-launch GitHub OAuth | Rotate from the GitHub OAuth app |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Enables later Google OAuth | Rotate from the Google Cloud OAuth client |
 | `SCHOLARSCOUT_STAFF_EMAILS` | Comma-separated staff allowlist for OAuth accounts | Review before launches, staff changes, and incident response |
 | `SCHOLARSCOUT_HEALTH_TOKEN` | Bearer token for production data health checks | Rotate when monitoring access changes |
 
@@ -122,7 +122,7 @@ After production secrets are live, configure these GitHub Actions repository sec
 | `SCHOLARSCOUT_SMOKE_HEALTH_TOKEN` | Recommended | Service-token checks for data status, durable adapter, and backup retention |
 | `SCHOLARSCOUT_SMOKE_STAFF_COOKIE` | Recommended | Staff-authenticated checks for data status, export access, durable adapter, and backup retention |
 | `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER` | Recommended | Expected production adapter, such as `vercel-blob` or `http` |
-| `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` | Recommended | Comma-separated Auth.js providers expected in production, such as `google,github` |
+| `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` | Recommended | Use `github` for first launch; change to `github,google` after Google is added |
 
 The workflow at `.github/workflows/production-monitor.yml` runs every six hours and can also be triggered manually from GitHub Actions. Prefer `SCHOLARSCOUT_SMOKE_HEALTH_TOKEN` for scheduled data health checks. If only the staff cookie is configured and it expires, signed-out route checks still run, but staff data health checks are skipped until the cookie secret is refreshed.
 

@@ -74,11 +74,11 @@ Then run service-token checks:
 SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN \
 SCHOLARSCOUT_SMOKE_HEALTH_TOKEN='PASTE_HEALTH_TOKEN' \
 SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=vercel-blob \
-SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=google,github \
+SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github \
 npm run smoke:production
 ```
 
-Use `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` to match the OAuth providers intentionally enabled for the deployment.
+Use `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` to match the OAuth providers intentionally enabled for the deployment. Launch with `github`; change to `github,google` after Google OAuth is configured.
 Use `SCHOLARSCOUT_SMOKE_TIMEOUT_MS` only when the deployed platform consistently needs a longer per-request timeout than the 10000ms default.
 Use `SCHOLARSCOUT_SMOKE_RETRIES` for transient network tolerance; keep the value low so repeated failures still surface quickly.
 Use `SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS` only when you want the release smoke check to enforce a simple per-request latency ceiling.
