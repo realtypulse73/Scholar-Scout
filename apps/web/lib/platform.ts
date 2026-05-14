@@ -13,7 +13,7 @@ export type AnalyticsArea =
   | 'notification'
   | 'admin';
 
-export interface FeedItem {
+export interface Path {
   id: string;
   type: FeedContentType;
   title: string;
@@ -21,10 +21,12 @@ export interface FeedItem {
   pathway: string;
   programmeId: string;
   durationSeconds: number;
-  mediaUrl: string;
+  videoUrl: string;
   transcript: string;
   tags: string[];
 }
+
+export type FeedItem = Path;
 
 export interface SimulationChoice {
   id: string;
@@ -95,7 +97,7 @@ export interface DecisionLogEntry {
   reason: string;
 }
 
-export const feedItems: FeedItem[] = [
+export const feedItems: Path[] = [
   {
     id: 'feed-health-day',
     type: 'video',
@@ -104,7 +106,7 @@ export const feedItems: FeedItem[] = [
     pathway: 'Healthcare',
     programmeId: 'north-valley-health',
     durationSeconds: 48,
-    mediaUrl:
+    videoUrl:
       'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     transcript:
       'Students practice patient intake, lab safety, and teamwork before clinical placement.',
@@ -118,8 +120,8 @@ export const feedItems: FeedItem[] = [
     pathway: 'Technology',
     programmeId: 'metro-cybersecurity',
     durationSeconds: 36,
-    mediaUrl:
-      'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
+    videoUrl:
+      'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     transcript:
       'The first projects are usually password hygiene, network basics, and incident response habits.',
     tags: ['technology', 'certificate', 'online'],
@@ -132,7 +134,7 @@ export const feedItems: FeedItem[] = [
     pathway: 'Business',
     programmeId: 'lakeside-business-transfer',
     durationSeconds: 42,
-    mediaUrl:
+    videoUrl:
       'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     transcript:
       'A transfer pathway can keep costs lower while preserving the option to finish a four-year degree.',
@@ -339,7 +341,7 @@ export function assignVariant(userKey: string, experimentId: string): VariantAss
 }
 
 export function runDecisionEngine(input: {
-  feed: FeedItem[];
+  feed: Path[];
   watchSecondsByFeedId: Record<string, number>;
   skipsByFeedId: Record<string, number>;
 }): DecisionLogEntry[] {

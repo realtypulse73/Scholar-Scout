@@ -81,7 +81,7 @@ export default function FeedExperience({
                 {item.type === 'video' ? (
                   <video
                     className="aspect-[9/16] w-full bg-ink-900 object-cover"
-                    src={item.mediaUrl}
+                    src={item.videoUrl}
                     controls
                     playsInline
                     onPlay={() => {
@@ -98,7 +98,7 @@ export default function FeedExperience({
                     <h2 className="text-3xl font-extrabold">{item.title}</h2>
                     <audio
                       className="w-full"
-                      src={item.mediaUrl}
+                      src={item.videoUrl}
                       controls
                       onPlay={() => {
                         watchStarts.current[item.id] = Date.now();

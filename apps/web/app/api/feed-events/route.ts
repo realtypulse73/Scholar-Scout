@@ -8,6 +8,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     userKey?: string;
     feedItemId?: string;
+    eventType?: 'view' | 'watch' | 'skip';
     watchSeconds?: number;
     skipped?: boolean;
   };
@@ -16,20 +17,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing feed event fields.' }, { status: 400 });
   }
 
-  const event = await appendFeedInteraction({
-    userKey: body.userKey,
-    feedItemId: body.feedItemId,
-    watchSeconds: Number(body.watchSeconds ?? 0),
-    skipped: Boolean(body.skipped),
-  });
+  const eventType = body.eventType ?? (body.skipped ? 'skip' : 'watch');
+  const watchSeconds = Number(body.watchSeconds ?? 0);
+
+  const event =
+    eventType === 'view'
+      ? null
+      : await appendFeedInteraction({
+          userKey: body.userKey,
+          feedItemId: body.feedItemId,
+          watchSeconds,
+          skipped: eventType === 'skip' || Boolean(body.skipped),
+        });
 
   await appendAnalyticsEvent({
     area: 'feed',
-    name: body.skipped ? 'feed_skip' : 'feed_watch',
+    name:
+      eventType === 'view'
+        ? 'feed_view'
+        : eventType === 'skip'
+          ? 'feed_skip'
+          : 'feed_watch',
     userKey: body.userKey,
     metadata: {
       feedItemId: body.feedItemId,
-      watchSeconds: Number(body.watchSeconds ?? 0),
+      watchSeconds,
     },
   });
 
