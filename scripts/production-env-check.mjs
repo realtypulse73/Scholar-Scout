@@ -58,14 +58,19 @@ if (failures.length > 0) {
 }
 
 function oauthProviderChecks() {
+  const expectedProviders = splitList(
+    process.env.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS,
+  );
   const providers = [
     {
       name: 'Google OAuth',
+      providerId: 'google',
       id: 'GOOGLE_CLIENT_ID',
       secret: 'GOOGLE_CLIENT_SECRET',
     },
     {
       name: 'GitHub OAuth',
+      providerId: 'github',
       id: 'GITHUB_CLIENT_ID',
       secret: 'GITHUB_CLIENT_SECRET',
     },
@@ -73,16 +78,30 @@ function oauthProviderChecks() {
   const results = providers.map((provider) => {
     const hasId = hasValue(provider.id);
     const hasSecret = hasValue(provider.secret);
+    const expected =
+      expectedProviders.length === 0 ||
+      expectedProviders.includes(provider.providerId);
 
     if (hasId && hasSecret) {
       return pass(provider.name, `${provider.id} and ${provider.secret} are set.`);
     }
 
-    if (!hasId && !hasSecret) {
-      return warn(
+    if (!expected && !hasId && !hasSecret) {
+      return pass(
         provider.name,
-        `${provider.id} and ${provider.secret} are not set; this provider will be disabled.`,
+        `${provider.providerId} is not expected for this launch and will remain disabled.`,
       );
+    }
+
+    if (!hasId && !hasSecret) {
+      if (expectedProviders.length > 0) {
+        return fail(
+          provider.name,
+          `${provider.id} and ${provider.secret} are required because ${provider.providerId} is listed in SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS.`,
+        );
+      }
+
+      return warn(provider.name, `${provider.id} and ${provider.secret} are not set; this provider will be disabled.`);
     }
 
     return fail(
@@ -113,6 +132,13 @@ function oauthProviderChecks() {
   }
 
   return results;
+}
+
+function splitList(value) {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function dataAdapterChecks() {
@@ -265,13 +291,6 @@ function optionalValue(name, detail) {
 
 function hasValue(name) {
   return typeof process.env[name] === 'string' && process.env[name].trim() !== '';
-}
-
-function splitList(value) {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function isHttpUrl(value) {

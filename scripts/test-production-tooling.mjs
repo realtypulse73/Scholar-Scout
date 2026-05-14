@@ -53,6 +53,31 @@ test('production env checker fails local JSON adapter for production', async () 
   assert.match(result.stdout, /JSON storage is for local development/);
 });
 
+test('production env checker defers Google for GitHub-first launch', async () => {
+  const result = await runNode(['scripts/production-env-check.mjs', '--json'], {
+    NEXTAUTH_URL: 'https://scholarscout.example.org',
+    NEXTAUTH_SECRET: 'abcdefghijklmnopqrstuvwxyz1234567890',
+    SCHOLARSCOUT_STAFF_EMAILS: 'staff@example.org',
+    SCHOLARSCOUT_HEALTH_TOKEN: 'health-token-1234567890',
+    GITHUB_CLIENT_ID: 'github-client-id',
+    GITHUB_CLIENT_SECRET: 'github-client-secret',
+    SCHOLARSCOUT_DATA_ADAPTER: 'vercel-blob',
+    SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: 'blob-token-1234567890',
+    SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
+    SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: 'github',
+  });
+
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  const googleCheck = body.checks.find(
+    (check) => check.name === 'Google OAuth',
+  );
+
+  assert.equal(body.summary.failures, 0);
+  assert.equal(googleCheck.status, 'pass');
+  assert.match(googleCheck.detail, /not expected for this launch/);
+});
+
 test('production env checker rejects non-local HTTP production URL', async () => {
   const result = await runNode(['scripts/production-env-check.mjs', '--json'], {
     NEXTAUTH_URL: 'http://scholarscout.example.org',

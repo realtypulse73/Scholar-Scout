@@ -2442,3 +2442,29 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **Live data freshness** - Production should confirm account-backed shortlist plans stay in sync across signed-in sessions.
+
+---
+
+### Task 103 - Defer Google OAuth As First-Launch Blocker
+**Status:** Complete
+**Description:** Remove Google OAuth from first-launch readiness blockers by making production checks honor the GitHub-first expected-provider configuration.
+
+**Acceptance Criteria:**
+- [x] Production env checks pass Google OAuth as deferred when `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github`.
+- [x] Google OAuth still fails if it is explicitly expected but missing credentials.
+- [x] Readiness checklist says only intentionally enabled provider callbacks are required.
+- [x] Production tooling tests cover the GitHub-first deferred Google path.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `scripts/production-env-check.mjs` | Treats non-expected OAuth providers as disabled for the current launch instead of warning |
+| `scripts/test-production-tooling.mjs` | Adds GitHub-first regression coverage for deferred Google OAuth |
+| `docs/production-readiness-checklist.md` | Clarifies that Google callback setup is later-phase, not first-launch blocking |
+| `docs/codex-backlog.md` | Records the Google OAuth blocker removal |
+
+**Verification:**
+- `npm run test:production-tooling`
+
+**Follow-up Risks:**
+1. **Later provider expansion** - When Google is actually enabled, set `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github,google` so readiness requires Google credentials.

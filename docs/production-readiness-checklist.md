@@ -36,12 +36,12 @@ Use [`production-secret-provider-notes.md`](production-secret-provider-notes.md)
 
 ## 3. Configure OAuth Redirects
 
-Add production callback URLs in each provider console:
+Add production callback URLs only for providers intentionally enabled in the deployment. First launch uses GitHub only; Google is a later provider and is not a launch blocker while `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github`.
 
 | Provider | Callback URL |
 |---|---|
-| Google | `https://YOUR_DOMAIN/api/auth/callback/google` |
-| GitHub | `https://YOUR_DOMAIN/api/auth/callback/github` |
+| GitHub, first launch | `https://YOUR_DOMAIN/api/auth/callback/github` |
+| Google, later phase | `https://YOUR_DOMAIN/api/auth/callback/google` |
 
 For preview deployments, either add explicit preview callback URLs or test OAuth only on the production domain.
 
