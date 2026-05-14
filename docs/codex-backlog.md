@@ -2361,7 +2361,7 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 ---
 
 ### Task 100 - GitHub-First OAuth Launch Plan
-**Status:** Complete  
+**Status:** Complete
 **Description:** Switch production launch guidance from Google-first OAuth assumptions to GitHub OAuth first, with Google added later.
 
 **Acceptance Criteria:**
@@ -2413,3 +2413,32 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **External secrets** - These issues still require provider-console access and must not receive pasted secret values.
+
+---
+
+### Task 102 - Adaptive Recommendation Dashboard Integration
+**Status:** Complete
+**Description:** Implement ScholarScout sync plan backlog item #1 by replacing static dashboard ranking with behavior-aware adaptive recommendations.
+
+**Acceptance Criteria:**
+- [x] Dashboard loads local and account-backed shortlist ids and planning statuses.
+- [x] Top recommendation uses adaptive score before simulation boosts are applied.
+- [x] Recommendation cards display `rankReason` and adaptive signal context.
+- [x] Existing programme ranking still works when no adaptive signals exist.
+- [x] Focused tests cover adaptive boosts and baseline ordering.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `apps/web/components/recommendations/RecommendationDashboard.tsx` | Uses adaptive recommendations, shortlist plans, rank reasons, and simulation boosts together |
+| `apps/web/__tests__/lib/adaptive-recommendations.test.ts` | Covers shortlist/planning boosts and unchanged baseline ranking |
+| `docs/codex-backlog.md` | Records the completed sync-plan implementation |
+
+**Verification:**
+- `npm run typecheck`
+- `npm run test --workspace @scholar-scout/web -- adaptive-recommendations`
+- `npm run test`
+- `npm run build`
+
+**Follow-up Risks:**
+1. **Live data freshness** - Production should confirm account-backed shortlist plans stay in sync across signed-in sessions.

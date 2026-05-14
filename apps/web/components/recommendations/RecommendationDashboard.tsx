@@ -6,10 +6,12 @@ import { useSession } from 'next-auth/react';
 import { Badge, Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
-  getRankedProgrammeMatches,
   parseOnboardingProfile,
-  type RankedProgrammeMatch,
 } from '@/lib/preference-matching';
+import {
+  getAdaptiveRecommendations,
+  type AdaptiveProgrammeRecommendation,
+} from '@/lib/adaptive-recommendations';
 import { buildPathwayRecommendations } from '@/lib/pathway-recommendations';
 import {
   SIMULATION_RESULTS_STORAGE_KEY,
@@ -17,6 +19,13 @@ import {
   parseSimulationResults,
   type SimulationResultMap,
 } from '@/lib/simulation-recommendation-signals';
+import {
+  SHORTLIST_PLAN_STORAGE_KEY,
+  SHORTLIST_STORAGE_KEY,
+  parseShortlist,
+  parseShortlistPlans,
+  type ShortlistPlanMap,
+} from '@/lib/shortlist';
 import type { OnboardingData } from '@/lib/onboarding-types';
 import type { Programme } from '@/lib/programmes';
 
@@ -25,7 +34,7 @@ interface RecommendationDashboardProps {
 }
 
 interface SimulationAwareMatch {
-  match: RankedProgrammeMatch;
+  recommendation: AdaptiveProgrammeRecommendation;
   simulationBoost: number;
   simulationReasons: string[];
   clarityScore: number;
@@ -37,15 +46,27 @@ export default function RecommendationDashboard({
 }: RecommendationDashboardProps) {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<OnboardingData | null>(null);
-  const [simulationResults, setSimulationResults] = useState<SimulationResultMap>({});
+  const [simulationResults, setSimulationResults] =
+    useState<SimulationResultMap>({});
+  const [shortlistIds, setShortlistIds] = useState<string[]>([]);
+  const [shortlistPlans, setShortlistPlans] = useState<ShortlistPlanMap>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    async function loadProfile() {
+    async function loadRecommendationContext() {
       const localProfile = parseOnboardingProfile(
         window.localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY),
       );
+      const localShortlistIds = parseShortlist(
+        window.localStorage.getItem(SHORTLIST_STORAGE_KEY),
+      );
+      const localPlans = parseShortlistPlans(
+        window.localStorage.getItem(SHORTLIST_PLAN_STORAGE_KEY),
+      );
+
       setProfile(localProfile);
+      setShortlistIds(localShortlistIds);
+      setShortlistPlans(localPlans);
       setSimulationResults(
         parseSimulationResults(
           window.localStorage.getItem(SIMULATION_RESULTS_STORAGE_KEY) ??
@@ -54,58 +75,87 @@ export default function RecommendationDashboard({
       );
 
       if (session) {
-        const response = await fetch('/api/account/onboarding');
-        if (response.ok) {
-          const body = (await response.json()) as { profile?: OnboardingData };
+        const [profileResponse, shortlistResponse] = await Promise.all([
+          fetch('/api/account/onboarding'),
+          fetch('/api/account/shortlist'),
+        ]);
+
+        if (profileResponse.ok) {
+          const body = (await profileResponse.json()) as {
+            profile?: OnboardingData;
+          };
           setProfile(body.profile ?? localProfile);
+        }
+
+        if (shortlistResponse.ok) {
+          const body = (await shortlistResponse.json()) as {
+            programmeIds?: string[];
+            plans?: ShortlistPlanMap;
+          };
+          setShortlistIds(body.programmeIds ?? localShortlistIds);
+          setShortlistPlans(body.plans ?? localPlans);
         }
       }
 
       setLoaded(true);
     }
 
-    void loadProfile();
+    void loadRecommendationContext();
   }, [session]);
 
-  const rankedMatches = useMemo(
-    () => (profile ? getRankedProgrammeMatches(programmes, profile) : []),
-    [programmes, profile],
+  const adaptiveRecommendations = useMemo(
+    () =>
+      profile
+        ? getAdaptiveRecommendations(programmes, {
+            profile,
+            shortlistIds,
+            plans: shortlistPlans,
+          })
+        : [],
+    [programmes, profile, shortlistIds, shortlistPlans],
   );
   const simulationAwareMatches = useMemo<SimulationAwareMatch[]>(() => {
-    return rankedMatches
-      .map((match) => {
+    return adaptiveRecommendations
+      .map((recommendation) => {
         const signal = getSimulationRecommendationSignal(
-          match.programme,
+          recommendation.programme,
           simulationResults,
         );
 
         return {
-          match,
+          recommendation,
           simulationBoost: signal.boost,
           simulationReasons: signal.reasons,
           clarityScore: signal.clarityScore,
-          finalScore: Math.min(100, match.fit.score + signal.boost),
+          finalScore: Math.min(100, recommendation.adaptiveScore + signal.boost),
         };
       })
       .sort(
         (a, b) =>
           b.finalScore - a.finalScore ||
           b.simulationBoost - a.simulationBoost ||
-          b.match.fit.score - a.match.fit.score,
+          b.recommendation.adaptiveScore - a.recommendation.adaptiveScore,
       );
-  }, [rankedMatches, simulationResults]);
+  }, [adaptiveRecommendations, simulationResults]);
   const simulationDrivenCount = simulationAwareMatches.filter(
     (item) => item.simulationBoost > 0,
   ).length;
+  const adaptiveSignalCount = simulationAwareMatches.reduce(
+    (count, item) => count + item.recommendation.signals.length,
+    0,
+  );
   const highestClarityScore = Math.max(
     0,
     ...Object.values(simulationResults).map((result) => result.clarityScore),
   );
   const pathwayRecommendations = useMemo(
-    () => buildPathwayRecommendations(
-      simulationAwareMatches.slice(0, 5).map((item) => item.match.programme),
-      profile,
-    ),
+    () =>
+      buildPathwayRecommendations(
+        simulationAwareMatches
+          .slice(0, 5)
+          .map((item) => item.recommendation.programme),
+        profile,
+      ),
     [simulationAwareMatches, profile],
   );
   const topMatch = simulationAwareMatches[0];
@@ -113,7 +163,8 @@ export default function RecommendationDashboard({
   const verificationCount = pathwayRecommendations.reduce(
     (count, recommendation) =>
       count +
-      recommendation.phases.filter((phase) => phase.type === 'verify')
+      recommendation.phases
+        .filter((phase) => phase.type === 'verify')
         .flatMap((phase) => phase.actions).length,
     0,
   );
@@ -159,7 +210,7 @@ export default function RecommendationDashboard({
     <div className="space-y-6">
       <section className="rounded-card border border-ink-200 bg-white p-5 shadow-card">
         <Badge tone="brand" className="mb-4">
-          Recommendation dashboard
+          Adaptive recommendation dashboard
         </Badge>
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
@@ -167,29 +218,36 @@ export default function RecommendationDashboard({
               Your best next move
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
-              This dashboard combines onboarding signals, programme fit, access,
-              affordability, support needs, pathway planning, and completed
-              career simulations into a ranked set of practical next steps.
+              This dashboard combines onboarding fit, shortlist behavior,
+              planning status, planning notes, programme similarity, and
+              completed career simulations into a ranked set of practical next
+              steps.
             </p>
           </div>
           {topMatch ? (
             <div className="rounded-card border border-brand-200 bg-brand-50 p-4">
               <p className="text-xs font-bold uppercase text-brand-700">
-                Highest-fit recommendation
+                Highest adaptive recommendation
               </p>
               <h2 className="mt-2 text-xl font-extrabold text-ink-900">
-                {topMatch.match.programme.name}
+                {topMatch.recommendation.programme.name}
               </h2>
               <p className="mt-1 text-sm font-semibold text-ink-600">
-                {topMatch.match.programme.school} · {topMatch.finalScore}% final fit
+                {topMatch.recommendation.programme.school} - {topMatch.finalScore}% final fit
               </p>
-              {topMatch.simulationBoost > 0 ? (
-                <Badge tone="success" className="mt-3">
-                  Based on your simulation results
+              <p className="mt-3 text-sm leading-6 text-ink-700">
+                {topMatch.recommendation.rankReason}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge tone="success">
+                  {topMatch.recommendation.adaptiveScore}% adaptive
                 </Badge>
-              ) : null}
+                {topMatch.simulationBoost > 0 ? (
+                  <Badge tone="brand">+{topMatch.simulationBoost} simulation</Badge>
+                ) : null}
+              </div>
               <Link
-                href={`/programmes/${topMatch.match.programme.id}`}
+                href={`/programmes/${topMatch.recommendation.programme.id}`}
                 className="mt-4 inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
               >
                 View programme
@@ -199,11 +257,15 @@ export default function RecommendationDashboard({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-5" aria-label="Dashboard metrics">
-        <MetricCard label="Ranked options" value={`${simulationAwareMatches.length}`} />
+      <section
+        className="grid gap-4 md:grid-cols-6"
+        aria-label="Dashboard metrics"
+      >
+        <MetricCard label="Adaptive ranked" value={`${simulationAwareMatches.length}`} />
         <MetricCard label="Excellent / strong" value={`${simulationAwareMatches.filter((item) => item.finalScore >= 72).length}`} />
-        <MetricCard label="Simulation-driven" value={`${simulationDrivenCount}`} />
-        <MetricCard label="Clarity score" value={highestClarityScore ? `${highestClarityScore}%` : '—'} />
+        <MetricCard label="Shortlisted" value={`${shortlistIds.length}`} />
+        <MetricCard label="Adaptive signals" value={`${adaptiveSignalCount}`} />
+        <MetricCard label="Clarity score" value={highestClarityScore ? `${highestClarityScore}%` : '-'} />
         <MetricCard label="Items to verify" value={`${verificationCount}`} />
       </section>
 
@@ -239,7 +301,7 @@ export default function RecommendationDashboard({
                 {bestPathway.headline}
               </h2>
               <p className="mt-2 text-sm font-semibold text-ink-600">
-                Priority: {bestPathway.priority} · Confidence:{' '}
+                Priority: {bestPathway.priority} - Confidence:{' '}
                 {bestPathway.confidenceScore}%
               </p>
             </div>
@@ -259,13 +321,13 @@ export default function RecommendationDashboard({
             Ranked recommendations
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            These are sorted by personal fit plus simulation-driven boosts when
-            your completed scenarios point toward a pathway.
+            These are sorted by adaptive fit first, then simulation-driven boosts
+            when completed scenarios point toward a pathway.
           </p>
           <div className="mt-5 space-y-3">
             {simulationAwareMatches.slice(0, 5).map((item, index) => (
               <article
-                key={item.match.programme.id}
+                key={item.recommendation.programme.id}
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -274,16 +336,19 @@ export default function RecommendationDashboard({
                       #{index + 1} recommendation
                     </p>
                     <h3 className="mt-1 text-base font-extrabold text-ink-900">
-                      {item.match.programme.name}
+                      {item.recommendation.programme.name}
                     </h3>
                     <p className="mt-1 text-sm font-semibold text-ink-500">
-                      {item.match.programme.school}
+                      {item.recommendation.programme.school}
                     </p>
                   </div>
                   <div className="text-right">
                     <Badge tone={item.finalScore >= 72 ? 'success' : 'warning'}>
                       {item.finalScore}%
                     </Badge>
+                    <p className="mt-1 text-xs font-bold text-success-700">
+                      {item.recommendation.adaptiveScore}% adaptive
+                    </p>
                     {item.simulationBoost > 0 ? (
                       <p className="mt-1 text-xs font-bold text-brand-700">
                         +{item.simulationBoost} simulation
@@ -292,16 +357,27 @@ export default function RecommendationDashboard({
                   </div>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-ink-700">
-                  {item.match.fit.reasons[0]}
+                  {item.recommendation.rankReason}
                 </p>
+                {item.recommendation.signals.slice(0, 2).map((signal) => (
+                  <p
+                    key={`${item.recommendation.programme.id}-${signal.type}`}
+                    className="mt-2 text-sm font-semibold leading-6 text-success-700"
+                  >
+                    {signal.message}
+                  </p>
+                ))}
                 {item.simulationReasons.map((reason) => (
-                  <p key={reason} className="mt-2 text-sm font-semibold leading-6 text-brand-700">
+                  <p
+                    key={reason}
+                    className="mt-2 text-sm font-semibold leading-6 text-brand-700"
+                  >
                     {reason}
                   </p>
                 ))}
-                {item.match.fit.cautions[0] ? (
+                {item.recommendation.fit?.cautions[0] ? (
                   <p className="mt-2 text-sm leading-6 text-danger-700">
-                    Verify: {item.match.fit.cautions[0]}
+                    Verify: {item.recommendation.fit.cautions[0]}
                   </p>
                 ) : null}
               </article>
