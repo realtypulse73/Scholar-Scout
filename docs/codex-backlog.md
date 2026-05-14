@@ -2320,3 +2320,40 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 **Follow-up Risks:**
 1. **External admin action** - A Google Cloud or Workspace admin still has to grant access or create the OAuth client.
+
+---
+
+### Task 99 - AI Platform Growth Surface
+**Status:** Complete  
+**Description:** Add the first full-stack growth layer: feed, simulations, recommendations, AI advisor, memory, creator pages, referrals, sharing, analytics, A/B assignment, and operations dashboards.
+
+**Acceptance Criteria:**
+- [x] `/feed` renders a vertical video/voice feed and tracks watch or skip events.
+- [x] `/simulate` renders a simulation player, scores choices, and saves results.
+- [x] `/recommendations` shows explainable ranked programme recommendations.
+- [x] `/api/advisor-chat` uses the server-side OpenAI Responses API when `OPENAI_API_KEY` is configured and falls back safely when it is not.
+- [x] Memory records track student stage from exploration signals.
+- [x] `/u/[username]` renders creator pathway pages with stats, clarity score, and Try This Path CTA.
+- [x] Referral and share APIs generate links and attribution records.
+- [x] `/admin/feed` and `/admin/ops` show metrics and decision-engine output.
+- [x] A/B assignment and decision routes are server-side.
+- [x] Typecheck, build, and tests pass.
+
+**Files Changed:**
+| File | Description |
+|---|---|
+| `apps/web/lib/platform.ts` | Shared feed, simulation, recommendation, creator, A/B, and decision logic |
+| `apps/web/lib/server/platform-store.ts` | Server-side event, memory, referral, share, analytics, and decision persistence |
+| `apps/web/app/feed/page.tsx` | Feed route |
+| `apps/web/app/simulate/page.tsx` | Simulation route |
+| `apps/web/app/recommendations/page.tsx` | Explainable recommendations route |
+| `apps/web/app/advisor/page.tsx` | AI advisor chat route |
+| `apps/web/app/u/[username]/page.tsx` | Creator profile route |
+| `apps/web/app/admin/feed/page.tsx` | Feed analytics dashboard |
+| `apps/web/app/admin/ops/page.tsx` | Operations dashboard |
+| `apps/web/app/api/*` | Feed, simulation, advisor, memory, referral, share, analytics, A/B, and decision APIs |
+
+**Follow-up Risks:**
+1. **Media realism** - Current feed media uses safe public sample media; production needs governed creator uploads or a CMS.
+2. **AI operations** - Advisor quality depends on setting `OPENAI_API_KEY`, selecting a production model, and adding abuse/rate controls.
+3. **Experiment governance** - A/B winner selection is deterministic scaffolding; real winner promotion should require minimum sample sizes and review.

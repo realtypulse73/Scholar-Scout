@@ -62,7 +62,14 @@ npm run typecheck
 Local staff tools:
 
 - Programme draft CMS: `/admin/programmes`
+- Feed analytics: `/admin/feed`
+- Operations dashboard: `/admin/ops`
 - Student shortlist comparison: `/shortlist`
+- TikTok-style pathway feed: `/feed`
+- Simulation player: `/simulate`
+- AI advisor chat: `/advisor`
+- Explainable recommendations: `/recommendations`
+- Creator profile example: `/u/maya-health`
 
 Auth and account-backed data:
 
@@ -71,6 +78,7 @@ Auth and account-backed data:
 - Profile: `/profile`
 - Runtime env: set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for NextAuth.
 - Optional OAuth providers: set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and/or `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`. OAuth accounts are created in the active data store on first sign-in.
+- Optional AI advisor: set server-only `OPENAI_API_KEY` and optionally `OPENAI_MODEL`. `/api/advisor-chat` uses the OpenAI Responses API when configured and falls back to a deterministic advisor reply when no key is present.
 - Optional staff allowlist: set `SCHOLARSCOUT_STAFF_EMAILS` as a comma-separated list for OAuth users who should receive staff access.
 - Optional health token: set `SCHOLARSCOUT_HEALTH_TOKEN` to enable bearer-token production data health checks at `/api/admin/data/health`.
 - Optional smoke provider expectation: set `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` as a comma-separated list such as `google,github` to verify Auth.js provider discovery during production smoke checks.

@@ -132,10 +132,12 @@ function getInterestSignal(
   profile: OnboardingData,
 ): ProgrammeFitSignal {
   const selectedInterests = profile.interests.filter(
-    (interest) => interest !== 'undecided',
+    (interest): interest is Exclude<typeof interest, 'undecided'> =>
+      interest !== 'undecided',
   );
+  const selectedInterestSet = new Set<string>(selectedInterests);
   const matchingInterests = programme.interests.filter((interest) =>
-    selectedInterests.includes(interest),
+    selectedInterestSet.has(interest),
   );
 
   if (profile.interests.includes('undecided') || selectedInterests.length === 0) {
@@ -319,10 +321,11 @@ function getSupportSignal(
   profile: OnboardingData,
 ): ProgrammeFitSignal {
   const selectedSupports = profile.supportNeeds.filter(
-    (support) => support !== 'none',
+    (support): support is Exclude<typeof support, 'none'> => support !== 'none',
   );
+  const selectedSupportSet = new Set<string>(selectedSupports);
   const matchingSupport = programme.support.filter((support) =>
-    selectedSupports.includes(support),
+    selectedSupportSet.has(support),
   );
 
   if (profile.supportNeeds.includes('none') || selectedSupports.length === 0) {

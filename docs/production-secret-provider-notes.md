@@ -23,6 +23,8 @@ Set these variables in the production hosting environment before routing real us
 | `NEXTAUTH_SECRET` | Yes | Long random secret for Auth.js JWT/session signing |
 | `SCHOLARSCOUT_STAFF_EMAILS` | Recommended | Comma-separated trusted staff emails for OAuth role assignment |
 | `SCHOLARSCOUT_HEALTH_TOKEN` | Recommended | Bearer token for production data health monitoring |
+| `OPENAI_API_KEY` | Optional for AI advisor | Server-only OpenAI API key for `/api/advisor-chat` |
+| `OPENAI_MODEL` | Optional for AI advisor | Defaults to `gpt-4.1-mini` when unset |
 | `SCHOLARSCOUT_DATA_ADAPTER` | Yes | Use `vercel-blob` or `http` in production |
 | `BLOB_READ_WRITE_TOKEN` or `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` | If using Blob | Prefer a dedicated ScholarScout token when available |
 | `SCHOLARSCOUT_BLOB_DATA_PATH` | Optional Blob override | Defaults to `scholarscout/data.json` |

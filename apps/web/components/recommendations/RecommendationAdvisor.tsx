@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Badge, Card } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import type { AdvisorMessage } from '@/lib/recommendation-advisor';
 
 interface RecommendationAdvisorProps {

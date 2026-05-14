@@ -59,6 +59,18 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-3">
           <Link
+            href="/feed"
+            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+          >
+            Feed
+          </Link>
+          <Link
+            href="/advisor"
+            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+          >
+            Advisor
+          </Link>
+          <Link
             href="/shortlist"
             className="text-sm font-semibold text-ink-600 hover:text-brand-700"
           >

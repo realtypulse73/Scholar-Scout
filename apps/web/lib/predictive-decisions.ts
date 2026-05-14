@@ -126,7 +126,7 @@ function getChoiceProbability(input: {
   shortlistMomentum: number;
   riskCount: number;
 }) {
-  const relativeStrength = input.adaptiveScore / maxScore;
+  const relativeStrength = input.adaptiveScore / input.maxScore;
   let probability = 12 + relativeStrength * 38;
 
   if (input.shortlisted) {
