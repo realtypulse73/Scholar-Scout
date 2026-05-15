@@ -18,6 +18,12 @@ export async function POST(request: Request) {
         topProgramme?: string;
         fitScore?: number;
         clarityScore?: number;
+        score?: number;
+        dominantTraits?: string[];
+        insights?: string[];
+        nextActions?: string[];
+        recommendedInterests?: string[];
+        recommendedPathways?: string[];
         simulationReasons?: string[];
         cautions?: string[];
       };
@@ -44,7 +50,13 @@ export async function POST(request: Request) {
     const providedContext = [
       `Top programme: ${body.context?.topProgramme ?? 'Unknown'}`,
       `Fit score: ${body.context?.fitScore ?? 'Unknown'}`,
+      `Simulation score: ${body.context?.score ?? 'Unknown'}`,
       `Clarity score: ${body.context?.clarityScore ?? 'Unknown'}`,
+      `Dominant traits: ${(body.context?.dominantTraits ?? []).join(', ') || 'Unknown'}`,
+      `Simulation insights: ${(body.context?.insights ?? []).join('; ') || 'Unknown'}`,
+      `Recommended interests: ${(body.context?.recommendedInterests ?? []).join(', ') || 'Unknown'}`,
+      `Recommended pathways: ${(body.context?.recommendedPathways ?? []).join(', ') || 'Unknown'}`,
+      `Next actions: ${(body.context?.nextActions ?? []).join('; ') || 'Unknown'}`,
       `Simulation reasons: ${(body.context?.simulationReasons ?? []).join('; ')}`,
       `Cautions: ${(body.context?.cautions ?? []).join('; ')}`,
     ].join('\n');
@@ -94,8 +106,15 @@ async function createAdvisorReply(input: {
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
+      max_output_tokens: 220,
       instructions:
-        'You are the ScholarScout AI advisor. Give grounded, practical, encouraging guidance about pathways, career fit, risk, cost, support, and next steps. Avoid overpromising outcomes. Keep responses concise but useful.',
+        [
+          'You are the ScholarScout AI advisor.',
+          'Give grounded, practical, encouraging guidance about pathways, career fit, risk, cost, support, and next steps.',
+          'Use only the provided ScholarScout context. If the context is missing, say what to check next instead of inventing facts.',
+          'Do not guarantee admission, scholarships, jobs, salary, or outcomes.',
+          'Keep the response under 90 words and include one concrete next step.',
+        ].join(' '),
       input: [
         `Student memory: ${input.memorySummary}`,
         `Current recommendation context:\n${input.recommendationContext}`,
@@ -116,9 +135,21 @@ async function createAdvisorReply(input: {
   };
 
   return (
-    data.output_text ??
+    trimAdvisorReply(
+      data.output_text ??
     data.output?.flatMap((item) => item.content ?? []).find((item) => item.text)
       ?.text ??
-    fallbackReply
+    fallbackReply,
+    )
   );
+}
+
+function trimAdvisorReply(reply: string) {
+  const normalized = reply.trim().replace(/\s+/g, ' ');
+
+  if (normalized.length <= 700) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 697).trim()}...`;
 }
