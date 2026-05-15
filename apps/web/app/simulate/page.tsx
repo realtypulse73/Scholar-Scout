@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import SimulationPlayer from '@/components/simulation/SimulationPlayer';
 import { Badge } from '@/components/ui';
-import { simulations } from '@/lib/platform';
-import { getRecommendationsForUser } from '@/lib/server/platform-store';
+import { simulations } from '@/lib/simulations';
 
 export const metadata = {
   title: 'Simulation | ScholarScout',
@@ -10,7 +9,6 @@ export const metadata = {
 };
 
 export default async function SimulationPage() {
-  const recommendations = await getRecommendationsForUser('local-student');
   const simulation = simulations[0];
 
   return (
@@ -33,10 +31,7 @@ export default async function SimulationPage() {
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-5 py-8">
-        <SimulationPlayer
-          simulation={simulation}
-          recommendations={recommendations}
-        />
+        <SimulationPlayer simulation={simulation} />
       </div>
     </main>
   );

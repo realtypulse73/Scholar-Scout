@@ -23,6 +23,12 @@ export function parseSimulationResults(value: string | null): SimulationResultMa
       return {};
     }
 
+    if (isSimulationRunResult(parsed)) {
+      return {
+        [parsed.simulationId]: parsed,
+      };
+    }
+
     return Object.entries(parsed).reduce<SimulationResultMap>((results, [key, result]) => {
       if (isSimulationRunResult(result)) {
         results[key] = result;
