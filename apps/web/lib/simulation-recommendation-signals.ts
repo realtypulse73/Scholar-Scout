@@ -1,5 +1,8 @@
 import type { Programme } from '@/lib/programmes';
-import type { SimulationRunResult } from '@/lib/career-simulations';
+import type {
+  SimulationDecisionTrait,
+  SimulationRunResult,
+} from '@/lib/career-simulations';
 
 export const SIMULATION_RESULTS_STORAGE_KEY = 'scholarscout.simulation-results';
 
@@ -7,6 +10,7 @@ export interface SimulationRecommendationSignal {
   boost: number;
   reasons: string[];
   clarityScore: number;
+  nextSteps: string[];
 }
 
 export type SimulationResultMap = Record<string, SimulationRunResult>;
@@ -57,6 +61,7 @@ export function getSimulationRecommendationSignal(
 ): SimulationRecommendationSignal {
   const results = Object.values(simulationResults);
   const reasons: string[] = [];
+  const nextSteps: string[] = [];
   let boost = 0;
   let clarityScore = 0;
 
@@ -87,12 +92,79 @@ export function getSimulationRecommendationSignal(
       boost += 5;
       reasons.push('Boosted because the student scored strongly in a related career simulation.');
     }
+
+    const traitSignal = getTraitSignal(programme, result.dominantTraits);
+
+    if (traitSignal.points > 0) {
+      boost += traitSignal.points;
+      reasons.push(traitSignal.reason);
+    }
+
+    if (result.clarityScore >= 80 && (traitSignal.points > 0 || pathwayOverlap)) {
+      boost += 4;
+      reasons.push('Boosted because the student showed high clarity in a related simulation.');
+    }
+
+    nextSteps.push(...result.nextActions);
   });
 
   return {
     boost: Math.min(20, boost),
     reasons: Array.from(new Set(reasons)).slice(0, 3),
     clarityScore,
+    nextSteps: Array.from(new Set(nextSteps)).slice(0, 4),
+  };
+}
+
+function getTraitSignal(
+  programme: Programme,
+  traits: SimulationDecisionTrait[],
+) {
+  const traitPoints = traits.reduce((points, trait) => {
+    if (trait === 'hands-on' && programme.pathway !== 'online-degree') {
+      return points + 3;
+    }
+
+    if (trait === 'analytical' && programme.interests.some((interest) => ['stem', 'technology'].includes(interest))) {
+      return points + 4;
+    }
+
+    if (trait === 'service-oriented' && programme.interests.includes('healthcare')) {
+      return points + 4;
+    }
+
+    if (trait === 'communication' && programme.support.includes('career-counseling')) {
+      return points + 2;
+    }
+
+    if (trait === 'safety-minded' && programme.interests.some((interest) => ['trades', 'healthcare'].includes(interest))) {
+      return points + 3;
+    }
+
+    if (trait === 'detail-focused' && programme.interests.some((interest) => ['technology', 'stem', 'healthcare'].includes(interest))) {
+      return points + 3;
+    }
+
+    if (trait === 'collaborative' && programme.delivery !== 'Online') {
+      return points + 2;
+    }
+
+    if (trait === 'pressure-ready' && programme.pathway !== '4-year-university') {
+      return points + 2;
+    }
+
+    return points;
+  }, 0);
+
+  if (traitPoints === 0) {
+    return { points: 0, reason: '' };
+  }
+
+  return {
+    points: Math.min(10, traitPoints),
+    reason: `Boosted by simulation traits: ${traits
+      .map((trait) => trait.replace('-', ' '))
+      .join(', ')}.`,
   };
 }
 

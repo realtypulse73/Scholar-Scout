@@ -38,6 +38,7 @@ interface SimulationAwareMatch {
   simulationBoost: number;
   simulationReasons: string[];
   clarityScore: number;
+  nextSteps: string[];
   finalScore: number;
 }
 
@@ -53,7 +54,7 @@ export default function RecommendationDashboard({
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    async function loadRecommendationContext() {
+    function loadLocalRecommendationContext() {
       const localProfile = parseOnboardingProfile(
         window.localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY),
       );
@@ -63,16 +64,31 @@ export default function RecommendationDashboard({
       const localPlans = parseShortlistPlans(
         window.localStorage.getItem(SHORTLIST_PLAN_STORAGE_KEY),
       );
+      const storedSimulationResults = parseSimulationResults(
+        window.localStorage.getItem(SIMULATION_RESULTS_STORAGE_KEY),
+      );
+      const latestSimulationResult = parseSimulationResults(
+        window.localStorage.getItem('simulation-result'),
+      );
 
       setProfile(localProfile);
       setShortlistIds(localShortlistIds);
       setShortlistPlans(localPlans);
-      setSimulationResults(
-        parseSimulationResults(
-          window.localStorage.getItem(SIMULATION_RESULTS_STORAGE_KEY) ??
-            window.localStorage.getItem('simulation-result'),
-        ),
-      );
+      setSimulationResults({
+        ...storedSimulationResults,
+        ...latestSimulationResult,
+      });
+
+      return {
+        localProfile,
+        localShortlistIds,
+        localPlans,
+      };
+    }
+
+    async function loadRecommendationContext() {
+      const { localProfile, localShortlistIds, localPlans } =
+        loadLocalRecommendationContext();
 
       if (session) {
         const [profileResponse, shortlistResponse] = await Promise.all([
@@ -101,6 +117,18 @@ export default function RecommendationDashboard({
     }
 
     void loadRecommendationContext();
+
+    const refreshLocalContext = () => {
+      loadLocalRecommendationContext();
+    };
+
+    window.addEventListener('storage', refreshLocalContext);
+    window.addEventListener('focus', refreshLocalContext);
+
+    return () => {
+      window.removeEventListener('storage', refreshLocalContext);
+      window.removeEventListener('focus', refreshLocalContext);
+    };
   }, [session]);
 
   const adaptiveRecommendations = useMemo(
@@ -127,6 +155,7 @@ export default function RecommendationDashboard({
           simulationBoost: signal.boost,
           simulationReasons: signal.reasons,
           clarityScore: signal.clarityScore,
+          nextSteps: signal.nextSteps,
           finalScore: Math.min(100, recommendation.adaptiveScore + signal.boost),
         };
       })
@@ -148,6 +177,9 @@ export default function RecommendationDashboard({
     0,
     ...Object.values(simulationResults).map((result) => result.clarityScore),
   );
+  const nextStepGuidance = Array.from(
+    new Set(simulationAwareMatches.flatMap((item) => item.nextSteps)),
+  ).slice(0, 4);
   const pathwayRecommendations = useMemo(
     () =>
       buildPathwayRecommendations(
@@ -290,6 +322,27 @@ export default function RecommendationDashboard({
         </section>
       ) : null}
 
+      {nextStepGuidance.length > 0 ? (
+        <section className="rounded-card border border-ink-200 bg-white p-5 shadow-card">
+          <Badge tone="success" className="mb-3">
+            Next-step guidance
+          </Badge>
+          <h2 className="text-xl font-extrabold text-ink-900">
+            What to do after your simulation
+          </h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {nextStepGuidance.map((step) => (
+              <p
+                key={step}
+                className="rounded-card border border-success-100 bg-success-50 p-3 text-sm font-semibold leading-6 text-success-700"
+              >
+                {step}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {bestPathway ? (
         <section className="rounded-card border border-success-100 bg-white p-5 shadow-card">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -375,6 +428,11 @@ export default function RecommendationDashboard({
                     {reason}
                   </p>
                 ))}
+                {item.nextSteps[0] ? (
+                  <p className="mt-2 text-sm leading-6 text-ink-600">
+                    Next step: {item.nextSteps[0]}
+                  </p>
+                ) : null}
                 {item.recommendation.fit?.cautions[0] ? (
                   <p className="mt-2 text-sm leading-6 text-danger-700">
                     Verify: {item.recommendation.fit.cautions[0]}
