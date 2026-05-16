@@ -1,4 +1,5 @@
 import type { OnboardingData } from './onboarding-types';
+import { TOTAL_STEPS } from './onboarding-types';
 
 export type ValidationError = string;
 
@@ -12,40 +13,53 @@ export function validateStep(
 ): ValidationError | null {
   switch (step) {
     case 1:
-      if (!data.gpaBand) {
-        return 'Please select your GPA band to continue.';
+      if (data.interests.length === 0) {
+        return 'Select at least one interest so ScholarScout can start shaping your matches.';
+      }
+      if (!data.pathwayPreference) {
+        return 'Choose the kind of pathway you want to explore first.';
       }
       return null;
 
     case 2:
-      if (data.interests.length === 0) {
-        return 'Please select at least one area of interest.';
+      if (!data.gpaBand) {
+        return 'Select a GPA band. It helps us keep matches realistic, not judgmental.';
+      }
+      if (!data.locationPreference) {
+        return 'Choose a location preference so we can tune the match list.';
       }
       return null;
 
     case 3:
-      if (!data.locationPreference) {
-        return 'Please select a location preference to continue.';
-      }
+      // Cost sensitivity always has a value and support needs are optional.
       return null;
 
     case 4:
-      if (!data.pathwayPreference) {
-        return 'Please select a pathway preference to continue.';
-      }
-      return null;
-
-    case 5:
-      // Affordability slider always has a value (default 3); no error possible.
-      return null;
-
-    case 6:
-      // Support needs are optional (student may select none).
-      return null;
+      return validateAllRequired(data);
 
     default:
       return null;
   }
+}
+
+function validateAllRequired(data: OnboardingData): ValidationError | null {
+  if (data.interests.length === 0) {
+    return 'Add at least one interest before finishing.';
+  }
+
+  if (!data.pathwayPreference) {
+    return 'Choose a pathway preference before finishing.';
+  }
+
+  if (!data.gpaBand) {
+    return 'Select a GPA band before finishing.';
+  }
+
+  if (!data.locationPreference) {
+    return 'Choose a location preference before finishing.';
+  }
+
+  return null;
 }
 
 /**
@@ -54,7 +68,7 @@ export function validateStep(
  */
 export function validateAll(data: OnboardingData): number[] {
   const errorSteps: number[] = [];
-  for (let step = 1; step <= 6; step++) {
+  for (let step = 1; step <= TOTAL_STEPS; step++) {
     if (validateStep(step, data) !== null) {
       errorSteps.push(step);
     }

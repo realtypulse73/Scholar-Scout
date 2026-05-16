@@ -71,7 +71,7 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   supportNeeds: [],
 };
 
-export const TOTAL_STEPS = 6;
+export const TOTAL_STEPS = 4;
 
 export const GPA_BAND_LABELS: Record<GpaBand, string> = {
   'below-2.0': 'Below 2.0',
