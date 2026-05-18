@@ -1,4 +1,4 @@
-# Scholar-Scout Monorepo
+﻿# Scholar-Scout Monorepo
 
 ScholarScout is a rejection-free post-secondary discovery platform that matches students with programmes that fit their goals, budget, and life circumstances.
 
@@ -6,7 +6,7 @@ ScholarScout is a rejection-free post-secondary discovery platform that matches 
 
 - `apps/web`: Next.js web application
 - `packages/*`: shared packages reserved for extracted libraries and configs
-- `services/*`: backend or worker services reserved for future expansion
+- `services/*`: backend or worker services
 - `docs`: project docs and backlog notes
 
 The project shortcut/rubric lives at [`docs/scholarscout-rubric.md`](docs/scholarscout-rubric.md).
@@ -123,3 +123,4 @@ docs/
 - The original single-app scaffold has been converted into an npm workspace layout.
 - Shared packages and services are scaffolded as top-level workspace folders so future additions follow the same install and build flow.
 - If you add another app, package, or service, give it its own `package.json` and matching scripts so the root workspace commands pick it up automatically.
+

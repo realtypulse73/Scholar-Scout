@@ -38,3 +38,39 @@ jobs:
 
       - name: Build web app
         run: npm run build:web
+
+  crimclock-quality-gate:
+    name: CrimClock quality gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Typecheck CrimClock web
+        run: npm run typecheck --workspace @crimclock/web
+
+      - name: Lint CrimClock web
+        run: npm run lint --workspace @crimclock/web
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install API dependencies
+        working-directory: services/api
+        run: pip install ".[dev]"
+
+      - name: Run API tests
+        working-directory: services/api
+        run: pytest
