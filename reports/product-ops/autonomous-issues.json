@@ -1,0 +1,112 @@
+[
+  {
+    "title": "Integrate adaptive recommendations into dashboard",
+    "priority": "P1",
+    "labels": [
+      "codex",
+      "automation",
+      "dashboard",
+      "P1"
+    ],
+    "goal": "Use shortlist activity, plan status, and notes to adjust recommendation ranking.",
+    "files": [
+      "apps/web/components/recommendations/RecommendationDashboard.tsx",
+      "apps/web/lib/adaptive-recommendations.ts",
+      "apps/web/lib/shortlist.ts"
+    ],
+    "tasks": [
+      "Load shortlist ids and plan statuses in the recommendation dashboard.",
+      "Replace static top-match ranking with adaptive ranking.",
+      "Display adaptive score and rank reason."
+    ],
+    "body": "## Goal\nUse shortlist activity, plan status, and notes to adjust recommendation ranking.\n\n## Priority\nP1\n\n## Files to Review\n- apps/web/components/recommendations/RecommendationDashboard.tsx\n- apps/web/lib/adaptive-recommendations.ts\n- apps/web/lib/shortlist.ts\n\n## Tasks\n- [ ] Load shortlist ids and plan statuses in the recommendation dashboard.\n- [ ] Replace static top-match ranking with adaptive ranking.\n- [ ] Display adaptive score and rank reason.\n\n## Acceptance Criteria\n- [ ] Typecheck passes\n- [ ] Lint passes\n- [ ] Tests pass where applicable\n- [ ] Feature works in the relevant route\n- [ ] No secrets committed\n\n## Codex Instructions\nRepository: realtypulse73/Scholar-Scout\nBranch: feature/integrate-adaptive-recommendations-into-dashboard\nFollow docs/chatgpt-codex-github-sync.md and open a PR into main.\n"
+  },
+  {
+    "title": "Integrate predictive decision UI",
+    "priority": "P1",
+    "labels": [
+      "codex",
+      "automation",
+      "predictive",
+      "dashboard",
+      "P1"
+    ],
+    "goal": "Show most likely choice, decision stage, risk, confidence, and likely next action.",
+    "files": [
+      "apps/web/components/recommendations/RecommendationDashboard.tsx",
+      "apps/web/lib/predictive-decisions.ts"
+    ],
+    "tasks": [
+      "Compute predictions from current profile, shortlist, and plans.",
+      "Display choice probability and decision stage.",
+      "Show whyLikely and risks in the dashboard."
+    ],
+    "body": "## Goal\nShow most likely choice, decision stage, risk, confidence, and likely next action.\n\n## Priority\nP1\n\n## Files to Review\n- apps/web/components/recommendations/RecommendationDashboard.tsx\n- apps/web/lib/predictive-decisions.ts\n\n## Tasks\n- [ ] Compute predictions from current profile, shortlist, and plans.\n- [ ] Display choice probability and decision stage.\n- [ ] Show whyLikely and risks in the dashboard.\n\n## Acceptance Criteria\n- [ ] Typecheck passes\n- [ ] Lint passes\n- [ ] Tests pass where applicable\n- [ ] Feature works in the relevant route\n- [ ] No secrets committed\n\n## Codex Instructions\nRepository: realtypulse73/Scholar-Scout\nBranch: feature/integrate-predictive-decision-ui\nFollow docs/chatgpt-codex-github-sync.md and open a PR into main.\n"
+  },
+  {
+    "title": "Build institutional intelligence dashboard UI",
+    "priority": "P2",
+    "labels": [
+      "codex",
+      "automation",
+      "institutional",
+      "dashboard",
+      "P2"
+    ],
+    "goal": "Create staff-only institutional intelligence dashboard for demand, support gaps, and opportunities.",
+    "files": [
+      "apps/web/lib/institutional-intelligence.ts",
+      "apps/web/app/admin/intelligence/page.tsx",
+      "apps/web/components/auth/StaffGate.tsx"
+    ],
+    "tasks": [
+      "Create staff-gated admin intelligence route.",
+      "Render demand signals, support needs, programme insights, and opportunities.",
+      "Use current programme data and stored onboarding data where available."
+    ],
+    "body": "## Goal\nCreate staff-only institutional intelligence dashboard for demand, support gaps, and opportunities.\n\n## Priority\nP2\n\n## Files to Review\n- apps/web/lib/institutional-intelligence.ts\n- apps/web/app/admin/intelligence/page.tsx\n- apps/web/components/auth/StaffGate.tsx\n\n## Tasks\n- [ ] Create staff-gated admin intelligence route.\n- [ ] Render demand signals, support needs, programme insights, and opportunities.\n- [ ] Use current programme data and stored onboarding data where available.\n\n## Acceptance Criteria\n- [ ] Typecheck passes\n- [ ] Lint passes\n- [ ] Tests pass where applicable\n- [ ] Feature works in the relevant route\n- [ ] No secrets committed\n\n## Codex Instructions\nRepository: realtypulse73/Scholar-Scout\nBranch: feature/build-institutional-intelligence-dashboard-ui\nFollow docs/chatgpt-codex-github-sync.md and open a PR into main.\n"
+  },
+  {
+    "title": "Build marketplace sponsored pathway scaffolding",
+    "priority": "P2",
+    "labels": [
+      "codex",
+      "automation",
+      "marketplace",
+      "P2"
+    ],
+    "goal": "Add transparent sponsored pathway logic that only appears when fit and predicted intent thresholds are met.",
+    "files": [
+      "apps/web/lib/marketplace.ts",
+      "apps/web/components/recommendations/RecommendationDashboard.tsx",
+      "docs/marketplace-monetization-model.md"
+    ],
+    "tasks": [
+      "Create marketplace eligibility engine.",
+      "Add sponsored pathway badge and explanation.",
+      "Document trust and monetization safeguards."
+    ],
+    "body": "## Goal\nAdd transparent sponsored pathway logic that only appears when fit and predicted intent thresholds are met.\n\n## Priority\nP2\n\n## Files to Review\n- apps/web/lib/marketplace.ts\n- apps/web/components/recommendations/RecommendationDashboard.tsx\n- docs/marketplace-monetization-model.md\n\n## Tasks\n- [ ] Create marketplace eligibility engine.\n- [ ] Add sponsored pathway badge and explanation.\n- [ ] Document trust and monetization safeguards.\n\n## Acceptance Criteria\n- [ ] Typecheck passes\n- [ ] Lint passes\n- [ ] Tests pass where applicable\n- [ ] Feature works in the relevant route\n- [ ] No secrets committed\n\n## Codex Instructions\nRepository: realtypulse73/Scholar-Scout\nBranch: feature/build-marketplace-sponsored-pathway-scaffolding\nFollow docs/chatgpt-codex-github-sync.md and open a PR into main.\n"
+  },
+  {
+    "title": "Generate investor pitch and institutional dashboard docs",
+    "priority": "P3",
+    "labels": [
+      "codex",
+      "automation",
+      "docs",
+      "P3"
+    ],
+    "goal": "Create investor-ready deck narrative and institutional dashboard UI specification.",
+    "files": [
+      "docs/investor-pitch-revenue-model.md",
+      "docs/institutional-dashboard-ui-spec.md"
+    ],
+    "tasks": [
+      "Create pitch deck slide narrative.",
+      "Document revenue model and marketplace mechanics.",
+      "Create dashboard UI spec with data cards and opportunity alerts."
+    ],
+    "body": "## Goal\nCreate investor-ready deck narrative and institutional dashboard UI specification.\n\n## Priority\nP3\n\n## Files to Review\n- docs/investor-pitch-revenue-model.md\n- docs/institutional-dashboard-ui-spec.md\n\n## Tasks\n- [ ] Create pitch deck slide narrative.\n- [ ] Document revenue model and marketplace mechanics.\n- [ ] Create dashboard UI spec with data cards and opportunity alerts.\n\n## Acceptance Criteria\n- [ ] Typecheck passes\n- [ ] Lint passes\n- [ ] Tests pass where applicable\n- [ ] Feature works in the relevant route\n- [ ] No secrets committed\n\n## Codex Instructions\nRepository: realtypulse73/Scholar-Scout\nBranch: feature/generate-investor-pitch-and-institutional-dashboard-docs\nFollow docs/chatgpt-codex-github-sync.md and open a PR into main.\n"
+  }
+]
