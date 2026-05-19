@@ -1,0 +1,41 @@
+# ScholarScout Product Ops Report — 2026-05-19
+
+## Issue Prioritization Rules
+
+- **P0** — Production outage, auth failure, data loss, secret exposure, or broken deploy
+- **P1** — Core student journey blocked: onboarding, recommendations, shortlist, sign-in, or programme browsing
+- **P2** — Important platform feature: predictive, adaptive, institutional, marketplace, dashboard, analytics
+- **P3** — Polish, copy, nonblocking UI, documentation, refactor, backlog grooming
+
+## Bug Triage Checklist
+
+- Reproduce the bug and capture route, browser, user role, and environment.
+- Classify severity using P0/P1/P2/P3.
+- Identify likely layer: auth, onboarding, matching, dashboard, data-store, deployment, or UI.
+- Add acceptance criteria for the fix and regression test expectation.
+
+## Roadmap Themes
+
+1. Student decision dashboard
+2. Adaptive and predictive recommendations
+3. Institutional intelligence dashboard
+4. Marketplace and monetization safeguards
+5. Codex/GitHub automated build pipeline
+
+## Nightly Intelligence Notes
+
+- Review new issues labeled `codex`, `automation`, `bug`, and `marketplace`.
+- Confirm CI status on open PRs before merge.
+- Verify no secrets were committed.
+- Track whether recommendations remain explainable and user-aligned.
+
+## Institutional Analytics Export Checklist
+
+- Demand signals
+- Support needs
+- Programme demand score
+- Predicted choice share
+- Support fit score
+- Affordability and access flags
+- Opportunity alerts
+
