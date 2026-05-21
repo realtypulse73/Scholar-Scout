@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ProgrammeFitPanel from '@/components/programmes/ProgrammeFitPanel';
+import ProgrammeVisualPanel from '@/components/programmes/ProgrammeVisualPanel';
+import SchoolLogo from '@/components/programmes/SchoolLogo';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { Badge, Card } from '@/components/ui';
@@ -91,9 +93,12 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
             <h1 className="mt-5 text-3xl font-extrabold leading-tight text-ink-900 sm:text-4xl">
               {programme.name}
             </h1>
-            <p className="mt-2 text-base font-semibold text-ink-600">
-              {programme.school} - {programme.city}, {programme.state}
-            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <SchoolLogo programme={programme} size="md" />
+              <p className="text-base font-semibold text-ink-600">
+                {programme.school} - {programme.city}, {programme.state}
+              </p>
+            </div>
             <p className="mt-5 max-w-3xl text-base leading-7 text-ink-600">
               {programme.overview}
             </p>
@@ -125,6 +130,8 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
 
       <div className="mx-auto grid max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
         <div className="space-y-6">
+          <ProgrammeVisualPanel programme={programme} />
+
           <ProgrammeFitPanel programme={programme} />
 
           <Card className="p-5">

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import SchoolLogo from '@/components/programmes/SchoolLogo';
 import { Badge, Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
@@ -258,15 +259,20 @@ export default function RecommendationDashboard({
           </div>
           {topMatch ? (
             <div className="rounded-card border border-brand-200 bg-brand-50 p-4">
-              <p className="text-xs font-bold uppercase text-brand-700">
-                Highest adaptive recommendation
-              </p>
-              <h2 className="mt-2 text-xl font-extrabold text-ink-900">
-                {topMatch.recommendation.programme.name}
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-ink-600">
-                {topMatch.recommendation.programme.school} - {topMatch.finalScore}% final fit
-              </p>
+              <div className="flex items-start gap-3">
+                <SchoolLogo programme={topMatch.recommendation.programme} size="lg" />
+                <div>
+                  <p className="text-xs font-bold uppercase text-brand-700">
+                    Highest adaptive recommendation
+                  </p>
+                  <h2 className="mt-2 text-xl font-extrabold text-ink-900">
+                    {topMatch.recommendation.programme.name}
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-ink-600">
+                    {topMatch.recommendation.programme.school} - {topMatch.finalScore}% final fit
+                  </p>
+                </div>
+              </div>
               <p className="mt-3 text-sm leading-6 text-ink-700">
                 {topMatch.recommendation.rankReason}
               </p>
@@ -384,16 +390,19 @@ export default function RecommendationDashboard({
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase text-ink-500">
-                      #{index + 1} recommendation
-                    </p>
-                    <h3 className="mt-1 text-base font-extrabold text-ink-900">
-                      {item.recommendation.programme.name}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-ink-500">
-                      {item.recommendation.programme.school}
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <SchoolLogo programme={item.recommendation.programme} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase text-ink-500">
+                        #{index + 1} recommendation
+                      </p>
+                      <h3 className="mt-1 text-base font-extrabold text-ink-900">
+                        {item.recommendation.programme.name}
+                      </h3>
+                      <p className="mt-1 text-sm font-semibold text-ink-500">
+                        {item.recommendation.programme.school}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <Badge tone={item.finalScore >= 72 ? 'success' : 'warning'}>
@@ -458,13 +467,16 @@ export default function RecommendationDashboard({
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-base font-extrabold text-ink-900">
-                      {pathway.programme.name}
-                    </h3>
-                    <p className="mt-1 text-sm leading-6 text-ink-600">
-                      {pathway.headline}
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <SchoolLogo programme={pathway.programme} size="sm" />
+                    <div className="min-w-0">
+                      <h3 className="text-base font-extrabold text-ink-900">
+                        {pathway.programme.name}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-ink-600">
+                        {pathway.headline}
+                      </p>
+                    </div>
                   </div>
                   <Badge tone={pathway.priority === 'high' ? 'success' : 'brand'}>
                     {pathway.priority} priority
