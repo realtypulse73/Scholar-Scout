@@ -200,6 +200,9 @@ export const programmes: Programme[] = [
     overview:
       'A health science starting point for students who want lab practice, strong school help, and a lower-cost path into health work or transfer.',
     highlights: ['Clinical observation', 'Transfer pathway', 'Peer tutoring'],
+    applicationDeadline: '2026-08-01',
+    aidDeadline: '2026-06-15',
+    aidTypes: ['pell-grant', 'institutional-grant', 'work-study', 'state-grant'],
     nextSteps: [
       'Check required health classes',
       'Ask about clinical observation rules',
@@ -231,6 +234,7 @@ export const programmes: Programme[] = [
     overview:
       'A short online cyber path with hands-on labs, test prep, and flexible pacing for students with work or family needs.',
     highlights: ['Industry labs', 'Evening pace', 'Certification prep'],
+    aidTypes: ['pell-grant', 'employer-tuition-help'],
     nextSteps: [
       'Check laptop and software needs',
       'Ask which certification test is included',
@@ -261,6 +265,9 @@ export const programmes: Programme[] = [
     overview:
       'A business path at a community college for students who want a lower-cost start, transfer help, and room to explore.',
     highlights: ['Transfer advising', 'Low tuition', 'Flexible schedule'],
+    applicationDeadline: '2026-07-31',
+    aidDeadline: '2026-06-30',
+    aidTypes: ['pell-grant', 'institutional-grant', 'work-study', 'state-grant', 'need-based-scholarship'],
     nextSteps: [
       'Meet with a transfer advisor',
       'Match credits with target universities',
@@ -292,6 +299,9 @@ export const programmes: Programme[] = [
     overview:
       'A four-year environmental program for students who want field work, public university resources, and disability and wellness support.',
     highlights: ['Field research', 'Public university', 'Support services'],
+    applicationDeadline: '2026-11-01',
+    aidDeadline: '2026-10-01',
+    aidTypes: ['pell-grant', 'institutional-grant', 'state-grant', 'need-based-scholarship', 'merit-scholarship'],
     nextSteps: [
       'Ask about fieldwork travel',
       'Check lab requirements',
@@ -323,6 +333,8 @@ export const programmes: Programme[] = [
     overview:
       'A hands-on welding program built for quick job entry, with tool help, work practice, and job placement support.',
     highlights: ['Paid externship', 'Union pathways', 'Tool grant'],
+    applicationDeadline: '2026-07-01',
+    aidTypes: ['pell-grant', 'employer-tuition-help'],
     nextSteps: [
       'Ask about safety gear and tool grants',
       'Check work practice timing',
@@ -353,6 +365,8 @@ export const programmes: Programme[] = [
     overview:
       'An earn-while-learning path for future teachers who want classroom mentors, hybrid classes, and help earning a credential.',
     highlights: ['Earn while learning', 'Mentor classroom', 'State credential'],
+    applicationDeadline: '2026-06-25',
+    aidTypes: ['pell-grant', 'employer-tuition-help'],
     nextSteps: [
       'Check paid classroom hours',
       'Review classroom placement sites',
@@ -384,6 +398,7 @@ export const programmes: Programme[] = [
     overview:
       'A fully online IT degree with self-paced terms, portfolio projects, and remote advising for students who need flexibility and career help.',
     highlights: ['Self-paced terms', 'Remote advising', 'Portfolio projects'],
+    aidTypes: ['pell-grant', 'employer-tuition-help', 'need-based-scholarship'],
     nextSteps: [
       'Review weekly time needs',
       'Ask about portfolio review milestones',
@@ -415,6 +430,9 @@ export const programmes: Programme[] = [
     overview:
       'A civic justice program for students interested in law, policy, and public service, with writing help and internship links.',
     highlights: ['Policy clinics', 'Internship network', 'Writing support'],
+    applicationDeadline: '2026-10-15',
+    aidDeadline: '2026-09-15',
+    aidTypes: ['pell-grant', 'institutional-grant', 'state-grant', 'need-based-scholarship'],
     nextSteps: [
       'Explore internship partner sites',
       'Review writing-heavy classes',

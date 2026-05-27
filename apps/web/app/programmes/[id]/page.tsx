@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import AffordabilityPanel from '@/components/programmes/AffordabilityPanel';
 import ProgrammeFitPanel from '@/components/programmes/ProgrammeFitPanel';
 import ProgrammeVisualPanel from '@/components/programmes/ProgrammeVisualPanel';
 import SchoolLogo from '@/components/programmes/SchoolLogo';
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: PageProps) {
 
   return {
     title: `${programme.name} | ScholarScout`,
-    description: `${programme.name} at ${programme.school}: tuition, entry flexibility, support services, location, and practical next steps.`,
+    description: `${programme.name} at ${programme.school}: cost, entry options, support, place, and next steps.`,
   };
 }
 
@@ -134,6 +135,8 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
 
           <ProgrammeFitPanel programme={programme} />
 
+          <AffordabilityPanel programme={programme} />
+
           <Card className="p-5">
             <h2 className="text-xl font-extrabold">Fit factors</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -151,9 +154,8 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
           <Card className="p-5">
             <h2 className="text-xl font-extrabold">Support services</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">
-              These are the support signals currently attached to this
-              programme. They are intended to help students compare practical
-              fit before applying.
+              These supports are listed for this program. Use them to compare
+              fit before you apply.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {programme.support.map((support) => (
@@ -183,7 +185,7 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
 
         <aside className="space-y-6">
           <Card className="p-5">
-            <h2 className="text-lg font-extrabold">Programme profile</h2>
+            <h2 className="text-lg font-extrabold">Program details</h2>
             <dl className="mt-4 space-y-4">
               <Detail label="Pathway" value={PROGRAMME_PATHWAY_LABELS[programme.pathway]} />
               <Detail label="Credential" value={programme.credential} />
