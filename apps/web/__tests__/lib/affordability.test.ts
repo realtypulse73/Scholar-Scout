@@ -4,6 +4,7 @@ import {
   getAidSignals,
   getCostSummary,
   getDeadlineSignals,
+  getShortlistDeadlines,
   isDeadlineSoon,
 } from '@/lib/affordability';
 import { getProgrammeById, programmes } from '@/lib/programmes';
@@ -140,6 +141,59 @@ describe('affordability helpers', () => {
     it('identifies the highest-cost tier', () => {
       const prog = { ...programmes[0], annualTuition: 15000 };
       expect(getCostSummary(prog)).toContain('higher annual cost');
+    });
+  });
+
+  describe('getShortlistDeadlines', () => {
+    it('returns empty when no shortlisted programmes have deadlines', () => {
+      const rolling = programmes.filter(
+        (p) => !p.applicationDeadline && !p.aidDeadline,
+      );
+      expect(getShortlistDeadlines(rolling)).toHaveLength(0);
+    });
+
+    it('returns deadlines sorted by ascending date', () => {
+      const withDeadlines = programmes.filter(
+        (p) => p.applicationDeadline || p.aidDeadline,
+      );
+      const deadlines = getShortlistDeadlines(withDeadlines);
+
+      for (let i = 1; i < deadlines.length; i++) {
+        expect(deadlines[i].date >= deadlines[i - 1].date).toBe(true);
+      }
+    });
+
+    it('includes both applicationDeadline and aidDeadline as separate entries', () => {
+      const northValley = getProgrammeById('north-valley-health')!;
+      const deadlines = getShortlistDeadlines([northValley]);
+
+      expect(deadlines).toHaveLength(2);
+      expect(deadlines.find((d) => d.label === 'Apply by')).toBeDefined();
+      expect(deadlines.find((d) => d.label === 'Aid deadline')).toBeDefined();
+    });
+
+    it('marks the urgency correctly for a past deadline', () => {
+      const pastProg = { ...programmes[0], applicationDeadline: '2020-01-01', aidDeadline: undefined };
+      const deadlines = getShortlistDeadlines([pastProg]);
+
+      expect(deadlines[0].urgency).toBe('overdue');
+    });
+
+    it('marks the urgency as soon for a date within 60 days', () => {
+      // summit-teacher-apprentice has applicationDeadline '2026-06-25' (29 days out from 2026-05-27)
+      const summit = getProgrammeById('summit-teacher-apprentice')!;
+      const deadlines = getShortlistDeadlines([summit]);
+
+      expect(deadlines[0].urgency).toBe('soon');
+    });
+
+    it('marks the urgency as later for a date beyond 60 days', () => {
+      const evergreen = getProgrammeById('evergreen-environmental')!; // 2026-10-01 and 2026-11-01
+      const deadlines = getShortlistDeadlines([evergreen]);
+
+      deadlines.forEach((d) => {
+        expect(d.urgency).toBe('later');
+      });
     });
   });
 

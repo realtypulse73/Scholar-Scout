@@ -129,6 +129,57 @@ export function getAidSignals(programme: Programme): AffordabilitySignal[] {
   });
 }
 
+export type DeadlineUrgency = 'overdue' | 'soon' | 'later';
+
+export interface ShortlistDeadline {
+  programme: Programme;
+  label: string;
+  date: string;
+  formatted: string;
+  urgency: DeadlineUrgency;
+}
+
+/**
+ * Flatten all application and aid deadlines across a list of programmes,
+ * sorted by ascending date. Programmes with no deadlines are omitted.
+ */
+export function getShortlistDeadlines(
+  programmes: Programme[],
+): ShortlistDeadline[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deadlines: ShortlistDeadline[] = [];
+
+  for (const programme of programmes) {
+    for (const [field, label] of [
+      ['applicationDeadline', 'Apply by'],
+      ['aidDeadline', 'Aid deadline'],
+    ] as const) {
+      const dateStr = programme[field] as string | undefined;
+      if (!dateStr) continue;
+
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const deadline = new Date(year, month - 1, day);
+      const diffDays =
+        (deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+
+      const urgency: DeadlineUrgency =
+        diffDays < 0 ? 'overdue' : diffDays <= 60 ? 'soon' : 'later';
+
+      deadlines.push({
+        programme,
+        label,
+        date: dateStr,
+        formatted: formatDeadline(dateStr),
+        urgency,
+      });
+    }
+  }
+
+  return deadlines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
 /**
  * Return a plain-language cost summary for a programme.
  */
