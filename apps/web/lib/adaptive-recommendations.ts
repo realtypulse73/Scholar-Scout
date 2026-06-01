@@ -75,6 +75,7 @@ export function getAdaptiveRecommendations(
         b.adaptiveScore - a.adaptiveScore ||
         (b.fit?.score ?? b.programme.matchScore) -
           (a.fit?.score ?? a.programme.matchScore) ||
+        b.programme.matchScore - a.programme.matchScore ||
         a.programme.annualTuition - b.programme.annualTuition,
     );
 }
@@ -93,7 +94,7 @@ function getAdaptiveSignals(
     signals.push({
       type: 'shortlisted',
       points: 10,
-      message: 'Boosted because the student saved this programme.',
+      message: 'Moved up because you saved this program.',
     });
   }
 
@@ -101,14 +102,14 @@ function getAdaptiveSignals(
     signals.push({
       type: 'plan-status',
       points: PLAN_STATUS_POINTS[plan.status],
-      message: `Boosted because planning status is ${plan.status.replace('-', ' ')}.`,
+      message: `Moved up because your plan status is ${plan.status.replaceAll('-', ' ')}.`,
     });
 
     if (plan.note.trim().length >= 20) {
       signals.push({
         type: 'planning-note',
         points: 5,
-        message: 'Boosted because the student added planning notes.',
+        message: 'Moved up because you added notes.',
       });
     }
   }
@@ -118,7 +119,7 @@ function getAdaptiveSignals(
     signals.push({
       type: 'similarity',
       points: similarityBoost,
-      message: 'Boosted because it resembles programmes the student already saved.',
+      message: 'Moved up because it is like schools you saved.',
     });
   }
 
@@ -126,7 +127,7 @@ function getAdaptiveSignals(
     signals.push({
       type: 'fit-score',
       points: 5,
-      message: 'Boosted because baseline personal fit is excellent.',
+      message: 'Moved up because your fit score is very strong.',
     });
   }
 
@@ -176,7 +177,7 @@ function getRankReason(
     return fit.reasons[0];
   }
 
-  return `${programme.name} is ranked from ScholarScout baseline programme fit.`;
+  return `${programme.name} is ranked by ScholarScout's basic fit score.`;
 }
 
 function clampScore(score: number) {

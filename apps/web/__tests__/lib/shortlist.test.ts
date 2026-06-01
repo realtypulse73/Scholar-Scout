@@ -57,7 +57,7 @@ describe('shortlist helpers', () => {
       'Readiness',
     ]);
     expect(summary.strengths).toContain('Access');
-    expect(summary.nextStep).toBe('Review health prerequisite courses');
+    expect(summary.nextStep).toBe('Check required health classes');
   });
 
   it('sorts decision summaries by practical signal strength', () => {
