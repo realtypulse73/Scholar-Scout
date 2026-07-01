@@ -40,7 +40,7 @@ describe('getAdaptiveRecommendations', () => {
     expect(boostedRecommendation.adaptiveScore).toBeGreaterThan(
       boostedRecommendation.fit?.score ?? 0,
     );
-    expect(boostedRecommendation.rankReason).toMatch(/planning status/i);
+    expect(boostedRecommendation.rankReason).toMatch(/plan status/i);
   });
 
   it('preserves baseline ordering when there are no adaptive signals', () => {
