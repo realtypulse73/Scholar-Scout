@@ -154,17 +154,91 @@ Deferred until the controlled pilot foundations and evidence exist.
 
 ## Traceability
 
-Populated during roadmap creation. Each v1 requirement will map to exactly one phase.
+Each v1 requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SAFE-01…SHIP-03 | Pending roadmap mapping | Pending |
+| SAFE-01 | Phase 1 | Pending |
+| SAFE-02 | Phase 1 | Pending |
+| SAFE-03 | Phase 1 | Pending |
+| SAFE-04 | Phase 1 | Pending |
+| SAFE-05 | Phase 1 | Pending |
+| MATCH-01 | Phase 2 | Pending |
+| MATCH-02 | Phase 2 | Pending |
+| MATCH-03 | Phase 2 | Pending |
+| MATCH-04 | Phase 2 | Pending |
+| MATCH-05 | Phase 2 | Pending |
+| MATCH-06 | Phase 2 | Pending |
+| MATCH-07 | Phase 2 | Pending |
+| MATCH-08 | Phase 2 | Pending |
+| FAIR-01 | Phase 2 | Pending |
+| FAIR-02 | Phase 2 | Pending |
+| FAIR-03 | Phase 2 | Pending |
+| FAIR-04 | Phase 2 | Pending |
+| FAIR-05 | Phase 2 | Pending |
+| DATA-01 | Phase 3 | Pending |
+| DATA-02 | Phase 3 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| DATA-04 | Phase 3 | Pending |
+| DATA-05 | Phase 3 | Pending |
+| DATA-06 | Phase 3 | Pending |
+| DATA-07 | Phase 3 | Pending |
+| PROG-01 | Phase 4 | Pending |
+| PROG-02 | Phase 4 | Pending |
+| PROG-03 | Phase 4 | Pending |
+| PROG-04 | Phase 4 | Pending |
+| PROG-05 | Phase 4 | Pending |
+| PROG-06 | Phase 4 | Pending |
+| SOURCE-01 | Phase 4 | Pending |
+| SOURCE-02 | Phase 4 | Pending |
+| SOURCE-03 | Phase 4 | Pending |
+| SOURCE-04 | Phase 4 | Pending |
+| SOURCE-05 | Phase 4 | Pending |
+| SOURCE-06 | Phase 4 | Pending |
+| SOURCE-07 | Phase 4 | Pending |
+| SOURCE-08 | Phase 4 | Pending |
+| SOURCE-09 | Phase 4 | Pending |
+| SOURCE-10 | Phase 4 | Pending |
+| UX-01 | Phase 5 | Pending |
+| UX-02 | Phase 5 | Pending |
+| UX-03 | Phase 5 | Pending |
+| UX-04 | Phase 5 | Pending |
+| UX-05 | Phase 5 | Pending |
+| UX-06 | Phase 5 | Pending |
+| UX-07 | Phase 5 | Pending |
+| MSG-01 | Phase 5 | Pending |
+| MSG-02 | Phase 5 | Pending |
+| MSG-03 | Phase 5 | Pending |
+| MSG-04 | Phase 5 | Pending |
+| MSG-05 | Phase 5 | Pending |
+| MSG-06 | Phase 5 | Pending |
+| MSG-07 | Phase 5 | Pending |
+| EVAL-01 | Phase 6 | Pending |
+| EVAL-02 | Phase 6 | Pending |
+| EVAL-03 | Phase 6 | Pending |
+| EVAL-04 | Phase 6 | Pending |
+| EVAL-05 | Phase 6 | Pending |
+| EVAL-06 | Phase 6 | Pending |
+| EVAL-07 | Phase 6 | Pending |
+| EVAL-08 | Phase 6 | Pending |
+| EVAL-09 | Phase 6 | Pending |
+| EVAL-10 | Phase 6 | Pending |
+| PILOT-01 | Phase 7 | Pending |
+| PILOT-02 | Phase 7 | Pending |
+| PILOT-03 | Phase 7 | Pending |
+| PILOT-04 | Phase 7 | Pending |
+| PILOT-05 | Phase 7 | Pending |
+| PILOT-06 | Phase 7 | Pending |
+| PILOT-07 | Phase 7 | Pending |
+| SHIP-01 | Phase 1 | Pending |
+| SHIP-02 | Phase 1 | Pending |
+| SHIP-03 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 75 total
-- Mapped to phases: 0
-- Unmapped: 75
+- Mapped to phases: 75
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-21*  
-*Last updated: 2026-07-21 after PRD recovery research*
+*Last updated: 2026-07-22 after roadmap creation*
