@@ -7,7 +7,7 @@ const clickNext = () =>
 const clickBack = () =>
   fireEvent.click(screen.getByRole('button', { name: /back/i }));
 const clickSave = () =>
-  fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
+  fireEvent.click(screen.getByRole('button', { name: /show my matches/i }));
 
 describe('OnboardingWizard 4-step flow', () => {
   beforeEach(() => {
@@ -17,8 +17,8 @@ describe('OnboardingWizard 4-step flow', () => {
   it('starts with interests and pathway choices', () => {
     render(<OnboardingWizard />);
 
-    expect(screen.getByText('Interests')).toBeInTheDocument();
-    expect(screen.getByText(/What are you curious about/i)).toBeInTheDocument();
+    expect(screen.getByText('What do you like?')).toBeInTheDocument();
+    expect(screen.getByText(/Pick a few things you may want to learn/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
 
@@ -27,7 +27,7 @@ describe('OnboardingWizard 4-step flow', () => {
 
     clickNext();
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/select at least one interest/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/pick at least one interest/i);
   });
 
   it('advances through the 4-step flow and saves profile', async () => {
@@ -37,18 +37,18 @@ describe('OnboardingWizard 4-step flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '4-Year University' }));
     clickNext();
 
-    expect(screen.getByText('Fit basics')).toBeInTheDocument();
+    expect(screen.getByText('Where can school fit?')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /3.0/i }));
     fireEvent.click(screen.getByRole('button', { name: 'In-State' }));
     clickNext();
 
-    expect(screen.getByText('Support')).toBeInTheDocument();
+    expect(screen.getByText('What help matters?')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Very cost-conscious/i }));
     fireEvent.click(screen.getByRole('button', { name: /Financial Aid/i }));
     clickNext();
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
-    expect(screen.getByText(/Your profile is ready to save/i)).toBeInTheDocument();
+    expect(screen.getByText('Check your map')).toBeInTheDocument();
+    expect(screen.getByText(/Look it over before we show programs/i)).toBeInTheDocument();
     clickSave();
 
     await waitFor(() => {
