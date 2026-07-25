@@ -81,29 +81,29 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Unmapped | Pending |
-| SEC-02 | Unmapped | Pending |
-| SEC-03 | Unmapped | Pending |
-| SEC-04 | Unmapped | Pending |
-| SEC-05 | Unmapped | Pending |
-| OPS-01 | Unmapped | Pending |
-| OPS-02 | Unmapped | Pending |
-| OPS-03 | Unmapped | Pending |
-| OPS-04 | Unmapped | Pending |
-| OPS-05 | Unmapped | Pending |
-| DATA-01 | Unmapped | Pending |
-| DATA-02 | Unmapped | Pending |
-| DATA-03 | Unmapped | Pending |
-| PROD-01 | Unmapped | Pending |
-| PROD-02 | Unmapped | Pending |
-| PROD-03 | Unmapped | Pending |
-| PROD-04 | Unmapped | Pending |
+| SEC-01 | Phase 2 | Pending |
+| SEC-02 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Pending |
+| SEC-04 | Phase 2 | Pending |
+| SEC-05 | Phase 2 | Pending |
+| OPS-01 | Phase 1 | Pending |
+| OPS-02 | Phase 3 | Pending |
+| OPS-03 | Phase 3 | Pending |
+| OPS-04 | Phase 6 | Pending |
+| OPS-05 | Phase 1 | Pending |
+| DATA-01 | Phase 4 | Pending |
+| DATA-02 | Phase 4 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| PROD-01 | Phase 5 | Pending |
+| PROD-02 | Phase 5 | Pending |
+| PROD-03 | Phase 5 | Pending |
+| PROD-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-25*
-*Last updated: 2026-07-25 after initial definition*
+*Last updated: 2026-07-25 after roadmap creation*
