@@ -6,6 +6,21 @@ import path from 'path';
 import { TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
 import type { OnboardingData } from '@/lib/onboarding-types';
+import {
+  validatePeerConnectionRequest,
+  type CreatePeerConnectionRequest,
+  type PeerConnectionRequest,
+} from '@/lib/peer-connections';
+import {
+  validateOutcomeMetricRecord,
+  type OutcomeMetricRecord,
+} from '@/lib/outcome-profiles';
+import {
+  validateCampusNote,
+  validateUploaderInboxRequest,
+  type CampusNote,
+  type UploaderInboxRequest,
+} from '@/lib/campus-community';
 import type { Programme } from '@/lib/programmes';
 import type { ShortlistPlanMap, ShortlistProgrammePlan } from '@/lib/shortlist';
 
@@ -39,6 +54,10 @@ export interface ScholarScoutData {
   shortlists: Record<string, string[]>;
   shortlistPlans?: Record<string, ShortlistPlanMap>;
   programmeRecords: Programme[];
+  outcomeMetricRecords?: OutcomeMetricRecord[];
+  peerConnectionRequests?: PeerConnectionRequest[];
+  campusNotes?: CampusNote[];
+  uploaderInboxRequests?: UploaderInboxRequest[];
   auditEvents: AuditEvent[];
   restoreBackups?: ScholarScoutDataBackup[];
 }
@@ -124,6 +143,10 @@ const INITIAL_DATA: ScholarScoutData = {
   shortlists: {},
   shortlistPlans: {},
   programmeRecords: [],
+  outcomeMetricRecords: [],
+  peerConnectionRequests: [],
+  campusNotes: [],
+  uploaderInboxRequests: [],
   auditEvents: [],
   restoreBackups: [],
 };
@@ -391,6 +414,36 @@ export function validateScholarScoutDataImport(
     });
   }
 
+  if ('campusNotes' in data && data.campusNotes !== undefined && !Array.isArray(data.campusNotes)) {
+    errors.push('Campus notes must be an array when present.');
+  } else if (Array.isArray(data.campusNotes)) {
+    data.campusNotes.forEach((note, index) => {
+      if (!isCampusNote(note)) errors.push(`Campus note ${index + 1} is missing required fields.`);
+    });
+  }
+
+  if ('uploaderInboxRequests' in data && data.uploaderInboxRequests !== undefined && !Array.isArray(data.uploaderInboxRequests)) {
+    errors.push('Uploader inbox requests must be an array when present.');
+  } else if (Array.isArray(data.uploaderInboxRequests)) {
+    data.uploaderInboxRequests.forEach((inboxRequest, index) => {
+      if (!isUploaderInboxRequest(inboxRequest)) errors.push(`Uploader inbox request ${index + 1} is missing required fields.`);
+    });
+  }
+
+  if (
+    'peerConnectionRequests' in data &&
+    data.peerConnectionRequests !== undefined &&
+    !Array.isArray(data.peerConnectionRequests)
+  ) {
+    errors.push('Peer connection requests must be an array when present.');
+  } else if (Array.isArray(data.peerConnectionRequests)) {
+    data.peerConnectionRequests.forEach((request, index) => {
+      if (!isPeerConnectionRequest(request)) {
+        errors.push(`Peer connection request ${index + 1} is missing required fields.`);
+      }
+    });
+  }
+
   if (!Array.isArray(data.programmeRecords)) {
     errors.push('Snapshot programme records must be an array.');
   } else {
@@ -403,6 +456,20 @@ export function validateScholarScoutDataImport(
         errors.push(
           `Programme record ${index + 1} needs review: ${validationErrors[0]}`,
         );
+      }
+    });
+  }
+
+  if (
+    'outcomeMetricRecords' in data &&
+    data.outcomeMetricRecords !== undefined &&
+    !Array.isArray(data.outcomeMetricRecords)
+  ) {
+    errors.push('Outcome metric records must be an array when present.');
+  } else if (Array.isArray(data.outcomeMetricRecords)) {
+    data.outcomeMetricRecords.forEach((record, index) => {
+      if (!isOutcomeMetricRecord(record)) {
+        errors.push(`Outcome metric record ${index + 1} is missing required fields.`);
       }
     });
   }
@@ -866,6 +933,110 @@ export async function getProgrammeRecords() {
   return data.programmeRecords;
 }
 
+export async function getOutcomeMetricRecords() {
+  const data = await readScholarScoutData();
+  return data.outcomeMetricRecords ?? [];
+}
+
+export async function createPeerConnectionRequest(
+  requesterId: string,
+  input: CreatePeerConnectionRequest,
+) {
+  const errors = validatePeerConnectionRequest(input);
+  if (errors.length > 0) {
+    throw new Error(errors[0]);
+  }
+
+  const data = await readScholarScoutData();
+  const request: PeerConnectionRequest = {
+    id: randomUUID(),
+    requester_id: requesterId,
+    peer_guide_username: input.peer_guide_username.trim(),
+    program_id: input.program_id.trim(),
+    topic: input.topic.trim(),
+    question: input.question.trim(),
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  };
+  data.peerConnectionRequests = [
+    request,
+    ...(data.peerConnectionRequests ?? []),
+  ];
+  data.auditEvents.push(
+    createAuditEvent(requesterId, 'request-peer-connection', 'data', request.id),
+  );
+  await writeScholarScoutData(data);
+  return request;
+}
+
+export async function getPeerConnectionRequests(requesterId: string) {
+  const data = await readScholarScoutData();
+  return (data.peerConnectionRequests ?? []).filter(
+    (request) => request.requester_id === requesterId,
+  );
+}
+
+export async function getCampusNotes(schoolSlug: string, uploaderUsername?: string) {
+  const data = await readScholarScoutData();
+  return (data.campusNotes ?? [])
+    .filter((note) => note.school_slug === schoolSlug && (!uploaderUsername || note.uploader_username === uploaderUsername))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at));
+}
+
+export async function createCampusNote(
+  authorId: string,
+  input: Omit<CampusNote, 'id' | 'author_id' | 'created_at'>,
+) {
+  const errors = validateCampusNote(input);
+  if (errors.length) throw new Error(errors[0]);
+  const data = await readScholarScoutData();
+  const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString() };
+  data.campusNotes = [note, ...(data.campusNotes ?? [])];
+  data.auditEvents.push(createAuditEvent(authorId, 'post-campus-note', 'data', note.id));
+  await writeScholarScoutData(data);
+  return note;
+}
+
+export async function createUploaderInboxRequest(
+  senderId: string,
+  input: Pick<UploaderInboxRequest, 'uploader_username' | 'program_id' | 'body'>,
+) {
+  const errors = validateUploaderInboxRequest(input);
+  if (errors.length) throw new Error(errors[0]);
+  const data = await readScholarScoutData();
+  const inboxRequest: UploaderInboxRequest = { ...input, body: input.body.trim(), id: randomUUID(), sender_id: senderId, status: 'pending', created_at: new Date().toISOString() };
+  data.uploaderInboxRequests = [inboxRequest, ...(data.uploaderInboxRequests ?? [])];
+  data.auditEvents.push(createAuditEvent(senderId, 'request-uploader-inbox', 'data', inboxRequest.id));
+  await writeScholarScoutData(data);
+  return inboxRequest;
+}
+
+/**
+ * Replaces outcome evidence as a deliberate staff data operation. This persists
+ * source-linked rows only; ranking remains guarded by outcome-profiles.ts.
+ */
+export async function saveOutcomeMetricRecords(
+  userId: string,
+  records: OutcomeMetricRecord[],
+) {
+  const errors = records.flatMap((record, index) =>
+    validateOutcomeMetricRecord(record).map(
+      (error) => `Outcome metric record ${index + 1}: ${error}`,
+    ),
+  );
+  if (errors.length > 0) {
+    throw new Error(errors[0]);
+  }
+
+  const data = await readScholarScoutData();
+  data.outcomeMetricRecords = records;
+  data.auditEvents.push(
+    createAuditEvent(userId, 'replace-outcome-metrics', 'data', 'outcome-metrics'),
+  );
+  await writeScholarScoutData(data);
+  return data.outcomeMetricRecords;
+}
+
 export async function getProgrammeAuditEvents(): Promise<ProgrammeAuditEvent[]> {
   const data = await readScholarScoutData();
   const usersById = new Map(data.users.map((user) => [user.id, user]));
@@ -1047,6 +1218,16 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
       ? (data.shortlistPlans as Record<string, ShortlistPlanMap>)
       : {},
     programmeRecords: data.programmeRecords as Programme[],
+    outcomeMetricRecords: Array.isArray(data.outcomeMetricRecords)
+      ? (data.outcomeMetricRecords as OutcomeMetricRecord[])
+      : [],
+    peerConnectionRequests: Array.isArray(data.peerConnectionRequests)
+      ? (data.peerConnectionRequests as PeerConnectionRequest[])
+      : [],
+    campusNotes: Array.isArray(data.campusNotes) ? (data.campusNotes as CampusNote[]) : [],
+    uploaderInboxRequests: Array.isArray(data.uploaderInboxRequests)
+      ? (data.uploaderInboxRequests as UploaderInboxRequest[])
+      : [],
     auditEvents: data.auditEvents as AuditEvent[],
     restoreBackups: Array.isArray(data.restoreBackups)
       ? (data.restoreBackups as ScholarScoutDataBackup[])
@@ -1093,6 +1274,62 @@ function isAuditEvent(value: unknown): value is AuditEvent {
     typeof value.entityId === 'string' &&
     typeof value.createdAt === 'string'
   );
+}
+
+function isOutcomeMetricRecord(value: unknown): value is OutcomeMetricRecord {
+  if (!isPlainObject(value)) {
+    return false;
+  }
+
+  if (
+    typeof value.institution_id !== 'string' ||
+    (value.program_CIP !== null && typeof value.program_CIP !== 'string') ||
+    typeof value.metric_name !== 'string' ||
+    (value.value !== null && typeof value.value !== 'number') ||
+    (value.cohort_size !== null && typeof value.cohort_size !== 'number') ||
+    typeof value.cohort_definition !== 'string' ||
+    typeof value.as_of_date !== 'string' ||
+    typeof value.source_url !== 'string' ||
+    typeof value.source_type !== 'string' ||
+    typeof value.confidence !== 'string' ||
+    (value.suppression_reason !== null && typeof value.suppression_reason !== 'string')
+  ) {
+    return false;
+  }
+
+  return validateOutcomeMetricRecord(value as unknown as OutcomeMetricRecord).length === 0;
+}
+
+function isPeerConnectionRequest(value: unknown): value is PeerConnectionRequest {
+  if (!isPlainObject(value)) return false;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.requester_id !== 'string' ||
+    typeof value.peer_guide_username !== 'string' ||
+    typeof value.program_id !== 'string' ||
+    typeof value.topic !== 'string' ||
+    typeof value.question !== 'string' ||
+    typeof value.created_at !== 'string' ||
+    (value.status !== 'pending' && value.status !== 'accepted' && value.status !== 'declined' && value.status !== 'closed')
+  ) {
+    return false;
+  }
+  return validatePeerConnectionRequest({
+    peer_guide_username: value.peer_guide_username,
+    program_id: value.program_id,
+    topic: value.topic,
+    question: value.question,
+  }).length === 0;
+}
+
+function isCampusNote(value: unknown): value is CampusNote {
+  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.author_id !== 'string' || typeof value.school_slug !== 'string' || (value.uploader_username !== null && typeof value.uploader_username !== 'string') || (value.program_id !== null && typeof value.program_id !== 'string') || typeof value.body !== 'string' || typeof value.created_at !== 'string') return false;
+  return validateCampusNote({ school_slug: value.school_slug, uploader_username: value.uploader_username as string | null, program_id: value.program_id as string | null, body: value.body }).length === 0;
+}
+
+function isUploaderInboxRequest(value: unknown): value is UploaderInboxRequest {
+  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.sender_id !== 'string' || typeof value.uploader_username !== 'string' || typeof value.program_id !== 'string' || typeof value.body !== 'string' || typeof value.created_at !== 'string' || (value.status !== 'pending' && value.status !== 'accepted' && value.status !== 'declined' && value.status !== 'closed')) return false;
+  return validateUploaderInboxRequest({ uploader_username: value.uploader_username, program_id: value.program_id, body: value.body }).length === 0;
 }
 
 function normalizeStoredShortlistPlans(plans: ShortlistPlanMap) {

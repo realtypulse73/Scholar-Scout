@@ -81,6 +81,18 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
         </Link>
         <div className="flex items-center gap-4">
           <Link
+            href="/western-new-york"
+            className="text-sm font-semibold text-ink-600 hover:text-brand-700"
+          >
+            WNY pathways
+          </Link>
+          <Link
+            href="/peer-community"
+            className="text-sm font-semibold text-ink-600 hover:text-brand-700"
+          >
+            Student uploaders
+          </Link>
+          <Link
             href="/onboarding"
             className="text-sm font-semibold text-ink-600 hover:text-brand-700"
           >

@@ -119,6 +119,12 @@ export default function PathCard({
             >
               View programme
             </Link>
+            <Link
+              href="/peer-community"
+              className="inline-flex min-h-touch items-center justify-center rounded-card border border-white/40 bg-white/10 px-4 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/20"
+            >
+              Contact this uploader
+            </Link>
             <Button
               variant="secondary"
               className="border-white/30 bg-white/10 text-white hover:border-white hover:text-white"

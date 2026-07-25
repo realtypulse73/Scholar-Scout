@@ -20,9 +20,9 @@ const valueProps = [
       'Students see routes that can match their profile, including two-year, trade, certificate, online, and university pathways.',
   },
   {
-    title: 'Compare without pressure',
+    title: 'Learn from peers',
     description:
-      'Shortlists are designed for practical next steps: cost, distance, services, and confidence fit in one place.',
+      'Ask the students posting about a program what it is really like before applying—workload, support, cost questions, and first-semester reality.',
   },
 ];
 
@@ -71,6 +71,12 @@ export default function Home() {
             Advisor
           </Link>
           <Link
+            href="/peer-community"
+            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+          >
+            Peer community
+          </Link>
+          <Link
             href="/shortlist"
             className="text-sm font-semibold text-ink-600 hover:text-brand-700"
           >
@@ -92,7 +98,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="border-y border-ink-200 bg-ink-50">
+      <section className="transition-story border-y border-ink-200">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:items-center lg:px-8 lg:py-16">
           <div>
             <Badge tone="brand" className="mb-5">
@@ -112,6 +118,12 @@ export default function Home() {
                 className="inline-flex min-h-12 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-base font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Find my path
+              </Link>
+              <Link
+                href="/peer-community"
+                className="inline-flex min-h-12 items-center justify-center rounded-card border border-brand-300 bg-brand-50 px-5 text-base font-semibold text-brand-700 transition-colors hover:border-brand-500 hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              >
+                Meet student uploaders
               </Link>
               <a
                 href="#how-it-works"

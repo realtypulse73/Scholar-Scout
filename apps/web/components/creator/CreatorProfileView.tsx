@@ -3,6 +3,8 @@ import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui';
 import ReferralPanel from '@/components/referrals/ReferralPanel';
 import SharePanel from '@/components/share/SharePanel';
+import CampusNoteBoard from '@/components/campus-community/CampusNoteBoard';
+import UploaderContactPanel from '@/components/campus-community/UploaderContactPanel';
 import type { CreatorProfile } from '@/lib/platform';
 
 interface CreatorProfileViewProps {
@@ -30,10 +32,10 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
             ))}
           </div>
           <Link
-            href="/simulate"
+            href={`/schools/${creator.schoolSlug}`}
             className="mt-6 inline-flex min-h-12 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white"
           >
-            Try this path
+            Visit school locker
           </Link>
         </Card>
 
@@ -66,6 +68,12 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
       </section>
 
       <aside className="space-y-4">
+        <Card className="p-5">
+          <p className="text-xs font-semibold uppercase text-ink-500">Contact this uploader</p>
+          <UploaderContactPanel username={creator.username} programId={creator.programmeId} inboxEnabled={creator.inboxEnabled} />
+          <Link href={`/schools/${creator.schoolSlug}`} className="mt-4 inline-flex text-sm font-bold text-brand-700">Open {creator.school} locker</Link>
+        </Card>
+        <CampusNoteBoard schoolSlug={creator.schoolSlug} uploaderUsername={creator.username} programId={creator.programmeId} />
         <ReferralPanel referrer={creator.username} />
         <SharePanel targetType="creator" targetId={creator.username} />
       </aside>

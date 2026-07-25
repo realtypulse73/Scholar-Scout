@@ -74,6 +74,12 @@ export interface CreatorProfile {
   username: string;
   displayName: string;
   pathway: string;
+  programmeId: string;
+  school: string;
+  schoolSlug: string;
+  currentStage: string;
+  conversationTopics: string[];
+  inboxEnabled: boolean;
   stats: {
     followers: number;
     completions: number;
@@ -214,6 +220,12 @@ export const creatorProfiles: CreatorProfile[] = [
     username: 'maya-health',
     displayName: 'Maya R.',
     pathway: 'Allied Health',
+    programmeId: 'north-valley-health',
+    school: 'North Valley College',
+    schoolSlug: 'north-valley-college',
+    currentStage: 'Second-year allied health student',
+    conversationTopics: ['lab routines', 'clinical preparation', 'tutoring'],
+    inboxEnabled: true,
     stats: { followers: 1240, completions: 318, averageWatchSeconds: 31 },
     clarityScore: 91,
     bio: 'Shows students what healthcare training feels like before they apply.',
@@ -223,6 +235,12 @@ export const creatorProfiles: CreatorProfile[] = [
     username: 'devon-cyber',
     displayName: 'Devon K.',
     pathway: 'Cybersecurity',
+    programmeId: 'metro-cybersecurity',
+    school: 'Metro Technical Institute',
+    schoolSlug: 'metro-technical-institute',
+    currentStage: 'Certificate student',
+    conversationTopics: ['first projects', 'online learning', 'career preparation'],
+    inboxEnabled: true,
     stats: { followers: 980, completions: 227, averageWatchSeconds: 29 },
     clarityScore: 88,
     bio: 'Breaks technical pathways into beginner-friendly practice missions.',
@@ -232,12 +250,19 @@ export const creatorProfiles: CreatorProfile[] = [
     username: 'lena-transfer',
     displayName: 'Lena S.',
     pathway: 'Business Transfer',
+    programmeId: 'lakeside-business-transfer',
+    school: 'Lakeside Community College',
+    schoolSlug: 'lakeside-community-college',
+    currentStage: 'Business transfer student',
+    conversationTopics: ['transfer planning', 'financial aid', 'first semester'],
+    inboxEnabled: false,
     stats: { followers: 760, completions: 184, averageWatchSeconds: 26 },
     clarityScore: 84,
     bio: 'Explains lower-cost transfer strategies for undecided students.',
     tags: ['business', 'transfer', 'budget'],
   },
 ];
+
 
 export function scoreSimulation(
   simulation: Simulation,
