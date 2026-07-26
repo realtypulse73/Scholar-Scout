@@ -51,13 +51,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install without postinstall scripts
-        run: npm install --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run prelaunch rehearsal
-        run: npm run rehearse:prelaunch
+        run: pnpm run rehearse:prelaunch
 
       - name: Summarize prelaunch rehearsal
         if: always()

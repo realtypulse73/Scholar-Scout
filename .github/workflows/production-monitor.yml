@@ -37,22 +37,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install without postinstall scripts
-        run: npm install --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run production smoke monitor
-        run: npm run smoke:production
+        run: pnpm run smoke:production
 
       - name: Write production smoke report
         if: always()
-        run: npm run smoke:production -- --json > production-smoke-report.json
+        run: pnpm run smoke:production -- --json > production-smoke-report.json
         continue-on-error: true
 
       - name: Summarize production smoke report
         if: always()
-        run: npm run report:production -- --smoke-report production-smoke-report.json >> "$GITHUB_STEP_SUMMARY"
+        run: pnpm run report:production -- --smoke-report production-smoke-report.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload production smoke report
         if: always()
