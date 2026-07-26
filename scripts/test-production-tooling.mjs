@@ -313,6 +313,38 @@ test('production report help names the pnpm commands that generate JSON reports'
   assert.doesNotMatch(result.stdout, /\bnpm run/);
 });
 
+test('post-deploy smoke targets the stable secret while retaining dispatch evidence', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/post-deploy-smoke.yml'),
+    'utf8',
+  );
+
+  assert.match(
+    workflow,
+    /SCHOLARSCOUT_SMOKE_BASE_URL:\s*\$\{\{ secrets\.SCHOLARSCOUT_SMOKE_BASE_URL \}\}/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /SCHOLARSCOUT_SMOKE_BASE_URL:\s*\$\{\{ github\.event\.client_payload\.url \}\}/,
+  );
+  assert.match(
+    workflow,
+    /group: scholarscout-post-deploy-smoke-\$\{\{ github\.event\.client_payload\.url \}\}/,
+  );
+  assert.match(
+    workflow,
+    /ref: \$\{\{ github\.event\.client_payload\.git\.sha \}\}/,
+  );
+  assert.match(
+    workflow,
+    /const deploymentUrl = context\.payload\.client_payload\.url;/,
+  );
+  assert.match(
+    workflow,
+    /const commitSha = context\.payload\.client_payload\.git\?\.sha \?\? context\.sha;/,
+  );
+});
+
 test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-'));
   const result = await runNode(
