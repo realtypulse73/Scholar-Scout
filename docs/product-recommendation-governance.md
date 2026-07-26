@@ -1,7 +1,7 @@
 # Scholar Scout Recommendation Governance Specification
 
-**Status:** Product and engineering baseline  
-**Date:** 2026-07-26  
+**Status:** Product and engineering baseline
+**Date:** 2026-07-26
 **Source inputs:** `.planning/.research/Student Potential Research Framework.md`, `.planning/.research/Student Opportunity Support Matching.md`, and `.planning/.research/Student Opportunity Platform Research Agenda.md`
 
 ## Product decision
