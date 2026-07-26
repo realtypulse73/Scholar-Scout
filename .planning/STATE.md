@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
 status: verifying
-stopped_at: Completed 01-release-and-ci-baseline-05-PLAN.md
-last_updated: "2026-07-26T03:18:50.229Z"
+stopped_at: Completed 01-release-and-ci-baseline-06-PLAN.md
+last_updated: "2026-07-26T03:56:44.685Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 1 execution started
 progress:
   total_phases: 1
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -62,6 +62,7 @@ Progress: [██████████] 100%
 | Phase 01-release-and-ci-baseline P03 | 8 minutes | 2 tasks | 2 files |
 | Phase 01-release-and-ci-baseline P04 | 25m | 3 tasks | 9 files |
 | Phase 01-release-and-ci-baseline P05 | 35 minutes | 3 tasks | 14 files |
+| Phase 01-release-and-ci-baseline P06 | 18 minutes | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Progress: [██████████] 100%
 - [Phase ?]: Require protected-main CI, production-only smoke evidence, and an incident acknowledgement before calling a release complete.
 - [Phase ?]: Keep Node 20 as the Phase 1 compatibility baseline while requiring a maintainer-owned upgrade target and timeline before it becomes long-lived policy.
 - [Phase ?]: Use pnpm process-scoped store configuration in the portable wrapper because pnpm 10 does not accept the prior store flag form.
+- [Phase ?]: Use Corepack-selected pnpm@10.34.5, the root pnpm lockfile, and frozen installs as the sole active maintainer contract.
+- [Phase ?]: Target Node 24 LTS with the Scholar Scout release maintainer accountable before long-lived release-policy approval; retain Node 20 only as the Phase 1 compatibility boundary.
 
 ### Pending Todos
 
@@ -109,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T03:18:50.218Z
-Stopped at: Completed 01-release-and-ci-baseline-05-PLAN.md
+Last session: 2026-07-26T03:56:44.674Z
+Stopped at: Completed 01-release-and-ci-baseline-06-PLAN.md
 Resume file: None
