@@ -4,9 +4,9 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
-status: verifying
+status: executing
 stopped_at: Phase 2 context gathered
-last_updated: "2026-07-26T13:28:24.702Z"
+last_updated: "2026-07-26T14:51:45.712Z"
 last_activity: 2026-07-26
 last_activity_desc: "Completed quick task 260726-26d: stable production-domain smoke target"
 progress:
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 Phase: 1 (Release and CI Baseline) — EXECUTING
 Plan: 5 of 5
-Status: Phase complete — ready for verification
+Status: Ready to execute
 Last activity: 2026-07-26 — Completed quick task 260726-26d: stable production-domain smoke target
 
 Progress: [██████████] 100%
@@ -84,6 +84,10 @@ Progress: [██████████] 100%
 - [Phase ?]: Use pnpm process-scoped store configuration in the portable wrapper because pnpm 10 does not accept the prior store flag form.
 - [Phase ?]: Use Corepack-selected pnpm@10.34.5, the root pnpm lockfile, and frozen installs as the sole active maintainer contract.
 - [Phase ?]: Target Node 24 LTS with the Scholar Scout release maintainer accountable before long-lived release-policy approval; retain Node 20 only as the Phase 1 compatibility boundary.
+
+### Roadmap Evolution
+
+- Phase 7 added: Governed Opportunity and Support Matching
 
 ### Pending Todos
 

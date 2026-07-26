@@ -52,7 +52,40 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
   4. An incoming GitHub webhook is rejected when its signature secret is missing or invalid, and a valid qualifying webhook can dispatch only an authenticated, size-bounded agent request.
   5. A user who repeatedly attempts login or registration receives a safe rate-limit response without tying up the server event loop for avoidable work.
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Approve the externally atomic counter dependencies
+- [ ] 02-09-PLAN.md — Harden and test the GitHub webhook runner
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Add fail-closed atomic reservations and bounded request parsing
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Establish opaque guest actors and safe same-device migration
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — Protect memory, simulations, and analytics ownership boundaries
+- [ ] 02-05-PLAN.md — Protect referral, engagement, share, and experiment ownership boundaries
+- [ ] 02-06-PLAN.md — Add revocable active-staff authorization and audit evidence
+- [ ] 02-08-PLAN.md — Harden the direct Responses advisor and evaluation fixtures
+- [ ] 02-12-PLAN.md — Route onboarding and shortlist through opaque guest/account actors
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-07-PLAN.md — Apply fresh staff checks to data-operation routes
+- [ ] 02-10-PLAN.md — Rate-bound credentials and trigger guest migration after sign-in
+- [ ] 02-13-PLAN.md — Disable public decision mutations and guard global decision dashboards
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-11-PLAN.md — Rate-bound registration and wire the supported credential client flow
+
 **Risk**: Existing public routes and JWT-carried roles currently assume caller data or stale authorization; introduce shared server guards with route-contract tests before changing client flows.
 
 ### Phase 3: Administrative and Data Operations Correctness
@@ -125,3 +158,14 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 | 4. Incremental Durable Persistence Boundaries | 0/TBD | Not started | - |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
+
+### Phase 7: Governed Opportunity and Support Matching
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 7 to break down)
