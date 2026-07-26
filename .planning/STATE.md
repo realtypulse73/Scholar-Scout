@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
-status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-07-26T03:03:27.135Z"
+status: verifying
+stopped_at: Completed 01-release-and-ci-baseline-05-PLAN.md
+last_updated: "2026-07-26T03:18:50.229Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 1 execution started
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 Phase: 1 (Release and CI Baseline) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-25 — Phase 1 execution started
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [████████░░] 80%
 | Phase 01-release-and-ci-baseline P02 | 34min | 3 tasks | 9 files |
 | Phase 01-release-and-ci-baseline P03 | 8 minutes | 2 tasks | 2 files |
 | Phase 01-release-and-ci-baseline P04 | 25m | 3 tasks | 9 files |
+| Phase 01-release-and-ci-baseline P05 | 35 minutes | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Progress: [████████░░] 80%
 - [Phase ?]: Keep failed-smoke response as an idempotent incident issue with human-only rollback guidance.
 - [Phase ?]: Document the pinned Corepack pnpm path and frozen install as the only supported contributor contract.
 - [Phase ?]: Keep Vercel Corepack setup, production-branch protection, and release evidence explicit as maintainer-owned dashboard configuration.
+- [Phase ?]: Require protected-main CI, production-only smoke evidence, and an incident acknowledgement before calling a release complete.
+- [Phase ?]: Keep Node 20 as the Phase 1 compatibility baseline while requiring a maintainer-owned upgrade target and timeline before it becomes long-lived policy.
+- [Phase ?]: Use pnpm process-scoped store configuration in the portable wrapper because pnpm 10 does not accept the prior store flag form.
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T03:03:27.124Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-07-26T03:18:50.218Z
+Stopped at: Completed 01-release-and-ci-baseline-05-PLAN.md
 Resume file: None
