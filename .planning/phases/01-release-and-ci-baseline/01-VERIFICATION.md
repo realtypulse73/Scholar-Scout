@@ -1,44 +1,55 @@
 ---
 phase: 01-release-and-ci-baseline
-verified: 2026-07-26T03:26:17Z
-status: gaps_found
+verified: 2026-07-26T04:01:06Z
+status: human_needed
 score: 0/3 must-haves verified
-behavior_unverified: 2
+behavior_unverified: 3
 overrides_applied: 0
-gaps:
-  - truth: "A maintainer can install dependencies with one documented immutable package-manager and lockfile path, and use it for local development, CI, and Vercel builds."
-    status: failed
-    reason: "AGENTS.md is an active project instruction file but still directs developers to npm, package-lock.json, npm workspaces, and npm install/run commands, contradicting the checked-in pnpm-only contract."
-    artifacts:
-      - path: AGENTS.md
-        issue: "Stale package-manager, lockfile, local-development, CI, and Vercel guidance at lines 36-37, 72, 77-78, 113, 264, and 267."
-    missing:
-      - "Regenerate or update AGENTS.md from current repository evidence so it documents only pnpm@10.34.5/Corepack, pnpm-lock.yaml, frozen install, and current pnpm workspace commands."
-  - truth: "The Node 20 lifecycle checkpoint is linked to an accountable supported-Node target, owner, and timing before this baseline is accepted as long-lived."
-    status: failed
-    reason: "The Phase 1 validation contract makes this a phase-close requirement, but the readiness checklist retains an unresolved TODO instead of the required issue or ADR URL."
-    artifacts:
-      - path: docs/production-readiness-checklist.md
-        issue: "Line 145 says `TODO: add the accountable issue or ADR URL before the next release policy is approved.`"
-    missing:
-      - "Create or identify the accountable Node-upgrade issue/ADR and replace the TODO with its link, owner, target, and timing."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 0/3
+  gaps_closed:
+    - "A maintainer has one active Corepack-selected pnpm 10.34.5 / root-lockfile / frozen-install contract."
+    - "The Node 20 compatibility baseline is tied to an accountable Node 24 LTS target, owner, timing, and validation path."
+  gaps_remaining: []
+  regressions: []
 behavior_unverified_items:
+  - truth: "A maintainer can install dependencies with one documented immutable package-manager and lockfile path, and use it for local development, CI, and Vercel builds."
+    test: "Merge a reviewed change through protected main and retain the Vercel production build log."
+    expected: "Vercel selects Corepack pnpm 10.34.5, runs the frozen root install, and runs pnpm build:vercel."
+    why_human: "Repository files and local portable-pnpm tests prove the contract exists and works locally, but cannot prove Vercel's environment setting or hosted execution."
   - truth: "Every pull request reports Scholar Scout build, typecheck, lint, and test results without an unrelated CrimClock job failing the pipeline."
-    test: "Open a draft PR against main and inspect the check list and results."
-    expected: "Exactly the six ScholarScout checks report independently; no CrimClock/Python job appears."
-    why_human: "The workflow definition and local commands are present and pass, but repository evidence cannot prove GitHub actually scheduled the jobs for a PR."
+    test: "Open a draft PR against main and inspect the completed check list."
+    expected: "Exactly the six ScholarScout quality checks run independently; no CrimClock or Python check appears."
+    why_human: "The committed workflow has the six jobs and local mapped checks pass, but GitHub Actions scheduling is external runtime behavior."
   - truth: "A maintainer can distinguish a failed Scholar Scout quality check from a clean, releasable pull request."
-    test: "Inspect the main ruleset/branch protection after a successful draft PR."
-    expected: "Only the six exact ScholarScout checks are required, branches must be current, pull requests are required, and direct pushes are blocked."
-    why_human: "Required-check and direct-push settings live in GitHub, not in the repository."
+    test: "Inspect the main ruleset or branch-protection configuration after a successful draft PR."
+    expected: "Pull requests and up-to-date branches are required, direct pushes are blocked, and exactly the six ScholarScout checks are required."
+    why_human: "Required-check and direct-push controls live in GitHub configuration, not committed source."
+human_verification:
+  - test: "Open a draft PR against main and retain its completed checks."
+    expected: "The six exact ScholarScout checks run independently with no unrelated CrimClock/Python job."
+    why_human: "GitHub Actions scheduling and check reporting are external runtime behavior."
+  - test: "Export or screenshot the main ruleset/branch-protection configuration."
+    expected: "Pull requests, up-to-date branches, restricted direct pushes, and only the six exact ScholarScout checks are enforced."
+    why_human: "GitHub rulesets are dashboard state."
+  - test: "Merge through protected main and retain the Vercel production build log."
+    expected: "The log shows Corepack pnpm 10.34.5, pnpm install --frozen-lockfile --ignore-scripts, and pnpm build:vercel."
+    why_human: "Vercel production environment variables, Git integration, and hosted build execution are external state."
+  - test: "Retain a production-success post-deploy smoke workflow run and its production-smoke-report artifact."
+    expected: "The run uses the event deployment URL and the report is uploaded for that production event."
+    why_human: "Vercel-to-GitHub repository-dispatch delivery cannot be proven by static YAML."
+  - test: "Run one safe controlled production-smoke failure and retain the workflow run, artifact, incident issue, and maintainer acknowledgement."
+    expected: "The alert issue contains no secrets, links the human incident runbook, and records that no automatic rollback occurred."
+    why_human: "This is an external failure/alert/response sequence; repository code only proves the static path."
 ---
 
 # Phase 1: Release and CI Baseline Verification Report
 
 **Phase Goal:** Maintainers can reproduce a clean Scholar Scout build and use pull-request checks as a reliable release signal.
-**Verified:** 2026-07-26T03:26:17Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
+**Verified:** 2026-07-26T04:01:06Z
+**Status:** human_needed
+**Re-verification:** Yes — after gap closure
 
 ## Goal Achievement
 
@@ -46,97 +57,119 @@ behavior_unverified_items:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | One documented immutable package-manager and lockfile path works locally, in CI, and in Vercel. | ✗ FAILED | `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, CI, Vercel config, and active runbooks use pnpm, but `AGENTS.md` still prescribes npm/package-lock paths. This violates the single documented-path contract. |
-| 2 | Every PR reports Scholar Scout build, typecheck, lint, and test results without CrimClock. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `.github/workflows/ci.yml` has exactly six independently named PR/main jobs, no path filters, no CrimClock/Python references, and every mapped command passed locally. No draft-PR check evidence exists. |
-| 3 | A maintainer can distinguish a failed Scholar Scout check from a clean, releasable PR. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The six fixed names are documented in the PR template and Vercel handoff, but no GitHub ruleset/branch-protection evidence establishes required checks, current-branch enforcement, or direct-push restriction. |
+| 1 | A maintainer can install dependencies with one documented immutable package-manager and lockfile path, and use it for local development, CI, and Vercel builds. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The former documentation blocker is closed: `AGENTS.md` now matches `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, CI, and `vercel.json`; no active legacy npm/lockfile path was found. Portable pnpm reports 10.34.5 and focused local tests pass. Hosted CI/Vercel execution remains unobserved. |
+| 2 | Every pull request reports Scholar Scout build, typecheck, lint, and test results without an unrelated CrimClock job failing the pipeline. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `.github/workflows/ci.yml` statically defines exactly six ScholarScout PR/main jobs, each Corepack + frozen-pnpm based; no CrimClock/Python reference remains. A real GitHub PR run has not been retained. |
+| 3 | A maintainer can distinguish a failed Scholar Scout quality check from a clean, releasable pull request. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The exact check names and protection requirements are consistently documented, but repository files cannot establish that the GitHub ruleset requires them or blocks direct pushes. |
 
-**Score:** 0/3 truths verified (2 present, behavior-unverified)
+**Score:** 0/3 truths behaviorally verified (3 present, behavior-unverified)
 
-## Required Artifacts
+### Repository Gap Closure
+
+| Prior blocker | Re-verification evidence | Status |
+| --- | --- | --- |
+| Competing active npm/package-lock guidance | `AGENTS.md` contains the pnpm 10.34.5 pin, frozen install, web/service commands, and Vercel build command; scans found no `npm install`/`npm run`, `package-lock.json`, or nested web lockfile guidance. | ✓ VERIFIED |
+| Unowned Node 20 lifecycle TODO | `docs/adr/0001-node-runtime-upgrade.md` is accepted and specifies Node 24 LTS, the Scholar Scout release maintainer, the deadline, and governed validation scope; the readiness checklist directly links it and the old TODO is absent. | ✓ VERIFIED |
+
+### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml` | Pinned shared workspace contract | ✓ VERIFIED | `pnpm@10.34.5`; Node 20; required workspace importers (`.`, web, and both services); stale root/nested locks absent. Frozen install passed with pnpm 10.34.5. |
-| `scripts/pnpm-portable.ps1` + `scripts/use-portable-node.ps1` | Portable Corepack pnpm path | ✓ VERIFIED | Both portable activation and pnpm `--version` completed successfully with v20.20.2 / pnpm 10.34.5. |
-| `.github/workflows/ci.yml` | Six independent Scholar Scout quality jobs | ✓ VERIFIED (static) | Six jobs, exact names, PR/main triggers, Corepack, frozen install, one mapped command per job, and no CrimClock/Python job. Hosted execution remains unverified. |
-| `vercel.json` | Frozen pnpm Vercel build path | ✓ VERIFIED (static) | `pnpm install --frozen-lockfile --ignore-scripts` and `pnpm build:vercel`; actual Vercel use needs maintainer evidence. |
-| `.github/workflows/post-deploy-smoke.yml` | Production-only smoke and incident workflow | ✓ VERIFIED (static) | Filters `vercel.deployment.success` to `production`, maps event URL to `SCHOLARSCOUT_SMOKE_BASE_URL`, retains JSON artifact, and has a scoped issue-alert job. Event delivery and failure path need external evidence. |
-| `AGENTS.md` | Current project instructions | ✗ STALE / BLOCKER | Its generated stack guidance still presents npm and two removed lockfiles as the supported project contract. |
-| `docs/production-readiness-checklist.md` | Node runtime lifecycle ownership | ✗ STUB / BLOCKER | The mandatory external decision reference is an unresolved TODO. |
+| `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml` | Pinned shared workspace contract | ✓ VERIFIED | Root pin is `pnpm@10.34.5`; Node remains 20.x; lockfile includes `.`, `apps/web`, and both service importers. Legacy root and nested lockfiles are absent. |
+| `scripts/pnpm-portable.ps1` + `scripts/use-portable-node.ps1` | Portable Node/Corepack pnpm path | ✓ VERIFIED | The wrapper enables Corepack against the bundled Node 20 runtime and reports pnpm 10.34.5. |
+| `AGENTS.md` | One active maintainer contract | ✓ VERIFIED | Substantive generated instructions now wire the same pnpm version, frozen install, workspace commands, CI path, and Vercel build command to the checked-in sources. |
+| `docs/adr/0001-node-runtime-upgrade.md` | Accountable Node lifecycle decision | ✓ VERIFIED | Accepted ADR names target, accountable owner, deadline, current compatibility boundary, validation surfaces, and external-evidence boundary. |
+| `docs/production-readiness-checklist.md` | Linked lifecycle checkpoint | ✓ VERIFIED | Its Node-runtime section directly links the ADR and contains no unresolved lifecycle-decision stub. |
+| `.github/workflows/ci.yml` | Six independent Scholar Scout quality jobs | ✓ VERIFIED (static) | Six displayed ScholarScout jobs use Node 20, Corepack, frozen install, and distinct commands; no unrelated CrimClock/Python job is defined. Hosted execution is still human verification. |
+| `vercel.json` | Frozen pnpm Vercel build path | ✓ VERIFIED (static) | Uses `pnpm install --frozen-lockfile --ignore-scripts` followed by `pnpm build:vercel`. |
+| `.github/workflows/post-deploy-smoke.yml` | Production-event smoke and incident path | ✓ VERIFIED (static) | Production-only dispatch guard, event URL data flow, retained artifact, scoped issue permission, and human-runbook alert are wired. Dispatch and failure behavior remain external verification. |
 
-## Key Link Verification
+### Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| `package.json` | `pnpm-lock.yaml` | pinned Corepack pnpm frozen install | ✓ WIRED | Bundled Node/Corepack selected pnpm 10.34.5 and `pnpm install --frozen-lockfile --ignore-scripts` succeeded. |
-| `.github/workflows/ci.yml` | `pnpm-lock.yaml` | six Corepack/frozen installs | ✓ WIRED (static) | Each of the six jobs contains the same frozen install; mapped local commands passed. |
-| Vercel production-success event | post-deploy workflow | `repository_dispatch` production guard | ⚠️ EXTERNAL | YAML is wired, but no Vercel dispatch run proves delivery. |
-| post-deploy workflow | `scripts/production-smoke.mjs` | `SCHOLARSCOUT_SMOKE_BASE_URL` then `pnpm run smoke:production` | ✓ WIRED (static) | Payload URL reaches the existing root script; production-tooling tests exercise smoke-script success/failure behavior, not Actions event delivery. |
-| smoke failure alert | incident runbook | issue body link to `docs/production-incident-response.md` | ✓ WIRED (static) | Alert body is idempotent, contains non-secret evidence fields, and states no automatic rollback. Controlled failure is still unproven. |
+| `AGENTS.md` | `package.json` / `pnpm-workspace.yaml` / `pnpm-lock.yaml` | matching pin, frozen install, and workspace commands | ✓ WIRED | The active instruction strings match the live root contract; scans found no competing legacy path. |
+| `docs/production-readiness-checklist.md` | `docs/adr/0001-node-runtime-upgrade.md` | direct relative lifecycle link | ✓ WIRED | The checklist link resolves to the accepted local ADR and repeats its owner/timing boundary. |
+| `.github/workflows/ci.yml` | `pnpm-lock.yaml` | each named job uses Corepack and frozen install | ✓ WIRED (static) | All six jobs share the committed dependency graph before their named check. |
+| Vercel production-success event | `.github/workflows/post-deploy-smoke.yml` | `repository_dispatch` guarded to `production` | ⚠️ EXTERNAL | The workflow is wired, but no Vercel dispatch run proves delivery. |
+| Post-deploy workflow | `scripts/production-smoke.mjs` | event URL becomes `SCHOLARSCOUT_SMOKE_BASE_URL` | ✓ WIRED (static) | The workflow passes the payload URL to `pnpm run smoke:production`; production-tooling tests exercise the script behavior. |
+| Smoke failure alert | `docs/production-incident-response.md` | idempotent issue body links human response | ✓ WIRED (static) | Only alert reporting is automated; the workflow contains no rollback command and explicitly directs a human decision. |
 
-## Data-Flow Trace (Level 4)
+### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | --- | --- | --- | --- | --- |
-| `post-deploy-smoke.yml` | `SCHOLARSCOUT_SMOKE_BASE_URL` | `github.event.client_payload.url` | Event-provided production URL is passed to the existing smoke command | ✓ FLOWING (static); event delivery needs human evidence |
+| `.github/workflows/post-deploy-smoke.yml` | `SCHOLARSCOUT_SMOKE_BASE_URL` | `github.event.client_payload.url` | The dispatch payload’s deployment URL is supplied to the existing smoke command. | ✓ FLOWING (static); event delivery needs human evidence |
 
-## Behavioral Spot-Checks
+### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Pinned immutable workspace install | bundled `pnpm install --frozen-lockfile --ignore-scripts` | pnpm 10.34.5; lockfile up to date; exit 0 | ✓ PASS |
-| Portable Node/Corepack activation | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/use-portable-node.ps1` | Node v20.20.2; pnpm 10.34.5; exit 0 | ✓ PASS |
-| Web typecheck, lint, Jest, and build | four commands mapped from CI | all exit 0; Jest 22 suites / 133 tests; production build completed | ✓ PASS |
-| HTTP fixture tests | `pnpm --filter @scholar-scout/http-data-service test` | 6 passing tests | ✓ PASS |
-| Production-tooling behavior | `pnpm test:production-tooling` | 17 passing tests, including portable wrapper and smoke-script failure behavior | ✓ PASS |
+| Portable Corepack pnpm contract | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/pnpm-portable.ps1 --version` | pnpm `10.34.5`; exit 0 | ✓ PASS |
+| HTTP fixture command used by CI | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/pnpm-portable.ps1 --filter @scholar-scout/http-data-service test` | 6 tests passed; exit 0 | ✓ PASS |
+| Phase 1 operational tooling | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/pnpm-portable.ps1 test:production-tooling` | 17 tests passed, including portable-wrapper coverage and smoke failure behavior; exit 0 | ✓ PASS |
 
 Step 7c: SKIPPED — Phase 1 declares no conventional `scripts/**/tests/probe-*.sh` probe.
 
-## Requirements Coverage
+### Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| OPS-01 | 01-02, 01-03, 01-05 | Relevant independent Scholar Scout CI results, no CrimClock | ? NEEDS HUMAN | Static workflow and all six commands pass, but a draft-PR execution and GitHub required-check configuration were not retained. |
-| OPS-05 | 01-01 through 01-05 | One documented immutable package-manager and lockfile path | ✗ BLOCKED | The code and current runbooks use pnpm, but `AGENTS.md` remains authoritative-looking npm/package-lock guidance. |
+| OPS-01 | 01-02, 01-03, 01-05 | Relevant independent Scholar Scout CI results, with no CrimClock job | ? NEEDS HUMAN | Workflow topology and focused mapped checks are sound, but a draft-PR execution and GitHub merge-gate configuration are external evidence. |
+| OPS-05 | 01-01 through 01-06 | One documented immutable package-manager and lockfile path | ✓ SATISFIED (repository) | The previous active-instruction and Node-lifecycle blockers are closed; local portable pnpm and operational tests pass. Vercel production parity remains an external phase-close check. |
 
-No requirement mapped to Phase 1 is orphaned from the plans.
+No requirement mapped to Phase 1 is orphaned from its plans.
 
-## Anti-Patterns Found
+### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 | --- | --- | --- | --- | --- |
-| `AGENTS.md` | 36-37, 72, 77-78, 113, 264, 267 | stale active npm/package-lock instructions | 🛑 BLOCKER | Maintainers are given a second, contradictory package-manager path. |
-| `docs/production-readiness-checklist.md` | 145 | unresolved `TODO` for required Node upgrade issue/ADR | 🛑 BLOCKER | The explicit Phase 1 lifecycle checkpoint has no owner, target, or timing reference. |
+| — | — | No `TBD`, `FIXME`, `XXX`, `TODO`, placeholder, or stale package-manager marker in the three gap-closure artifacts. | ℹ️ None | No repository blocker found. |
 
-## External Maintainer Evidence Required After Gap Closure
+## Human Verification Required
 
-1. **Draft PR CI execution**
+### 1. Draft PR CI execution
 
-   **Test:** Open a PR to `main` and retain its checks.
-   **Expected:** The six exact `ScholarScout / ...` checks run independently with no CrimClock check.
-   **Why human:** GitHub Actions scheduling and check reporting are external runtime behavior.
+**Test:** Open a draft PR against `main` and retain its completed checks.
 
-2. **GitHub main protection**
+**Expected:** Exactly the six named ScholarScout checks run independently, with no CrimClock/Python check.
 
-   **Test:** Export or screenshot the `main` ruleset/branch protection.
-   **Expected:** Pull requests and up-to-date branches are required; direct pushes are restricted; exactly the six named ScholarScout checks are required.
-   **Why human:** These controls are dashboard configuration, not committed source.
+**Why human:** GitHub Actions scheduling and reported check state are external.
 
-3. **Vercel production parity and smoke success**
+### 2. GitHub main protection
 
-   **Test:** After a protected merge, retain the Vercel production build log and the dispatched smoke-run/artifact URL.
-   **Expected:** Corepack uses pnpm 10.34.5, the frozen install and `pnpm build:vercel` run, and the smoke report targets that event's production URL.
-   **Why human:** Vercel settings, Git integration, and event dispatch cannot be proven locally.
+**Test:** Export or screenshot the `main` ruleset/branch-protection configuration.
 
-4. **Controlled smoke failure**
+**Expected:** Pull requests and up-to-date branches are required, direct pushes are restricted, and exactly the six named ScholarScout checks are required.
 
-   **Test:** Trigger a safe failing production-smoke scenario and retain the run, artifact, and created/updated incident issue.
-   **Expected:** The issue contains no secret material, links the human rollback runbook, and an accountable maintainer records review with no automatic rollback.
-   **Why human:** This is an external failure/alert/response sequence.
+**Why human:** Rulesets are dashboard configuration.
+
+### 3. Vercel production parity
+
+**Test:** Merge through protected `main` and retain the Vercel production build log.
+
+**Expected:** Corepack selects pnpm 10.34.5, the frozen install runs, and `pnpm build:vercel` completes.
+
+**Why human:** Vercel environment configuration, Git integration, and hosted execution are external state.
+
+### 4. Production-success smoke evidence
+
+**Test:** Retain a production-success post-deploy smoke workflow run and its JSON artifact.
+
+**Expected:** The run targets the event deployment URL and uploads `production-smoke-report`.
+
+**Why human:** The Vercel-to-GitHub dispatch cannot be observed from repository files.
+
+### 5. Controlled smoke failure and human response
+
+**Test:** Run one safe failing smoke scenario and retain its workflow run, artifact, incident issue, and maintainer acknowledgement.
+
+**Expected:** The issue is non-secret, links the human incident runbook, and records review with no automatic rollback.
+
+**Why human:** This validates an external failure/alert/response sequence.
 
 ## Gaps Summary
 
-The pnpm migration, six CI commands, portable tooling, Vercel configuration, and static post-deploy wiring are substantive and locally validated. Phase 1 nevertheless misses its goal today because the repository's live `AGENTS.md` contradicts the promised single package-manager path, and because the mandatory Node lifecycle decision remains an unresolved TODO. No later roadmap phase explicitly owns either cleanup, so neither is deferred.
+The two repository blockers from the prior verification are closed; there are no remaining repository implementation gaps or regressions. The phase cannot be marked passed until the five retained GitHub/Vercel/manual evidence items above are supplied. This is an escalation gate for external operational evidence, not a code-fix request.
 
-_Verified: 2026-07-26T03:26:17Z_
+_Verified: 2026-07-26T04:01:06Z_
 _Verifier: the agent (gsd-verifier)_
