@@ -5,6 +5,7 @@ Describe what changed and why.
 Closes #
 
 ## Testing
+- [ ] Corepack and the frozen workspace install: `corepack enable` then `pnpm install --frozen-lockfile --ignore-scripts`
 - [ ] ScholarScout / Web typecheck: `pnpm --filter @scholar-scout/web typecheck`
 - [ ] ScholarScout / Web lint: `pnpm --filter @scholar-scout/web lint`
 - [ ] ScholarScout / Web Jest: `pnpm --filter @scholar-scout/web test --runInBand`
