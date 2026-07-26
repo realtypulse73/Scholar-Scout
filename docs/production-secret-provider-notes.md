@@ -8,7 +8,9 @@ Use [`../.env.prelaunch.local.example`](../.env.prelaunch.local.example) only fo
 To create a private production handoff file with generated Auth.js and health-token values, run:
 
 ```bash
-npm run provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails staff@example.org
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails staff@example.org
 ```
 
 The command writes `.env.production.local`, which is ignored by git, and `reports/production-provider-setup.md`, which contains checklist instructions without secret values. Use `--local-file PATH` only when you need a non-default output path.
@@ -61,7 +63,7 @@ Rotation:
 1. Create or rotate the Google client secret.
 2. Update `GOOGLE_CLIENT_SECRET` in the hosting environment.
 3. Redeploy.
-4. Run `npm run smoke:production` against the deployment.
+4. Run `pnpm run smoke:production` against the deployment.
 5. Revoke the old client secret after sign-in is healthy.
 
 ## GitHub OAuth
@@ -114,7 +116,7 @@ Validation:
 3. Open `/admin/programmes`.
 4. Confirm Data operations shows a durable `vercel-blob` adapter.
 5. Export data, validate the exported snapshot, and confirm backup retention is within policy.
-6. Run staff-authenticated `npm run smoke:production` with `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=vercel-blob`.
+6. Run staff-authenticated `pnpm run smoke:production` with `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=vercel-blob`.
 
 Rotation:
 
@@ -148,7 +150,7 @@ Validation:
 2. Confirm the service accepts authenticated `PUT` with `Content-Type: application/json`.
 3. Deploy ScholarScout with the HTTP variables.
 4. Sign in as staff and confirm Data operations shows a durable `http` adapter.
-5. Run staff-authenticated `npm run smoke:production` with `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=http`.
+5. Run staff-authenticated `pnpm run smoke:production` with `SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=http`.
 
 Rotation:
 
@@ -187,4 +189,4 @@ Use this cadence unless your hosting or security policy requires a shorter one:
 | `SCHOLARSCOUT_HEALTH_TOKEN` | Rotate when monitoring ownership changes or the token appears in logs |
 | `SCHOLARSCOUT_SMOKE_STAFF_COOKIE` | Refresh whenever the scheduled export check starts skipping or failing due to session expiry |
 
-After any secret rotation, run `npm run check:production-env` and `npm run smoke:production` against the deployment.
+After any secret rotation, run `pnpm run check:production-env` and `pnpm run smoke:production` against the deployment.

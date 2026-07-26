@@ -69,7 +69,9 @@ If an admin creates the credentials:
 Run:
 
 ```bash
-npm run check:production-env -- --env-file .env.production.local
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run check:production-env -- --env-file .env.production.local
 ```
 
 Then validate the deployed app:
