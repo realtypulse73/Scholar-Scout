@@ -35,6 +35,16 @@ Before enabling production traffic, configure the matching GitHub ruleset or bra
 
 Select those checks only after successful runs have appeared in GitHub. Retain a screenshot or export of the resulting ruleset/branch-protection configuration with the deployment evidence.
 
+### Post-deploy smoke target
+
+Keep Vercel Standard Protection enabled for dynamic deployment URLs. Those protected URLs can redirect to Vercel SSO, so the post-deploy smoke workflow does not request the deployment URL supplied by the dispatch event. Instead, configure the GitHub Actions repository secret `SCHOLARSCOUT_SMOKE_BASE_URL` to the stable public Production domain:
+
+```text
+https://scholar-scout-web.vercel.app/
+```
+
+Set or update that secret in **Repository Settings -> Secrets and variables -> Actions -> Secrets** before any intentional production-domain change. The repository-dispatch URL remains in the workflow only as deployment evidence: it groups concurrent smoke runs and appears in a failed-smoke incident with the deployed commit SHA. It is not the smoke request target. Do not add Vercel protection-bypass tokens, credentials, cookies, private deployment URLs, or production data to this configuration or the runbook.
+
 ## Local Equivalent
 
 After `corepack enable`, the local equivalent of Vercel's committed app-root build path is:
