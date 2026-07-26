@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
 status: executing
-stopped_at: Completed 01-release-and-ci-baseline-01-01-PLAN.md
-last_updated: "2026-07-26T02:31:47.540Z"
+stopped_at: Completed 01-release-and-ci-baseline-02-PLAN.md
+last_updated: "2026-07-26T02:45:01.360Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 1 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 1 (Release and CI Baseline) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-25 — Phase 1 execution started
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [██░░░░░░░░] 20%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01-release-and-ci-baseline P01 | 8min | 3 tasks | 11 files |
+| Phase 01-release-and-ci-baseline P02 | 34min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Progress: [██░░░░░░░░] 20%
 - Modernize whole-document persistence incrementally at high-risk boundaries.
 - [Phase ?]: Pinned pnpm@10.34.5 through Corepack for the root workspace and portable Windows tooling.
 - [Phase ?]: Use one regenerated root pnpm lockfile, validate it with frozen lifecycle-script-disabled installs, then remove stale locks.
+- [Phase ?]: CI reports six independently named Scholar Scout checks, each with a frozen Corepack-pnpm install.
+- [Phase ?]: Use pnpm test --runInBand without an extra delimiter so Jest receives the flag correctly under pnpm 10.
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T02:31:47.528Z
-Stopped at: Completed 01-release-and-ci-baseline-01-01-PLAN.md
+Last session: 2026-07-26T02:45:01.348Z
+Stopped at: Completed 01-release-and-ci-baseline-02-PLAN.md
 Resume file: None

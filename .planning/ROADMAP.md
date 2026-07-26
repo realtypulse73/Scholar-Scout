@@ -28,10 +28,10 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
   2. Every pull request reports Scholar Scout build, typecheck, lint, and test results without an unrelated CrimClock job failing the pipeline.
   3. A maintainer can distinguish a failed Scholar Scout quality check from a clean, releasable pull request.
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 - [ ] 01-03-PLAN.md
 - [ ] 01-04-PLAN.md
 - [ ] 01-05-PLAN.md
@@ -118,7 +118,7 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Release and CI Baseline | 1/5 | In Progress|  |
+| 1. Release and CI Baseline | 2/5 | In Progress|  |
 | 2. Authentication, API, AI, and Webhook Controls | 0/TBD | Not started | - |
 | 3. Administrative and Data Operations Correctness | 0/TBD | Not started | - |
 | 4. Incremental Durable Persistence Boundaries | 0/TBD | Not started | - |
