@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  web-quality-gate:
-    name: Web quality gate
+  web-typecheck:
+    name: ScholarScout / Web typecheck
     runs-on: ubuntu-latest
 
     steps:
@@ -22,25 +22,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Typecheck web app
-        run: npm run typecheck --workspace @scholar-scout/web
+        run: pnpm --filter @scholar-scout/web typecheck
 
-      - name: Lint web app
-        run: npm run lint --workspace @scholar-scout/web
-
-      - name: Run web tests
-        run: npm run test --workspace @scholar-scout/web -- --runInBand
-
-      - name: Build web app
-        run: npm run build:web
-
-  crimclock-quality-gate:
-    name: CrimClock quality gate
+  web-lint:
+    name: ScholarScout / Web lint
     runs-on: ubuntu-latest
 
     steps:
@@ -51,26 +44,100 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install Node dependencies
-        run: npm ci
+      - name: Enable Corepack
+        run: corepack enable
 
-      - name: Typecheck CrimClock web
-        run: npm run typecheck --workspace @crimclock/web
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Lint CrimClock web
-        run: npm run lint --workspace @crimclock/web
+      - name: Lint web app
+        run: pnpm --filter @scholar-scout/web lint
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+  web-jest:
+    name: ScholarScout / Web Jest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: 20
 
-      - name: Install API dependencies
-        working-directory: services/api
-        run: pip install ".[dev]"
+      - name: Enable Corepack
+        run: corepack enable
 
-      - name: Run API tests
-        working-directory: services/api
-        run: pytest
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run web tests
+        run: pnpm --filter @scholar-scout/web test -- --runInBand
+
+  web-build:
+    name: ScholarScout / Web build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build web app
+        run: pnpm --filter @scholar-scout/web build
+
+  http-data-service-tests:
+    name: ScholarScout / HTTP data-service tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run HTTP data-service tests
+        run: pnpm --filter @scholar-scout/http-data-service test
+
+  production-tooling-tests:
+    name: ScholarScout / Production-tooling tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run production-tooling tests
+        run: pnpm test:production-tooling
