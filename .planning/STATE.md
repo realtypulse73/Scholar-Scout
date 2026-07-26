@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
 status: executing
-stopped_at: Completed 01-release-and-ci-baseline-03-PLAN.md
-last_updated: "2026-07-26T02:54:11.492Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-07-26T03:03:27.135Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 1 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 1 (Release and CI Baseline) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-07-25 — Phase 1 execution started
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [██████░░░░] 60%
 | Phase 01-release-and-ci-baseline P01 | 8min | 3 tasks | 11 files |
 | Phase 01-release-and-ci-baseline P02 | 34min | 3 tasks | 9 files |
 | Phase 01-release-and-ci-baseline P03 | 8 minutes | 2 tasks | 2 files |
+| Phase 01-release-and-ci-baseline P04 | 25m | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Progress: [██████░░░░] 60%
 - [Phase ?]: Use pnpm test --runInBand without an extra delimiter so Jest receives the flag correctly under pnpm 10.
 - [Phase ?]: Use the Vercel repository-dispatch production URL and deployed SHA for post-deploy smoke evidence.
 - [Phase ?]: Keep failed-smoke response as an idempotent incident issue with human-only rollback guidance.
+- [Phase ?]: Document the pinned Corepack pnpm path and frozen install as the only supported contributor contract.
+- [Phase ?]: Keep Vercel Corepack setup, production-branch protection, and release evidence explicit as maintainer-owned dashboard configuration.
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T02:54:11.472Z
-Stopped at: Completed 01-release-and-ci-baseline-03-PLAN.md
+Last session: 2026-07-26T03:03:27.124Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
