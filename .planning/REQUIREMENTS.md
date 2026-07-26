@@ -19,7 +19,7 @@
 - [ ] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
 - [ ] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
 - [ ] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
-- [ ] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
+- [x] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
 
 ### Data Foundation
 
@@ -90,7 +90,7 @@
 | OPS-02 | Phase 3 | Pending |
 | OPS-03 | Phase 3 | Pending |
 | OPS-04 | Phase 6 | Pending |
-| OPS-05 | Phase 1 | Pending |
+| OPS-05 | Phase 1 | Complete |
 | DATA-01 | Phase 4 | Pending |
 | DATA-02 | Phase 4 | Pending |
 | DATA-03 | Phase 3 | Pending |
@@ -100,6 +100,7 @@
 | PROD-04 | Phase 6 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 17 total
 - Mapped to phases: 17
 - Unmapped: 0

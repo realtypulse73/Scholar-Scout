@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 1
 current_phase_name: Release and CI Baseline
-status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-07-26T01:37:59.346Z"
+status: executing
+stopped_at: Completed 01-release-and-ci-baseline-01-01-PLAN.md
+last_updated: "2026-07-26T02:31:47.540Z"
 last_activity: 2026-07-25
-last_activity_desc: Created the v1 release-hardening roadmap and mapped all requirements.
+last_activity_desc: Phase 1 execution started
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
 ---
 
 # Project State
@@ -27,12 +27,12 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 ## Current Position
 
-Phase: 1 of 6 (Release and CI Baseline)
-Plan: Not yet planned
-Status: Ready to plan
-Last activity: 2026-07-25 — Created the v1 release-hardening roadmap and mapped all requirements.
+Phase: 1 (Release and CI Baseline) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-07-25 — Phase 1 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -53,6 +53,12 @@ Progress: [░░░░░░░░░░] 0%
 - Last 5 plans: -
 - Trend: Not established
 
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01-release-and-ci-baseline P01 | 8min | 3 tasks | 11 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -60,6 +66,8 @@ Progress: [░░░░░░░░░░] 0%
 - Prioritize release confidence and security before product expansion.
 - Treat the current uncommitted school/community/WNY cluster as a separately validated release slice.
 - Modernize whole-document persistence incrementally at high-risk boundaries.
+- [Phase ?]: Pinned pnpm@10.34.5 through Corepack for the root workspace and portable Windows tooling.
+- [Phase ?]: Use one regenerated root pnpm lockfile, validate it with frozen lifecycle-script-disabled installs, then remove stale locks.
 
 ### Pending Todos
 
@@ -88,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T01:37:59.336Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-release-and-ci-baseline/01-CONTEXT.md
+Last session: 2026-07-26T02:31:47.528Z
+Stopped at: Completed 01-release-and-ci-baseline-01-01-PLAN.md
+Resume file: None
