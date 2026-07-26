@@ -140,9 +140,10 @@ The workflow at `.github/workflows/production-readiness.yml` runs the production
 
 ## 9. Node Runtime Lifecycle Checkpoint
 
-Phase 1 retains Node 20 as a bounded compatibility baseline. Before the next release policy treats that baseline as long-lived, an accountable maintainer must record the selected supported Node upgrade target, owner, and timing in a linked issue or ADR:
-
-- **Node upgrade decision link:** `TODO: add the accountable issue or ADR URL before the next release policy is approved.`
+Phase 1 retains Node 20 as a bounded compatibility baseline. The accepted
+[Node 24 LTS runtime-upgrade ADR](adr/0001-node-runtime-upgrade.md) assigns the
+Scholar Scout release maintainer as owner and requires the governed upgrade
+decision before the next long-lived release policy approval.
 
 ## 10. Rotation Checklist
 
