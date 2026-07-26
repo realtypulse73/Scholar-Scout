@@ -2,6 +2,10 @@
 
 Use this adapter when ScholarScout runs on Vercel and needs durable account, shortlist, onboarding, admin programme, and audit data without operating a separate service.
 
+## Command Prerequisite
+
+The root `packageManager` selects pnpm 10.34.5. Run `corepack enable` once, then use `pnpm install --frozen-lockfile --ignore-scripts` before running the commands below.
+
 ## Runtime Setup
 
 Create a private Vercel Blob store and expose a read-write token to the app environment.
@@ -43,11 +47,11 @@ Reads use private Blob access with cache bypass. Writes overwrite the same JSON 
 Before deploy:
 
 ```bash
-npm run test
-npm run typecheck
-npm run lint
-npm run build:vercel
-npm run vercel:docker-free
+pnpm test
+pnpm typecheck
+pnpm lint
+pnpm build:vercel
+pnpm vercel:docker-free
 ```
 
 After deploy:

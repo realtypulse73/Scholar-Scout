@@ -4,10 +4,14 @@ This workspace package is a no-dependency local fixture for the ScholarScout HTT
 
 It is not a production CMS. It gives developers a real `GET`/`PUT` service to test `SCHOLARSCOUT_DATA_ADAPTER=http` without Docker or new install scripts.
 
+## Command Prerequisite
+
+The root `packageManager` selects pnpm 10.34.5. Run `corepack enable` once, then install the workspace from the repository root with `pnpm install --frozen-lockfile --ignore-scripts`.
+
 ## Run Locally
 
 ```bash
-npm run dev --workspace @scholar-scout/http-data-service
+pnpm --filter @scholar-scout/http-data-service dev
 ```
 
 The service listens at:
