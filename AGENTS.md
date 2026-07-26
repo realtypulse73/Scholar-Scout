@@ -1,3 +1,7 @@
+## Project Document Index
+
+Before starting any task, read [PROJECT-INDEX.md](PROJECT-INDEX.md) and then open the documents its “Read when” column identifies for the task. Treat the index as the canonical document map, keep it current whenever an important project document changes, and distinguish active sources of truth from historical evidence.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
