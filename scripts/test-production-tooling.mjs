@@ -301,6 +301,18 @@ test('production report summary renders env and smoke JSON as Markdown', async (
   assert.match(result.stdout, /Skipped: staff data export - No cookie./);
 });
 
+test('production report help names the pnpm commands that generate JSON reports', async () => {
+  const result = await runNode([
+    'scripts/production-report-summary.mjs',
+    '--help',
+  ]);
+
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /pnpm run check:production-env -- --json/);
+  assert.match(result.stdout, /pnpm run smoke:production -- --json/);
+  assert.doesNotMatch(result.stdout, /npm run/);
+});
+
 test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-'));
   const result = await runNode(
@@ -401,6 +413,11 @@ test('environment provisioning writes local env and external checklist', async (
   assert.match(localEnv, /SCHOLARSCOUT_ALLOW_CREDENTIALS_ONLY_PRODUCTION=true/);
   assert.match(report, /Production Values Still Needed/);
   assert.match(report, /OAuth app credentials/);
+  assert.match(
+    report,
+    /pnpm run rehearse:prelaunch -- --skip-smoke --env-file/,
+  );
+  assert.doesNotMatch(report, /npm run/);
 });
 
 test('production value provisioning writes generated secrets and provider checklist', async () => {
@@ -430,9 +447,14 @@ test('production value provisioning writes generated secrets and provider checkl
   assert.match(env, /SCHOLARSCOUT_STAFF_EMAILS=advisor@example.org/);
   assert.match(report, /GitHub Actions Secrets To Add/);
   assert.match(report, /api\/auth\/callback\/google/);
+  assert.match(
+    report,
+    /pnpm run rehearse:prelaunch -- --env-file .env.production.local/,
+  );
+  assert.doesNotMatch(report, /npm run/);
 });
 
-test('portable pnpm PowerShell wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
+test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
   const result = await runCommand(
     'powershell',
     [
