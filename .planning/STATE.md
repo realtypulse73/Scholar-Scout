@@ -64,6 +64,12 @@ None yet.
 - Rendered admin data controls lack their corresponding privileged routes.
 - The uncommitted school/community/WNY work must not be silently merged into unrelated stabilization changes.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260725-sao | Fix the missing admin data import validation route module | 2026-07-25 | 3a150a8 | [260725-sao-fix-the-missing-admin-data-import-valida](./quick/260725-sao-fix-the-missing-admin-data-import-valida/) |
+
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
