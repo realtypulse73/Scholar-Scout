@@ -31,10 +31,10 @@ Scholar Scout is a web application that helps students explore higher-education 
 
 ## Runtime
 
-- Node.js 20.x - required by the root workspace and both standalone services in `package.json`, `services/http-data-service/package.json`, and `services/codex-webhook-runner/package.json`.
+- Node.js 20.x - the bounded Phase 1 compatibility baseline required by the root workspace and both standalone services in `package.json`, `services/http-data-service/package.json`, and `services/codex-webhook-runner/package.json`; the accountable Node 24 LTS upgrade decision is recorded in `docs/adr/0001-node-runtime-upgrade.md`.
 - Browser/Edge-facing runtime - Next.js App Router pages and route handlers in `apps/web/app/` run through the Next.js server build configured by `apps/web/next.config.mjs`.
-- npm 10.x - declared by `packageManager` and `engines` in `package.json`; root scripts use npm workspaces.
-- Lockfile: `package-lock.json` is present (lockfile v3). `pnpm-lock.yaml` and `apps/web/pnpm-lock.yaml` are also present, but the root package manager declaration remains npm.
+- pnpm 10.34.5 - pinned by `packageManager` and `engines` in `package.json` and selected through Corepack; root scripts use pnpm workspace filters.
+- Lockfile: the committed root `pnpm-lock.yaml` is the sole authoritative dependency lockfile for every workspace.
 
 ## Frameworks
 
@@ -69,13 +69,14 @@ Scholar Scout is a web application that helps students explore higher-education 
 - Production readiness and smoke-monitor settings are defined in `scripts/production-env-check.mjs` and consumed by `.github/workflows/production-readiness.yml` and `.github/workflows/production-monitor.yml`.
 - Root workspace scripts and workspace topology are configured in `package.json`; web scripts live in `apps/web/package.json`.
 - Next.js configuration is intentionally minimal in `apps/web/next.config.mjs`; TypeScript path alias `@/*` resolves from `apps/web/` in `apps/web/tsconfig.json`.
-- Vercel builds from repository root with `npm install --ignore-scripts` and `npm run build:vercel`, configured in `vercel.json` and documented in `docs/vercel-deployment.md`.
+- CI enables Corepack and runs `pnpm install --frozen-lockfile --ignore-scripts` before each named quality command in `.github/workflows/ci.yml`.
+- Vercel builds from the repository root with `pnpm install --frozen-lockfile --ignore-scripts` and `pnpm build:vercel`, configured in `vercel.json` and documented in `docs/vercel-deployment.md`.
 - Tailwind theme and content globs are configured in `apps/web/tailwind.config.ts`; PostCSS points at the JavaScript Tailwind config in `apps/web/postcss.config.mjs`.
 
 ## Platform Requirements
 
-- Node.js 20.x and npm 10.x are required by `package.json`; install dependencies from the root and use `npm run dev` for the web workspace.
-- To exercise the HTTP data contract locally, run `npm run dev --workspace @scholar-scout/http-data-service`; its documented local endpoint is described in `docs/http-data-adapter-runbook.md`.
+- Node.js 20.x and Corepack-selected `pnpm@10.34.5` are required by `package.json`. From the repository root, run `corepack enable`, then install only with `pnpm install --frozen-lockfile --ignore-scripts`; use `pnpm --filter @scholar-scout/web run dev` for the web workspace.
+- To exercise the HTTP data contract locally, run `pnpm --filter @scholar-scout/http-data-service run dev`; start the webhook runner with `pnpm --filter @scholar-scout/codex-webhook-runner run start`. The HTTP service endpoint is described in `docs/http-data-adapter-runbook.md`.
 - No Docker dependency is required for current development or the Vercel build path; the supported Docker-free commands are documented in `docs/docker-free-development.md`.
 - Vercel is the configured hosting target for the Next.js web app via `vercel.json` and `docs/vercel-deployment.md`.
 - Durable production storage must use the Vercel Blob or HTTP adapter; `scripts/production-env-check.mjs` rejects the local JSON adapter for production readiness.
@@ -110,7 +111,7 @@ Scholar Scout is a web application that helps students explore higher-education 
 - Break long imports, JSX props, object literals, and function calls across lines with one item per line when this preserves readability. `apps/web/app/api/admin/programmes/route.ts` and `apps/web/components/onboarding/StepSupportNeeds.tsx` are the reference patterns.
 - Use Tailwind utility strings directly in JSX. Compose conditional class lists with template literals when state controls a small variant, as in `apps/web/components/onboarding/StepSupportNeeds.tsx`; use `classNames` from `apps/web/lib/class-names.ts` for reusable UI primitives, as in `apps/web/components/ui/Button.tsx`.
 - Retain accessibility attributes alongside interactive controls (`type`, `aria-*`, visible focus classes) as in `apps/web/components/onboarding/StepSupportNeeds.tsx` and `apps/web/components/ui/Button.tsx`.
-- Run `npm run lint --workspace @scholar-scout/web` for web changes. `apps/web/package.json` runs ESLint for `.ts` and `.tsx` files with `--max-warnings=0`.
+- Run `pnpm --filter @scholar-scout/web run lint` for web changes. `apps/web/package.json` runs ESLint for `.ts` and `.tsx` files with `--max-warnings=0`.
 - Follow `apps/web/.eslintrc.json`, which extends `next/core-web-vitals` and `next/typescript`; it ignores generated `next-env.d.ts`.
 - Keep TypeScript strict. `apps/web/tsconfig.json` enables `strict`, uses `isolatedModules`, and disallows emitted application files with `noEmit`.
 
@@ -261,10 +262,10 @@ Scholar Scout is a web application that helps students explore higher-education 
 - Triggers: Internal browser `fetch` calls and external HTTP requests.
 - Responsibilities: Authenticate where a user or staff role is required, validate route inputs, invoke server/domain modules, and return JSON.
 - Location: `services/http-data-service/src/server.mjs`.
-- Triggers: `npm run dev --workspace @scholar-scout/http-data-service` or `npm run start --workspace @scholar-scout/http-data-service`.
+- Triggers: `pnpm --filter @scholar-scout/http-data-service run dev` or `pnpm --filter @scholar-scout/http-data-service run start`.
 - Responsibilities: Serve health checks and the normalized ScholarScout document contract for the HTTP persistence adapter.
 - Location: `services/codex-webhook-runner/src/server.mjs`.
-- Triggers: `npm run start --workspace @scholar-scout/codex-webhook-runner` or GitHub webhook delivery to `/github/webhook`.
+- Triggers: `pnpm --filter @scholar-scout/codex-webhook-runner run start` or GitHub webhook delivery to `/github/webhook`.
 - Responsibilities: Validate signature, filter labeled issue events, produce a job packet, and optionally notify GitHub/an agent endpoint.
 
 ## Architectural Constraints
