@@ -1,0 +1,117 @@
+name: ScholarScout Post-deploy Smoke
+
+on:
+  repository_dispatch:
+    types: [vercel.deployment.success]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: scholarscout-post-deploy-smoke-${{ github.event.client_payload.url }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Production deployment smoke
+    if: ${{ github.event.client_payload.environment == 'production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ github.event.client_payload.url }}
+      SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
+      SCHOLARSCOUT_SMOKE_STAFF_COOKIE: ${{ secrets.SCHOLARSCOUT_SMOKE_STAFF_COOKIE }}
+      SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
+      SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.git.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run production smoke
+        run: pnpm run smoke:production
+
+      - name: Write production smoke report
+        if: always()
+        run: pnpm run smoke:production -- --json > production-smoke-report.json
+        continue-on-error: true
+
+      - name: Summarize production smoke report
+        if: always()
+        run: pnpm run report:production -- --smoke-report production-smoke-report.json >> "$GITHUB_STEP_SUMMARY"
+        continue-on-error: true
+
+      - name: Upload production smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-report
+          path: production-smoke-report.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  alert:
+    name: Open production smoke incident
+    needs: smoke
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create or update production smoke incident
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueTitle = 'ScholarScout production smoke incident';
+            const deploymentUrl = context.payload.client_payload.url;
+            const commitSha = context.payload.client_payload.git?.sha ?? context.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const artifactUrl = `${runUrl}#artifacts`;
+            const runbookUrl = `../blob/${commitSha}/docs/production-incident-response.md`;
+            const body = [
+              '## Production smoke failure',
+              '',
+              `- Deployment URL: ${deploymentUrl}`,
+              `- Commit SHA: ${commitSha}`,
+              `- Workflow run: [${context.runId}](${runUrl})`,
+              `- Smoke report artifact: [production-smoke-report](${artifactUrl})`,
+              `- Human response: Review [docs/production-incident-response.md](${runbookUrl}) before deciding whether to roll back. No automatic rollback was performed.`,
+            ].join('\n');
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const incident = issues.find(
+              (issue) => !issue.pull_request && issue.title === issueTitle,
+            );
+
+            if (incident) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: incident.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body,
+              });
+            }
