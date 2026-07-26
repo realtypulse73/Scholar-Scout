@@ -1,21 +1,24 @@
 # Vercel Deployment
 
-ScholarScout deploys from the repository root through the Git integration. The committed [`vercel.json`](../vercel.json) defines the install and build commands; Vercel dashboard settings complete the protected production deployment contract.
+ScholarScout deploys through the Git integration with `apps/web` configured as the Vercel project Root Directory. The committed [`vercel.json`](../vercel.json) defines the install and build commands; Vercel dashboard settings complete the protected production deployment contract.
 
 ## Repository Contract
 
-The root `packageManager` selects pnpm 10.34.5. Vercel must use Node 20.x and Corepack so that its build resolves the committed workspace graph exactly as contributors and CI do.
+The root `packageManager` selects pnpm 10.34.5. Vercel must use Node 20.x and Corepack so that its build resolves the committed workspace graph exactly as contributors and CI do. Although Vercel starts build commands in `apps/web`, the committed commands first move two levels up to the workspace root, where the sole `pnpm-lock.yaml` and filtered build script live.
 
 | Setting | Required value | Source |
 |---|---|---|
 | Framework Preset | Next.js | committed configuration |
-| Root Directory | repository root | committed configuration |
-| Install Command | `pnpm install --frozen-lockfile --ignore-scripts` | [`vercel.json`](../vercel.json) |
-| Build Command | `pnpm build:vercel` | [`vercel.json`](../vercel.json) |
-| Output Directory | `apps/web/.next` | [`vercel.json`](../vercel.json) |
+| Root Directory | `apps/web` | Vercel Project Settings -> Build and Deployment -> Root Directory |
+| Source-file access outside Root Directory | Enabled | Vercel Build Step settings |
+| Install Command | `cd ../.. && pnpm install --frozen-lockfile --ignore-scripts` | [`vercel.json`](../vercel.json) |
+| Build Command | `cd ../.. && pnpm build:vercel` | [`vercel.json`](../vercel.json) |
+| Output Directory | `.next` (relative to `apps/web`) | [`vercel.json`](../vercel.json) |
 | Node Version | 20.x | project runtime contract |
 
 In **Vercel Project Settings → Environment Variables**, add `ENABLE_EXPERIMENTAL_COREPACK=1` for the **Production** environment. This is a dashboard setting, not a committed secret or replacement for `vercel.json`.
+
+In **Vercel Project Settings -> Build and Deployment -> Root Directory**, keep Root Directory set to `apps/web`. In the Build Step settings, enable source-file access outside that directory so the committed commands can read the root workspace manifest and lockfile. Do not replace the committed commands with dashboard command overrides.
 
 ## Protected Production Flow
 
@@ -34,11 +37,15 @@ Select those checks only after successful runs have appeared in GitHub. Retain a
 
 ## Local Equivalent
 
-After `corepack enable`, the local equivalent of Vercel's committed build path is:
+After `corepack enable`, the local equivalent of Vercel's committed app-root build path is:
 
 ```bash
+cd apps/web
+cd ../..
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm build:vercel
 ```
+
+The initial directory changes reproduce Vercel starting in `apps/web`; the install and filtered build then run at the workspace root. Vercel publishes `.next` relative to the configured app root, which is `apps/web/.next` in the repository.
 
 If Docker is unavailable locally, use the supported portable Node/Corepack pnpm path in [`vercel-docker-workaround.md`](vercel-docker-workaround.md). For Vercel project access, Git integration, and external-setting evidence, use [`vercel-permissions-handoff.md`](vercel-permissions-handoff.md).
