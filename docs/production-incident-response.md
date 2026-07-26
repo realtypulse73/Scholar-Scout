@@ -2,6 +2,17 @@
 
 Use this when production smoke checks, data health checks, OAuth, or staff operations start failing.
 
+## Post-deploy Smoke Failure Record
+
+For a failed **ScholarScout Post-deploy Smoke** run, open the created-or-updated `ScholarScout production smoke incident` issue before making a rollback decision. Record the following evidence in the incident without copying secrets, cookies, or exported data:
+
+1. The smoke workflow run URL.
+2. The retained `production-smoke-report` artifact URL.
+3. The maintainer alert issue URL.
+4. The accountable maintainer's acknowledgement that this runbook's human rollback procedure was reviewed and that no automatic rollback occurred.
+
+The alert is a notification and evidence trail, not a deployment-control mechanism. A rollback remains a deliberate maintainer decision while compatible data changes are evolving.
+
 ## First Five Minutes
 
 1. Open the latest **ScholarScout Production Monitor** run.
@@ -14,7 +25,7 @@ Use this when production smoke checks, data health checks, OAuth, or staff opera
 
 | Signal | Likely cause | First action |
 |---|---|---|
-| Public route returns non-200 | Deployment, routing, or runtime failure | Check hosting deployment logs and rollback if a known-good deployment exists |
+| Public route returns non-200 | Deployment, routing, or runtime failure | Check hosting deployment logs, create a fresh snapshot if data may be affected, then let the incident owner decide whether a known-good deployment should be rolled back |
 | Expected auth provider missing | OAuth env var pair missing or provider callback misconfigured | Run production env readiness and inspect `/api/auth/providers` |
 | Data adapter is not durable | Wrong `SCHOLARSCOUT_DATA_ADAPTER` or missing data-store token | Do not write data; correct env and redeploy |
 | Data status has issues | Adapter config, local JSON fallback, or data-store read failure | Compare readiness report with deployed env and check data provider health |
@@ -41,8 +52,8 @@ Rotate credentials only when evidence points to expiry, compromise, or provider-
 After rotation:
 
 ```bash
-npm run check:production-env
-npm run smoke:production
+pnpm run check:production-env
+pnpm run smoke:production
 ```
 
 If the change affects monitoring, run **ScholarScout Production Readiness** and then manually trigger **ScholarScout Production Monitor**.

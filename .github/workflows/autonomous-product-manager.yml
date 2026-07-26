@@ -22,8 +22,11 @@ jobs:
         with:
           node-version: 20
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Generate dynamic roadmap and issue packets
         run: node scripts/autonomous-product-manager.mjs

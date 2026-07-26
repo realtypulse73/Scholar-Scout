@@ -15,11 +15,11 @@
 
 ### Reliability and Operations
 
-- [ ] **OPS-01**: Every pull request receives a relevant Scholar Scout build, typecheck, lint, and test result; no unrelated CrimClock job can fail the pipeline.
+- [x] **OPS-01**: Every pull request receives a relevant Scholar Scout build, typecheck, lint, and test result; no unrelated CrimClock job can fail the pipeline.
 - [ ] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
 - [ ] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
 - [ ] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
-- [ ] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
+- [x] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
 
 ### Data Foundation
 
@@ -81,29 +81,30 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Unmapped | Pending |
-| SEC-02 | Unmapped | Pending |
-| SEC-03 | Unmapped | Pending |
-| SEC-04 | Unmapped | Pending |
-| SEC-05 | Unmapped | Pending |
-| OPS-01 | Unmapped | Pending |
-| OPS-02 | Unmapped | Pending |
-| OPS-03 | Unmapped | Pending |
-| OPS-04 | Unmapped | Pending |
-| OPS-05 | Unmapped | Pending |
-| DATA-01 | Unmapped | Pending |
-| DATA-02 | Unmapped | Pending |
-| DATA-03 | Unmapped | Pending |
-| PROD-01 | Unmapped | Pending |
-| PROD-02 | Unmapped | Pending |
-| PROD-03 | Unmapped | Pending |
-| PROD-04 | Unmapped | Pending |
+| SEC-01 | Phase 2 | Pending |
+| SEC-02 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Pending |
+| SEC-04 | Phase 2 | Pending |
+| SEC-05 | Phase 2 | Pending |
+| OPS-01 | Phase 1 | Complete |
+| OPS-02 | Phase 3 | Pending |
+| OPS-03 | Phase 3 | Pending |
+| OPS-04 | Phase 6 | Pending |
+| OPS-05 | Phase 1 | Complete |
+| DATA-01 | Phase 4 | Pending |
+| DATA-02 | Phase 4 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| PROD-01 | Phase 5 | Pending |
+| PROD-02 | Phase 5 | Pending |
+| PROD-03 | Phase 5 | Pending |
+| PROD-04 | Phase 6 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-25*
-*Last updated: 2026-07-25 after initial definition*
+*Last updated: 2026-07-25 after roadmap creation*

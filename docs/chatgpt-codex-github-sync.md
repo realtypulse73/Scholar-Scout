@@ -61,14 +61,21 @@ Tasks:
 3. <specific implementation step>
 
 Acceptance criteria:
-- npm run typecheck --workspace @scholar-scout/web passes
-- npm run lint --workspace @scholar-scout/web passes
+- corepack enable and pnpm install --frozen-lockfile --ignore-scripts pass
+- pnpm --filter @scholar-scout/web typecheck passes
+- pnpm --filter @scholar-scout/web lint passes
+- pnpm --filter @scholar-scout/web test --runInBand passes
+- pnpm --filter @scholar-scout/web build passes
+- pnpm --filter @scholar-scout/http-data-service test passes
+- pnpm test:production-tooling passes
 - Feature works in the relevant route
 - No secrets are committed
 - Documentation updated in docs/
 
 Open a PR into main with a concise summary and testing notes.
 ```
+
+The six protected-`main` check names are `ScholarScout / Web typecheck`, `ScholarScout / Web lint`, `ScholarScout / Web Jest`, `ScholarScout / Web build`, `ScholarScout / HTTP data-service tests`, and `ScholarScout / Production-tooling tests`. Release approval additionally requires the production-only smoke evidence in the [production release runbook](production-release-runbook.md#7-record-the-protected-release-evidence).
 
 ## GitHub Mirroring Protocol
 
@@ -193,8 +200,8 @@ SCHOLARSCOUT_STAFF_EMAILS
 2. Mirror the decision into GitHub docs or an issue.
 3. Ask Codex to implement against the GitHub issue or this handoff document.
 4. Review the PR.
-5. Merge to `main`.
-6. Redeploy through Vercel.
+5. Merge through protected `main` after all six ScholarScout checks pass.
+6. Let Vercel deploy, then retain the production-only post-deploy smoke run and report artifact as described in the [production release runbook](production-release-runbook.md#7-record-the-protected-release-evidence).
 7. Return to ChatGPT for the next product or business iteration.
 
 ## Immediate Next Action

@@ -25,10 +25,12 @@ CODEX_AGENT_ENDPOINT=https://your-agent-endpoint.example.com
 ## Local Development
 
 ```bash
-cd services/codex-webhook-runner
-npm install
-npm run dev
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm --filter @scholar-scout/codex-webhook-runner dev
 ```
+
+For changes that affect the repository release path, use the six protected-`main` checks and production evidence in the [production release runbook](../../docs/production-release-runbook.md#7-record-the-protected-release-evidence); a local webhook-runner command does not authorize a release.
 
 Health endpoint:
 

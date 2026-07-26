@@ -46,21 +46,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install without postinstall scripts
-        run: npm install --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run production env readiness check
-        run: npm run check:production-env
+        run: pnpm run check:production-env
 
       - name: Write readiness report
         if: always()
-        run: npm run check:production-env -- --json > production-env-readiness.json
+        run: pnpm run check:production-env -- --json > production-env-readiness.json
 
       - name: Summarize readiness report
         if: always()
-        run: npm run report:production -- --env-report production-env-readiness.json >> "$GITHUB_STEP_SUMMARY"
+        run: pnpm run report:production -- --env-report production-env-readiness.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload readiness report
         if: always()

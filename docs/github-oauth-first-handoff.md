@@ -67,8 +67,12 @@ After Vercel environment variables and GitHub Actions secrets are configured:
 7. Run production smoke checks with:
 
 ```bash
-SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github npm run smoke:production
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github pnpm run smoke:production
 ```
+
+Release approval still depends on the protected-`main` evidence and production-only smoke report described in the [production release runbook](production-release-runbook.md#7-record-the-protected-release-evidence), not on a local command result alone.
 
 ## Add Google Later
 

@@ -24,7 +24,7 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
     void fetch(`/api/campus-notes?${search.toString()}`)
       .then((response) => response.ok ? response.json() as Promise<{ notes: CampusNote[] }> : { notes: [] })
       .then((data) => setNotes(data.notes));
-  }, [schoolSlug]);
+  }, [schoolSlug, uploaderUsername]);
 
   async function postNote() {
     setStatus('');

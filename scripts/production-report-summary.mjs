@@ -120,8 +120,8 @@ function printHelp() {
   console.log(`Usage: node scripts/production-report-summary.mjs [options]
 
 Options:
-  --env-report PATH     JSON report from npm run check:production-env -- --json
-  --smoke-report PATH   JSON report from npm run smoke:production -- --json
+  --env-report PATH     JSON report from pnpm run check:production-env -- --json
+  --smoke-report PATH   JSON report from pnpm run smoke:production -- --json
   --help                Show this help text
 `);
 }

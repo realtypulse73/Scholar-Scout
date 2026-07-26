@@ -2,6 +2,10 @@
 
 Use this runbook when `SCHOLARSCOUT_DATA_ADAPTER=http` backs account, shortlist, onboarding, admin programme, and audit data. For the Vercel-native Blob adapter, use [`vercel-blob-data-adapter.md`](vercel-blob-data-adapter.md).
 
+## Command Prerequisite
+
+The root `packageManager` selects pnpm 10.34.5. Run `corepack enable` once, then use `pnpm install --frozen-lockfile --ignore-scripts` before running the commands below.
+
 ## Runtime Contract
 
 The configured service URL stores one ScholarScout data document.
@@ -45,17 +49,17 @@ Keep `SCHOLARSCOUT_DATA_SERVICE_TOKEN` out of client bundles, logs, and docs. Ro
 Before a deployment:
 
 ```bash
-npm run test
-npm run typecheck
-npm run lint
-npm run build:vercel
-npm run vercel:docker-free
+pnpm test
+pnpm typecheck
+pnpm lint
+pnpm build:vercel
+pnpm vercel:docker-free
 ```
 
 For local contract verification without Docker, run the fixture service:
 
 ```bash
-npm run dev --workspace @scholar-scout/http-data-service
+pnpm --filter @scholar-scout/http-data-service dev
 ```
 
 Then point the web app at:

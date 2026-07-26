@@ -1,62 +1,63 @@
 # Docker-Free Development
 
-ScholarScout can move forward without Docker for the current frontend scope. The app is a Node/npm workspace, so local development only needs Node.js 18+ and npm 10+.
+ScholarScout can move forward without Docker for the current frontend scope. The app is a Node 20.x/pnpm workspace. The root `packageManager` selects pnpm 10.34.5 through Corepack.
 
 ## One-Time Setup
 
 ```bash
-npm install
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
 ```
 
-If Node/npm are unavailable on Windows, use the repo-local portable Node workaround:
+If Node/pnpm are unavailable on Windows, use the repo-local portable Node/Corepack workaround:
 
 ```powershell
 . .\scripts\use-portable-node.ps1
-npm install --ignore-scripts
+pnpm install --frozen-lockfile --ignore-scripts
 ```
 
-If the leading dot command is confusing or your terminal rejects it, run npm through the portable wrapper instead:
+If the leading dot command is confusing or your terminal rejects it, run pnpm through the portable wrapper instead:
 
 ```powershell
-.\scripts\npm-portable.ps1 install --ignore-scripts
-.\scripts\npm-portable.ps1 run build:vercel
+.\scripts\pnpm-portable.ps1 install --frozen-lockfile --ignore-scripts
+.\scripts\pnpm-portable.ps1 build:vercel
 ```
 
 For a one-command Vercel smoke test, run:
 
 ```powershell
-.\scripts\npm-portable.ps1 run vercel:docker-free
+.\scripts\pnpm-portable.ps1 vercel:docker-free
 ```
 
 From Command Prompt, use:
 
 ```bat
-scripts\npm-portable.cmd install --ignore-scripts
-scripts\npm-portable.cmd run build:vercel
-scripts\npm-portable.cmd run vercel:docker-free
+scripts\pnpm-portable.cmd install --frozen-lockfile --ignore-scripts
+scripts\pnpm-portable.cmd build:vercel
+scripts\pnpm-portable.cmd vercel:docker-free
 ```
 
 ## Daily Commands
 
 ```bash
-npm run dev
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-npm run build:vercel
+pnpm dev
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm build:vercel
 ```
 
 The root scripts forward to the workspace packages. To target only the web app, use:
 
 ```bash
-npm run dev --workspace @scholar-scout/web
-npm run test --workspace @scholar-scout/web
+pnpm --filter @scholar-scout/web dev
+pnpm --filter @scholar-scout/web test
 ```
 
 ## Current Local Limitation
 
-In the current Codex desktop sandbox, the bundled `node.exe` is denied by Windows execution policy and `npm` is not on PATH. The portable Node workaround keeps the runtime inside `.tools` and prepends it to PATH for the current shell.
+In the current Codex desktop sandbox, the bundled `node.exe` may be denied by Windows execution policy and pnpm is not on PATH. The portable Node/Corepack workaround keeps the runtime inside `.tools` and prepends it to PATH for the current shell.
 
 ## Practical Workaround
 

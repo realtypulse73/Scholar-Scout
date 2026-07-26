@@ -10,7 +10,7 @@ ScholarScout is a rejection-free post-secondary discovery platform. Every featur
 
 | Area | Status | Standard |
 |---|---|---|
-| Monorepo scaffold | Complete | Root npm workspace owns installs, scripts, lockfile, and Vercel build path |
+| Monorepo scaffold | Complete | Root pnpm workspace owns installs, scripts, lockfile, and Vercel build path |
 | Web app | Complete baseline | Next.js App Router, TypeScript, Tailwind, static deployable routes |
 | Design tokens | Complete | Use brand, ink, status colors, radius, shadow, and touch spacing from Tailwind config |
 | UI primitives | Complete | Prefer shared Button, Input, Card, and Badge before adding one-off controls |
@@ -22,7 +22,7 @@ ScholarScout is a rejection-free post-secondary discovery platform. Every featur
 | Shortlist | Account-backed decision-support baseline | Students can save programmes, compare practical decision signals, track next actions, planning status, and notes locally or behind an authenticated account |
 | Admin programme data | Governed baseline | Staff manage validated programme records with review states, reviewer handoff, source metadata, source confidence, structured source checks, audit history, revision checks, stale-edit recovery, selected-field conflict merging, guidance list diffs, individual guidance-item merge controls, inline guidance conflict editing, data backing visibility, protected data exports, restore dry-run validation, confirmed restore execution with backup-before-restore, backup history browsing, backup restore impact planning, guarded saved-backup restore execution, and backup retention health checks |
 | Data persistence | Service-adapter baseline | Account and programme APIs use a replaceable data-store boundary with JSON, HTTP service, and Vercel Blob adapters, operations docs, and a local contract fixture with health and backup behavior |
-| Vercel Docker workaround | Complete | Deploy from repo root with `npm install --ignore-scripts` and `npm run build:vercel` |
+| Vercel Docker workaround | Complete | Deploy from repo root with `corepack enable`, `pnpm install --frozen-lockfile --ignore-scripts`, and `pnpm run build:vercel` |
 | Production readiness | Checklist baseline | OAuth, staff allowlist, data-store adapter, provider-specific secret setup, service-token health checks, restore operations, deployment checks, HTTPS env validation, env-file based local rehearsal workaround, tested smoke tooling with network failure reports, transient retries, latency guardrails, smoke provider checks, prelaunch rehearsal artifacts, scheduled monitoring artifacts and summaries, release and incident runbooks, and credential rotation have operator guidance |
 
 ## Build Rubric
@@ -38,12 +38,16 @@ ScholarScout is a rejection-free post-secondary discovery platform. Every featur
 
 ## Definition Of Done
 
-- `npm run lint` passes.
-- `npm run typecheck` passes.
-- `npm run test` passes.
-- `npm run check:production-env` passes with the intended production env loaded.
-- `npm run test:production-tooling` passes.
-- `npm run build:vercel` passes.
+- `corepack enable` and `pnpm install --frozen-lockfile --ignore-scripts` pass.
+- `pnpm --filter @scholar-scout/web typecheck` passes.
+- `pnpm --filter @scholar-scout/web lint` passes.
+- `pnpm --filter @scholar-scout/web test --runInBand` passes.
+- `pnpm --filter @scholar-scout/web build` passes.
+- `pnpm --filter @scholar-scout/http-data-service test` passes.
+- `pnpm test:production-tooling` passes.
+- `pnpm run check:production-env` passes with the intended production env loaded.
+- `pnpm run build:vercel` passes.
+- The release merged through protected `main` after the six named ScholarScout checks, and the production-only smoke run/report evidence is retained per the [production release runbook](production-release-runbook.md#7-record-the-protected-release-evidence).
 - Backlog notes mention the feature, changed files, and follow-up risks.
 
 ## Current Auth And Data Notes
@@ -55,7 +59,7 @@ ScholarScout is a rejection-free post-secondary discovery platform. Every featur
 ## Next Logical Work
 
 1. Provision production secrets for OAuth and Vercel Blob or a compatible hosted HTTP service.
-2. Run `npm run rehearse:prelaunch`, or the manual prelaunch rehearsal workflow with the production env loaded before deploy.
+2. Run `pnpm run rehearse:prelaunch`, or the manual prelaunch rehearsal workflow with the production env loaded before deploy.
 3. Follow the production release runbook and run smoke checks against the live deployment after secrets are provisioned, including expected adapter and provider checks.
 4. Expand student decision support from account-backed shortlist planning into affordability verification and deadline tracking.
 5. Add record-level database or CMS writes when the production data platform is chosen.

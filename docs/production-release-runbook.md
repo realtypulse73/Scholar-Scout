@@ -2,12 +2,23 @@
 
 Use this runbook after production secrets are provisioned and before routing real student traffic to a new deployment.
 
+## Prerequisite: Use The Pinned Dependency Graph
+
+From the repository root, use the pnpm version selected by the root `packageManager` field and install only from the reviewed lockfile:
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+```
+
+Do not substitute another package manager or regenerate the lockfile during a release.
+
 ## 1. Confirm Secret Shape
 
 If production provider values have not been assembled yet, generate the ignored local handoff file first:
 
 ```bash
-npm run provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails staff@example.org
+pnpm run provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails staff@example.org
 ```
 
 This writes `.env.production.local` with generated `NEXTAUTH_SECRET` and `SCHOLARSCOUT_HEALTH_TOKEN` values plus placeholders for OAuth and durable data credentials. Copy values from that file into Vercel and GitHub Actions secrets, but do not commit or paste the file into tickets.
@@ -15,13 +26,13 @@ This writes `.env.production.local` with generated `NEXTAUTH_SECRET` and `SCHOLA
 Load the intended production environment and run:
 
 ```bash
-npm run check:production-env
+pnpm run check:production-env
 ```
 
 For a release artifact or handoff note, also capture the JSON report:
 
 ```bash
-npm run check:production-env -- --json
+pnpm run check:production-env -- --json
 ```
 
 The report contains variable names, statuses, and practical messages only. It must not include secret values.
@@ -35,7 +46,7 @@ Use the `base_url` override when validating a preview or newly promoted URL. The
 For a fuller launch rehearsal, run **ScholarScout Prelaunch Rehearsal** or locally:
 
 ```bash
-npm run rehearse:prelaunch
+pnpm run rehearse:prelaunch
 ```
 
 The rehearsal writes readiness, tooling, optional smoke, and summary artifacts under `reports/prelaunch-rehearsal`.
@@ -44,8 +55,8 @@ Use [`prelaunch-evidence-template.md`](prelaunch-evidence-template.md) for the l
 If real provider secrets are not available yet, use the local workaround only for rehearsal plumbing:
 
 ```bash
-npm run provision:env
-npm run rehearse:prelaunch -- --skip-smoke --env-file .env.prelaunch.local
+pnpm run provision:env
+pnpm run rehearse:prelaunch -- --skip-smoke --env-file .env.prelaunch.local
 ```
 
 The local workaround intentionally allows credentials-only auth and a localhost HTTP data service. It is not a substitute for the real production launch rehearsal with OAuth and a durable hosted data adapter.
@@ -55,7 +66,7 @@ The local workaround intentionally allows credentials-only auth and a localhost 
 Deploy from the repository root with the Docker-free path:
 
 ```bash
-npm run build:vercel
+pnpm run build:vercel
 ```
 
 Keep the production data adapter on `vercel-blob` or `http`. Do not launch production traffic on the JSON adapter.
@@ -65,7 +76,7 @@ Keep the production data adapter on `vercel-blob` or `http`. Do not launch produ
 Run unauthenticated checks first:
 
 ```bash
-SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN npm run smoke:production
+SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN pnpm run smoke:production
 ```
 
 Then run service-token checks:
@@ -75,7 +86,7 @@ SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN \
 SCHOLARSCOUT_SMOKE_HEALTH_TOKEN='PASTE_HEALTH_TOKEN' \
 SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=vercel-blob \
 SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS=github \
-npm run smoke:production
+pnpm run smoke:production
 ```
 
 Use `SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS` to match the OAuth providers intentionally enabled for the deployment. Launch with `github`; change to `github,google` after Google OAuth is configured.
@@ -111,11 +122,20 @@ The monitor uploads `production-smoke-report.json` after each run.
 The workflow summary also renders the report in Markdown. For local release notes, run:
 
 ```bash
-npm run report:production -- --env-report production-env-readiness.json --smoke-report production-smoke-report.json
+pnpm run report:production -- --env-report production-env-readiness.json --smoke-report production-smoke-report.json
 ```
 
-## 7. Record The Release
+## 7. Record The Protected Release Evidence
 
-Record the deployment date, adapter, enabled OAuth providers, readiness report result, smoke result, and secret rotation owner in the project operations notes.
+Production releases reach Vercel only from a protected `main` merge. Before considering a release complete, retain all of the following in the project operations notes:
+
+1. The protected-`main` pull request and the six successful ScholarScout CI checks.
+2. The Vercel production deployment/build-log URL.
+3. The **ScholarScout Post-deploy Smoke** workflow run triggered by the successful production deployment and its retained `production-smoke-report` artifact.
+4. If smoke fails, the created-or-updated maintainer incident issue, its run/artifact links, and the acknowledgement that [`production-incident-response.md`](production-incident-response.md) was reviewed.
+
+The post-deploy workflow runs only for successful production deployment events. A smoke failure alerts maintainers and preserves evidence; it never triggers an automatic rollback. Follow the human, data-safe rollback decision process in the incident runbook.
+
+Record the deployment date, adapter, enabled OAuth providers, readiness report result, smoke result, secret rotation owner, and the evidence above in the project operations notes.
 
 If the monitor fails after release, use [`production-incident-response.md`](production-incident-response.md).

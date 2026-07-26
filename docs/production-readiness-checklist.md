@@ -77,25 +77,29 @@ Every restore path creates a backup before replacing the active data document.
 From the repository root:
 
 ```bash
-npm run check:production-env
-npm run rehearse:prelaunch -- --skip-smoke
-npm run test:production-tooling
-npm run test
-npm run typecheck
-npm run lint
-npm run build:vercel
-npm run vercel:docker-free
+corepack enable
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run check:production-env
+pnpm run rehearse:prelaunch -- --skip-smoke
+pnpm run test:production-tooling
+pnpm --filter @scholar-scout/web typecheck
+pnpm --filter @scholar-scout/web lint
+pnpm --filter @scholar-scout/web test --runInBand
+pnpm --filter @scholar-scout/web build
+pnpm --filter @scholar-scout/http-data-service test
+pnpm run build:vercel
+pnpm run vercel:docker-free
 ```
 
-`npm run check:production-env` should run in an environment that has the intended production values loaded. It reports pass/warn/fail results without printing secret values, and it fails the command when launch-blocking values are missing or malformed.
+`pnpm run check:production-env` should run in an environment that has the intended production values loaded. It reports pass/warn/fail results without printing secret values, and it fails the command when launch-blocking values are missing or malformed.
 For local rehearsal plumbing before real provider secrets exist, copy `.env.prelaunch.local.example` to `.env.prelaunch.local`, fill local-only values, and pass `--env-file .env.prelaunch.local`.
 
-`npm run vercel:docker-free` intentionally installs with `--ignore-scripts` before building. If a new dependency requires postinstall scripts, update the Vercel Docker workaround before merging that dependency.
+`pnpm run vercel:docker-free` intentionally installs with `--ignore-scripts` before building. If a new dependency requires postinstall scripts, update the Vercel Docker workaround before merging that dependency.
 
 After deployment, run the production smoke check against the deployed URL:
 
 ```bash
-SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN npm run smoke:production
+SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN pnpm run smoke:production
 ```
 
 This checks public routes, Auth.js provider discovery, and signed-out protection for admin data APIs.
@@ -107,12 +111,18 @@ SCHOLARSCOUT_SMOKE_BASE_URL=https://YOUR_DOMAIN \
 SCHOLARSCOUT_SMOKE_HEALTH_TOKEN='PASTE_HEALTH_TOKEN' \
 SCHOLARSCOUT_SMOKE_STAFF_COOKIE='PASTE_STAFF_COOKIE' \
 SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER=vercel-blob \
-npm run smoke:production
+pnpm run smoke:production
 ```
 
 The health-token smoke check verifies data status, durable adapter state, and backup retention policy. The staff-cookie check verifies export access. Do not commit or paste health tokens or staff cookies into issue trackers, docs, or logs.
 
-## 7. Enable Scheduled Monitoring
+## 7. Confirm Protected Release Evidence
+
+Before treating a production release as complete, confirm that it merged through protected `main` with these six passing checks: `ScholarScout / Web typecheck`, `ScholarScout / Web lint`, `ScholarScout / Web Jest`, `ScholarScout / Web build`, `ScholarScout / HTTP data-service tests`, and `ScholarScout / Production-tooling tests`.
+
+Each successful production deployment then dispatches **ScholarScout Post-deploy Smoke**. Retain its workflow-run URL and `production-smoke-report` artifact. If the smoke check fails, retain the alert issue URL and record a maintainer acknowledgement that [`production-incident-response.md`](production-incident-response.md) was reviewed; no automatic rollback occurs, and any rollback is a deliberate, data-safe human decision.
+
+## 8. Enable Scheduled Monitoring
 
 After production secrets are live, configure these GitHub Actions repository secrets:
 
@@ -128,7 +138,14 @@ The workflow at `.github/workflows/production-monitor.yml` runs every six hours 
 
 The workflow at `.github/workflows/production-readiness.yml` runs the production environment checker manually against repository or environment secrets and uploads a JSON readiness report artifact. The workflow at `.github/workflows/prelaunch-rehearsal.yml` runs the broader prelaunch rehearsal and uploads the full rehearsal folder.
 
-## 8. Rotation Checklist
+## 9. Node Runtime Lifecycle Checkpoint
+
+Phase 1 retains Node 20 as a bounded compatibility baseline. The accepted
+[Node 24 LTS runtime-upgrade ADR](adr/0001-node-runtime-upgrade.md) assigns the
+Scholar Scout release maintainer as owner and requires the governed upgrade
+decision before the next long-lived release policy approval.
+
+## 10. Rotation Checklist
 
 When rotating secrets:
 

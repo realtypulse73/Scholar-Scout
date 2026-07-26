@@ -13,18 +13,25 @@ The project shortcut/rubric lives at [`docs/scholarscout-rubric.md`](docs/schola
 
 ## Prerequisites
 
-- Node.js 18+
-- npm 10+
+- Node.js 20.x
+- Corepack enabled with the repository-selected pnpm 10.34.5
+
+The root `packageManager` field selects pnpm 10.34.5. Enable Corepack before
+running repository commands:
+
+```bash
+corepack enable
+```
 
 ## Install Dependencies
 
 ```bash
-npm install
+pnpm install --frozen-lockfile --ignore-scripts
 ```
 
-npm will install the workspace root plus every package under `apps/*`, `packages/*`, and `services/*`.
+pnpm installs the workspace root plus every package under `apps/*`, `packages/*`, and `services/*` from the committed lockfile.
 
-Docker is not required for the current frontend workspace. If Docker is unavailable, use the Node/npm workflow in [`docs/docker-free-development.md`](docs/docker-free-development.md).
+Docker is not required for the current frontend workspace. If Docker is unavailable, use the portable Node/Corepack pnpm workflow in [`docs/docker-free-development.md`](docs/docker-free-development.md).
 
 For cloud builds, deploy from the repository root with Vercel using [`docs/vercel-deployment.md`](docs/vercel-deployment.md). If Docker is unavailable, use the explicit Vercel workaround in [`docs/vercel-docker-workaround.md`](docs/vercel-docker-workaround.md).
 Vercel access and role requirements are captured in [`docs/vercel-permissions-handoff.md`](docs/vercel-permissions-handoff.md).
@@ -44,20 +51,20 @@ Use [`.env.prelaunch.local.example`](.env.prelaunch.local.example) for a local r
 From the repository root:
 
 ```bash
-npm run dev
-npm run build
-npm run build:vercel
-npm run check:production-env
-npm run provision:env
-npm run provision:production-values
-npm run rehearse:prelaunch
-npm run report:production
-npm run vercel:docker-free
-npm run smoke:production
-npm run test:production-tooling
-npm run lint
-npm run test
-npm run typecheck
+pnpm dev
+pnpm build
+pnpm build:vercel
+pnpm check:production-env
+pnpm provision:env
+pnpm provision:production-values
+pnpm rehearse:prelaunch
+pnpm report:production
+pnpm vercel:docker-free
+pnpm smoke:production
+pnpm test:production-tooling
+pnpm lint
+pnpm test
+pnpm typecheck
 ```
 
 Local staff tools:
@@ -88,18 +95,18 @@ Auth and account-backed data:
 - Optional smoke latency ceiling: set `SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS` to fail smoke checks when any successful request is slower than the configured milliseconds.
 - Optional local data path: set `SCHOLARSCOUT_DATA_FILE`; otherwise the app writes development account data under `data/scholarscout-data.json`.
 - Optional data adapter selector: set `SCHOLARSCOUT_DATA_ADAPTER=json` for the local JSON adapter, `SCHOLARSCOUT_DATA_ADAPTER=http` with `SCHOLARSCOUT_DATA_SERVICE_URL` and optional `SCHOLARSCOUT_DATA_SERVICE_TOKEN` for a service-backed adapter, or `SCHOLARSCOUT_DATA_ADAPTER=vercel-blob` with `BLOB_READ_WRITE_TOKEN` for Vercel Blob storage. The HTTP adapter operations handoff lives in [`docs/http-data-adapter-runbook.md`](docs/http-data-adapter-runbook.md), and the Vercel Blob setup lives in [`docs/vercel-blob-data-adapter.md`](docs/vercel-blob-data-adapter.md).
-- Local HTTP service fixture: run `npm run dev --workspace @scholar-scout/http-data-service` to test the HTTP adapter contract without Docker.
-- Production env check: run `npm run check:production-env` in an environment that has the intended production secrets to catch missing OAuth, staff allowlist, data adapter, and health-token settings before deployment.
-- Local env provisioning: run `npm run provision:env` to generate an ignored `.env.prelaunch.local` and a production provisioning checklist.
-- Production value handoff: run `npm run provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails you@example.org` to generate ignored local production secrets and a provider setup checklist. Use `--local-file PATH` only when you need a non-default output path.
-- Production env report: run `npm run check:production-env -- --json` when CI or release notes need a machine-readable readiness report without printing secret values.
+- Local HTTP service fixture: run `pnpm --filter @scholar-scout/http-data-service dev` to test the HTTP adapter contract without Docker.
+- Production env check: run `pnpm check:production-env` in an environment that has the intended production secrets to catch missing OAuth, staff allowlist, data adapter, and health-token settings before deployment.
+- Local env provisioning: run `pnpm provision:env` to generate an ignored `.env.prelaunch.local` and a production provisioning checklist.
+- Production value handoff: run `pnpm provision:production-values -- --production-url https://YOUR_DOMAIN --staff-emails you@example.org` to generate ignored local production secrets and a provider setup checklist. Use `--local-file PATH` only when you need a non-default output path.
+- Production env report: run `pnpm check:production-env -- --json` when CI or release notes need a machine-readable readiness report without printing secret values.
 - Env-file workaround: append `-- --env-file .env.prelaunch.local` to `check:production-env`, `rehearse:prelaunch`, or `smoke:production` after copying the local prelaunch template and filling placeholders.
 
 Target just the web app:
 
 ```bash
-npm run dev --workspace @scholar-scout/web
-npm run build --workspace @scholar-scout/web
+pnpm --filter @scholar-scout/web dev
+pnpm --filter @scholar-scout/web build
 ```
 
 ## Current App Structure
@@ -120,7 +127,6 @@ docs/
 
 ## Notes
 
-- The original single-app scaffold has been converted into an npm workspace layout.
+- The original single-app scaffold has been converted into a pnpm workspace layout.
 - Shared packages and services are scaffolded as top-level workspace folders so future additions follow the same install and build flow.
 - If you add another app, package, or service, give it its own `package.json` and matching scripts so the root workspace commands pick it up automatically.
-

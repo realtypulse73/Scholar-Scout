@@ -3,19 +3,25 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $nodeDir = Join-Path $repoRoot '.tools\node-v20.20.2-win-x64'
 $nodeExe = Join-Path $nodeDir 'node.exe'
-$npmCmd = Join-Path $nodeDir 'npm.cmd'
+$corepackCmd = Join-Path $nodeDir 'corepack.cmd'
 
 if (-not (Test-Path -LiteralPath $nodeExe)) {
   throw "Portable Node was not found at $nodeExe. Download and extract Node.js 20.x into .tools first."
 }
 
-if (-not (Test-Path -LiteralPath $npmCmd)) {
-  throw "Portable npm was not found at $npmCmd."
+if (-not (Test-Path -LiteralPath $corepackCmd)) {
+  throw "Portable Corepack was not found at $corepackCmd. Reinstall the portable Node.js 20.x runtime."
 }
 
 $env:Path = "$nodeDir;$env:Path"
-$env:NPM_CONFIG_CACHE = Join-Path $repoRoot '.tools\npm-cache'
+$env:COREPACK_HOME = Join-Path $repoRoot '.tools\corepack'
+$pnpmStore = Join-Path $repoRoot '.pnpm-store'
+
+& $corepackCmd enable --install-directory $nodeDir
+if ($LASTEXITCODE -ne 0) {
+  exit $LASTEXITCODE
+}
 
 Write-Output "Portable Node activated:"
 node --version
-npm --version
+& $corepackCmd pnpm --store-dir $pnpmStore --version
