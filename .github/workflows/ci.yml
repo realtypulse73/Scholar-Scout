@@ -74,7 +74,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run web tests
-        run: pnpm --filter @scholar-scout/web test -- --runInBand
+        run: pnpm --filter @scholar-scout/web test --runInBand
 
   web-build:
     name: ScholarScout / Web build

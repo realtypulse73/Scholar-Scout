@@ -432,7 +432,7 @@ test('production value provisioning writes generated secrets and provider checkl
   assert.match(report, /api\/auth\/callback\/google/);
 });
 
-test('portable npm PowerShell wrapper accepts direct npm arguments', { skip: !isWindows }, async () => {
+test('portable pnpm PowerShell wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
   const result = await runCommand(
     'powershell',
     [
@@ -440,7 +440,7 @@ test('portable npm PowerShell wrapper accepts direct npm arguments', { skip: !is
       '-ExecutionPolicy',
       'Bypass',
       '-File',
-      'scripts\\npm-portable.ps1',
+      'scripts\\pnpm-portable.ps1',
       '--version',
     ],
   );
