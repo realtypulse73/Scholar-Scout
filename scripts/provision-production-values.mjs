@@ -89,7 +89,7 @@ await writeFile(
     '6. Copy OAuth client id/secret into Vercel environment variables.',
     '7. Add GitHub Actions repository secrets for readiness, smoke, and prelaunch workflows.',
     '8. Redeploy after environment variables are set.',
-    '9. Run `npm run rehearse:prelaunch -- --env-file .env.production.local` locally or trigger the Prelaunch Rehearsal workflow.',
+    '9. Run `pnpm run rehearse:prelaunch -- --env-file .env.production.local` locally or trigger the Prelaunch Rehearsal workflow.',
     '',
     '## GitHub Actions Secrets To Add',
     '',

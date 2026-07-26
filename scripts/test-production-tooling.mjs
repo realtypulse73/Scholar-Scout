@@ -310,7 +310,7 @@ test('production report help names the pnpm commands that generate JSON reports'
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /pnpm run check:production-env -- --json/);
   assert.match(result.stdout, /pnpm run smoke:production -- --json/);
-  assert.doesNotMatch(result.stdout, /npm run/);
+  assert.doesNotMatch(result.stdout, /\bnpm run/);
 });
 
 test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
@@ -417,7 +417,7 @@ test('environment provisioning writes local env and external checklist', async (
     report,
     /pnpm run rehearse:prelaunch -- --skip-smoke --env-file/,
   );
-  assert.doesNotMatch(report, /npm run/);
+  assert.doesNotMatch(report, /\bnpm run/);
 });
 
 test('production value provisioning writes generated secrets and provider checklist', async () => {
@@ -451,7 +451,7 @@ test('production value provisioning writes generated secrets and provider checkl
     report,
     /pnpm run rehearse:prelaunch -- --env-file .env.production.local/,
   );
-  assert.doesNotMatch(report, /npm run/);
+  assert.doesNotMatch(report, /\bnpm run/);
 });
 
 test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
