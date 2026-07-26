@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import ProgrammeVisualPanel from '@/components/programmes/ProgrammeVisualPanel';
+import SchoolLogo from '@/components/programmes/SchoolLogo';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
 import { Badge, Card } from '@/components/ui';
 import {
@@ -87,7 +89,8 @@ export default function ProgrammeResults({
 
           return (
             <Card key={programme.id} className="p-5">
-              <div className="grid gap-5 md:grid-cols-[1fr_auto]">
+              <div className="grid gap-5 md:grid-cols-[minmax(0,14rem)_1fr_auto]">
+                <ProgrammeVisualPanel programme={programme} variant="compact" />
                 <div>
                   <div className="flex flex-wrap gap-2">
                     <Badge tone="success">
@@ -104,9 +107,12 @@ export default function ProgrammeResults({
                       {programme.name}
                     </Link>
                   </h2>
-                  <p className="mt-1 text-sm font-semibold text-ink-600">
-                    {programme.school} - {programme.city}, {programme.state}
-                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <SchoolLogo programme={programme} size="sm" />
+                    <p className="text-sm font-semibold text-ink-600">
+                      {programme.school} - {programme.city}, {programme.state}
+                    </p>
+                  </div>
                   <p className="mt-3 text-sm leading-6 text-ink-600">
                     {reason}
                   </p>

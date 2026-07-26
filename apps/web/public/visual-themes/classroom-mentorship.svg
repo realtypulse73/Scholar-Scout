@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Classroom mentorship</title>
+  <desc id="desc">Guided classroom residency scene with mentor notes and student goals.</desc>
+  <rect width="960" height="540" fill="#f0fdfa"/>
+  <rect y="338" width="960" height="202" fill="#fef3c7"/>
+  <circle cx="805" cy="120" r="84" fill="#14b8a6" opacity=".25"/>
+  <rect x="112" y="116" width="360" height="240" rx="24" fill="#ffffff" stroke="#0f172a" stroke-width="6"/>
+  <path d="M164 184h250M164 236h198M164 288h230" stroke="#0f766e" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="606" cy="240" r="48" fill="#f59e0b"/>
+  <circle cx="732" cy="240" r="48" fill="#14b8a6"/>
+  <path d="M570 336h198" stroke="#0f172a" stroke-width="34" stroke-linecap="round"/>
+</svg>

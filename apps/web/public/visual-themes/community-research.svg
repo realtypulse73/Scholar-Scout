@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Community research hub</title>
+  <desc id="desc">Community research workspace with interview notes and planning boards.</desc>
+  <rect width="960" height="540" fill="#f5f3ff"/>
+  <rect y="338" width="960" height="202" fill="#ccfbf1"/>
+  <circle cx="795" cy="120" r="82" fill="#8b5cf6" opacity=".24"/>
+  <rect x="120" y="140" width="250" height="235" rx="24" fill="#ffffff" stroke="#0f172a" stroke-width="6"/>
+  <circle cx="198" cy="232" r="42" fill="#14b8a6"/>
+  <circle cx="288" cy="232" r="42" fill="#8b5cf6"/>
+  <path d="M168 310h150" stroke="#0f172a" stroke-width="18" stroke-linecap="round"/>
+  <rect x="500" y="132" width="280" height="230" rx="24" fill="#ffffff" stroke="#0f172a" stroke-width="6"/>
+  <path d="M548 198h184M548 250h138M548 302h198" stroke="#7c3aed" stroke-width="18" stroke-linecap="round"/>
+</svg>

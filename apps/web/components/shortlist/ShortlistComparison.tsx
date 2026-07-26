@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import DeadlineTracker from '@/components/shortlist/DeadlineTracker';
 import { Badge, Card } from '@/components/ui';
 import {
   PROGRAMME_PATHWAY_LABELS,
@@ -129,9 +130,8 @@ export default function ShortlistComparison({
           No saved programmes yet
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          Save programmes from the listing or detail pages, then return here to
-          compare cost, entry flexibility, pathway, support, and delivery in one
-          place.
+          Save programs from the list or detail pages. Then come back here to
+          compare cost, entry options, support, and class format.
         </p>
         <Link
           href="/programmes"
@@ -152,11 +152,11 @@ export default function ShortlistComparison({
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-extrabold text-ink-900">
-              Compare saved programmes
+              Compare saved programs
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-600">
-              Keep the comparison practical: cost, entry flexibility, delivery,
-              support, and next-step readiness.
+              Compare the basics: cost, entry options, class format, support,
+              and next steps.
             </p>
           </div>
           <Link
@@ -168,6 +168,8 @@ export default function ShortlistComparison({
         </div>
       </div>
 
+      <DeadlineTracker shortlisted={shortlisted} />
+
       <section
         className="rounded-card border border-brand-200 bg-brand-50 p-5"
         aria-labelledby="decision-guide-heading"
@@ -175,7 +177,7 @@ export default function ShortlistComparison({
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase text-brand-700">
-              Decision guide
+              Choice guide
             </p>
             <h2
               id="decision-guide-heading"
@@ -185,8 +187,8 @@ export default function ShortlistComparison({
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-ink-700">
-            Use these signals to decide what to verify next, not to rule
-            anything out too early.
+            Use these clues to decide what to check next. Do not rule anything
+            out too soon.
           </p>
         </div>
 
@@ -229,13 +231,12 @@ export default function ShortlistComparison({
 
                 {summary.cautions.length > 0 ? (
                   <p className="mt-4 text-sm leading-6 text-ink-700">
-                    Verify {summary.cautions.join(', ').toLowerCase()} before
-                    treating this as ready.
+                    Check {summary.cautions.join(', ').toLowerCase()} before
+                    you treat this as ready.
                   </p>
                 ) : (
                   <p className="mt-4 text-sm leading-6 text-ink-700">
-                    This option has no major checklist cautions in the current
-                    data.
+                    This option has no big warning signs in the current data.
                   </p>
                 )}
 
@@ -281,7 +282,7 @@ export default function ShortlistComparison({
                       }
                       rows={3}
                       maxLength={500}
-                      placeholder="What do you still need to ask, compare, or confirm?"
+                      placeholder="What do you still need to ask or check?"
                       className="mt-1 block w-full rounded border border-ink-300 bg-white px-3 py-2 text-sm font-medium leading-6 text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     />
                   </label>
@@ -296,7 +297,7 @@ export default function ShortlistComparison({
         <table className="min-w-[860px] w-full border-collapse text-left text-sm">
           <thead className="bg-ink-50 text-xs uppercase text-ink-500">
             <tr>
-              <th className="px-4 py-3">Programme</th>
+              <th className="px-4 py-3">Program</th>
               <th className="px-4 py-3">Tuition</th>
               <th className="px-4 py-3">Entry flexibility</th>
               <th className="px-4 py-3">Pathway</th>

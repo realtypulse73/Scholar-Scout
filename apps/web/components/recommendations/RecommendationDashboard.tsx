@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import SchoolLogo from '@/components/programmes/SchoolLogo';
 import { Badge, Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   parseOnboardingProfile,
 } from '@/lib/preference-matching';
+import { buildProfileMatchBullets } from '@/lib/recommendation-explanations';
 import {
   getAdaptiveRecommendations,
   type AdaptiveProgrammeRecommendation,
@@ -205,10 +207,10 @@ export default function RecommendationDashboard({
     return (
       <Card className="p-8 text-center">
         <Badge tone="brand" className="mb-4">
-          Recommendation dashboard
+          Match dashboard
         </Badge>
         <p className="text-sm font-semibold text-ink-600">
-          Building your ScholarScout recommendations...
+          Building your school matches...
         </p>
       </Card>
     );
@@ -221,12 +223,11 @@ export default function RecommendationDashboard({
           Onboarding needed
         </Badge>
         <h1 className="text-2xl font-extrabold text-ink-900">
-          Complete onboarding to unlock recommendations
+          Answer a few questions to see matches
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          ScholarScout needs your interests, pathway preference, location,
-          affordability sensitivity, GPA band, and support needs before it can
-          produce a practical next-move dashboard.
+          ScholarScout needs your interests, school type, location, budget, GPA
+          range, and support needs before it can sort your options.
         </p>
         <Link
           href="/onboarding"
@@ -250,29 +251,55 @@ export default function RecommendationDashboard({
               Your best next move
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
-              This dashboard combines onboarding fit, shortlist behavior,
-              planning status, planning notes, programme similarity, and
-              completed career simulations into a ranked set of practical next
-              steps.
+              This page uses your answers, saved schools, plans, notes, and
+              career games to sort your next steps.
             </p>
           </div>
           {topMatch ? (
             <div className="rounded-card border border-brand-200 bg-brand-50 p-4">
-              <p className="text-xs font-bold uppercase text-brand-700">
-                Highest adaptive recommendation
-              </p>
-              <h2 className="mt-2 text-xl font-extrabold text-ink-900">
-                {topMatch.recommendation.programme.name}
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-ink-600">
-                {topMatch.recommendation.programme.school} - {topMatch.finalScore}% final fit
-              </p>
-              <p className="mt-3 text-sm leading-6 text-ink-700">
-                {topMatch.recommendation.rankReason}
-              </p>
+              <div className="flex items-start gap-3">
+                <SchoolLogo programme={topMatch.recommendation.programme} size="lg" />
+                <div>
+                  <p className="text-xs font-bold uppercase text-brand-700">
+                    Best match right now
+                  </p>
+                  <h2 className="mt-2 text-xl font-extrabold text-ink-900">
+                    {topMatch.recommendation.programme.name}
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-ink-600">
+                    {topMatch.recommendation.programme.school} - {topMatch.finalScore}% fit
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const bullets = buildProfileMatchBullets(
+                  profile,
+                  topMatch.recommendation.programme,
+                );
+                return bullets.length > 0 ? (
+                  <ul className="mt-3 space-y-1.5">
+                    {bullets.map((bullet) => (
+                      <li
+                        key={bullet}
+                        className="flex items-start gap-2 text-sm leading-6 text-ink-800"
+                      >
+                        <span
+                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-success-600"
+                          aria-hidden="true"
+                        />
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-ink-700">
+                    {topMatch.recommendation.rankReason}
+                  </p>
+                );
+              })()}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge tone="success">
-                  {topMatch.recommendation.adaptiveScore}% adaptive
+                  {topMatch.recommendation.adaptiveScore}% match
                 </Badge>
                 {topMatch.simulationBoost > 0 ? (
                   <Badge tone="brand">+{topMatch.simulationBoost} simulation</Badge>
@@ -293,25 +320,25 @@ export default function RecommendationDashboard({
         className="grid gap-4 md:grid-cols-6"
         aria-label="Dashboard metrics"
       >
-        <MetricCard label="Adaptive ranked" value={`${simulationAwareMatches.length}`} />
-        <MetricCard label="Excellent / strong" value={`${simulationAwareMatches.filter((item) => item.finalScore >= 72).length}`} />
+        <MetricCard label="Ranked now" value={`${simulationAwareMatches.length}`} />
+        <MetricCard label="Strong fits" value={`${simulationAwareMatches.filter((item) => item.finalScore >= 72).length}`} />
         <MetricCard label="Shortlisted" value={`${shortlistIds.length}`} />
-        <MetricCard label="Adaptive signals" value={`${adaptiveSignalCount}`} />
-        <MetricCard label="Clarity score" value={highestClarityScore ? `${highestClarityScore}%` : '-'} />
-        <MetricCard label="Items to verify" value={`${verificationCount}`} />
+        <MetricCard label="Match clues" value={`${adaptiveSignalCount}`} />
+        <MetricCard label="Clarity" value={highestClarityScore ? `${highestClarityScore}%` : '-'} />
+        <MetricCard label="Facts to check" value={`${verificationCount}`} />
       </section>
 
       {simulationDrivenCount > 0 ? (
         <section className="rounded-card border border-brand-200 bg-brand-50 p-5">
           <Badge tone="brand" className="mb-3">
-            Simulation insight layer
+            Career game update
           </Badge>
           <h2 className="text-xl font-extrabold text-ink-900">
-            Your completed simulations are changing the ranking
+            Your career games changed the order
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-700">
-            ScholarScout is now giving extra weight to programmes that match the
-            environments, interests, and pathways you tested through simulations.
+            ScholarScout gives more weight to programs that match the work,
+            interests, and paths you tried.
           </p>
           <Link
             href="/explore"
@@ -374,8 +401,8 @@ export default function RecommendationDashboard({
             Ranked recommendations
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            These are sorted by adaptive fit first, then simulation-driven boosts
-            when completed scenarios point toward a pathway.
+            These are sorted by fit first. Career games can move a school up
+            when they show a strong match.
           </p>
           <div className="mt-5 space-y-3">
             {simulationAwareMatches.slice(0, 5).map((item, index) => (
@@ -384,16 +411,19 @@ export default function RecommendationDashboard({
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase text-ink-500">
-                      #{index + 1} recommendation
-                    </p>
-                    <h3 className="mt-1 text-base font-extrabold text-ink-900">
-                      {item.recommendation.programme.name}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-ink-500">
-                      {item.recommendation.programme.school}
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <SchoolLogo programme={item.recommendation.programme} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase text-ink-500">
+                        #{index + 1} match
+                      </p>
+                      <h3 className="mt-1 text-base font-extrabold text-ink-900">
+                        {item.recommendation.programme.name}
+                      </h3>
+                      <p className="mt-1 text-sm font-semibold text-ink-500">
+                        {item.recommendation.programme.school}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <Badge tone={item.finalScore >= 72 ? 'success' : 'warning'}>
@@ -409,33 +439,50 @@ export default function RecommendationDashboard({
                     ) : null}
                   </div>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-ink-700">
-                  {item.recommendation.rankReason}
-                </p>
-                {item.recommendation.signals.slice(0, 2).map((signal) => (
-                  <p
-                    key={`${item.recommendation.programme.id}-${signal.type}`}
-                    className="mt-2 text-sm font-semibold leading-6 text-success-700"
-                  >
-                    {signal.message}
+                {(() => {
+                  const bullets = buildProfileMatchBullets(
+                    profile,
+                    item.recommendation.programme,
+                  );
+                  return bullets.length > 0 ? (
+                    <ul className="mt-3 space-y-1.5">
+                      {bullets.map((bullet) => (
+                        <li
+                          key={bullet}
+                          className="flex items-start gap-2 text-sm leading-6 text-ink-700"
+                        >
+                          <span
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-success-600"
+                            aria-hidden="true"
+                          />
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm leading-6 text-ink-700">
+                      {item.recommendation.rankReason}
+                    </p>
+                  );
+                })()}
+                {item.recommendation.signals[0] ? (
+                  <p className="mt-2 text-xs font-semibold leading-5 text-brand-700">
+                    {item.recommendation.signals[0].message}
                   </p>
-                ))}
-                {item.simulationReasons.map((reason) => (
-                  <p
-                    key={reason}
-                    className="mt-2 text-sm font-semibold leading-6 text-brand-700"
-                  >
-                    {reason}
-                  </p>
-                ))}
-                {item.nextSteps[0] ? (
-                  <p className="mt-2 text-sm leading-6 text-ink-600">
-                    Next step: {item.nextSteps[0]}
+                ) : null}
+                {item.simulationReasons[0] ? (
+                  <p className="mt-2 text-xs font-semibold leading-5 text-brand-700">
+                    {item.simulationReasons[0]}
                   </p>
                 ) : null}
                 {item.recommendation.fit?.cautions[0] ? (
-                  <p className="mt-2 text-sm leading-6 text-danger-700">
-                    Verify: {item.recommendation.fit.cautions[0]}
+                  <p className="mt-2 text-xs leading-5 text-warning-700">
+                    Check: {item.recommendation.fit.cautions[0]}
+                  </p>
+                ) : null}
+                {item.nextSteps[0] ? (
+                  <p className="mt-2 text-xs font-semibold leading-5 text-ink-500">
+                    Next: {item.nextSteps[0]}
                   </p>
                 ) : null}
               </article>
@@ -448,8 +495,8 @@ export default function RecommendationDashboard({
             Pathways side-by-side
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Each pathway translates a programme into what the student should do
-            first, what it leads to, and what must be verified.
+            Each path shows what to do first, what it can lead to, and what
+            facts to check.
           </p>
           <div className="mt-5 space-y-3">
             {pathwayRecommendations.slice(0, 4).map((pathway) => (
@@ -458,13 +505,16 @@ export default function RecommendationDashboard({
                 className="rounded-card border border-ink-200 p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-base font-extrabold text-ink-900">
-                      {pathway.programme.name}
-                    </h3>
-                    <p className="mt-1 text-sm leading-6 text-ink-600">
-                      {pathway.headline}
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <SchoolLogo programme={pathway.programme} size="sm" />
+                    <div className="min-w-0">
+                      <h3 className="text-base font-extrabold text-ink-900">
+                        {pathway.programme.name}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-ink-600">
+                        {pathway.headline}
+                      </p>
+                    </div>
                   </div>
                   <Badge tone={pathway.priority === 'high' ? 'success' : 'brand'}>
                     {pathway.priority} priority

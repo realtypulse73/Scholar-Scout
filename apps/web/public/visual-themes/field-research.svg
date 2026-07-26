@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Field research day</title>
+  <desc id="desc">Field notebook, sample trays, and accessible outdoor research gear.</desc>
+  <rect width="960" height="540" fill="#ecfdf5"/>
+  <path d="M0 322c138-70 256-76 398-20s276 64 562-10v248H0z" fill="#a7f3d0"/>
+  <circle cx="790" cy="112" r="82" fill="#22c55e" opacity=".25"/>
+  <rect x="138" y="156" width="270" height="260" rx="20" fill="#ffffff" stroke="#064e3b" stroke-width="6"/>
+  <path d="M182 218h176M182 264h138M182 310h188" stroke="#0f766e" stroke-width="18" stroke-linecap="round"/>
+  <rect x="500" y="198" width="250" height="154" rx="22" fill="#ffffff" stroke="#064e3b" stroke-width="6"/>
+  <circle cx="570" cy="274" r="42" fill="#06b6d4"/>
+  <circle cx="675" cy="274" r="42" fill="#84cc16"/>
+  <path d="M542 405h220" stroke="#064e3b" stroke-width="32" stroke-linecap="round"/>
+</svg>

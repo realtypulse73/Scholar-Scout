@@ -7,6 +7,7 @@ import {
   SUPPORT_NEED_LABELS,
 } from '@/lib/onboarding-types';
 import {
+  getProgrammeSupportCoverage,
   PROGRAMME_PATHWAY_LABELS,
   type Programme,
 } from '@/lib/programmes';
@@ -20,7 +21,8 @@ type FitCategory =
   | 'location'
   | 'affordability'
   | 'support'
-  | 'access';
+  | 'access'
+  | 'student-ready';
 
 export interface ProgrammeFitSignal {
   category: FitCategory;
@@ -59,6 +61,38 @@ export function serializeOnboardingProfile(data: OnboardingData) {
   return JSON.stringify(data);
 }
 
+/**
+ * Returns true for students who have intense support needs, multiple
+ * concurrent life challenges, or a non-standard academic record.
+ *
+ * These students benefit from LRE (Least Restrictive Environment) scoring:
+ * support alignment is weighted as the primary retention signal, access
+ * penalties are softened so the full programme range stays visible, and
+ * 4-year programmes with strong support are not buried below certificate
+ * or trade options just because of pathway type.
+ */
+export function isNonTraditionalStudent(profile: OnboardingData): boolean {
+  const intenseSupportNeeds: string[] = [
+    'disability-services',
+    'iep-support',
+    'mental-health',
+    'childcare',
+    'language-support',
+    'housing',
+  ];
+  const hasIntenseNeed = profile.supportNeeds.some((s) =>
+    intenseSupportNeeds.includes(s),
+  );
+  const hasComplexNeeds =
+    profile.supportNeeds.filter((s) => s !== 'none').length >= 3;
+  const hasNonStandardRecord =
+    profile.gpaBand === 'below-2.0' ||
+    profile.gpaBand === '2.0-2.4' ||
+    profile.gpaBand === 'no-gpa';
+
+  return hasIntenseNeed || hasComplexNeeds || hasNonStandardRecord;
+}
+
 export function explainProgrammeFit(
   programme: Programme,
   profile: OnboardingData,
@@ -85,13 +119,14 @@ export function explainProgrammeFit(
   addSignal(getAffordabilitySignal(programme, profile));
   addSignal(getSupportSignal(programme, profile));
   addSignal(getAccessSignal(programme, profile));
+  addSignal(getStudentReadySignal(programme, profile));
 
   const finalScore = Math.min(100, Math.max(0, Math.round(score)));
 
   return {
     score: finalScore,
     band: getFitBand(finalScore),
-    reasons: reasons.length > 0 ? reasons : ['Worth reviewing as a baseline ScholarScout option.'],
+    reasons: reasons.length > 0 ? reasons : ['Worth a look as a basic ScholarScout option.'],
     cautions,
     signals,
   };
@@ -121,7 +156,12 @@ export function getRankedProgrammeMatches(
     }))
     .sort(
       (a, b) =>
+        getRawFitScore(b.fit) - getRawFitScore(a.fit) ||
         b.fit.score - a.fit.score ||
+        getSignalPoints(b.fit, 'student-ready') -
+          getSignalPoints(a.fit, 'student-ready') ||
+        getSignalPoints(b.fit, 'support') - getSignalPoints(a.fit, 'support') ||
+        getSignalPoints(b.fit, 'access') - getSignalPoints(a.fit, 'access') ||
         b.programme.matchScore - a.programme.matchScore ||
         a.programme.annualTuition - b.programme.annualTuition,
     );
@@ -143,9 +183,9 @@ function getInterestSignal(
   if (profile.interests.includes('undecided') || selectedInterests.length === 0) {
     return {
       category: 'interest',
-      label: 'Interest discovery',
+      label: 'Interest search',
       points: 8,
-      message: 'Keeps options open while interests are still being explored.',
+      message: 'Keeps options open while you learn what you like.',
     };
   }
 
@@ -154,7 +194,7 @@ function getInterestSignal(
       category: 'interest',
       label: 'Strong interest match',
       points: 24,
-      message: `Strong overlap with ${matchingInterests
+      message: `Strong match with your ${matchingInterests
         .map((interest) => INTEREST_LABELS[interest])
         .join(', ')} interests.`,
     };
@@ -171,9 +211,9 @@ function getInterestSignal(
 
   return {
     category: 'interest',
-    label: 'Interest gap',
+    label: 'Different interest',
     points: -6,
-    message: 'Interest areas do not directly overlap yet.',
+    message: 'This does not match your interests yet.',
   };
 }
 
@@ -186,9 +226,9 @@ function getPathwaySignal(
   if (!preference || preference === 'undecided') {
     return {
       category: 'pathway',
-      label: 'Flexible pathway',
+      label: 'Open path',
       points: 8,
-      message: 'Still viable while you are undecided on pathway.',
+      message: 'Still worth a look while you choose a path.',
     };
   }
 
@@ -197,7 +237,7 @@ function getPathwaySignal(
       category: 'pathway',
       label: 'Pathway match',
       points: 20,
-      message: `Matches your ${PATHWAY_LABELS[preference]} pathway preference.`,
+      message: `Matches your ${PATHWAY_LABELS[preference]} path choice.`,
     };
   }
 
@@ -205,7 +245,7 @@ function getPathwaySignal(
     category: 'pathway',
     label: 'Different pathway',
     points: -7,
-    message: `Listed as ${PROGRAMME_PATHWAY_LABELS[programme.pathway]}, not your selected pathway.`,
+    message: `Listed as ${PROGRAMME_PATHWAY_LABELS[programme.pathway]}, not your chosen path.`,
   };
 }
 
@@ -220,7 +260,7 @@ function getLocationSignal(
       category: 'location',
       label: 'Open location',
       points: 6,
-      message: 'Fits your open location preference.',
+      message: 'Works with your open place choice.',
     };
   }
 
@@ -246,13 +286,13 @@ function getLocationSignal(
           category: 'location',
           label: 'Campus option',
           points: 8,
-          message: 'Has a campus or hybrid location to compare.',
+          message: 'Has a campus or hybrid option to compare.',
         }
       : {
           category: 'location',
           label: 'Online-only location',
           points: -4,
-          message: 'Online-only location may not match your campus preference.',
+          message: 'Online only may not match your campus choice.',
         };
   }
 
@@ -260,7 +300,7 @@ function getLocationSignal(
     category: 'location',
     label: 'Location review',
     points: 4,
-    message: `Can be reviewed against your ${LOCATION_LABELS[preference]} preference.`,
+    message: `Can be checked against your ${LOCATION_LABELS[preference]} choice.`,
   };
 }
 
@@ -277,16 +317,16 @@ function getAffordabilitySignal(
       category: 'affordability',
       label: 'Strong cost fit',
       points: 14,
-      message: 'Strong cost fit for a highly cost-conscious search.',
+      message: 'Strong cost fit if price matters most.',
     };
   }
 
   if (sensitivity <= 2) {
     return {
       category: 'affordability',
-      label: 'Aid review needed',
+      label: 'Check aid',
       points: -10,
-      message: 'Cost may need scholarship or aid review.',
+      message: 'You may need scholarships or aid for this cost.',
     };
   }
 
@@ -295,16 +335,16 @@ function getAffordabilitySignal(
       category: 'affordability',
       label: 'Balanced value',
       points: 10,
-      message: 'Tuition fits a balanced value search.',
+      message: 'Tuition fits a middle-cost search.',
     };
   }
 
   if (sensitivity >= 4) {
     return {
       category: 'affordability',
-      label: 'Budget flexibility',
+      label: 'Budget room',
       points: 6,
-      message: 'Cost appears compatible with your stated flexibility.',
+      message: 'Cost seems to fit your budget room.',
     };
   }
 
@@ -312,7 +352,7 @@ function getAffordabilitySignal(
     category: 'affordability',
     label: 'Cost neutral',
     points: 0,
-    message: 'Cost should be compared with aid and scholarships.',
+    message: 'Compare cost with aid and scholarships.',
   };
 }
 
@@ -324,16 +364,22 @@ function getSupportSignal(
     (support): support is Exclude<typeof support, 'none'> => support !== 'none',
   );
   const selectedSupportSet = new Set<string>(selectedSupports);
-  const matchingSupport = programme.support.filter((support) =>
+  const supportCoverage = getProgrammeSupportCoverage(programme);
+  const matchingSupport = supportCoverage.filter((support) =>
     selectedSupportSet.has(support),
   );
+
+  // Students with 3 or more concurrent support needs have complex requirements.
+  // For them, covering only 1 of 3+ needs is a caution — most of what they
+  // need to stay enrolled and thrive is still missing.
+  const highNeedStudent = selectedSupports.length >= 3;
 
   if (profile.supportNeeds.includes('none') || selectedSupports.length === 0) {
     return {
       category: 'support',
-      label: 'No support blocker',
+      label: 'No support issue',
       points: 4,
-      message: 'No specific support requirement blocks this option.',
+      message: 'No support need blocks this option.',
     };
   }
 
@@ -341,27 +387,45 @@ function getSupportSignal(
     return {
       category: 'support',
       label: 'Strong support fit',
-      points: 14,
+      // Extra weight for students with multiple concurrent needs — a full
+      // support match here is the strongest retention signal we can give.
+      points: highNeedStudent ? 26 : 20,
       message: `Includes ${matchingSupport
         .map((support) => SUPPORT_NEED_LABELS[support])
         .join(', ')} support.`,
     };
   }
 
-  if (matchingSupport.length === 1) {
+  // For students with 1–2 support needs, a single match is a genuine positive.
+  if (matchingSupport.length === 1 && !highNeedStudent) {
     return {
       category: 'support',
-      label: 'Partial support fit',
-      points: 8,
+      label: 'Some support fit',
+      points: 10,
       message: `Includes ${SUPPORT_NEED_LABELS[matchingSupport[0]]} support.`,
+    };
+  }
+
+  // For students with 3+ concurrent needs, 1-of-3 coverage is not enough for
+  // reliable retention. Surface the gap as a named caution so the student can
+  // ask about it — but keep the programme visible in results.
+  if (matchingSupport.length === 1 && highNeedStudent) {
+    const unmetLabels = selectedSupports
+      .filter((s) => !supportCoverage.includes(s))
+      .map((s) => SUPPORT_NEED_LABELS[s]);
+    return {
+      category: 'support',
+      label: 'Support services — check missing needs',
+      points: -6,
+      message: `Support services cover one need. Ask about ${unmetLabels.join(', ')} before deciding.`,
     };
   }
 
   return {
     category: 'support',
-    label: 'Support review needed',
-    points: -8,
-    message: 'Support services may need closer review.',
+    label: 'Check support',
+    points: -14,
+    message: 'Support services may need a closer check before this feels workable.',
   };
 }
 
@@ -372,6 +436,7 @@ function getAccessSignal(
   const gpaBand = profile.gpaBand;
   const openAccess = programme.acceptanceRate >= 90;
   const broadAccess = programme.acceptanceRate >= 75;
+  const nonTraditional = isNonTraditionalStudent(profile);
 
   if (!gpaBand || gpaBand === 'no-gpa') {
     return {
@@ -379,48 +444,226 @@ function getAccessSignal(
       label: 'Entry review',
       points: openAccess ? 10 : 3,
       message: openAccess
-        ? 'Open-access entry makes this easier to explore without GPA pressure.'
-        : 'Entry requirements should be reviewed because no GPA was provided.',
+        ? 'Open entry makes this easier to explore without GPA pressure.'
+        : 'Check entry rules because no GPA was given.',
     };
   }
 
   if (gpaBand === 'below-2.0' || gpaBand === '2.0-2.4') {
-    return openAccess
-      ? {
-          category: 'access',
-          label: 'High access fit',
-          points: 16,
-          message: `${GPA_BAND_LABELS[gpaBand]} students may benefit from this programme's flexible entry profile.`,
-        }
-      : {
-          category: 'access',
-          label: 'Admissions caution',
-          points: -10,
-          message: 'Entry flexibility may require a closer admissions conversation.',
-        };
+    if (openAccess) {
+      return {
+        category: 'access',
+        label: 'Easy-entry fit',
+        points: 22,
+        message: `${GPA_BAND_LABELS[gpaBand]} students may benefit from flexible entry here.`,
+      };
+    }
+
+    // LRE principle: do not bury programmes for non-traditional students just
+    // because entry is selective. Reduce the penalty so the full range of
+    // options stays visible. Support services can bridge the gap — name that.
+    const supportMatchCount = getProgrammeSupportCoverage(programme).filter((s) =>
+      profile.supportNeeds.includes(s as (typeof profile.supportNeeds)[number]),
+    ).length;
+    const accessPenalty = nonTraditional
+      ? supportMatchCount > 0
+        ? -3
+        : -6
+      : -14;
+
+    return {
+      category: 'access',
+      label: 'Entry check',
+      points: accessPenalty,
+      message: 'Ask how entry works here — support services may help bridge the gap.',
+    };
   }
 
   if (gpaBand === '2.5-2.9') {
     return broadAccess
       ? {
           category: 'access',
-          label: 'Accessible option',
+          label: 'Good entry option',
           points: 10,
-          message: 'Entry profile appears accessible for a practical application list.',
+          message: 'Entry looks workable for your list.',
         }
       : {
           category: 'access',
-          label: 'Selective option',
-          points: -3,
-          message: 'May belong in a reach category rather than a primary option.',
+          label: 'Entry check',
+          points: -5,
+          message: 'This may need more entry planning than your top options.',
         };
   }
 
   return {
     category: 'access',
-    label: 'Academic fit',
+    label: 'School fit',
     points: 6,
-    message: 'Academic profile appears compatible enough for comparison.',
+    message: 'Your school record looks close enough to compare.',
+  };
+}
+
+function getStudentReadySignal(
+  programme: Programme,
+  profile: OnboardingData,
+): ProgrammeFitSignal {
+  const supportNeeds = profile.supportNeeds.filter((support) => support !== 'none');
+  const hasHigherSupportNeed = supportNeeds.some((support) =>
+    [
+      'disability-services',
+      'iep-support',
+      'mental-health',
+      'first-gen',
+      'childcare',
+      'language-support',
+      'housing',
+      'financial-aid',
+    ].includes(support),
+  );
+  const needsFlexibleEntry =
+    profile.gpaBand === 'below-2.0' ||
+    profile.gpaBand === '2.0-2.4' ||
+    profile.gpaBand === 'no-gpa';
+  const needsLowerCost = profile.affordabilitySensitivity <= 2;
+  const flexiblePath = [
+    '2-year-community-college',
+    'trade-vocational',
+    'certificate-program',
+    'apprenticeship',
+    'online-degree',
+  ].includes(programme.pathway);
+  const openEntry = programme.acceptanceRate >= 90;
+  const lowCost = programme.annualTuition <= 5000;
+  const supportCoverage = getProgrammeSupportCoverage(programme);
+  const supportMatches = supportCoverage.filter((support) =>
+    supportNeeds.includes(support as (typeof supportNeeds)[number]),
+  ).length;
+  const hasDeliveryFit =
+    profile.locationPreference === 'online-only'
+      ? programme.delivery === 'Online'
+      : programme.delivery !== 'Online' || profile.locationPreference === 'no-preference';
+  const needsStudentReadyFit =
+    hasHigherSupportNeed || needsFlexibleEntry || needsLowerCost;
+  const selectedInterests = profile.interests.filter(
+    (interest): interest is Exclude<typeof interest, 'undecided'> =>
+      interest !== 'undecided',
+  );
+  const hasInterestFit =
+    selectedInterests.length === 0 ||
+    profile.interests.includes('undecided') ||
+    programme.interests.some(
+      (interest) => interest !== 'undecided' && selectedInterests.includes(interest),
+    );
+  const hasPathwayFit =
+    !profile.pathwayPreference ||
+    profile.pathwayPreference === 'undecided' ||
+    profile.pathwayPreference === programme.pathway;
+  const nonTraditional = isNonTraditionalStudent(profile);
+
+  if (!needsStudentReadyFit) {
+    return {
+      category: 'student-ready',
+      label: 'Fit check',
+      points: flexiblePath ? 4 : 2,
+      message: 'This path has practical details to compare.',
+    };
+  }
+
+  let points = 0;
+  const matchedSignals: string[] = [];
+  const missingSignals: string[] = [];
+
+  if (flexiblePath) {
+    points += 7;
+    matchedSignals.push('flexible path');
+  }
+  // No penalty for 4-year or other non-flexible paths.
+  // LRE principle: always show students the highest-credential option where
+  // they can succeed with the right support — do not steer them away from
+  // 4-year programmes solely because of pathway type.
+
+  if (needsFlexibleEntry) {
+    if (openEntry) {
+      points += 10;
+      matchedSignals.push('open entry');
+    } else {
+      points -= 8;
+      missingSignals.push('entry rules');
+    }
+  }
+
+  if (needsLowerCost) {
+    if (lowCost) {
+      points += 8;
+      matchedSignals.push('lower cost');
+    } else {
+      points -= 6;
+      missingSignals.push('aid and price');
+    }
+  }
+
+  if (hasHigherSupportNeed) {
+    if (supportMatches >= Math.min(2, supportNeeds.length)) {
+      points += 12;
+      matchedSignals.push('needed support');
+    } else if (supportMatches === 1) {
+      points += 5;
+      matchedSignals.push('some support');
+    } else {
+      points -= 10;
+      missingSignals.push('support services');
+    }
+  }
+
+  if (hasDeliveryFit) {
+    points += 4;
+    matchedSignals.push('workable schedule or place');
+  } else {
+    points -= 4;
+    missingSignals.push('place or schedule');
+  }
+
+  if (!hasInterestFit) {
+    points -= 10;
+    missingSignals.push('field of study fit');
+  }
+
+  if (!hasPathwayFit) {
+    points -= 10;
+    missingSignals.push('pathway fit');
+  }
+
+  // LRE stretch signal: for non-traditional students at a 4-year programme
+  // where support alignment is strong, give a positive signal that this higher
+  // credential level is genuinely reachable with the right services in place.
+  if (nonTraditional && !flexiblePath && supportMatches >= Math.min(2, supportNeeds.length)) {
+    points += 8;
+    matchedSignals.push('support-ready at this level');
+  }
+
+  if (points >= 18) {
+    return {
+      category: 'student-ready',
+      label: 'Student-ready fit',
+      points,
+      message: `Meets you where you are with ${formatList(matchedSignals)}.`,
+    };
+  }
+
+  if (points >= 6) {
+    return {
+      category: 'student-ready',
+      label: 'Good support check',
+      points,
+      message: `Has ${formatList(matchedSignals)}. Also check ${formatList(missingSignals)}.`,
+    };
+  }
+
+  return {
+    category: 'student-ready',
+    label: 'Needs closer support check',
+    points,
+    message: `Before choosing this, check ${formatList(missingSignals)}.`,
   };
 }
 
@@ -438,6 +681,31 @@ function getFitBand(score: number): FitBand {
   }
 
   return 'review';
+}
+
+function formatList(items: string[]) {
+  if (items.length === 0) {
+    return 'the key details';
+  }
+
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+function getSignalPoints(
+  fit: ProgrammeFitExplanation,
+  category: FitCategory,
+) {
+  return fit.signals
+    .filter((signal) => signal.category === category)
+    .reduce((sum, signal) => sum + signal.points, 0);
+}
+
+function getRawFitScore(fit: ProgrammeFitExplanation) {
+  return 35 + fit.signals.reduce((sum, signal) => sum + signal.points, 0);
 }
 
 function isOnboardingData(value: unknown): value is OnboardingData {
