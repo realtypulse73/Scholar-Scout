@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 Phase: 1 (Release and CI Baseline) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-26 — Completed quick task 260726-1db: Vercel monorepo deployment configuration
+Last activity: 2026-07-26 — Completed quick task 260726-26d: stable production-domain smoke target
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,7 @@ None yet.
 | 260726-0ls | Create an evidence-graded product specification from the student opportunity research briefs | 2026-07-26 | eeed666 | [260726-0ls-create-an-evidence-graded-product-specif](./quick/260726-0ls-create-an-evidence-graded-product-specif/) |
 | 260726-0qr | Create a project document index and add it to Codex project guidance | 2026-07-26 | 726e87f | [260726-0qr-create-a-project-document-index-and-add-](./quick/260726-0qr-create-a-project-document-index-and-add-/) |
 | 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
+| 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
 
 ## Deferred Items
 
