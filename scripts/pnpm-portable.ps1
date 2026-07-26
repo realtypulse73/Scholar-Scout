@@ -22,6 +22,11 @@ if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
-Write-Output "Portable Node activated:"
-node --version
-& $corepackCmd pnpm --store-dir $pnpmStore --version
+$pnpmArgs = @($args)
+
+if ($pnpmArgs.Count -ge 2 -and $pnpmArgs[0] -eq '-PnpmArgs') {
+  $pnpmArgs = $pnpmArgs[1..($pnpmArgs.Count - 1)]
+}
+
+& $corepackCmd pnpm --store-dir $pnpmStore @pnpmArgs
+exit $LASTEXITCODE
