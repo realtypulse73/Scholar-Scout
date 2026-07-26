@@ -64,7 +64,7 @@ Acceptance criteria:
 - corepack enable and pnpm install --frozen-lockfile --ignore-scripts pass
 - pnpm --filter @scholar-scout/web typecheck passes
 - pnpm --filter @scholar-scout/web lint passes
-- pnpm --filter @scholar-scout/web test -- --runInBand passes
+- pnpm --filter @scholar-scout/web test --runInBand passes
 - pnpm --filter @scholar-scout/web build passes
 - pnpm --filter @scholar-scout/http-data-service test passes
 - pnpm test:production-tooling passes

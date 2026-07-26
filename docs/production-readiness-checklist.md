@@ -84,7 +84,7 @@ pnpm run rehearse:prelaunch -- --skip-smoke
 pnpm run test:production-tooling
 pnpm --filter @scholar-scout/web typecheck
 pnpm --filter @scholar-scout/web lint
-pnpm --filter @scholar-scout/web test -- --runInBand
+pnpm --filter @scholar-scout/web test --runInBand
 pnpm --filter @scholar-scout/web build
 pnpm --filter @scholar-scout/http-data-service test
 pnpm run build:vercel
