@@ -14,12 +14,12 @@ import {
 import { buildAdvisorContext } from '@/lib/server/advisor-context';
 import { ADVISOR_EVALUATION_CASES } from '../fixtures/advisor-eval-cases';
 
-jest.mock('@/lib/server/platform-store', () => ({
+jest.mock('../../lib/server/platform-store', () => ({
   getMemory: jest.fn(),
   getRecommendationsForUser: jest.fn(),
 }));
 
-const platformStore = jest.requireMock('@/lib/server/platform-store') as {
+const platformStore = jest.requireMock('../../lib/server/platform-store') as {
   getMemory: jest.Mock;
   getRecommendationsForUser: jest.Mock;
 };

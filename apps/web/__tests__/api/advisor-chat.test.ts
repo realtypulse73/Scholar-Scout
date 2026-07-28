@@ -3,29 +3,35 @@
 import { POST } from '@/app/api/advisor-chat/route';
 import { ADVISOR_SAFE_FALLBACK } from '@/lib/advisor-contract';
 
-jest.mock('@/lib/server/student-actor', () => ({
+jest.mock('../../lib/server/student-actor', () => ({
   resolveStudentActor: jest.fn(),
 }));
-jest.mock('@/lib/server/rate-limit', () => ({
+jest.mock('../../lib/server/rate-limit', () => ({
   reserveAdvisorAccount: jest.fn(),
   reserveAdvisorGuest: jest.fn(),
 }));
-jest.mock('@/lib/server/advisor-context', () => ({
+jest.mock('../../lib/server/advisor-context', () => ({
   buildAdvisorContext: jest.fn(),
 }));
-jest.mock('@/lib/server/platform-store', () => ({
+jest.mock('../../lib/server/platform-store', () => ({
   appendAnalyticsEvent: jest.fn(),
 }));
+jest.mock('../../lib/server/data-store', () => ({
+  getGuestQuotaBindingForAccount: jest.fn(),
+}));
 
-const actorModule = jest.requireMock('@/lib/server/student-actor') as {
+const actorModule = jest.requireMock('../../lib/server/student-actor') as {
   resolveStudentActor: jest.Mock;
 };
-const rateLimitModule = jest.requireMock('@/lib/server/rate-limit') as {
+const rateLimitModule = jest.requireMock('../../lib/server/rate-limit') as {
   reserveAdvisorAccount: jest.Mock;
   reserveAdvisorGuest: jest.Mock;
 };
-const contextModule = jest.requireMock('@/lib/server/advisor-context') as {
+const contextModule = jest.requireMock('../../lib/server/advisor-context') as {
   buildAdvisorContext: jest.Mock;
+};
+const dataStoreModule = jest.requireMock('../../lib/server/data-store') as {
+  getGuestQuotaBindingForAccount: jest.Mock;
 };
 
 function advisorRequest(value: unknown): Request {
@@ -63,6 +69,7 @@ describe('advisor chat route', () => {
       summary: 'Approved server context.',
       recommendations: [{ name: 'Programme One', explanation: 'Verified fit signal.' }],
     });
+    dataStoreModule.getGuestQuotaBindingForAccount.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -97,6 +104,22 @@ describe('advisor chat route', () => {
     });
     expect(contextModule.buildAdvisorContext).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps an active guest quota window when the same student signs in', async () => {
+    dataStoreModule.getGuestQuotaBindingForAccount.mockResolvedValue('guest-window-one');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({ output_text: JSON.stringify({ message: 'Check the current official details.' }) }),
+    });
+
+    await POST(advisorRequest({ message: 'Can I keep using my guest limit?' }));
+
+    expect(rateLimitModule.reserveAdvisorAccount).toHaveBeenCalledWith('student-one', {
+      guestWindowId: 'guest-window-one',
+    });
   });
 
   it('sends only server-selected context in a bounded strict Responses request', async () => {

@@ -7,6 +7,10 @@ describe('AdvisorChat', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: jest.fn(),
+    });
     global.fetch = fetchMock as typeof fetch;
     window.localStorage.clear();
   });
@@ -52,15 +56,22 @@ describe('AdvisorChat', () => {
 
     render(<AdvisorChat />);
     const input = screen.getByPlaceholderText('Ask about fit, risk, cost, or next steps');
-    for (const message of ['one', 'two', 'three', 'four']) {
-      await user.type(input, message);
-      fireEvent.keyDown(input, { key: 'Enter' });
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(['one', 'two', 'three', 'four'].indexOf(message) + 1));
-    }
+    await user.type(input, 'one');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(await screen.findByText('Message must be valid.')).toBeInTheDocument();
 
+    await user.type(input, 'two');
+    fireEvent.keyDown(input, { key: 'Enter' });
     expect(await screen.findByText(/Daily limit reached/)).toBeInTheDocument();
     expect(screen.getByText(/Try again after/)).toBeInTheDocument();
-    expect(screen.getByText(/not available right now/)).toBeInTheDocument();
+
+    await user.type(input, 'three');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(await screen.findByText(/not available right now/)).toBeInTheDocument();
+
+    await user.type(input, 'four');
+    fireEvent.keyDown(input, { key: 'Enter' });
     expect(await screen.findByText('Safe fallback.')).toBeInTheDocument();
+    expect(screen.getByText(/safe general next step/)).toBeInTheDocument();
   });
 });
