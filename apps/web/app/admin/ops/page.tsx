@@ -1,4 +1,6 @@
+import { notFound } from 'next/navigation';
 import PlatformDashboard from '@/components/admin/PlatformDashboard';
+import { requireActiveStaff } from '@/lib/server/active-staff';
 import { getPlatformMetrics } from '@/lib/server/platform-store';
 
 export const metadata = {
@@ -6,6 +8,15 @@ export const metadata = {
 };
 
 export default async function AdminOpsPage() {
+  const authorization = await requireActiveStaff({
+    action: 'view-operations-metrics',
+    route: '/admin/ops',
+  });
+
+  if (!authorization.ok) {
+    notFound();
+  }
+
   const metrics = await getPlatformMetrics();
 
   return (
