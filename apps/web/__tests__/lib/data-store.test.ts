@@ -8,6 +8,7 @@ import { ReadableStream } from 'stream/web';
 import { TextEncoder } from 'util';
 import {
   findOrCreateOAuthUser,
+  hashGuestCredential,
   getAccountRoleForEmail,
   getDataStoreConfigurationSummary,
   getScholarScoutDataStore,
@@ -23,11 +24,16 @@ import {
   saveShortlist,
   saveShortlistPlans,
   setScholarScoutDataStoreForTests,
+  registerGuestLifecycle,
   validateScholarScoutDataImport,
   writeScholarScoutData,
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import {
+  migrateGuestOwnedRecords,
+  type PlatformData,
+} from '@/lib/server/platform-store';
 import { programmes } from '@/lib/programmes';
 
 jest.mock('@vercel/blob', () => ({
@@ -934,6 +940,187 @@ describe('ScholarScout data store adapter', () => {
       entityId: 'backup-to-restore',
       userId: 'current-staff',
     });
+  });
+});
+
+describe('guest lifecycle migration', () => {
+  afterEach(() => {
+    setScholarScoutDataStoreForTests(null);
+  });
+
+  it('stores only a hashed seven-day guest credential and migrates only allowlisted private records once', async () => {
+    const store = new MemoryDataStore();
+    const data = store.data as PlatformData;
+    const guestId = 'guest-one';
+    const guestKey = `guest:${guestId}`;
+    const accountId = 'account-one';
+    const now = new Date('2026-07-28T12:00:00.000Z');
+
+    data.onboardingProfiles[guestKey] = {
+      gpaBand: '3.0-3.4',
+      interests: ['technology'],
+      locationPreference: 'online-only',
+      pathwayPreference: 'online-degree',
+      affordabilitySensitivity: 4,
+      supportNeeds: ['career-counseling'],
+    };
+    data.shortlists[guestKey] = ['metro-cybersecurity'];
+    data.shortlistPlans = {
+      [guestKey]: {
+        'metro-cybersecurity': {
+          status: 'contacted',
+          note: 'Guest-owned plan.',
+        },
+      },
+    };
+    data.feedInteractions = [
+      {
+        id: 'feed-guest',
+        userKey: guestKey,
+        feedItemId: 'explore-technology',
+        watchSeconds: 30,
+        skipped: false,
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.simulationResults = [
+      {
+        id: 'simulation-guest',
+        userKey: guestKey,
+        simulationId: 'career-values',
+        score: 4,
+        maxScore: 5,
+        clarityScore: 3,
+        boosts: ['technology'],
+        feedback: ['Keep exploring.'],
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.memoryRecords = [
+      {
+        id: 'memory-guest',
+        userKey: guestKey,
+        stage: 'exploring',
+        summary: 'Guest activity.',
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.referralRecords = [
+      {
+        id: 'referral-guest',
+        referrer: guestKey,
+        code: 'guest-code',
+        converted: false,
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.shareRecords = [
+      {
+        id: 'share-guest',
+        userKey: guestKey,
+        targetType: 'programme',
+        targetId: 'metro-cybersecurity',
+        deepLink: 'https://scholarscout.app/share/programme/metro-cybersecurity',
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.analyticsEvents = [
+      {
+        id: 'analytics-guest',
+        area: 'explore',
+        name: 'opened',
+        userKey: guestKey,
+        metadata: {},
+        createdAt: now.toISOString(),
+      },
+    ];
+    data.decisionLogs = [{ id: 'decision-one' }] as never;
+    data.peerConnectionRequests = [{ id: 'peer-one' }] as never;
+    data.campusNotes = [{ id: 'campus-one' }] as never;
+    data.uploaderInboxRequests = [{ id: 'inbox-one' }] as never;
+    data.outcomeMetricRecords = [{ id: 'outcome-one' }] as never;
+    data.auditEvents = [{ id: 'audit-one' }] as never;
+    data.restoreBackups = [{ id: 'backup-one' }] as never;
+    const excludedBefore = JSON.parse(
+      JSON.stringify({
+        users: data.users,
+        programmeRecords: data.programmeRecords,
+        outcomeMetricRecords: data.outcomeMetricRecords,
+        auditEvents: data.auditEvents,
+        restoreBackups: data.restoreBackups,
+        decisionLogs: data.decisionLogs,
+        peerConnectionRequests: data.peerConnectionRequests,
+        campusNotes: data.campusNotes,
+        uploaderInboxRequests: data.uploaderInboxRequests,
+      }),
+    );
+    setScholarScoutDataStoreForTests(store);
+
+    const rawGuestSecret = 'raw-guest-secret';
+    await registerGuestLifecycle({
+      guestId,
+      credentialHash: hashGuestCredential(rawGuestSecret),
+      quotaWindowId: 'guest-window-one',
+      now,
+    });
+
+    const storedBeforeMigration = await readScholarScoutData();
+    expect(JSON.stringify(storedBeforeMigration)).not.toContain(rawGuestSecret);
+    expect(storedBeforeMigration.guestLifecycles).toEqual([
+      expect.objectContaining({
+        id: guestId,
+        credentialHash: hashGuestCredential(rawGuestSecret),
+        quotaWindowId: 'guest-window-one',
+        expiresAt: '2026-08-04T12:00:00.000Z',
+      }),
+    ]);
+
+    await expect(
+      migrateGuestOwnedRecords({ guestId, accountId, now }),
+    ).resolves.toMatchObject({
+      migrated: true,
+      guestWindowId: 'guest-window-one',
+    });
+
+    expect(store.data.onboardingProfiles).toEqual({
+      [accountId]: expect.objectContaining({ interests: ['technology'] }),
+    });
+    expect(store.data.shortlists).toEqual({
+      [accountId]: ['metro-cybersecurity'],
+    });
+    expect(store.data.shortlistPlans).toEqual({
+      [accountId]: expect.objectContaining({ 'metro-cybersecurity': expect.any(Object) }),
+    });
+    const migrated = store.data as PlatformData;
+    expect(migrated.feedInteractions?.[0].userKey).toBe(accountId);
+    expect(migrated.simulationResults?.[0].userKey).toBe(accountId);
+    expect(migrated.memoryRecords?.[0].userKey).toBe(accountId);
+    expect(migrated.referralRecords?.[0].referrer).toBe(accountId);
+    expect(migrated.shareRecords?.[0].userKey).toBe(accountId);
+    expect(migrated.analyticsEvents?.[0].userKey).toBe(accountId);
+    expect(migrated.guestQuotaBindings?.[accountId]).toMatchObject({
+      guestWindowId: 'guest-window-one',
+    });
+    expect(migrated.guestMigrationAuditRecords).toEqual([
+      expect.objectContaining({ guestId, accountId }),
+    ]);
+    expect({
+      users: migrated.users,
+      programmeRecords: migrated.programmeRecords,
+      outcomeMetricRecords: migrated.outcomeMetricRecords,
+      auditEvents: migrated.auditEvents,
+      restoreBackups: migrated.restoreBackups,
+      decisionLogs: migrated.decisionLogs,
+      peerConnectionRequests: migrated.peerConnectionRequests,
+      campusNotes: migrated.campusNotes,
+      uploaderInboxRequests: migrated.uploaderInboxRequests,
+    }).toEqual(excludedBefore);
+
+    const afterFirstMigration = JSON.stringify(store.data);
+    await expect(
+      migrateGuestOwnedRecords({ guestId, accountId, now }),
+    ).resolves.toMatchObject({ migrated: false, alreadyMigrated: true });
+    expect(JSON.stringify(store.data)).toBe(afterFirstMigration);
   });
 });
 
