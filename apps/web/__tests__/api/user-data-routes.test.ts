@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import * as analyticsEventsRoute from '@/app/api/analytics/events/route';
 import { GET as getMemoryRoute, POST as postMemoryRoute } from '@/app/api/memory/route';
 import {
   GET as getSimulationResultsRoute,
@@ -153,5 +154,57 @@ describe('user data route ownership', () => {
     expect(saveSimulationResultMock).not.toHaveBeenCalled();
     expect(getRecommendationsForUserMock).not.toHaveBeenCalled();
     expect(appendAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it('stores bounded analytics events only for the resolved actor and exposes no global GET', async () => {
+    appendAnalyticsEventMock.mockResolvedValue({
+      id: 'event',
+      userKey: accountActor.storageKey,
+    } as never);
+
+    const response = await analyticsEventsRoute.POST(
+      new Request('https://scholar-scout.test/api/analytics/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          area: 'simulation',
+          name: 'simulation_completed',
+          metadata: { clarityScore: 75 },
+        }),
+      }),
+    );
+    const suppliedIdentity = await analyticsEventsRoute.POST(
+      new Request('https://scholar-scout.test/api/analytics/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          area: 'simulation',
+          name: 'simulation_completed',
+          userKey: 'account:student-two',
+        }),
+      }),
+    );
+    const invalidMetadata = await analyticsEventsRoute.POST(
+      new Request('https://scholar-scout.test/api/analytics/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          area: 'unknown',
+          name: 'x'.repeat(65),
+          metadata: { nested: { value: 'not-a-scalar' } },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendAnalyticsEventMock).toHaveBeenCalledWith({
+      area: 'simulation',
+      name: 'simulation_completed',
+      userKey: accountActor.storageKey,
+      metadata: { clarityScore: 75 },
+    });
+    expect(suppliedIdentity.status).toBe(400);
+    expect(invalidMetadata.status).toBe(400);
+    expect(analyticsEventsRoute.GET).toBeUndefined();
+    expect(appendAnalyticsEventMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ userKey: 'account:student-two' }),
+    );
   });
 });
