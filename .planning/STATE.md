@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: authentication-api-ai-and-webhook-controls
 status: executing
-stopped_at: Completed 02-10-PLAN.md
-last_updated: "2026-07-28T21:32:45.044Z"
+stopped_at: Completed 02-13-PLAN.md
+last_updated: "2026-07-28T21:44:10.774Z"
 last_activity: 2026-07-28
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 17
+  completed_plans: 18
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (authentication-api-ai-and-webhook-controls) — EXECUTING
-Plan: 5 of 13
+Plan: 6 of 13
 Status: Ready to execute
 Last activity: 2026-07-28 — Phase 02 execution started
 
-Progress: [█████████░] 89%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [█████████░] 89%
 | Phase 02 P12 | 40min | 2 tasks | 3 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P07 | 20min | 2 tasks | 7 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P10 | 20min | 2 tasks | 7 files |
+| Phase 02-authentication-api-ai-and-webhook-controls P13 | 11 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,8 @@ Progress: [█████████░] 89%
 - [Phase ?]: Health-token monitoring remains separate from staff authorization.
 - [Phase ?]: Use a trusted Vercel email/IP reservation before credential lookup or asynchronous scrypt work.
 - [Phase ?]: NextAuth credentials consume only a short-lived, single-use server grant; authenticated guest migration is session-bound and idempotent.
+- [Phase ?]: Retire the anonymous decision trigger instead of providing a public aggregate or replacement endpoint.
+- [Phase ?]: Use a safe 404 denial for server-rendered decision dashboards after requireActiveStaff records its minimal authorization audit.
 
 ### Roadmap Evolution
 
@@ -157,6 +160,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T21:32:45.032Z
-Stopped at: Completed 02-10-PLAN.md
+Last session: 2026-07-28T21:44:10.762Z
+Stopped at: Completed 02-13-PLAN.md
 Resume file: None
