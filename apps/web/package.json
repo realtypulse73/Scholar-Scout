@@ -12,6 +12,8 @@
     "typecheck": "tsc --project tsconfig.json --pretty"
   },
   "dependencies": {
+    "@upstash/ratelimit": "2.0.8",
+    "@upstash/redis": "1.38.0",
     "@vercel/blob": "^2.3.3",
     "next": "^15.5.15",
     "next-auth": "^4.24.14",
