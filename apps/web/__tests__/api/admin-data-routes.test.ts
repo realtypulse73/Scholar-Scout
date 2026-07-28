@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { GET as listBackups } from '@/app/api/admin/data/backups/route';
 import { POST as validateImport } from '@/app/api/admin/data/import/validate/route';
 import { POST as restoreImport } from '@/app/api/admin/data/import/restore/route';
+import { GET as dataStatus } from '@/app/api/admin/data/status/route';
 import { GET as dataHealth } from '@/app/api/admin/data/health/route';
 import { GET as planBackupRestore } from '@/app/api/admin/data/backups/[id]/plan/route';
 import { POST as restoreBackup } from '@/app/api/admin/data/backups/[id]/restore/route';
@@ -173,6 +174,72 @@ describe('admin data API routes', () => {
       error: expect.stringContaining(SCHOLARSCOUT_RESTORE_CONFIRMATION),
     });
     expect(store.data.users).toHaveLength(0);
+  });
+
+  it('checks the live staff allowlist and audits status and backup restore decisions', async () => {
+    const store = new MemoryDataStore();
+    store.data = dataWithBackup();
+    setScholarScoutDataStoreForTests(store);
+    getSessionMock.mockResolvedValue(staffSession());
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    await expectStatus(dataStatus(), 200);
+    await expectStatus(
+      planBackupRestore(new Request('http://test.local'), routeContext('backup-1')),
+      200,
+    );
+    await expectStatus(
+      restoreBackup(
+        jsonRequest({ confirmation: 'restore' }),
+        routeContext('backup-1'),
+      ),
+      400,
+    );
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'removed@example.com';
+    await expectStatus(dataStatus(), 403);
+    await expectStatus(
+      planBackupRestore(new Request('http://test.local'), routeContext('backup-1')),
+      403,
+    );
+    await expectStatus(
+      restoreBackup(
+        jsonRequest({ confirmation: SCHOLARSCOUT_RESTORE_CONFIRMATION }),
+        routeContext('backup-1'),
+      ),
+      403,
+    );
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'not-an-email';
+    await expectStatus(dataStatus(), 403);
+    delete process.env.SCHOLARSCOUT_STAFF_EMAILS;
+    await expectStatus(
+      planBackupRestore(new Request('http://test.local'), routeContext('backup-1')),
+      403,
+    );
+
+    await expect(getPrivilegedOperationAuditEvents()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'view-data-status',
+          route: '/api/admin/data/status',
+          outcome: 'allowed',
+        }),
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'plan-backup-restore',
+          route: '/api/admin/data/backups/backup-1/plan',
+          outcome: 'denied',
+        }),
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'restore-backup',
+          route: '/api/admin/data/backups/backup-1/restore',
+          outcome: 'denied',
+        }),
+      ]),
+    );
   });
 
   it('plans backup restores and returns not found for missing backups', async () => {
