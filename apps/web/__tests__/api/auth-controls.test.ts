@@ -3,6 +3,8 @@
 import { cookies } from 'next/headers';
 import { getServerSession } from 'next-auth';
 import { POST as migrateGuest } from '@/app/api/account/guest-migration/route';
+import { POST as exchangeCredentials } from '@/app/api/auth/credentials/route';
+import { authOptions } from '@/auth';
 import {
   GUEST_ACTOR_COOKIE_NAME,
   clearGuestActorCookie,
@@ -12,10 +14,15 @@ import {
   hashGuestCredential,
   readScholarScoutData,
   registerGuestLifecycle,
+  createUser,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import {
+  setAtomicReservationLimiterForTests,
+  type AtomicReservationLimiter,
+} from '@/lib/server/rate-limit';
 
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),
@@ -209,3 +216,115 @@ describe('student actor controls', () => {
     });
   });
 });
+
+describe('credential exchange controls', () => {
+  const credentialProvider = authOptions.providers?.[0] as {
+    options: {
+      authorize: (credentials: Record<string, string> | undefined) => Promise<unknown>;
+    };
+  };
+
+  beforeEach(() => {
+    setScholarScoutDataStoreForTests(new MemoryDataStore());
+  });
+
+  afterEach(() => {
+    setAtomicReservationLimiterForTests(null);
+    setScholarScoutDataStoreForTests(null);
+  });
+
+  it('reserves five attempts before lookup and returns reset-aware 429 before the sixth KDF', async () => {
+    const limiter = createFixedWindowLimiter(5);
+    setAtomicReservationLimiterForTests(limiter);
+
+    for (let index = 0; index < 5; index += 1) {
+      const response = await exchangeCredentials(createCredentialsRequest());
+      expect(response.status).toBe(401);
+    }
+
+    const response = await exchangeCredentials(createCredentialsRequest());
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('900');
+    await expect(response.json()).resolves.toEqual({
+      error: 'rate-limited',
+      resetAt: '2026-07-28T12:15:00.000Z',
+    });
+    expect(limiter.reserve).toHaveBeenCalledTimes(6);
+  });
+
+  it('fails closed before account lookup when the trusted Vercel IP or limiter is unavailable', async () => {
+    setAtomicReservationLimiterForTests(null);
+
+    const unavailableLimiter = await exchangeCredentials(createCredentialsRequest());
+    expect(unavailableLimiter.status).toBe(503);
+
+    const missingTrustedIp = await exchangeCredentials(
+      new Request('http://localhost/api/auth/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.4' },
+        body: JSON.stringify({ email: 'student@example.com', password: 'not-the-password' }),
+      }),
+    );
+    expect(missingTrustedIp.status).toBe(503);
+  });
+
+  it('issues a single-use grant after asynchronous verification and rejects raw credential callbacks', async () => {
+    const limiter = createFixedWindowLimiter(5);
+    setAtomicReservationLimiterForTests(limiter);
+    await createUser({
+      email: 'student@example.com',
+      name: 'Student',
+      password: 'secure-password',
+      role: 'student',
+    });
+
+    const response = await exchangeCredentials(
+      createCredentialsRequest({ password: 'secure-password' }),
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { grant: string };
+
+    await expect(
+      credentialProvider.options.authorize({ grant: body.grant }),
+    ).resolves.toMatchObject({ email: 'student@example.com' });
+    await expect(
+      credentialProvider.options.authorize({ grant: body.grant }),
+    ).resolves.toBeNull();
+    await expect(
+      credentialProvider.options.authorize({
+        email: 'student@example.com',
+        password: 'secure-password',
+      }),
+    ).resolves.toBeNull();
+  });
+});
+
+function createCredentialsRequest(input?: { password?: string }): Request {
+  return new Request('http://localhost/api/auth/credentials', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-vercel-forwarded-for': '203.0.113.7',
+    },
+    body: JSON.stringify({
+      email: 'student@example.com',
+      password: input?.password ?? 'not-the-password',
+    }),
+  });
+}
+
+function createFixedWindowLimiter(limit: number): AtomicReservationLimiter {
+  let count = 0;
+
+  return {
+    reserve: jest.fn(async () => {
+      count += 1;
+      return {
+        allowed: count <= limit,
+        resetAt: new Date('2026-07-28T12:15:00.000Z'),
+        retryAfterSeconds: 900,
+      };
+    }),
+  };
+}
