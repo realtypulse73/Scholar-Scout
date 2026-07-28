@@ -2,6 +2,12 @@
 
 import { getServerSession } from 'next-auth';
 import {
+  DELETE as deleteProgramme,
+  GET as getProgrammes,
+  POST as saveProgramme,
+} from '@/app/api/admin/programmes/route';
+import { GET as getShortlist } from '@/app/api/account/shortlist/route';
+import {
   getPrivilegedOperationAuditEvents,
   requireActiveStaff,
 } from '@/lib/server/active-staff';
@@ -143,5 +149,32 @@ describe('active staff authorization', () => {
       'route',
     ]);
     expect(JSON.stringify(audit)).not.toContain('Staff@Example.com');
+  });
+
+  it('rejects every programme operation for a removed staff member while preserving student access', async () => {
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'other@example.com';
+
+    const [getResponse, postResponse, deleteResponse, shortlistResponse] =
+      await Promise.all([
+        getProgrammes(),
+        saveProgramme(
+          new Request('http://localhost/api/admin/programmes', {
+            method: 'POST',
+            body: JSON.stringify({ untrusted: 'body' }),
+          }),
+        ),
+        deleteProgramme(
+          new Request('http://localhost/api/admin/programmes?id=programme-one', {
+            method: 'DELETE',
+          }),
+        ),
+        getShortlist(),
+      ]);
+
+    expect(getResponse.status).toBe(403);
+    expect(postResponse.status).toBe(403);
+    expect(deleteResponse.status).toBe(403);
+    expect(shortlistResponse.status).toBe(200);
+    await expect(getPrivilegedOperationAuditEvents()).resolves.toHaveLength(3);
   });
 });
