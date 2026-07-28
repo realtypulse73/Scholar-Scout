@@ -1,3 +1,11 @@
+jest.mock('@upstash/redis', () => ({
+  Redis: class Redis {},
+}));
+
+jest.mock('@upstash/ratelimit', () => ({
+  Ratelimit: class Ratelimit {},
+}));
+
 import {
   createRateLimitService,
   type AtomicReservationLimiter,
