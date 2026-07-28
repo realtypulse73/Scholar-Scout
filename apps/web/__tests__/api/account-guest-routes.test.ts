@@ -236,6 +236,38 @@ describe('account guest routes', () => {
         }),
       }),
     );
+    const nonStringId = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({ programmeIds: [123], plans: {} }),
+      }),
+    );
+    const excessiveCollection = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          programmeIds: Array.from({ length: 101 }, (_, index) => `programme-${index}`),
+          plans: {},
+        }),
+      }),
+    );
+    const oversizedNote = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...validBody,
+          plans: {
+            'north-valley-health': { status: 'considering', note: 'x'.repeat(501) },
+          },
+        }),
+      }),
+    );
+    const malformed = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: '{',
+      }),
+    );
     const oversized = await postShortlist(
       new Request('https://scholar-scout.test/api/account/shortlist', {
         method: 'POST',
@@ -248,6 +280,10 @@ describe('account guest routes', () => {
     expect(selectedIdentity.status).toBe(400);
     expect(foreignPlan.status).toBe(400);
     expect(invalidStatus.status).toBe(400);
+    expect(nonStringId.status).toBe(400);
+    expect(excessiveCollection.status).toBe(400);
+    expect(oversizedNote.status).toBe(400);
+    expect(malformed.status).toBe(400);
     expect(oversized.status).toBe(413);
     expect(saveShortlistMock).toHaveBeenCalledTimes(1);
     expect(saveShortlistMock).toHaveBeenCalledWith(account.storageKey, validBody.programmeIds);
