@@ -84,6 +84,14 @@ describe('active staff authorization', () => {
         route: '/api/admin/programmes',
       }),
     ).resolves.toMatchObject({ ok: true, actor: { id: 'staff-account' } });
+    await expect(getPrivilegedOperationAuditEvents()).resolves.toEqual([
+      expect.objectContaining({
+        actorId: 'staff-account',
+        action: 'programme:read',
+        route: '/api/admin/programmes',
+        outcome: 'allowed',
+      }),
+    ]);
 
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'other@example.com';
 
