@@ -1,6 +1,4 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
 import {
   deleteProgrammeRecord,
   getProgrammeAuditEvents,
@@ -8,6 +6,7 @@ import {
   ProgrammeRevisionConflictError,
   saveProgrammeRecord,
 } from '@/lib/server/data-store';
+import { requireActiveStaff } from '@/lib/server/active-staff';
 import {
   prepareProgrammeDraft,
   validateProgrammeDraft,
@@ -15,10 +14,13 @@ import {
 import type { Programme } from '@/lib/programmes';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'programme:read',
+    route: '/api/admin/programmes',
+  });
 
-  if (session?.user?.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   return NextResponse.json({
@@ -28,10 +30,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'programme:write',
+    route: '/api/admin/programmes',
+  });
 
-  if (!session?.user?.id || session.user.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   const input = (await request.json()) as Programme;
@@ -43,7 +48,7 @@ export async function POST(request: Request) {
 
   const programme = prepareProgrammeDraft(input);
   try {
-    const record = await saveProgrammeRecord(session.user.id, programme);
+    const record = await saveProgrammeRecord(authorization.actor.id, programme);
 
     return NextResponse.json({ ok: true, record });
   } catch (error) {
@@ -64,10 +69,13 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'programme:delete',
+    route: '/api/admin/programmes',
+  });
 
-  if (!session?.user?.id || session.user.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   const { searchParams } = new URL(request.url);
@@ -77,7 +85,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Missing programme id' }, { status: 400 });
   }
 
-  await deleteProgrammeRecord(session.user.id, id);
+  await deleteProgrammeRecord(authorization.actor.id, id);
 
   return NextResponse.json({ ok: true });
 }

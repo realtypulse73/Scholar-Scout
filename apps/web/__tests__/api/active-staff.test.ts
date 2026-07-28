@@ -154,22 +154,19 @@ describe('active staff authorization', () => {
   it('rejects every programme operation for a removed staff member while preserving student access', async () => {
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'other@example.com';
 
-    const [getResponse, postResponse, deleteResponse, shortlistResponse] =
-      await Promise.all([
-        getProgrammes(),
-        saveProgramme(
-          new Request('http://localhost/api/admin/programmes', {
-            method: 'POST',
-            body: JSON.stringify({ untrusted: 'body' }),
-          }),
-        ),
-        deleteProgramme(
-          new Request('http://localhost/api/admin/programmes?id=programme-one', {
-            method: 'DELETE',
-          }),
-        ),
-        getShortlist(),
-      ]);
+    const getResponse = await getProgrammes();
+    const postResponse = await saveProgramme(
+      new Request('http://localhost/api/admin/programmes', {
+        method: 'POST',
+        body: JSON.stringify({ untrusted: 'body' }),
+      }),
+    );
+    const deleteResponse = await deleteProgramme(
+      new Request('http://localhost/api/admin/programmes?id=programme-one', {
+        method: 'DELETE',
+      }),
+    );
+    const shortlistResponse = await getShortlist();
 
     expect(getResponse.status).toBe(403);
     expect(postResponse.status).toBe(403);
