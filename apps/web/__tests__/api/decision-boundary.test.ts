@@ -2,21 +2,6 @@
 
 import { NextResponse } from 'next/server';
 
-jest.mock('next/navigation', () => ({
-  notFound: jest.fn(() => {
-    throw new Error('NEXT_NOT_FOUND');
-  }),
-}));
-
-jest.mock('@/lib/server/active-staff', () => ({
-  requireActiveStaff: jest.fn(),
-}), { virtual: true });
-
-jest.mock('@/lib/server/platform-store', () => ({
-  getPlatformMetrics: jest.fn(),
-  runAndStoreDecisions: jest.fn(),
-}), { virtual: true });
-
 const metrics = {
   feedInteractions: 1,
   simulationsCompleted: 2,
@@ -33,28 +18,39 @@ describe('decision boundary', () => {
   let getDecisions: () => Promise<Response>;
   let AdminOpsPage: () => Promise<unknown>;
   let AdminFeedPage: () => Promise<unknown>;
-  const requireActiveStaffMock = jest.requireMock(
-    '@/lib/server/active-staff',
-  ).requireActiveStaff as jest.Mock;
-  const getPlatformMetricsMock = jest.requireMock(
-    '@/lib/server/platform-store',
-  ).getPlatformMetrics as jest.Mock;
-  const runAndStoreDecisionsMock = jest.requireMock(
-    '@/lib/server/platform-store',
-  ).runAndStoreDecisions as jest.Mock;
-  const notFoundMock = jest.requireMock('next/navigation').notFound as jest.Mock;
+  let requireActiveStaffMock: jest.SpyInstance;
+  let getPlatformMetricsMock: jest.Mock;
+  let runAndStoreDecisionsMock: jest.Mock;
+  let notFoundMock: jest.Mock;
 
-  beforeAll(async () => {
-    ({ GET: getDecisions } = await import('@/app/api/decisions/route'));
-    ({ default: AdminOpsPage } = await import('@/app/admin/ops/page'));
-    ({ default: AdminFeedPage } = await import('@/app/admin/feed/page'));
-  });
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.doMock('../../lib/server/active-staff', () => ({
+      requireActiveStaff: jest.fn(),
+    }));
+    jest.doMock('../../lib/server/platform-store', () => ({
+      getPlatformMetrics: jest.fn(),
+      runAndStoreDecisions: jest.fn(),
+    }));
+    jest.doMock('next/navigation', () => ({
+      notFound: jest.fn(() => {
+        throw new Error('NEXT_NOT_FOUND');
+      }),
+    }));
 
-  beforeEach(() => {
-    requireActiveStaffMock.mockReset();
-    getPlatformMetricsMock.mockReset();
-    runAndStoreDecisionsMock.mockReset();
-    notFoundMock.mockClear();
+    const activeStaff = require('../../lib/server/active-staff');
+    const platformStore = require('../../lib/server/platform-store');
+    const navigation = require('next/navigation');
+
+    requireActiveStaffMock = activeStaff.requireActiveStaff;
+    getPlatformMetricsMock = platformStore.getPlatformMetrics;
+    runAndStoreDecisionsMock = platformStore.runAndStoreDecisions;
+    notFoundMock = navigation.notFound;
+
+    ({ GET: getDecisions } = require('../../app/api/decisions/route'));
+    ({ default: AdminOpsPage } = require('../../app/admin/ops/page'));
+    ({ default: AdminFeedPage } = require('../../app/admin/feed/page'));
+    runAndStoreDecisionsMock.mockResolvedValue([]);
   });
 
   it('returns a safe disabled response without running or exposing decisions', async () => {
