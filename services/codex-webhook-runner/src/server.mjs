@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import http from 'node:http';
+import { pathToFileURL } from 'node:url';
 
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
 const MAX_JOB_PACKET_BYTES = 16 * 1024;
@@ -342,7 +343,7 @@ const server = createCodexWebhookRunner({
   repository: process.env.SCHOLARSCOUT_GITHUB_REPOSITORY || process.env.GITHUB_REPOSITORY,
 });
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = process.env.PORT || 8787;
 
   server.listen(port, () => {
