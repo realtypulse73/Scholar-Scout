@@ -1,7 +1,11 @@
+import { ReadableStream } from 'node:stream/web';
+import { TextDecoder, TextEncoder } from 'node:util';
 import {
   isExactObject,
   parseJsonRequest,
 } from '@/lib/api-request';
+
+Object.assign(globalThis, { TextDecoder, TextEncoder });
 
 type ExampleRequest = {
   message: string;
@@ -29,11 +33,14 @@ function validateExampleRequest(value: unknown): ExampleRequest | null {
   return { message, topics };
 }
 
-function createRequest(body: ReadableStream<Uint8Array>, contentLength?: string): Request {
+function createRequest(
+  body: ReadableStream<Uint8Array>,
+  contentLength?: string,
+): Pick<Request, 'body' | 'headers'> {
   return {
-    body,
+    body: body as unknown as Request['body'],
     headers: new Headers(contentLength ? { 'content-length': contentLength } : undefined),
-  } as Request;
+  };
 }
 
 function createBody(chunks: string[]): ReadableStream<Uint8Array> {
