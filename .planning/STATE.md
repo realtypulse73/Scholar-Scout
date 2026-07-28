@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-07-28T02:00:14.832Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-07-28T02:10:28.920Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 02 execution started
 
-Progress: [████░░░░░░] 42%
+Progress: [█████░░░░░] 47%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [████░░░░░░] 42%
 | Phase 01-release-and-ci-baseline P06 | 18 minutes | 2 tasks | 3 files |
 | Phase 02 P01 | 1 day | 1 tasks | 1 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P02 | 11min | 3 tasks | 10 files |
+| Phase 02 P09 | 5min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Progress: [████░░░░░░] 42%
 - [Phase ?]: Plan 02-02 must consume Vercel-managed UPSTASH_REDIS_REST_KV_REST_API_URL and UPSTASH_REDIS_REST_KV_REST_API_TOKEN server-side; no repository aliases or secrets.
 - [Phase ?]: Use Vercel-managed Upstash REST variables only for atomic, fail-closed rate-limit reservations.
 - [Phase ?]: Reserve advisor and credential quotas before KDF, context reads, or OpenAI calls; provider failure returns unavailable.
+- [Phase ?]: Reject absent or invalid webhook signatures with safe 503 responses while health remains observable.
+- [Phase ?]: Require both an agent endpoint and server-only bearer token for outbound webhook dispatch.
+- [Phase ?]: Sanitize and UTF-8 bound webhook job packets before dispatch.
 
 ### Roadmap Evolution
 
@@ -127,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T02:00:14.819Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-07-28T02:10:28.907Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
