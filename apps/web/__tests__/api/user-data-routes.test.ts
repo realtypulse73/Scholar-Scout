@@ -202,7 +202,7 @@ describe('user data route ownership', () => {
     });
     expect(suppliedIdentity.status).toBe(400);
     expect(invalidMetadata.status).toBe(400);
-    expect(analyticsEventsRoute.GET).toBeUndefined();
+    expect((analyticsEventsRoute as { GET?: unknown }).GET).toBeUndefined();
     expect(appendAnalyticsEventMock).not.toHaveBeenCalledWith(
       expect.objectContaining({ userKey: 'account:student-two' }),
     );
