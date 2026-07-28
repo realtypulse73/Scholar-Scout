@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-07-28T02:51:28.100Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-07-28T03:00:33.498Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 7 of 13
+Plan: 8 of 13
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 02 execution started
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [██████░░░░] 63%
 | Phase 02-authentication-api-ai-and-webhook-controls P03 | 12min | 3 tasks | 6 files |
 | Phase 02 P04 | 32min | 2 tasks | 4 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P05 | 4min | 2 tasks | 5 files |
+| Phase 02 P06 | 7min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Progress: [██████░░░░] 63%
 - [Phase ?]: Filter referral collections by the resolved student actor instead of exposing global records.
 - [Phase ?]: Reject browser identity fields and use exact bounded contracts for engagement actions.
 - [Phase ?]: Keep only bounded legacy engagement identity fields for client compatibility and ignore them; ownership always comes from the resolved actor.
+- [Phase ?]: Use a strict current allowlist per privileged request; JWT and stored roles are not staff authority.
+- [Phase ?]: Record only actor ID, action, route, outcome, and timestamp for privileged authorization evidence.
 
 ### Roadmap Evolution
 
@@ -142,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T02:49:06.462Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-07-28T03:00:33.465Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
