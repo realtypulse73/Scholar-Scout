@@ -52,7 +52,7 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
   4. An incoming GitHub webhook is rejected when its signature secret is missing or invalid, and a valid qualifying webhook can dispatch only an authenticated, size-bounded agent request.
   5. A user who repeatedly attempts login or registration receives a safe rate-limit response without tying up the server event loop for avoidable work.
 
-**Plans**: 9/13 plans executed
+**Plans**: 10/13 plans executed
 
 Plans:
 **Wave 1**
@@ -78,7 +78,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-07-PLAN.md — Apply fresh staff checks to data-operation routes
+- [x] 02-07-PLAN.md — Apply fresh staff checks to data-operation routes
 - [ ] 02-10-PLAN.md — Rate-bound credentials and trigger guest migration after sign-in
 - [ ] 02-13-PLAN.md — Disable public decision mutations and guard global decision dashboards
 
@@ -153,7 +153,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Release and CI Baseline | 6/6 | In Progress|  |
-| 2. Authentication, API, AI, and Webhook Controls | 9/13 | In Progress|  |
+| 2. Authentication, API, AI, and Webhook Controls | 10/13 | In Progress|  |
 | 3. Administrative and Data Operations Correctness | 0/TBD | Not started | - |
 | 4. Incremental Durable Persistence Boundaries | 0/TBD | Not started | - |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
