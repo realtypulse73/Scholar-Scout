@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
+import { requireActiveStaff } from '@/lib/server/active-staff';
 import {
   restoreScholarScoutDataFromBackup,
   SCHOLARSCOUT_RESTORE_CONFIRMATION,
@@ -12,10 +11,14 @@ interface RouteContext {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const session = await getServerSession(authOptions);
+  const { id } = await context.params;
+  const authorization = await requireActiveStaff({
+    action: 'restore-backup',
+    route: `/api/admin/data/backups/${id}/restore`,
+  });
 
-  if (!session?.user?.id || session.user.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   let input: { confirmation?: unknown; reason?: unknown };
@@ -42,11 +45,9 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  const { id } = await context.params;
-
   try {
     const result = await restoreScholarScoutDataFromBackup({
-      actorUserId: session.user.id,
+      actorUserId: authorization.actor.id,
       backupId: id,
       reason: typeof input.reason === 'string' ? input.reason : undefined,
     });

@@ -1,13 +1,15 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
+import { requireActiveStaff } from '@/lib/server/active-staff';
 import { getScholarScoutDataStoreStatus } from '@/lib/server/data-store';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'view-data-status',
+    route: '/api/admin/data/status',
+  });
 
-  if (session?.user?.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   return NextResponse.json(await getScholarScoutDataStoreStatus());

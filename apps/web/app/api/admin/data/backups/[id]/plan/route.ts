@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
+import { requireActiveStaff } from '@/lib/server/active-staff';
 import { getScholarScoutRestoreBackupPlan } from '@/lib/server/data-store';
 
 interface RouteContext {
@@ -8,13 +7,16 @@ interface RouteContext {
 }
 
 export async function GET(_: Request, context: RouteContext) {
-  const session = await getServerSession(authOptions);
+  const { id } = await context.params;
+  const authorization = await requireActiveStaff({
+    action: 'plan-backup-restore',
+    route: `/api/admin/data/backups/${id}/plan`,
+  });
 
-  if (session?.user?.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
-  const { id } = await context.params;
   const plan = await getScholarScoutRestoreBackupPlan(id);
 
   if (!plan) {
