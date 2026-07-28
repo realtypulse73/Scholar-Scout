@@ -72,7 +72,7 @@ status: complete
 
 ## Task Commits
 
-1. **Task 1: Make the runner injectable and fail closed on raw webhook input** - `1033c53` (TDD RED), `e25a638` (feat)
+1. **Task 1: Make the runner injectable and fail closed on raw webhook input** - `1033c53` (TDD RED), `e25a638` (feat), `76c9ca9` (runtime fix)
 2. **Task 2: Bound and authenticate outbound job dispatch** - `e12f7f2` (TDD RED), `5b54774` (feat)
 3. **Task 3: Document the hardened service contract** - `6cc0ce6` (docs)
 
@@ -101,7 +101,15 @@ status: complete
 - **Verification:** The real HTTP oversized-body regression test passes.
 - **Committed in:** `e25a638`
 
-**Total deviations:** 1 auto-fixed (1 request-handling bug).
+**2. [Rule 1 - Bug] Restored direct executable startup on Windows paths**
+- **Found during:** Final verification
+- **Issue:** Comparing a Windows `process.argv[1]` path to an ESM URL pathname prevented `node src/server.mjs` from starting the listener.
+- **Fix:** Compared canonical file URLs at the executable edge.
+- **Files modified:** `services/codex-webhook-runner/src/server.mjs`
+- **Verification:** The Node test suite and a local executable `/health` request pass.
+- **Committed in:** `76c9ca9`
+
+**Total deviations:** 2 auto-fixed (2 request-handling/runtime bugs).
 
 ## Issues Encountered
 
@@ -124,6 +132,7 @@ None.
 
 - Required source, test, package, and README files exist.
 - TDD gate commits exist: `1033c53`, `e25a638`, `e12f7f2`, and `5b54774`.
+- The direct Node executable health check passed after `76c9ca9`.
 - `corepack pnpm --filter @scholar-scout/codex-webhook-runner test` passed with 8 tests.
 
 ---
