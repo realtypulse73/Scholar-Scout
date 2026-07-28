@@ -1027,7 +1027,7 @@ describe('guest lifecycle migration', () => {
     data.analyticsEvents = [
       {
         id: 'analytics-guest',
-        area: 'explore',
+        area: 'recommendation',
         name: 'opened',
         userKey: guestKey,
         metadata: {},

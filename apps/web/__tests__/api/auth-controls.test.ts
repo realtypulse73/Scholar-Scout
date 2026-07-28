@@ -162,7 +162,7 @@ describe('student actor controls', () => {
       gpaBand: '3.5-4.0',
       interests: ['healthcare'],
       locationPreference: 'in-state',
-      pathwayPreference: 'in-person-degree',
+      pathwayPreference: '4-year-university',
       affordabilitySensitivity: 3,
       supportNeeds: [],
     };
