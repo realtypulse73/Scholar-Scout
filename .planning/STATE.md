@@ -6,7 +6,7 @@ current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
 stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-07-28T02:49:06.479Z"
+last_updated: "2026-07-28T02:51:28.100Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
@@ -104,6 +104,7 @@ Progress: [██████░░░░] 63%
 - [Phase ?]: Remove global analytics GET rather than exposing an aggregate view in the personal-data security slice.
 - [Phase ?]: Filter referral collections by the resolved student actor instead of exposing global records.
 - [Phase ?]: Reject browser identity fields and use exact bounded contracts for engagement actions.
+- [Phase ?]: Keep only bounded legacy engagement identity fields for client compatibility and ignore them; ownership always comes from the resolved actor.
 
 ### Roadmap Evolution
 

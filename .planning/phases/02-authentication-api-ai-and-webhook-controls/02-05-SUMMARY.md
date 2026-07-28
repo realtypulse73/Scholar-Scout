@@ -26,7 +26,7 @@ key-files:
     - apps/web/app/api/ab-testing/assign/route.ts
 key-decisions:
   - "Referral collections are filtered by the resolved actor rather than exposed as a global list."
-  - "Feed events, shares, and assignments reject browser-selected identity fields and accept only bounded route-owned inputs."
+  - "Feed events and shares ignore bounded legacy identity fields while assignments reject identity-bearing requests; all ownership remains actor-derived."
 patterns-established:
   - "Public engagement actions may issue or reuse an opaque guest actor, but never accept a browser-selected storage key."
 requirements-completed: [SEC-01]
@@ -47,14 +47,14 @@ coverage:
         ref: "apps/web/__tests__/api/engagement-routes.test.ts#engagement route ownership"
         status: pass
     human_judgment: false
-duration: 4min
+duration: 8min
 completed: 2026-07-27
 status: complete
 ---
 
 # Phase 2 Plan 05: Secure Engagement Ownership Summary
 
-**Referral, feed, sharing, and experiment endpoints now derive all ownership from the trusted student actor and reject browser-supplied identity fields.**
+**Referral, feed, sharing, and experiment endpoints now derive all ownership from the trusted student actor, so browser-supplied identities cannot steer records.**
 
 ## Accomplishments
 
@@ -67,6 +67,7 @@ status: complete
 
 1. **Task 1: Scope referrals and feed engagement to the actor** - `4bce7f0` (TDD RED), `bd2a691` (implementation)
 2. **Task 2: Scope shares and experiment assignment to the actor** - `2e5bec5` (TDD RED), `4debe5f` (implementation)
+3. **Compatibility correction** - `2c54627` (fix)
 
 ## Verification
 
@@ -86,11 +87,21 @@ status: complete
 
 - Public engagement routes resolve account or opaque guest actors with `allowGuest: true`; no shared guest identity remains.
 - Referral GET is an actor-scoped collection response, not an operational or public discovery API.
-- Engagement request shapes are exact so identity, metadata, and unsupported experiment fields are rejected before store calls.
+- Engagement request shapes are exact and bounded; legacy referral/feed/share identity fields are ignored for compatibility, while unsupported fields and assignment identities are rejected before store calls.
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Preserved existing engagement clients without restoring browser-controlled ownership**
+- **Found during:** Final verification
+- **Issue:** Existing referral, feed, and share clients send legacy identity fields that the new exact route schemas rejected, causing valid actor-owned actions to return `400`.
+- **Fix:** Accepted only length-bounded legacy identity fields on those routes and ignored them; all persistence and analytics continue using `actor.storageKey`. Assignment retains its stricter identity rejection because no existing client depends on the field.
+- **Files modified:** `apps/web/app/api/referrals/route.ts`, `apps/web/app/api/feed-events/route.ts`, `apps/web/app/api/share/route.ts`, `apps/web/__tests__/api/engagement-routes.test.ts`
+- **Verification:** Focused Jest coverage, TypeScript, and ESLint passed.
+- **Committed in:** `2c54627`
+
+**Total deviations:** 1 auto-fixed (1 Rule 1 compatibility bug). No ownership or trust-boundary scope expansion.
 
 ## Known Stubs
 
@@ -99,7 +110,7 @@ None.
 ## Self-Check: PASSED
 
 - All five plan-owned route/test files exist.
-- TDD and implementation commits `4bce7f0`, `bd2a691`, `2e5bec5`, and `4debe5f` exist in Git history.
+- TDD, implementation, and compatibility commits `4bce7f0`, `bd2a691`, `2e5bec5`, `4debe5f`, and `2c54627` exist in Git history.
 - Focused Jest coverage, TypeScript, and ESLint verification passed.
 
 ---
