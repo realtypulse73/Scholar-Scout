@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 02
-current_phase_name: Authentication, API, AI, and Webhook Controls
+current_phase_name: authentication-api-ai-and-webhook-controls
 status: executing
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-07-28T03:00:33.498Z"
-last_activity: 2026-07-27
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-07-28T05:17:07.576Z"
+last_activity: 2026-07-28
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-25)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 02 — Authentication, API, AI, and Webhook Controls
+**Current focus:** Phase 02 — authentication-api-ai-and-webhook-controls
 
 ## Current Position
 
-Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 8 of 13
+Phase: 02 (authentication-api-ai-and-webhook-controls) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
-Last activity: 2026-07-27 — Phase 02 execution started
+Last activity: 2026-07-28 — Phase 02 execution started
 
-Progress: [███████░░░] 68%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [███████░░░] 68%
 | Phase 02 P04 | 32min | 2 tasks | 4 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P05 | 4min | 2 tasks | 5 files |
 | Phase 02 P06 | 7min | 2 tasks | 4 files |
+| Phase 02-authentication-api-ai-and-webhook-controls P08 | 13 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Progress: [███████░░░] 68%
 - [Phase ?]: Keep only bounded legacy engagement identity fields for client compatibility and ignore them; ownership always comes from the resolved actor.
 - [Phase ?]: Use a strict current allowlist per privileged request; JWT and stored roles are not staff authority.
 - [Phase ?]: Record only actor ID, action, route, outcome, and timestamp for privileged authorization evidence.
+- [Phase ?]: Keep advisor calls single-turn and server-owned: exact { message }, actor-scoped context, strict JSON output, and no tools or browsing.
+- [Phase ?]: Carry a migrated guest quota window into account advisor reservations so signing in cannot bypass the active daily limit.
 
 ### Roadmap Evolution
 
@@ -145,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T03:00:33.465Z
-Stopped at: Completed 02-06-PLAN.md
+Last session: 2026-07-28T05:17:07.563Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
