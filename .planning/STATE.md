@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: Authentication, API, AI, and Webhook Controls
+current_phase: 1
+current_phase_name: Release and CI Baseline
 status: executing
 stopped_at: Phase 2 context gathered
-last_updated: "2026-07-28T01:06:40.368Z"
-last_activity: 2026-07-27
-last_activity_desc: Phase 02 execution started
+last_updated: "2026-07-26T14:51:45.712Z"
+last_activity: 2026-07-26
+last_activity_desc: "Completed quick task 260726-26d: stable production-domain smoke target"
 progress:
-  total_phases: 3
+  total_phases: 2
   completed_phases: 1
-  total_plans: 19
+  total_plans: 6
   completed_plans: 6
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-25)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 02 — Authentication, API, AI, and Webhook Controls
+**Current focus:** Phase 1 — Release and CI Baseline
 
 ## Current Position
 
-Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 1 of 13
-Status: Executing Phase 02
-Last activity: 2026-07-27 — Phase 02 execution started
+Phase: 1 (Release and CI Baseline) — EXECUTING
+Plan: 5 of 5
+Status: Ready to execute
+Last activity: 2026-07-26 — Completed quick task 260726-26d: stable production-domain smoke target
 
 Progress: [██████████] 100%
 
