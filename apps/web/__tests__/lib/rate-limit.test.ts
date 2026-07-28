@@ -155,4 +155,15 @@ describe('rate-limit policies', () => {
       retryAfterSeconds: null,
     });
   });
+
+  it('fails closed when no atomic limiter is configured', async () => {
+    const service = createRateLimitService({ limiter: null, now: () => now });
+
+    await expect(service.reserveRegistration('203.0.113.10')).resolves.toEqual({
+      status: 'unavailable',
+      allowed: false,
+      resetAt: null,
+      retryAfterSeconds: null,
+    });
+  });
 });
