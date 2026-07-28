@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
   const body = await parseJsonRequest(request, {
     maxBytes: MAX_REFERRAL_REQUEST_BYTES,
-    validate: (value) => (isExactObject(value, []) ? {} : null),
+    validate: validateReferralRequest,
   });
 
   if (!body.ok) {
@@ -57,4 +57,16 @@ export async function POST(request: Request) {
     referral,
     link: `/onboarding?ref=${encodeURIComponent(referral.code)}`,
   });
+}
+
+function validateReferralRequest(value: unknown): Record<string, never> | null {
+  if (!isExactObject(value, ['referrer'])) {
+    return null;
+  }
+
+  const referrer = value.referrer;
+
+  return referrer === undefined || (typeof referrer === 'string' && referrer.length <= 64)
+    ? {}
+    : null;
 }

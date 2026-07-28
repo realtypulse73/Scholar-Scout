@@ -9,6 +9,7 @@ import { resolveStudentActor } from '@/lib/server/student-actor';
 
 const MAX_FEED_EVENT_REQUEST_BYTES = 4 * 1024;
 const MAX_FEED_WATCH_SECONDS = 60 * 60;
+const MAX_LEGACY_IDENTITY_LENGTH = 128;
 const FEED_EVENT_TYPES = new Set(['view', 'watch', 'skip']);
 
 interface FeedEventRequest {
@@ -65,21 +66,37 @@ export async function POST(request: Request) {
 }
 
 function validateFeedEventRequest(value: unknown): FeedEventRequest | null {
-  if (!isExactObject(value, ['feedItemId', 'eventType', 'watchSeconds'])) {
+  if (
+    !isExactObject(value, [
+      'userKey',
+      'feedItemId',
+      'eventType',
+      'watchSeconds',
+      'skipped',
+    ])
+  ) {
     return null;
   }
 
+  const legacyUserKey = value.userKey;
   const feedItemId = value.feedItemId;
-  const eventType = value.eventType;
+  const suppliedEventType = value.eventType;
   const watchSeconds = value.watchSeconds;
+  const skipped = value.skipped;
+  const eventType =
+    suppliedEventType === undefined ? (skipped === true ? 'skip' : 'watch') : suppliedEventType;
 
   if (
+    (legacyUserKey !== undefined &&
+      (typeof legacyUserKey !== 'string' || legacyUserKey.length > MAX_LEGACY_IDENTITY_LENGTH)) ||
     typeof feedItemId !== 'string' ||
     feedItemId.length === 0 ||
     feedItemId.length > 64 ||
     !feedItems.some((item) => item.id === feedItemId) ||
     typeof eventType !== 'string' ||
     !FEED_EVENT_TYPES.has(eventType) ||
+    (skipped !== undefined &&
+      (typeof skipped !== 'boolean' || skipped !== (eventType === 'skip'))) ||
     typeof watchSeconds !== 'number' ||
     !Number.isSafeInteger(watchSeconds) ||
     watchSeconds < 0 ||

@@ -143,8 +143,14 @@ describe('engagement route ownership', () => {
     expect(appendAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({ userKey: accountActor.storageKey }),
     );
-    expect(forgedIdentity.status).toBe(400);
+    expect(forgedIdentity.status).toBe(200);
     expect(malformed.status).toBe(400);
+    expect(appendFeedInteractionMock).toHaveBeenLastCalledWith({
+      userKey: accountActor.storageKey,
+      feedItemId: 'feed-health-day',
+      watchSeconds: 24,
+      skipped: false,
+    });
   });
 
   it('creates shares only for the resolved actor with bounded targets', async () => {
@@ -195,8 +201,13 @@ describe('engagement route ownership', () => {
       targetType: 'programme',
       targetId: 'metro-cybersecurity',
     });
-    expect(forgedIdentity.status).toBe(400);
+    expect(forgedIdentity.status).toBe(200);
     expect(malformed.status).toBe(400);
+    expect(trackShareMock).toHaveBeenLastCalledWith({
+      userKey: accountActor.storageKey,
+      targetType: 'programme',
+      targetId: 'metro-cybersecurity',
+    });
   });
 
   it('assigns only supported experiments to the resolved actor', async () => {

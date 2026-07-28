@@ -6,6 +6,7 @@ import type { ShareRecord } from '@/lib/server/platform-store';
 
 const MAX_SHARE_REQUEST_BYTES = 2 * 1024;
 const MAX_SHARE_TARGET_ID_LENGTH = 64;
+const MAX_LEGACY_IDENTITY_LENGTH = 128;
 const SHARE_TARGET_TYPES = new Set<ShareRecord['targetType']>([
   'programme',
   'creator',
@@ -57,14 +58,17 @@ export async function POST(request: Request) {
 }
 
 function validateShareRequest(value: unknown): ShareRequest | null {
-  if (!isExactObject(value, ['targetType', 'targetId'])) {
+  if (!isExactObject(value, ['userKey', 'targetType', 'targetId'])) {
     return null;
   }
 
+  const legacyUserKey = value.userKey;
   const targetType = value.targetType;
   const targetId = value.targetId;
 
   if (
+    (legacyUserKey !== undefined &&
+      (typeof legacyUserKey !== 'string' || legacyUserKey.length > MAX_LEGACY_IDENTITY_LENGTH)) ||
     typeof targetType !== 'string' ||
     !SHARE_TARGET_TYPES.has(targetType as ShareRecord['targetType']) ||
     typeof targetId !== 'string' ||
