@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A hands-on guide to using GSD Core effectively with Codex."
+    />
+    <title>GSD Core Field Training</title>
+    <style>
+      :root {
+        --ink: #14213d;
+        --muted: #5f6c85;
+        --paper: #f7f8fc;
+        --panel: #ffffff;
+        --line: #d9deeb;
+        --primary: #3b4cca;
+        --primary-dark: #26358f;
+        --teal: #047a70;
+        --orange: #ec6c35;
+        --sun: #ffd66b;
+        --success: #157347;
+        --danger: #b42318;
+        --shadow: 0 18px 50px rgba(22, 35, 70, 0.1);
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 0%, rgba(255, 214, 107, 0.38), transparent 23rem),
+          radial-gradient(circle at 96% 5%, rgba(88, 206, 194, 0.25), transparent 27rem),
+          var(--paper);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      a { color: var(--primary-dark); }
+      a:hover { color: var(--orange); }
+
+      .shell { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 19px 0;
+      }
+
+      .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -0.02em; }
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        color: white;
+        background: var(--ink);
+        border-radius: 11px;
+        box-shadow: 4px 4px 0 var(--sun);
+      }
+
+      .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.9rem; }
+      .progress-track { width: 132px; height: 8px; border-radius: 99px; background: #e1e6f2; overflow: hidden; }
+      .progress-track span { display: block; width: 0%; height: 100%; background: var(--teal); transition: width 220ms ease; }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(270px, 0.8fr);
+        gap: 44px;
+        align-items: center;
+        padding: 62px 0 50px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 11px;
+        color: var(--primary-dark);
+        background: rgba(59, 76, 202, 0.1);
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1, h2, h3 { line-height: 1.1; letter-spacing: -0.045em; }
+      h1 { max-width: 770px; margin: 16px 0 18px; font-size: clamp(2.8rem, 6vw, 5.5rem); }
+      h2 { margin: 0 0 12px; font-size: clamp(1.75rem, 3vw, 2.6rem); }
+      h3 { margin: 0 0 8px; font-size: 1.15rem; }
+      p { margin: 0 0 16px; }
+      .lead { max-width: 680px; color: #3f4c65; font-size: 1.17rem; }
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px; }
+
+      button, .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 43px;
+        padding: 10px 16px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 750;
+        text-decoration: none;
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      }
+      button:hover, .button:hover { transform: translateY(-1px); }
+      button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(236, 108, 53, 0.6); outline-offset: 3px; }
+      .primary { color: white; background: var(--primary); box-shadow: 0 8px 18px rgba(59, 76, 202, 0.25); }
+      .primary:hover { color: white; background: var(--primary-dark); }
+      .secondary { color: var(--ink); background: white; border-color: var(--line); }
+
+      .hero-card, .card, .lesson, .lab, .checklist, .command-table, .summary-card {
+        background: var(--panel);
+        border: 1px solid rgba(217, 222, 235, 0.9);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+      }
+      .hero-card { padding: 25px; transform: rotate(1.2deg); }
+      .hero-card p { color: var(--muted); }
+      .mini-loop { display: grid; gap: 9px; margin-top: 19px; }
+      .mini-step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 11px;
+        background: #f5f7ff;
+        font-weight: 750;
+      }
+      .step-number {
+        display: grid;
+        place-items: center;
+        min-width: 25px;
+        height: 25px;
+        color: white;
+        background: var(--primary);
+        border-radius: 50%;
+        font-size: 0.77rem;
+      }
+
+      .notice {
+        display: flex;
+        gap: 12px;
+        margin: 10px 0 36px;
+        padding: 15px 17px;
+        background: #fff9eb;
+        border: 1px solid #f6df9c;
+        border-radius: 13px;
+      }
+      .notice strong { display: block; margin-bottom: 2px; }
+      .notice p { margin: 0; color: #68582c; }
+
+      .section { margin-top: 70px; scroll-margin-top: 20px; }
+      .section-heading { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 24px; }
+      .section-index {
+        display: grid;
+        flex: 0 0 auto;
+        place-items: center;
+        width: 39px;
+        height: 39px;
+        color: white;
+        background: var(--orange);
+        border-radius: 12px;
+        font-weight: 900;
+      }
+      .section-heading p { max-width: 720px; margin: 0; color: var(--muted); }
+
+      .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+      .card { padding: 22px; }
+      .card p { color: var(--muted); }
+      .card.accent { color: white; background: var(--ink); border-color: var(--ink); }
+      .card.accent p { color: #d5dbed; }
+
+      .loop { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      .loop-step { position: relative; min-height: 190px; padding: 18px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+      .loop-step:not(:last-child)::after { position: absolute; top: 50%; right: -8px; z-index: 2; color: var(--orange); content: "›"; font-size: 1.8rem; font-weight: 800; transform: translateY(-50%); }
+      .loop-step strong { display: block; margin-bottom: 8px; color: var(--primary-dark); font-size: 1.05rem; }
+      .loop-step p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+      .artifact { display: inline-block; margin-top: 13px; padding: 4px 8px; color: var(--teal); background: #e4f6f2; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.76rem; font-weight: 750; }
+
+      .callout { margin-top: 18px; padding: 18px 20px; border-left: 5px solid var(--teal); background: #eaf8f5; border-radius: 0 13px 13px 0; }
+      .callout p { margin: 0; }
+
+      .command-table { overflow: hidden; }
+      .command-row { display: grid; grid-template-columns: 1.02fr 1.75fr 0.62fr; gap: 16px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      .command-row:last-child { border-bottom: 0; }
+      .command-row.head { color: white; background: var(--ink); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+      code { padding: 3px 6px; color: #163f68; background: #edf3fb; border-radius: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+      .command-row code, .terminal code { color: #d6fffa; background: transparent; padding: 0; }
+      .tag { justify-self: start; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; }
+      .tag.light { color: #39601b; background: #e8f4d7; }
+      .tag.medium { color: #87590a; background: #fff1c5; }
+      .tag.deep { color: #8d2940; background: #ffe1e9; }
+
+      .terminal { overflow-x: auto; padding: 18px; color: #eaf2ff; background: #111a2e; border-radius: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.91rem; }
+      .terminal .prompt { color: #81e0d1; user-select: none; }
+      .copy-button { margin-top: 10px; min-height: 37px; padding: 7px 12px; color: var(--primary-dark); background: #eff2ff; border-color: #d7ddfa; font-size: 0.86rem; }
+
+      .scenario { display: grid; gap: 14px; }
+      .scenario-card { padding: 18px; background: white; border: 1px solid var(--line); border-radius: 14px; }
+      .scenario-card legend { padding: 0 6px; font-weight: 800; }
+      .scenario-card p { color: var(--muted); }
+      .options { display: grid; gap: 9px; margin-top: 13px; }
+      .option {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 10px 12px;
+        background: #f8faff;
+        border: 1px solid #e1e6f4;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .option:hover { border-color: #aebaf1; }
+      .option input { margin-top: 4px; accent-color: var(--primary); }
+      .feedback { min-height: 26px; margin-top: 14px; font-weight: 700; }
+      .feedback.good { color: var(--success); }
+      .feedback.bad { color: var(--danger); }
+
+      .mission { padding: 26px; color: white; background: linear-gradient(130deg, #2537a0, #117a72); border-radius: 20px; box-shadow: var(--shadow); }
+      .mission h3 { font-size: 1.5rem; }
+      .mission p { color: #e3fbf7; }
+      .mission .terminal { margin-top: 17px; background: rgba(5, 14, 40, 0.63); border: 1px solid rgba(255,255,255,0.15); }
+      .mission-result { min-height: 28px; margin: 15px 0 0; font-weight: 750; }
+
+      .checklist { padding: 21px; }
+      .check-item { display: flex; gap: 11px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+      .check-item:last-child { border-bottom: 0; }
+      .check-item input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--teal); }
+      .check-item span { color: var(--muted); }
+      .check-item input:checked + span { color: var(--ink); text-decoration: line-through; text-decoration-color: var(--teal); }
+
+      .summary-card { padding: 30px; text-align: center; }
+      .summary-card p { max-width: 640px; margin: 0 auto 18px; color: var(--muted); }
+      .score { display: inline-grid; place-items: center; width: 96px; height: 96px; margin: 8px 0 18px; color: var(--primary-dark); background: #edf0ff; border-radius: 50%; font-size: 1.6rem; font-weight: 900; }
+      .sources { margin-top: 22px; color: var(--muted); font-size: 0.9rem; }
+      .sources a { margin: 0 5px; }
+
+      .complete { position: fixed; right: 18px; bottom: 18px; z-index: 4; display: none; max-width: 330px; padding: 14px 16px; color: white; background: #146c43; border-radius: 12px; box-shadow: var(--shadow); font-weight: 700; }
+      .complete.show { display: block; animation: rise 240ms ease-out; }
+      @keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+      @media (max-width: 850px) {
+        .hero, .grid-3 { grid-template-columns: 1fr; }
+        .hero-card { transform: none; }
+        .loop { grid-template-columns: 1fr; }
+        .loop-step { min-height: 0; }
+        .loop-step:not(:last-child)::after { top: auto; right: 50%; bottom: -25px; transform: translateX(50%) rotate(90deg); }
+        .command-row { grid-template-columns: 1fr; gap: 6px; }
+        .command-row.head { display: none; }
+      }
+
+      @media (max-width: 620px) {
+        .shell { padding-right: 16px; padding-left: 16px; }
+        .topbar { align-items: flex-start; }
+        .status { align-items: flex-end; flex-direction: column; }
+        .progress-track { width: 90px; }
+        .grid-2 { grid-template-columns: 1fr; }
+        h1 { font-size: 2.8rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">G</span> GSD Core Field Training</div>
+        <div class="status" aria-live="polite"><span id="progress-label">0% complete</span><span class="progress-track"><span id="progress-bar"></span></span></div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <span class="eyebrow">A practical, 20-minute primer</span>
+          <h1 id="page-title">Use GSD with intent, not just momentum.</h1>
+          <p class="lead">GSD Core gives an AI coding agent a durable operating system: decisions before implementation, fresh-context execution, and proof before “done.” This training helps you choose the right workflow and steer it well.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#start">Start the training <span aria-hidden="true">↓</span></a>
+            <a class="button secondary" href="#mission">Jump to the hands-on mission</a>
+          </div>
+        </div>
+        <aside class="hero-card" aria-label="The GSD loop at a glance">
+          <span class="eyebrow">The core habit</span>
+          <h2>Make work legible.</h2>
+          <p>At each phase, GSD records what was decided, planned, built, and proven—so your next session starts from evidence rather than guesswork.</p>
+          <div class="mini-loop">
+            <div class="mini-step"><span class="step-number">1</span> Discuss the decisions</div>
+            <div class="mini-step"><span class="step-number">2</span> Plan the work</div>
+            <div class="mini-step"><span class="step-number">3</span> Execute in fresh context</div>
+            <div class="mini-step"><span class="step-number">4</span> Verify outcomes</div>
+          </div>
+        </aside>
+      </section>
+
+      <aside class="notice" role="note">
+        <span aria-hidden="true">⚑</span>
+        <div><strong>A naming update worth knowing</strong><p>The linked <code>gsd-build/get-shit-done</code> repository is archived. GSD continues as <a href="https://github.com/open-gsd/gsd-core" target="_blank" rel="noreferrer">GSD Core</a>; use it for current docs, releases, issues, and commands. This training uses Codex command syntax: <code>$gsd-…</code>.</p></div>
+      </aside>
+
+      <section class="section" id="start" aria-labelledby="why-title">
+        <div class="section-heading"><span class="section-index">01</span><div><h2 id="why-title">Know what GSD is solving</h2><p>GSD is most useful when a task has enough uncertainty, scope, or risk that a one-shot prompt would leave important work unspoken.</p></div></div>
+        <div class="grid-3">
+          <article class="card"><h3>Context rot</h3><p>Long agent sessions accumulate irrelevant detail. GSD keeps durable artifacts in the project, then gives heavy research, planning, and execution work fresh contexts.</p></article>
+          <article class="card"><h3>Invisible decisions</h3><p>Trade-offs written only in chat vanish at handoff time. GSD turns them into planning context that an executor can follow.</p></article>
+          <article class="card accent"><h3>The effective mindset</h3><p>Do not ask, “Can the agent code this?” Ask, “What must be true for this change to be safe, complete, and easy to resume?”</p></article>
+        </div>
+        <div class="callout"><strong>Rule of thumb:</strong> use the smallest workflow that still makes the risk visible. A typo needs momentum; a new API, a bug with an unknown cause, or a multi-file feature needs evidence.</div>
+      </section>
+
+      <section class="section" aria-labelledby="loop-title">
+        <div class="section-heading"><span class="section-index">02</span><div><h2 id="loop-title">Follow the phase loop</h2><p>The normal workflow is deliberate on purpose. Each stage creates an artifact that protects the next one from assumptions.</p></div></div>
+        <div class="loop" aria-label="GSD phase loop">
+          <article class="loop-step"><strong>Discuss</strong><p>Resolve gray areas and lock meaningful product or technical decisions before they become code.</p><span class="artifact">CONTEXT.md</span></article>
+          <article class="loop-step"><strong>Plan</strong><p>Research, slice the work, add verification, and check that the plan can actually achieve the phase goal.</p><span class="artifact">PLAN.md</span></article>
+          <article class="loop-step"><strong>Execute</strong><p>Use focused executors and small commits. The plan, not chat memory, provides the working brief.</p><span class="artifact">SUMMARY.md</span></article>
+          <article class="loop-step"><strong>Verify</strong><p>Test the promised outcomes and use UAT for what needs human judgment. Fix gaps before declaring victory.</p><span class="artifact">VERIFICATION.md</span></article>
+          <article class="loop-step"><strong>Ship</strong><p>Prepare the reviewable change, preserve evidence, and move the milestone forward without losing the learning.</p><span class="artifact">STATE.md</span></article>
+        </div>
+        <div class="grid-2" style="margin-top:18px">
+          <article class="card"><h3>Start a new project</h3><p><code>$gsd-new-project</code> captures product context and turns it into requirements and a roadmap. For an existing codebase, begin with <code>$gsd-onboard</code>.</p></article>
+          <article class="card"><h3>Resume intelligently</h3><p>When you are unsure where work stopped, use <code>$gsd-progress</code> for the status and next step, or <code>$gsd:next</code> when you want an interactive state-aware router.</p></article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="choose-title">
+        <div class="section-heading"><span class="section-index">03</span><div><h2 id="choose-title">Choose the smallest honest command</h2><p>Command choice is where most GSD leverage lives. Use the task’s uncertainty—not its apparent size—to decide how much process you need.</p></div></div>
+        <div class="command-table" role="table" aria-label="GSD command chooser">
+          <div class="command-row head" role="row"><span role="columnheader">Situation</span><span role="columnheader">Use this</span><span role="columnheader">Depth</span></div>
+          <div class="command-row" role="row"><span role="cell">One obvious, reversible change</span><span role="cell"><code>$gsd-fast "fix the README typo"</code></span><span class="tag light" role="cell">Inline</span></div>
+          <div class="command-row" role="row"><span role="cell">Ad-hoc change with multiple steps or a testable outcome</span><span role="cell"><code>$gsd-quick --validate "add CSV export"</code></span><span class="tag medium" role="cell">Quick task</span></div>
+          <div class="command-row" role="row"><span role="cell">Cause unknown; investigate before changing code</span><span role="cell"><code>$gsd-debug --diagnose "intermittent 500 on checkout"</code></span><span class="tag medium" role="cell">Evidence-first</span></div>
+          <div class="command-row" role="row"><span role="cell">A roadmap phase or new product capability</span><span role="cell"><code>$gsd-discuss-phase</code> → <code>$gsd-plan-phase</code> → <code>$gsd-execute-phase</code></span><span class="tag deep" role="cell">Phase</span></div>
+          <div class="command-row" role="row"><span role="cell">Unsure what comes next in an existing project</span><span role="cell"><code>$gsd-progress</code> or <code>$gsd:next</code></span><span class="tag light" role="cell">Navigate</span></div>
+        </div>
+        <div class="callout"><strong>Do not use <code>$gsd-fast</code> as a shortcut around uncertainty.</strong> It is for trivial, well-understood changes. Move up to <code>$gsd-quick</code> as soon as research, multi-step planning, or verification matters.</div>
+      </section>
+
+      <section class="section" aria-labelledby="practice-title">
+        <div class="section-heading"><span class="section-index">04</span><div><h2 id="practice-title">Practice command judgment</h2><p>Choose the best first command for each situation. Getting a “wrong” answer is useful: read the explanation and try again.</p></div></div>
+        <div class="lab">
+          <div class="scenario" style="padding:22px">
+            <fieldset class="scenario-card" data-answer="debug">
+              <legend>Scenario A — production error</legend>
+              <p>A customer reports sporadic 500 responses after a billing-service timeout. You do not yet know whether the cause is retry behavior, a data edge case, or a deployment issue.</p>
+              <div class="options">
+                <label class="option"><input type="radio" name="scenario-a" value="fast" /> <span><code>$gsd-fast "fix billing error"</code></span></label>
+                <label class="option"><input type="radio" name="scenario-a" value="debug" /> <span><code>$gsd-debug --diagnose "sporadic 500 after billing timeout"</code></span></label>
+                <label class="option"><input type="radio" name="scenario-a" value="auto" /> <span><code>$gsd-autonomous</code></span></label>
+              </div>
+              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
+            </fieldset>
+            <fieldset class="scenario-card" data-answer="quick">
+              <legend>Scenario B — bounded feature</legend>
+              <p>You need an admin CSV export. The outcome is clear, but it touches authorization, API output, UI wiring, and tests. You want a plan and verification without turning it into a whole roadmap phase.</p>
+              <div class="options">
+                <label class="option"><input type="radio" name="scenario-b" value="fast" /> <span><code>$gsd-fast "add CSV export"</code></span></label>
+                <label class="option"><input type="radio" name="scenario-b" value="quick" /> <span><code>$gsd-quick --validate "add authorized admin CSV export"</code></span></label>
+                <label class="option"><input type="radio" name="scenario-b" value="new" /> <span><code>$gsd-new-project</code></span></label>
+              </div>
+              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
+            </fieldset>
+            <fieldset class="scenario-card" data-answer="phase">
+              <legend>Scenario C — planned capability</legend>
+              <p>Your roadmap has a phase for role-based access. It has important decisions around migration, behavior for existing accounts, and release safety.</p>
+              <div class="options">
+                <label class="option"><input type="radio" name="scenario-c" value="quick" /> <span><code>$gsd-quick "implement roles"</code></span></label>
+                <label class="option"><input type="radio" name="scenario-c" value="phase" /> <span><code>$gsd-discuss-phase 3</code>, then plan and execute the phase</span></label>
+                <label class="option"><input type="radio" name="scenario-c" value="fast" /> <span><code>$gsd-fast "add role checks"</code></span></label>
+              </div>
+              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
+            </fieldset>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="brief-title">
+        <div class="section-heading"><span class="section-index">05</span><div><h2 id="brief-title">Give the workflow a useful brief</h2><p>Good GSD inputs make success, constraints, and evidence explicit. Name the outcome—not merely the implementation you first imagined.</p></div></div>
+        <div class="grid-2">
+          <article class="card"><h3>Weak request</h3><div class="terminal"><span class="prompt">$</span> $gsd-quick "improve auth"</div><p style="margin-top:14px">It hides the actor, risk, desired behavior, constraints, and proof. The agent must invent them.</p></article>
+          <article class="card"><h3>Strong request</h3><div class="terminal"><span class="prompt">$</span> $gsd-quick --discuss --validate "Require sign-in for account exports; preserve staff access; return a clear 401/403 response; add route tests."</div><p style="margin-top:14px">It gives a goal, a constraint, expected behavior, and a verification direction. <code>--discuss</code> is appropriate because authorization policy may contain a real decision.</p></article>
+        </div>
+        <div class="grid-3" style="margin-top:18px">
+          <article class="card"><h3>1. Outcome</h3><p>Who should be able to do what when the work is finished?</p></article>
+          <article class="card"><h3>2. Boundaries</h3><p>What must remain true? Mention compatibility, security, data, rollout, or design constraints.</p></article>
+          <article class="card"><h3>3. Evidence</h3><p>How will you know it works? Name a test, observable behavior, report, or human UAT check.</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="mission" aria-labelledby="mission-title">
+        <div class="section-heading"><span class="section-index">06</span><div><h2 id="mission-title">Hands-on mission</h2><p>Simulate a high-quality GSD start. Pick the command that matches the task, then reveal the recommended first move.</p></div></div>
+        <div class="mission">
+          <span class="eyebrow" style="color:#fff;background:rgba(255,255,255,.16)">Mission: one real decision</span>
+          <h3>“Add a student recommendation explanation panel.”</h3>
+          <p>It affects user trust and potentially sensitive recommendation logic. The feature is not merely visual: you need to decide what explanations are allowed, how they are framed, and what evidence the user should see.</p>
+          <div class="terminal"><span class="prompt">$</span> <span id="mission-command">Choose an approach below</span></div>
+          <div class="hero-actions">
+            <button class="secondary mission-choice" data-command="$gsd-fast &quot;add explanation panel&quot;" data-grade="no" type="button">Use Fast</button>
+            <button class="secondary mission-choice" data-command="$gsd-quick --validate &quot;add explanation panel&quot;" data-grade="maybe" type="button">Use Quick</button>
+            <button class="primary mission-choice" data-command="$gsd-discuss-phase 4, then $gsd-plan-phase 4" data-grade="yes" type="button">Use the phase loop</button>
+          </div>
+          <p class="mission-result" id="mission-result" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="habits-title">
+        <div class="section-heading"><span class="section-index">07</span><div><h2 id="habits-title">Build the habits that make GSD effective</h2><p>Use this before launching a substantial task. Check all five; your completion meter will update as you go.</p></div></div>
+        <div class="checklist">
+          <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I chose workflow depth based on uncertainty and risk.</strong><br />A quick fix and a new capability deserve different handling.</span></label>
+          <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I stated the outcome and the boundaries.</strong><br />I described what success means and what must not change.</span></label>
+          <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I surfaced real decisions before execution.</strong><br />For ambiguous work, I use discussion/specification rather than silently accepting defaults.</span></label>
+          <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I treat verification as work, not a postscript.</strong><br />I ask for the relevant tests, UAT, or measurable evidence.</span></label>
+          <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I read the artifacts when I return.</strong><br />I use <code>STATE.md</code>, plan summaries, and GSD navigation commands to resume from facts.</span></label>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="finish-title">
+        <div class="summary-card">
+          <span class="eyebrow">Ready-to-use prompt</span>
+          <h2 id="finish-title">Your next effective GSD request</h2>
+          <p>Copy this, replace the brackets, and make the goal, boundaries, and evidence real for your work.</p>
+          <div class="terminal" id="template-command"><span class="prompt">$</span> $gsd-quick --discuss --validate "[outcome]. Preserve [constraint]. Prove it with [test or observable behavior]."</div>
+          <button class="copy-button" type="button" data-copy-target="template-command">Copy the template</button>
+          <div class="score" id="score">0/9</div>
+          <p id="score-text">Complete the three scenario checks, the mission, and the five habits to finish the field training.</p>
+          <div class="sources"><strong>Keep learning:</strong><a href="https://github.com/open-gsd/gsd-core" target="_blank" rel="noreferrer">GSD Core</a>·<a href="https://github.com/open-gsd/gsd-core/blob/next/docs/COMMANDS.md" target="_blank" rel="noreferrer">command reference</a>·<a href="https://github.com/gsd-build/get-shit-done" target="_blank" rel="noreferrer">archived original repository</a></div>
+        </div>
+      </section>
+    </main>
+    <div class="complete" id="completion-toast" role="status">Training complete. You are ready to choose a GSD workflow deliberately.</div>
+
+    <script>
+      const answers = {
+        debug: 'Correct. Diagnose first: the root cause is unknown, so avoid committing to a fix before gathering evidence.',
+        quick: 'Correct. This is bounded but cross-cutting, so a quick task with validation gives you a plan and proof without promoting it to a roadmap phase.',
+        phase: 'Correct. This is a planned, consequential capability with policy and migration decisions. Discuss those decisions before creating the phase plan.',
+      };
+      const wrongAnswers = {
+        fast: 'Not yet. Fast is for trivial, well-understood work; this scenario has uncertainty or several important boundaries.',
+        auto: 'Not as a first move. Autonomous execution is powerful after the work has been scoped and planned—not while the root cause is unknown.',
+        new: 'This is an existing-project change, not a new project setup.',
+        quick: 'This is meaningful roadmap work. A phase discussion should capture its policy and migration decisions before quick execution.',
+      };
+      const state = { scenarios: new Set(), mission: false };
+
+      function updateProgress() {
+        const completed = state.scenarios.size + (state.mission ? 1 : 0) + document.querySelectorAll('.habit:checked').length;
+        const percent = Math.round((completed / 9) * 100);
+        document.getElementById('progress-label').textContent = `${percent}% complete`;
+        document.getElementById('progress-bar').style.width = `${percent}%`;
+        document.getElementById('score').textContent = `${completed}/9`;
+        document.getElementById('score-text').textContent = completed === 9
+          ? 'Excellent. You can now frame work, choose workflow depth, and demand evidence before declaring a task done.'
+          : 'Complete the three scenario checks, the mission, and the five habits to finish the field training.';
+        if (completed === 9) document.getElementById('completion-toast').classList.add('show');
+      }
+
+      document.querySelectorAll('.check-answer').forEach((button) => {
+        button.addEventListener('click', () => {
+          const fieldset = button.closest('fieldset');
+          const selected = fieldset.querySelector('input:checked');
+          const feedback = fieldset.querySelector('.feedback');
+          if (!selected) {
+            feedback.textContent = 'Choose one option first.';
+            feedback.className = 'feedback bad';
+            return;
+          }
+          const correct = fieldset.dataset.answer === selected.value;
+          feedback.textContent = correct ? answers[selected.value] : (wrongAnswers[selected.value] || 'Try the option that makes uncertainty visible before implementation.');
+          feedback.className = `feedback ${correct ? 'good' : 'bad'}`;
+          if (correct) state.scenarios.add(fieldset.querySelector('legend').textContent);
+          updateProgress();
+        });
+      });
+
+      document.querySelectorAll('.mission-choice').forEach((button) => {
+        button.addEventListener('click', () => {
+          document.getElementById('mission-command').textContent = button.dataset.command;
+          const result = document.getElementById('mission-result');
+          if (button.dataset.grade === 'yes') {
+            result.textContent = 'Best choice. This feature affects policy and trust. Discuss the allowed explanation signals and user-facing boundaries first, then plan and verify the phase.';
+            state.mission = true;
+          } else if (button.dataset.grade === 'maybe') {
+            result.textContent = 'Defensible only if the policy is already fully decided and this is not roadmap work. Otherwise, start with a phase discussion.';
+          } else {
+            result.textContent = 'Too shallow. The task has product and trust implications that need decisions and verification.';
+          }
+          updateProgress();
+        });
+      });
+
+      document.querySelectorAll('.habit').forEach((checkbox) => checkbox.addEventListener('change', updateProgress));
+
+      document.querySelectorAll('[data-copy-target]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const command = document.getElementById(button.dataset.copyTarget).innerText.replace(/^\$\s*/, '');
+          try {
+            await navigator.clipboard.writeText(command);
+            button.textContent = 'Copied';
+          } catch {
+            button.textContent = 'Select and copy the command';
+          }
+          window.setTimeout(() => { button.textContent = 'Copy the template'; }, 1600);
+        });
+      });
+    </script>
+  </body>
+</html>
