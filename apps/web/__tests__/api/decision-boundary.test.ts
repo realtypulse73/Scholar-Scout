@@ -18,7 +18,7 @@ describe('decision boundary', () => {
   let getDecisions: () => Promise<Response>;
   let AdminOpsPage: () => Promise<unknown>;
   let AdminFeedPage: () => Promise<unknown>;
-  let requireActiveStaffMock: jest.SpyInstance;
+  let requireActiveStaffMock: jest.Mock;
   let getPlatformMetricsMock: jest.Mock;
   let runAndStoreDecisionsMock: jest.Mock;
   let notFoundMock: jest.Mock;
@@ -38,18 +38,19 @@ describe('decision boundary', () => {
       }),
     }));
 
-    const activeStaff = require('../../lib/server/active-staff');
-    const platformStore = require('../../lib/server/platform-store');
-    const navigation = require('next/navigation');
+    const activeStaff = await import('../../lib/server/active-staff');
+    const platformStore = await import('../../lib/server/platform-store');
+    const navigation = await import('next/navigation');
 
-    requireActiveStaffMock = activeStaff.requireActiveStaff;
-    getPlatformMetricsMock = platformStore.getPlatformMetrics;
-    runAndStoreDecisionsMock = platformStore.runAndStoreDecisions;
-    notFoundMock = navigation.notFound;
+    requireActiveStaffMock = activeStaff.requireActiveStaff as unknown as jest.Mock;
+    getPlatformMetricsMock = platformStore.getPlatformMetrics as unknown as jest.Mock;
+    runAndStoreDecisionsMock =
+      platformStore.runAndStoreDecisions as unknown as jest.Mock;
+    notFoundMock = navigation.notFound as unknown as jest.Mock;
 
-    ({ GET: getDecisions } = require('../../app/api/decisions/route'));
-    ({ default: AdminOpsPage } = require('../../app/admin/ops/page'));
-    ({ default: AdminFeedPage } = require('../../app/admin/feed/page'));
+    ({ GET: getDecisions } = await import('../../app/api/decisions/route'));
+    ({ default: AdminOpsPage } = await import('../../app/admin/ops/page'));
+    ({ default: AdminFeedPage } = await import('../../app/admin/feed/page'));
     runAndStoreDecisionsMock.mockResolvedValue([]);
   });
 
