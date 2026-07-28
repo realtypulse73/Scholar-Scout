@@ -73,6 +73,15 @@ export interface GuestMigrationAuditRecord {
   transferredCollections: string[];
 }
 
+export interface PrivilegedOperationAuditEvent {
+  id: string;
+  actorId: string;
+  action: string;
+  route: string;
+  outcome: 'allowed' | 'denied';
+  createdAt: string;
+}
+
 export interface ScholarScoutData {
   users: StoredUser[];
   onboardingProfiles: Record<string, OnboardingData>;
@@ -88,6 +97,7 @@ export interface ScholarScoutData {
   guestLifecycles?: GuestLifecycleRecord[];
   guestQuotaBindings?: Record<string, GuestQuotaBinding>;
   guestMigrationAuditRecords?: GuestMigrationAuditRecord[];
+  privilegedOperationAuditEvents?: PrivilegedOperationAuditEvent[];
 }
 
 export interface ScholarScoutDataBackup {
@@ -180,6 +190,7 @@ const INITIAL_DATA: ScholarScoutData = {
   guestLifecycles: [],
   guestQuotaBindings: {},
   guestMigrationAuditRecords: [],
+  privilegedOperationAuditEvents: [],
 };
 
 const dataFilePath =
@@ -1152,6 +1163,36 @@ export async function getProgrammeAuditEvents(): Promise<ProgrammeAuditEvent[]> 
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export async function appendPrivilegedOperationAudit(input: {
+  actorId: string;
+  action: string;
+  route: string;
+  outcome: PrivilegedOperationAuditEvent['outcome'];
+}): Promise<void> {
+  const data = await readScholarScoutData();
+  data.privilegedOperationAuditEvents = [
+    ...(data.privilegedOperationAuditEvents ?? []),
+    {
+      id: randomUUID(),
+      actorId: input.actorId,
+      action: input.action,
+      route: input.route,
+      outcome: input.outcome,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+  await writeScholarScoutData(data);
+}
+
+export async function getPrivilegedOperationAuditEvents(): Promise<
+  PrivilegedOperationAuditEvent[]
+> {
+  const data = await readScholarScoutData();
+  return [...(data.privilegedOperationAuditEvents ?? [])].sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt),
+  );
+}
+
 function createAuditEvent(
   userId: string,
   action: string,
@@ -1343,6 +1384,9 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
       ? (data.guestMigrationAuditRecords as GuestMigrationAuditRecord[])
       : [],
+    privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
+      ? (data.privilegedOperationAuditEvents as PrivilegedOperationAuditEvent[])
+      : [],
   };
 }
 
@@ -1356,6 +1400,9 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
     guestQuotaBindings: normalizeGuestQuotaBindings(data.guestQuotaBindings),
     guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
       ? data.guestMigrationAuditRecords.filter(isGuestMigrationAuditRecord)
+      : [],
+    privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
+      ? data.privilegedOperationAuditEvents.filter(isPrivilegedOperationAuditEvent)
       : [],
   };
 }
@@ -1407,6 +1454,21 @@ function isGuestMigrationAuditRecord(
     isValidTimestamp(value.migratedAt) &&
     Array.isArray(value.transferredCollections) &&
     value.transferredCollections.every((collection) => typeof collection === 'string')
+  );
+}
+
+function isPrivilegedOperationAuditEvent(
+  value: unknown,
+): value is PrivilegedOperationAuditEvent {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.actorId === 'string' &&
+    typeof value.action === 'string' &&
+    typeof value.route === 'string' &&
+    (value.outcome === 'allowed' || value.outcome === 'denied') &&
+    isValidTimestamp(value.createdAt)
   );
 }
 
