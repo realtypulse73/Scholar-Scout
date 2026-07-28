@@ -2,13 +2,16 @@
 
 import { cookies } from 'next/headers';
 import { getServerSession } from 'next-auth';
+import { POST as migrateGuest } from '@/app/api/account/guest-migration/route';
 import {
   GUEST_ACTOR_COOKIE_NAME,
   clearGuestActorCookie,
   resolveStudentActor,
 } from '@/lib/server/student-actor';
 import {
+  hashGuestCredential,
   readScholarScoutData,
+  registerGuestLifecycle,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
   type ScholarScoutDataStore,
@@ -136,6 +139,73 @@ describe('student actor controls', () => {
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
+    });
+  });
+
+  it('rejects unauthenticated migration without reading a browser-selected identity', async () => {
+    getSessionMock.mockResolvedValue(null);
+
+    const response = await migrateGuest();
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' });
+    expect(cookieStore.get).not.toHaveBeenCalled();
+  });
+
+  it('migrates only the cookie-resolved guest once and returns stable success after invalidation', async () => {
+    const store = new MemoryDataStore();
+    const guestId = 'guest-route';
+    const guestCredential = 'trusted-guest-cookie';
+    const guestKey = `guest:${guestId}`;
+    setScholarScoutDataStoreForTests(store);
+    store.data.onboardingProfiles[guestKey] = {
+      gpaBand: '3.5-4.0',
+      interests: ['healthcare'],
+      locationPreference: 'in-state',
+      pathwayPreference: 'in-person-degree',
+      affordabilitySensitivity: 3,
+      supportNeeds: [],
+    };
+    await registerGuestLifecycle({
+      guestId,
+      credentialHash: hashGuestCredential(guestCredential),
+      now: new Date('2026-07-28T12:00:00.000Z'),
+    });
+    getSessionMock.mockResolvedValue({ user: { id: 'account-route' } } as never);
+    cookieStore.get.mockReturnValue({ value: guestCredential });
+
+    const firstResponse = await migrateGuest();
+
+    expect(firstResponse.status).toBe(200);
+    await expect(firstResponse.json()).resolves.toEqual({
+      ok: true,
+      migrated: true,
+    });
+    expect(store.data.onboardingProfiles).toEqual({
+      'account-route': expect.objectContaining({ interests: ['healthcare'] }),
+    });
+    expect(cookieStore.set).toHaveBeenCalledWith(GUEST_ACTOR_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+
+    cookieStore.get.mockReturnValue(undefined);
+    cookieStore.set.mockClear();
+    const retryResponse = await migrateGuest();
+
+    expect(retryResponse.status).toBe(200);
+    await expect(retryResponse.json()).resolves.toEqual({
+      ok: true,
+      migrated: false,
+    });
+    expect(cookieStore.set).not.toHaveBeenCalled();
+    await expect(readScholarScoutData()).resolves.toMatchObject({
+      guestQuotaBindings: {
+        'account-route': expect.objectContaining({ guestId }),
+      },
     });
   });
 });
