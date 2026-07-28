@@ -58,14 +58,8 @@ describe('user data route ownership', () => {
     getMemoryMock.mockResolvedValue({ id: 'memory', userKey: accountActor.storageKey } as never);
     updateMemoryMock.mockResolvedValue({ id: 'memory', userKey: accountActor.storageKey } as never);
 
-    const getResponse = await getMemoryRoute(
-      new Request('https://scholar-scout.test/api/memory?userKey=account:student-two'),
-    );
-    const postResponse = await postMemoryRoute(
-      new Request('https://scholar-scout.test/api/memory', {
-        method: 'POST',
-      }),
-    );
+    const getResponse = await getMemoryRoute();
+    const postResponse = await postMemoryRoute();
 
     expect(getResponse.status).toBe(200);
     expect(postResponse.status).toBe(200);
@@ -89,9 +83,7 @@ describe('user data route ownership', () => {
     getRecommendationsForUserMock.mockResolvedValue([]);
     appendAnalyticsEventMock.mockResolvedValue({ id: 'event' } as never);
 
-    const getResponse = await getSimulationResultsRoute(
-      new Request('https://scholar-scout.test/api/simulations/results?userKey=account:student-two'),
-    );
+    const getResponse = await getSimulationResultsRoute();
     const postResponse = await postSimulationResultsRoute(
       new Request('https://scholar-scout.test/api/simulations/results', {
         method: 'POST',
