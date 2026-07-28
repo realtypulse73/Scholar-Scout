@@ -21,18 +21,20 @@ const guestCookieOptions = {
   maxAge: GUEST_COOKIE_MAX_AGE_SECONDS,
 };
 
-export type StudentActor =
-  | {
-      kind: 'account';
-      accountId: string;
-      storageKey: string;
-    }
-  | {
-      kind: 'guest';
-      guestId: string;
-      storageKey: string;
-      guestWindowId: string;
-    };
+export interface AccountStudentActor {
+  kind: 'account';
+  accountId: string;
+  storageKey: string;
+}
+
+export interface GuestStudentActor {
+  kind: 'guest';
+  guestId: string;
+  storageKey: string;
+  guestWindowId: string;
+}
+
+export type StudentActor = AccountStudentActor | GuestStudentActor;
 
 /**
  * Resolves a private actor from trusted server credentials only. Callers cannot
@@ -52,17 +54,10 @@ export async function resolveStudentActor(input: {
     };
   }
 
-  const cookieStore = await cookies();
-  const credential = cookieStore.get(GUEST_ACTOR_COOKIE_NAME)?.value;
+  const existingGuestActor = await resolveExistingGuestActor();
 
-  if (credential) {
-    const lifecycle = await getActiveGuestLifecycleByCredentialHash(
-      hashGuestCredential(credential),
-    );
-
-    if (lifecycle) {
-      return toGuestActor(lifecycle);
-    }
+  if (existingGuestActor) {
+    return existingGuestActor;
   }
 
   if (!input.allowGuest) {
@@ -73,6 +68,7 @@ export async function resolveStudentActor(input: {
   const lifecycle = await registerGuestLifecycle({
     credentialHash: hashGuestCredential(issuedCredential),
   });
+  const cookieStore = await cookies();
   cookieStore.set(
     GUEST_ACTOR_COOKIE_NAME,
     issuedCredential,
@@ -80,6 +76,22 @@ export async function resolveStudentActor(input: {
   );
 
   return toGuestActor(lifecycle);
+}
+
+/** Resolves an existing guest only from the trusted HttpOnly cookie and server lifecycle. */
+export async function resolveExistingGuestActor(): Promise<GuestStudentActor | null> {
+  const cookieStore = await cookies();
+  const credential = cookieStore.get(GUEST_ACTOR_COOKIE_NAME)?.value;
+
+  if (!credential) {
+    return null;
+  }
+
+  const lifecycle = await getActiveGuestLifecycleByCredentialHash(
+    hashGuestCredential(credential),
+  );
+
+  return lifecycle ? toGuestActor(lifecycle) : null;
 }
 
 /** Invalidates the only browser credential used to resolve a guest actor. */
@@ -94,7 +106,7 @@ export async function clearGuestActorCookie(): Promise<void> {
 function toGuestActor(input: {
   id: string;
   quotaWindowId: string;
-}): StudentActor {
+}): GuestStudentActor {
   return {
     kind: 'guest',
     guestId: input.id,
