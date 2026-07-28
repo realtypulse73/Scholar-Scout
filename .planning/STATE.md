@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-07-28T01:37:24.475Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-07-28T02:00:14.832Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 2 of 13
+Plan: 3 of 13
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 02 execution started
 
-Progress: [████░░░░░░] 37%
+Progress: [████░░░░░░] 42%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [████░░░░░░] 37%
 | Phase 01-release-and-ci-baseline P05 | 35 minutes | 3 tasks | 14 files |
 | Phase 01-release-and-ci-baseline P06 | 18 minutes | 2 tasks | 3 files |
 | Phase 02 P01 | 1 day | 1 tasks | 1 files |
+| Phase 02-authentication-api-ai-and-webhook-controls P02 | 11min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,8 @@ Progress: [████░░░░░░] 37%
 - [Phase ?]: Target Node 24 LTS with the Scholar Scout release maintainer accountable before long-lived release-policy approval; retain Node 20 only as the Phase 1 compatibility boundary.
 - [Phase ?]: Use the Vercel-managed Upstash Redis integration in iad1 for atomic rate-limit reservations.
 - [Phase ?]: Plan 02-02 must consume Vercel-managed UPSTASH_REDIS_REST_KV_REST_API_URL and UPSTASH_REDIS_REST_KV_REST_API_TOKEN server-side; no repository aliases or secrets.
+- [Phase ?]: Use Vercel-managed Upstash REST variables only for atomic, fail-closed rate-limit reservations.
+- [Phase ?]: Reserve advisor and credential quotas before KDF, context reads, or OpenAI calls; provider failure returns unavailable.
 
 ### Roadmap Evolution
 
@@ -124,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T01:37:24.451Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-07-28T02:00:14.819Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
