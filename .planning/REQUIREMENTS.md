@@ -9,9 +9,9 @@
 
 - [ ] **SEC-01**: A signed-in student can read and change only their own account, shortlist, memory, simulation, referral, and engagement data; routes never trust a caller-supplied user key as identity.
 - [ ] **SEC-02**: A staff member can access administrative data operations only when the server confirms an active, revocable staff authorization.
-- [ ] **SEC-03**: A user can use the AI advisor without arbitrary callers creating unbounded provider cost or submitting oversized, unvalidated context.
+- [x] **SEC-03**: A user can use the AI advisor without arbitrary callers creating unbounded provider cost or submitting oversized, unvalidated context.
 - [ ] **SEC-04**: A webhook request is rejected unless its signature secret is configured and valid, and any outbound agent dispatch is authenticated and bounded.
-- [ ] **SEC-05**: A login or registration attempt is rate-limited and receives a safe failure response without blocking the server event loop unnecessarily.
+- [x] **SEC-05**: A login or registration attempt is rate-limited and receives a safe failure response without blocking the server event loop unnecessarily.
 
 ### Reliability and Operations
 
@@ -83,9 +83,9 @@
 |-------------|-------|--------|
 | SEC-01 | Phase 2 | Pending |
 | SEC-02 | Phase 2 | Pending |
-| SEC-03 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Complete |
 | SEC-04 | Phase 2 | Pending |
-| SEC-05 | Phase 2 | Pending |
+| SEC-05 | Phase 2 | Complete |
 | OPS-01 | Phase 1 | Complete |
 | OPS-02 | Phase 3 | Pending |
 | OPS-03 | Phase 3 | Pending |
