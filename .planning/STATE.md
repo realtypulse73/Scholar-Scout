@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-07-28T02:41:22.780Z"
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-07-28T02:49:06.479Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 6 of 13
+Plan: 7 of 13
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 02 execution started
 
-Progress: [██████░░░░] 58%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [██████░░░░] 58%
 | Phase 02 P09 | 5min | 3 tasks | 4 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P03 | 12min | 3 tasks | 6 files |
 | Phase 02 P04 | 32min | 2 tasks | 4 files |
+| Phase 02-authentication-api-ai-and-webhook-controls P05 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Progress: [██████░░░░] 58%
 - [Phase ?]: Merge guest shortlist data without overwriting existing account data, and move only the documented private-activity allowlist.
 - [Phase ?]: Derive memory, simulation, and analytics ownership only from trusted account or opaque guest actors.
 - [Phase ?]: Remove global analytics GET rather than exposing an aggregate view in the personal-data security slice.
+- [Phase ?]: Filter referral collections by the resolved student actor instead of exposing global records.
+- [Phase ?]: Reject browser identity fields and use exact bounded contracts for engagement actions.
 
 ### Roadmap Evolution
 
@@ -138,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T02:41:22.768Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-07-28T02:49:06.462Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None
