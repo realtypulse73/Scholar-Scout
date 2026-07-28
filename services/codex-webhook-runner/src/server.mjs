@@ -2,6 +2,9 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
+const MAX_JOB_PACKET_BYTES = 16 * 1024;
+const MAX_ISSUE_TITLE_BYTES = 1024;
+const MAX_ISSUE_BODY_BYTES = 12 * 1024;
 const SUPPORTED_ISSUE_ACTIONS = new Set(['opened', 'labeled']);
 const APPROVED_LABELS = new Set(['codex', 'automation']);
 
@@ -9,6 +12,7 @@ export function createCodexWebhookRunner({
   webhookSecret,
   githubToken,
   codexAgentEndpoint,
+  codexAgentBearerToken,
   repository,
   fetchImpl = fetch,
   logger = console,
@@ -79,7 +83,19 @@ export function createCodexWebhookRunner({
       });
     }
 
-    const jobPacket = createCodexJobPacket(payload);
+    let jobPacket;
+
+    try {
+      jobPacket = createCodexJobPacket(payload);
+    } catch (error) {
+      if (error instanceof JobPacketTooLargeError) {
+        return respondJson(response, 413, {
+          error: 'Webhook job packet too large',
+        });
+      }
+
+      throw error;
+    }
 
     try {
       if (githubToken) {
@@ -91,10 +107,11 @@ export function createCodexWebhookRunner({
         });
       }
 
-      if (codexAgentEndpoint) {
+      if (codexAgentEndpoint && codexAgentBearerToken) {
         await dispatchToAgent({
           fetchImpl,
           endpoint: codexAgentEndpoint,
+          bearerToken: codexAgentBearerToken,
           jobPacket,
         });
       }
@@ -107,7 +124,7 @@ export function createCodexWebhookRunner({
 
     return respondJson(response, 200, {
       ok: true,
-      dispatched: Boolean(codexAgentEndpoint),
+      dispatched: Boolean(codexAgentEndpoint && codexAgentBearerToken),
     });
   });
 }
@@ -158,9 +175,10 @@ function isIssuePayload(payload) {
 function createCodexJobPacket(payload) {
   const repo = payload.repository.full_name;
   const issueNumber = payload.issue.number;
-  const branchSlug = slugify(payload.issue.title);
-
-  return {
+  const issueTitle = sanitizeText(payload.issue.title, MAX_ISSUE_TITLE_BYTES);
+  const issueBody = sanitizeText(payload.issue.body || '', MAX_ISSUE_BODY_BYTES);
+  const branchSlug = slugify(issueTitle);
+  const jobPacket = {
     repository: repo,
     issueNumber,
     branch: `feature/${issueNumber}-${branchSlug}`,
@@ -171,13 +189,28 @@ function createCodexJobPacket(payload) {
       'Create a feature branch and open a PR into main.',
       'Run typecheck, lint, tests, and build before PR creation.',
     ].join('\n'),
-    issueTitle: payload.issue.title,
-    issueBody: payload.issue.body || '',
+    issueTitle,
+    issueBody,
   };
+
+  const excessBytes = Buffer.byteLength(JSON.stringify(jobPacket), 'utf8') - MAX_JOB_PACKET_BYTES;
+
+  if (excessBytes > 0) {
+    jobPacket.issueBody = truncateUtf8(
+      issueBody,
+      Math.max(0, Buffer.byteLength(issueBody, 'utf8') - excessBytes),
+    );
+  }
+
+  if (Buffer.byteLength(JSON.stringify(jobPacket), 'utf8') > MAX_JOB_PACKET_BYTES) {
+    throw new JobPacketTooLargeError();
+  }
+
+  return jobPacket;
 }
 
 async function postIssueComment({ fetchImpl, githubToken, payload, jobPacket }) {
-  await fetchImpl(payload.issue.comments_url, {
+  const response = await fetchImpl(payload.issue.comments_url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${githubToken}`,
@@ -196,16 +229,55 @@ async function postIssueComment({ fetchImpl, githubToken, payload, jobPacket }) 
       ].join('\n'),
     }),
   });
+
+  if (!response.ok) {
+    throw new Error('GitHub comment request failed');
+  }
 }
 
-async function dispatchToAgent({ fetchImpl, endpoint, jobPacket }) {
-  await fetchImpl(endpoint, {
+async function dispatchToAgent({ fetchImpl, endpoint, bearerToken, jobPacket }) {
+  const response = await fetchImpl(endpoint, {
     method: 'POST',
     headers: {
+      Authorization: `Bearer ${bearerToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(jobPacket),
+    signal: AbortSignal.timeout(10_000),
   });
+
+  if (!response.ok) {
+    throw new Error('Codex agent dispatch failed');
+  }
+}
+
+function sanitizeText(value, maximumBytes) {
+  return truncateUtf8(
+    value
+      .normalize('NFKC')
+      .replace(/[\u0000-\u001F\u007F]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+    maximumBytes,
+  );
+}
+
+function truncateUtf8(value, maximumBytes) {
+  let result = '';
+  let resultBytes = 0;
+
+  for (const character of value) {
+    const characterBytes = Buffer.byteLength(character, 'utf8');
+
+    if (resultBytes + characterBytes > maximumBytes) {
+      break;
+    }
+
+    result += character;
+    resultBytes += characterBytes;
+  }
+
+  return result;
 }
 
 function verifySignature(body, signatureHeader, secret) {
@@ -252,6 +324,7 @@ function readRequestBody(request, maximumBytes) {
 }
 
 class RequestBodyTooLargeError extends Error {}
+class JobPacketTooLargeError extends Error {}
 
 function respondJson(response, status, payload) {
   response.writeHead(status, {
@@ -265,6 +338,7 @@ const server = createCodexWebhookRunner({
   webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
   githubToken: process.env.GITHUB_TOKEN,
   codexAgentEndpoint: process.env.CODEX_AGENT_ENDPOINT,
+  codexAgentBearerToken: process.env.CODEX_AGENT_BEARER_TOKEN,
   repository: process.env.SCHOLARSCOUT_GITHUB_REPOSITORY || process.env.GITHUB_REPOSITORY,
 });
 
