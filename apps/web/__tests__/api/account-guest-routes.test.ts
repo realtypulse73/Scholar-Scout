@@ -4,6 +4,10 @@ import {
   GET as getOnboarding,
   POST as postOnboarding,
 } from '@/app/api/account/onboarding/route';
+import {
+  GET as getShortlist,
+  POST as postShortlist,
+} from '@/app/api/account/shortlist/route';
 
 jest.mock('../../lib/server/student-actor', () => ({
   resolveStudentActor: jest.fn(),
@@ -37,6 +41,18 @@ describe('account guest routes', () => {
   const saveOnboardingProfileMock = jest.requireMock(
     '../../lib/server/data-store',
   ).saveOnboardingProfile as jest.Mock;
+  const getShortlistMock = jest.requireMock(
+    '../../lib/server/data-store',
+  ).getShortlist as jest.Mock;
+  const getShortlistPlansMock = jest.requireMock(
+    '../../lib/server/data-store',
+  ).getShortlistPlans as jest.Mock;
+  const saveShortlistMock = jest.requireMock(
+    '../../lib/server/data-store',
+  ).saveShortlist as jest.Mock;
+  const saveShortlistPlansMock = jest.requireMock(
+    '../../lib/server/data-store',
+  ).saveShortlistPlans as jest.Mock;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -135,5 +151,133 @@ describe('account guest routes', () => {
     await expect(migratedResponse.json()).resolves.toEqual({ profile: completeProfile });
     expect(invalidatedGuestResponse.status).toBe(401);
     expect(getOnboardingProfileMock).toHaveBeenCalledWith(account.storageKey);
+  });
+
+  it('keeps opaque guest shortlist collections isolated by their resolved actor keys', async () => {
+    const guestOne = {
+      kind: 'guest' as const,
+      guestId: 'guest-one',
+      guestWindowId: 'window-one',
+      storageKey: 'guest:guest-one',
+    };
+    const guestTwo = {
+      kind: 'guest' as const,
+      guestId: 'guest-two',
+      guestWindowId: 'window-two',
+      storageKey: 'guest:guest-two',
+    };
+    resolveStudentActorMock.mockResolvedValueOnce(guestOne);
+    getShortlistMock.mockResolvedValueOnce(['north-valley-health']);
+    getShortlistPlansMock.mockResolvedValueOnce({
+      'north-valley-health': { status: 'contacted', note: 'Asked about aid.' },
+    });
+    resolveStudentActorMock.mockResolvedValueOnce(guestTwo);
+    getShortlistMock.mockResolvedValueOnce([]);
+    getShortlistPlansMock.mockResolvedValueOnce({});
+
+    const firstResponse = await getShortlist();
+    const secondResponse = await getShortlist();
+
+    await expect(firstResponse.json()).resolves.toEqual({
+      programmeIds: ['north-valley-health'],
+      plans: { 'north-valley-health': { status: 'contacted', note: 'Asked about aid.' } },
+    });
+    await expect(secondResponse.json()).resolves.toEqual({ programmeIds: [], plans: {} });
+    expect(getShortlistMock).toHaveBeenNthCalledWith(1, guestOne.storageKey);
+    expect(getShortlistPlansMock).toHaveBeenNthCalledWith(2, guestTwo.storageKey);
+  });
+
+  it('accepts only bounded plans for the submitted shortlist and never accepts an owner field', async () => {
+    const account = {
+      kind: 'account' as const,
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    };
+    const validBody = {
+      programmeIds: ['north-valley-health'],
+      plans: {
+        'north-valley-health': {
+          status: 'contacted',
+          note: 'Asked about financial aid.',
+        },
+      },
+    };
+    resolveStudentActorMock.mockResolvedValue(account);
+
+    const accepted = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify(validBody),
+      }),
+    );
+    const selectedIdentity = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({ ...validBody, guestId: 'guest-two' }),
+      }),
+    );
+    const foreignPlan = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...validBody,
+          plans: { 'another-programme': validBody.plans['north-valley-health'] },
+        }),
+      }),
+    );
+    const invalidStatus = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...validBody,
+          plans: {
+            'north-valley-health': { status: 'unknown', note: '' },
+          },
+        }),
+      }),
+    );
+    const oversized = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        headers: { 'content-length': '20000' },
+        body: JSON.stringify(validBody),
+      }),
+    );
+
+    expect(accepted.status).toBe(200);
+    expect(selectedIdentity.status).toBe(400);
+    expect(foreignPlan.status).toBe(400);
+    expect(invalidStatus.status).toBe(400);
+    expect(oversized.status).toBe(413);
+    expect(saveShortlistMock).toHaveBeenCalledTimes(1);
+    expect(saveShortlistMock).toHaveBeenCalledWith(account.storageKey, validBody.programmeIds);
+    expect(saveShortlistPlansMock).toHaveBeenCalledWith(account.storageKey, validBody.plans);
+  });
+
+  it('reads migrated shortlist activity through the account and rejects the invalidated guest', async () => {
+    const account = {
+      kind: 'account' as const,
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    };
+    resolveStudentActorMock.mockResolvedValueOnce(account);
+    getShortlistMock.mockResolvedValueOnce(['north-valley-health']);
+    getShortlistPlansMock.mockResolvedValueOnce({
+      'north-valley-health': { status: 'ready-to-apply', note: 'Complete application.' },
+    });
+    resolveStudentActorMock.mockResolvedValueOnce(null);
+
+    const migratedResponse = await getShortlist();
+    const invalidatedGuestResponse = await getShortlist();
+
+    await expect(migratedResponse.json()).resolves.toEqual({
+      programmeIds: ['north-valley-health'],
+      plans: {
+        'north-valley-health': { status: 'ready-to-apply', note: 'Complete application.' },
+      },
+    });
+    expect(invalidatedGuestResponse.status).toBe(401);
+    expect(getShortlistMock).toHaveBeenCalledWith(account.storageKey);
+    expect(getShortlistPlansMock).toHaveBeenCalledWith(account.storageKey);
   });
 });
