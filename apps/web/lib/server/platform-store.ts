@@ -84,6 +84,12 @@ export interface PlatformData extends ScholarScoutData {
   decisionLogs?: DecisionLogEntry[];
 }
 
+export interface GuestMigrationResult {
+  migrated: boolean;
+  alreadyMigrated: boolean;
+  guestWindowId: string | null;
+}
+
 export async function readPlatformData(): Promise<PlatformData> {
   const data = (await readScholarScoutData()) as PlatformData;
 
@@ -97,6 +103,173 @@ export async function readPlatformData(): Promise<PlatformData> {
     analyticsEvents: data.analyticsEvents ?? [],
     decisionLogs: data.decisionLogs ?? [],
   };
+}
+
+/**
+ * Moves the explicit private-activity allowlist from a server-resolved guest key
+ * to a signed-in account. Community and operational collections stay untouched.
+ */
+export async function migrateGuestOwnedRecords(input: {
+  guestId: string;
+  accountId: string;
+  now?: Date;
+}): Promise<GuestMigrationResult> {
+  const data = await readPlatformData();
+  const lifecycle = data.guestLifecycles?.find((guest) => guest.id === input.guestId);
+
+  if (!lifecycle) {
+    return { migrated: false, alreadyMigrated: false, guestWindowId: null };
+  }
+
+  if (lifecycle.migratedAt) {
+    return {
+      migrated: false,
+      alreadyMigrated: true,
+      guestWindowId: lifecycle.quotaWindowId,
+    };
+  }
+
+  const now = input.now ?? new Date();
+  if (new Date(lifecycle.expiresAt).getTime() <= now.getTime()) {
+    return { migrated: false, alreadyMigrated: false, guestWindowId: null };
+  }
+
+  const guestKey = `guest:${input.guestId}`;
+  const accountId = input.accountId;
+  const transferredCollections: string[] = [];
+
+  if (data.onboardingProfiles[guestKey]) {
+    data.onboardingProfiles[accountId] =
+      data.onboardingProfiles[accountId] ?? data.onboardingProfiles[guestKey];
+    delete data.onboardingProfiles[guestKey];
+    transferredCollections.push('onboardingProfiles');
+  }
+
+  if (data.shortlists[guestKey]) {
+    data.shortlists[accountId] = Array.from(
+      new Set([
+        ...(data.shortlists[accountId] ?? []),
+        ...data.shortlists[guestKey],
+      ]),
+    ).sort();
+    delete data.shortlists[guestKey];
+    transferredCollections.push('shortlists');
+  }
+
+  if (data.shortlistPlans?.[guestKey]) {
+    data.shortlistPlans[accountId] = {
+      ...data.shortlistPlans[guestKey],
+      ...(data.shortlistPlans[accountId] ?? {}),
+    };
+    delete data.shortlistPlans[guestKey];
+    transferredCollections.push('shortlistPlans');
+  }
+
+  data.feedInteractions = migrateUserKeyRecords(
+    data.feedInteractions ?? [],
+    guestKey,
+    accountId,
+    'feedInteractions',
+    transferredCollections,
+  );
+  data.simulationResults = migrateUserKeyRecords(
+    data.simulationResults ?? [],
+    guestKey,
+    accountId,
+    'simulationResults',
+    transferredCollections,
+  );
+  data.memoryRecords = migrateUserKeyRecords(
+    data.memoryRecords ?? [],
+    guestKey,
+    accountId,
+    'memoryRecords',
+    transferredCollections,
+  );
+  data.shareRecords = migrateUserKeyRecords(
+    data.shareRecords ?? [],
+    guestKey,
+    accountId,
+    'shareRecords',
+    transferredCollections,
+  );
+  data.analyticsEvents = migrateUserKeyRecords(
+    data.analyticsEvents ?? [],
+    guestKey,
+    accountId,
+    'analyticsEvents',
+    transferredCollections,
+  );
+  data.referralRecords = migrateReferralRecords(
+    data.referralRecords ?? [],
+    guestKey,
+    accountId,
+    transferredCollections,
+  );
+
+  lifecycle.migratedAt = now.toISOString();
+  lifecycle.migratedToAccountId = accountId;
+  data.guestQuotaBindings = {
+    ...(data.guestQuotaBindings ?? {}),
+    [accountId]: {
+      guestId: lifecycle.id,
+      guestWindowId: lifecycle.quotaWindowId,
+      createdAt: now.toISOString(),
+      expiresAt: lifecycle.expiresAt,
+    },
+  };
+  data.guestMigrationAuditRecords = [
+    ...(data.guestMigrationAuditRecords ?? []),
+    {
+      id: randomUUID(),
+      guestId: lifecycle.id,
+      accountId,
+      migratedAt: now.toISOString(),
+      transferredCollections,
+    },
+  ];
+  await writeScholarScoutData(data);
+
+  return {
+    migrated: true,
+    alreadyMigrated: false,
+    guestWindowId: lifecycle.quotaWindowId,
+  };
+}
+
+function migrateUserKeyRecords<T extends { userKey: string }>(
+  records: T[],
+  guestKey: string,
+  accountId: string,
+  collection: string,
+  transferredCollections: string[],
+): T[] {
+  const matchingRecords = records.filter((record) => record.userKey === guestKey);
+
+  if (matchingRecords.length > 0) {
+    transferredCollections.push(collection);
+  }
+
+  return records.map((record) =>
+    record.userKey === guestKey ? { ...record, userKey: accountId } : record,
+  );
+}
+
+function migrateReferralRecords(
+  records: ReferralRecord[],
+  guestKey: string,
+  accountId: string,
+  transferredCollections: string[],
+): ReferralRecord[] {
+  const matchingRecords = records.filter((record) => record.referrer === guestKey);
+
+  if (matchingRecords.length > 0) {
+    transferredCollections.push('referralRecords');
+  }
+
+  return records.map((record) =>
+    record.referrer === guestKey ? { ...record, referrer: accountId } : record,
+  );
 }
 
 export async function appendFeedInteraction(input: {

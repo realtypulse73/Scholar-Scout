@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { randomUUID, scryptSync, timingSafeEqual } from 'crypto';
+import { createHash, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { TextDecoder } from 'util';
@@ -48,6 +48,31 @@ export interface ProgrammeAuditEvent extends AuditEvent {
   actorLabel: string;
 }
 
+export interface GuestLifecycleRecord {
+  id: string;
+  credentialHash: string;
+  quotaWindowId: string;
+  createdAt: string;
+  expiresAt: string;
+  migratedAt?: string;
+  migratedToAccountId?: string;
+}
+
+export interface GuestQuotaBinding {
+  guestId: string;
+  guestWindowId: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface GuestMigrationAuditRecord {
+  id: string;
+  guestId: string;
+  accountId: string;
+  migratedAt: string;
+  transferredCollections: string[];
+}
+
 export interface ScholarScoutData {
   users: StoredUser[];
   onboardingProfiles: Record<string, OnboardingData>;
@@ -60,6 +85,9 @@ export interface ScholarScoutData {
   uploaderInboxRequests?: UploaderInboxRequest[];
   auditEvents: AuditEvent[];
   restoreBackups?: ScholarScoutDataBackup[];
+  guestLifecycles?: GuestLifecycleRecord[];
+  guestQuotaBindings?: Record<string, GuestQuotaBinding>;
+  guestMigrationAuditRecords?: GuestMigrationAuditRecord[];
 }
 
 export interface ScholarScoutDataBackup {
@@ -149,6 +177,9 @@ const INITIAL_DATA: ScholarScoutData = {
   uploaderInboxRequests: [],
   auditEvents: [],
   restoreBackups: [],
+  guestLifecycles: [],
+  guestQuotaBindings: {},
+  guestMigrationAuditRecords: [],
 };
 
 const dataFilePath =
@@ -727,11 +758,82 @@ export function setScholarScoutDataStoreForTests(
 }
 
 export async function readScholarScoutData() {
-  return getScholarScoutDataStore().read();
+  return normalizeScholarScoutData(await getScholarScoutDataStore().read());
 }
 
 export async function writeScholarScoutData(data: ScholarScoutData) {
-  await getScholarScoutDataStore().write(data);
+  await getScholarScoutDataStore().write(normalizeScholarScoutData(data));
+}
+
+/** Hashes an opaque, high-entropy guest credential before it is used as a storage lookup. */
+export function hashGuestCredential(credential: string): string {
+  return createHash('sha256').update(credential).digest('hex');
+}
+
+/** Registers a server-issued guest lifecycle without retaining its raw browser credential. */
+export async function registerGuestLifecycle(input: {
+  guestId?: string;
+  credentialHash: string;
+  quotaWindowId?: string;
+  now?: Date;
+}): Promise<GuestLifecycleRecord> {
+  const data = await readScholarScoutData();
+  const now = input.now ?? new Date();
+  const guestId = input.guestId ?? randomUUID();
+  const existing = data.guestLifecycles?.find((guest) => guest.id === guestId);
+
+  if (existing) {
+    throw new Error('Guest lifecycle already exists.');
+  }
+
+  const lifecycle: GuestLifecycleRecord = {
+    id: guestId,
+    credentialHash: input.credentialHash,
+    quotaWindowId: input.quotaWindowId ?? guestId,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  };
+
+  data.guestLifecycles = [...(data.guestLifecycles ?? []), lifecycle];
+  await writeScholarScoutData(data);
+
+  return lifecycle;
+}
+
+/** Returns an unmigrated guest lifecycle only when its trusted credential and expiry remain valid. */
+export async function getActiveGuestLifecycleByCredentialHash(
+  credentialHash: string,
+  now = new Date(),
+): Promise<GuestLifecycleRecord | null> {
+  const data = await readScholarScoutData();
+  const lifecycle = data.guestLifecycles?.find(
+    (guest) => guest.credentialHash === credentialHash,
+  );
+
+  if (
+    !lifecycle ||
+    lifecycle.migratedAt ||
+    new Date(lifecycle.expiresAt).getTime() <= now.getTime()
+  ) {
+    return null;
+  }
+
+  return lifecycle;
+}
+
+/** Returns the active migrated guest quota window for an account, if one still applies. */
+export async function getGuestQuotaBindingForAccount(
+  accountId: string,
+  now = new Date(),
+): Promise<string | null> {
+  const data = await readScholarScoutData();
+  const binding = data.guestQuotaBindings?.[accountId];
+
+  if (!binding || new Date(binding.expiresAt).getTime() <= now.getTime()) {
+    return null;
+  }
+
+  return binding.guestWindowId;
 }
 
 export async function createUser(input: {
@@ -1232,7 +1334,84 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     restoreBackups: Array.isArray(data.restoreBackups)
       ? (data.restoreBackups as ScholarScoutDataBackup[])
       : [],
+    guestLifecycles: Array.isArray(data.guestLifecycles)
+      ? (data.guestLifecycles as GuestLifecycleRecord[])
+      : [],
+    guestQuotaBindings: isRecord(data.guestQuotaBindings)
+      ? (data.guestQuotaBindings as Record<string, GuestQuotaBinding>)
+      : {},
+    guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
+      ? (data.guestMigrationAuditRecords as GuestMigrationAuditRecord[])
+      : [],
   };
+}
+
+function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
+  return {
+    ...INITIAL_DATA,
+    ...data,
+    guestLifecycles: Array.isArray(data.guestLifecycles)
+      ? data.guestLifecycles.filter(isGuestLifecycleRecord)
+      : [],
+    guestQuotaBindings: normalizeGuestQuotaBindings(data.guestQuotaBindings),
+    guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
+      ? data.guestMigrationAuditRecords.filter(isGuestMigrationAuditRecord)
+      : [],
+  };
+}
+
+function normalizeGuestQuotaBindings(
+  bindings: Record<string, GuestQuotaBinding> | undefined,
+): Record<string, GuestQuotaBinding> {
+  return Object.fromEntries(
+    Object.entries(bindings ?? {}).filter(([, binding]) =>
+      isGuestQuotaBinding(binding),
+    ),
+  );
+}
+
+function isGuestLifecycleRecord(value: unknown): value is GuestLifecycleRecord {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.credentialHash === 'string' &&
+    typeof value.quotaWindowId === 'string' &&
+    isValidTimestamp(value.createdAt) &&
+    isValidTimestamp(value.expiresAt) &&
+    (value.migratedAt === undefined || isValidTimestamp(value.migratedAt)) &&
+    (value.migratedToAccountId === undefined || typeof value.migratedToAccountId === 'string')
+  );
+}
+
+function isGuestQuotaBinding(value: unknown): value is GuestQuotaBinding {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.guestId === 'string' &&
+    typeof value.guestWindowId === 'string' &&
+    isValidTimestamp(value.createdAt) &&
+    isValidTimestamp(value.expiresAt)
+  );
+}
+
+function isGuestMigrationAuditRecord(
+  value: unknown,
+): value is GuestMigrationAuditRecord {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.guestId === 'string' &&
+    typeof value.accountId === 'string' &&
+    isValidTimestamp(value.migratedAt) &&
+    Array.isArray(value.transferredCollections) &&
+    value.transferredCollections.every((collection) => typeof collection === 'string')
+  );
+}
+
+function isValidTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
