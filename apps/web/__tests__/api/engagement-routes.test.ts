@@ -146,4 +146,97 @@ describe('engagement route ownership', () => {
     expect(forgedIdentity.status).toBe(400);
     expect(malformed.status).toBe(400);
   });
+
+  it('creates shares only for the resolved actor with bounded targets', async () => {
+    trackShareMock.mockResolvedValue({
+      id: 'share',
+      userKey: accountActor.storageKey,
+      targetType: 'programme',
+      targetId: 'metro-cybersecurity',
+      deepLink: 'https://scholarscout.app/share/programme/metro-cybersecurity',
+    });
+    appendAnalyticsEventMock.mockResolvedValue({ id: 'event' });
+
+    const response = await shareRoute.POST(
+      new Request('https://scholar-scout.test/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetType: 'programme',
+          targetId: 'metro-cybersecurity',
+        }),
+      }),
+    );
+    const forgedIdentity = await shareRoute.POST(
+      new Request('https://scholar-scout.test/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userKey: 'account:student-two',
+          targetType: 'programme',
+          targetId: 'metro-cybersecurity',
+        }),
+      }),
+    );
+    const malformed = await shareRoute.POST(
+      new Request('https://scholar-scout.test/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetType: 'administrator',
+          targetId: '../private',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(trackShareMock).toHaveBeenCalledWith({
+      userKey: accountActor.storageKey,
+      targetType: 'programme',
+      targetId: 'metro-cybersecurity',
+    });
+    expect(forgedIdentity.status).toBe(400);
+    expect(malformed.status).toBe(400);
+  });
+
+  it('assigns only supported experiments to the resolved actor', async () => {
+    assignVariantMock.mockReturnValue({ experimentId: 'feed-layout', variant: 'A' });
+    appendAnalyticsEventMock.mockResolvedValue({ id: 'event' });
+
+    const response = await assignRoute.POST(
+      new Request('https://scholar-scout.test/api/ab-testing/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ experimentId: 'feed-layout' }),
+      }),
+    );
+    const forgedIdentity = await assignRoute.POST(
+      new Request('https://scholar-scout.test/api/ab-testing/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userKey: 'account:student-two',
+          experimentId: 'feed-layout',
+        }),
+      }),
+    );
+    const unsupportedExperiment = await assignRoute.POST(
+      new Request('https://scholar-scout.test/api/ab-testing/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ experimentId: 'staff-rollout' }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(assignVariantMock).toHaveBeenCalledWith(
+      accountActor.storageKey,
+      'feed-layout',
+    );
+    expect(appendAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userKey: accountActor.storageKey }),
+    );
+    expect(forgedIdentity.status).toBe(400);
+    expect(unsupportedExperiment.status).toBe(400);
+  });
 });
