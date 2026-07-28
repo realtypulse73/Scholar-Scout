@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: Authentication, API, AI, and Webhook Controls
 status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-07-28T02:10:28.920Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-07-28T02:26:50.603Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 02 (Authentication, API, AI, and Webhook Controls) — EXECUTING
-Plan: 4 of 13
+Plan: 5 of 13
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 02 execution started
 
-Progress: [█████░░░░░] 47%
+Progress: [█████░░░░░] 53%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [█████░░░░░] 47%
 | Phase 02 P01 | 1 day | 1 tasks | 1 files |
 | Phase 02-authentication-api-ai-and-webhook-controls P02 | 11min | 3 tasks | 10 files |
 | Phase 02 P09 | 5min | 3 tasks | 4 files |
+| Phase 02-authentication-api-ai-and-webhook-controls P03 | 12min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Progress: [█████░░░░░] 47%
 - [Phase ?]: Reject absent or invalid webhook signatures with safe 503 responses while health remains observable.
 - [Phase ?]: Require both an agent endpoint and server-only bearer token for outbound webhook dispatch.
 - [Phase ?]: Sanitize and UTF-8 bound webhook job packets before dispatch.
+- [Phase ?]: Use a random 256-bit HttpOnly guest cookie with SHA-256 server lookup and no raw-secret persistence.
+- [Phase ?]: Keep a migrated guest quota window bound to the account until the seven-day lifecycle expires.
+- [Phase ?]: Merge guest shortlist data without overwriting existing account data, and move only the documented private-activity allowlist.
 
 ### Roadmap Evolution
 
@@ -131,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T02:10:28.907Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-07-28T02:26:50.590Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
