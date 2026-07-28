@@ -137,12 +137,96 @@ describe('Codex webhook runner', () => {
     assert.equal(response.status, 413);
     assert.equal(fetchCalls.length, 0);
   });
+
+  it('does not dispatch to the agent endpoint when its bearer token is missing', async () => {
+    const fetchCalls = [];
+    const server = createCodexWebhookRunner({
+      webhookSecret: WEBHOOK_SECRET,
+      repository: CONFIGURED_REPOSITORY,
+      codexAgentEndpoint: 'https://agent.example/jobs',
+      fetchImpl: createFetchRecorder(fetchCalls),
+    });
+    const baseUrl = await listen(server, servers);
+
+    const response = await postWebhook(baseUrl, createIssuePayload());
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      dispatched: false,
+    });
+    assert.equal(fetchCalls.length, 0);
+  });
+
+  it('sends a bounded sanitized job packet with bearer authentication and a ten-second abort', async () => {
+    const fetchCalls = [];
+    let timeoutMilliseconds;
+    const originalTimeout = AbortSignal.timeout;
+    AbortSignal.timeout = (milliseconds) => {
+      timeoutMilliseconds = milliseconds;
+      return new AbortController().signal;
+    };
+
+    try {
+      const server = createCodexWebhookRunner({
+        webhookSecret: WEBHOOK_SECRET,
+        repository: CONFIGURED_REPOSITORY,
+        codexAgentEndpoint: 'https://agent.example/jobs',
+        codexAgentBearerToken: 'agent-token',
+        fetchImpl: createFetchRecorder(fetchCalls),
+      });
+      const baseUrl = await listen(server, servers);
+      const response = await postWebhook(baseUrl, createIssuePayload({
+        labels: ['codex'],
+        title: 'Harden\u0000 the runner',
+        body: `Large body\u0000${'\u{1F680}'.repeat(12_000)}`,
+      }));
+
+      assert.equal(response.status, 200);
+      assert.equal(fetchCalls.length, 1);
+      const [url, options] = fetchCalls[0];
+      const packet = JSON.parse(options.body);
+
+      assert.equal(url, 'https://agent.example/jobs');
+      assert.equal(options.headers.Authorization, 'Bearer agent-token');
+      assert.equal(options.headers['Content-Type'], 'application/json');
+      assert.equal(timeoutMilliseconds, 10_000);
+      assert.ok(options.signal instanceof AbortSignal);
+      assert.ok(Buffer.byteLength(options.body, 'utf8') <= 16 * 1024);
+      assert.equal(packet.issueTitle.includes('\u0000'), false);
+      assert.equal(packet.issueBody.includes('\u0000'), false);
+    } finally {
+      AbortSignal.timeout = originalTimeout;
+    }
+  });
+
+  it('uses the configured GitHub token and returns a safe error when an external call fails', async () => {
+    const server = createCodexWebhookRunner({
+      webhookSecret: WEBHOOK_SECRET,
+      repository: CONFIGURED_REPOSITORY,
+      githubToken: 'github-token',
+      fetchImpl: async (_url, options) => {
+        assert.equal(options.headers.Authorization, 'Bearer github-token');
+        throw new Error('upstream failure');
+      },
+    });
+    const baseUrl = await listen(server, servers);
+
+    const response = await postWebhook(baseUrl, createIssuePayload());
+
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), {
+      error: 'Webhook delivery failed',
+    });
+  });
 });
 
 function createIssuePayload({
   action = 'opened',
+  body = 'Please update the webhook runner.',
   labels = ['codex'],
   repository = CONFIGURED_REPOSITORY,
+  title = 'Harden webhook runner',
 } = {}) {
   return {
     action,
@@ -150,11 +234,11 @@ function createIssuePayload({
       full_name: repository,
     },
     issue: {
-      body: 'Please update the webhook runner.',
+      body,
       comments_url: 'https://api.github.example/issues/42/comments',
       labels: labels.map((name) => ({ name })),
       number: 42,
-      title: 'Harden webhook runner',
+      title,
     },
   };
 }
