@@ -1,9 +1,15 @@
 import 'server-only';
 
-import { createHash, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  scrypt,
+  timingSafeEqual,
+} from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
-import { TextDecoder } from 'util';
+import { promisify, TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
 import type { OnboardingData } from '@/lib/onboarding-types';
 import {
@@ -47,6 +53,22 @@ export interface AuditEvent {
 export interface ProgrammeAuditEvent extends AuditEvent {
   actorLabel: string;
 }
+
+export type CredentialVerificationResult =
+  | { status: 'verified'; user: StoredUser }
+  | { status: 'unknown-account' | 'incorrect-password'; user: null };
+
+const CREDENTIAL_GRANT_TTL_MS = 2 * 60 * 1_000;
+const credentialGrants = new Map<
+  string,
+  {
+    email: string;
+    ip: string;
+    expiresAt: number;
+    user: StoredUser;
+  }
+>();
+const scryptAsync = promisify(scrypt);
 
 export interface GuestLifecycleRecord {
   id: string;
@@ -865,7 +887,7 @@ export async function createUser(input: {
     email,
     name: input.name.trim() || email.split('@')[0],
     role: input.role,
-    passwordHash: hashPassword(input.password),
+    passwordHash: await hashPassword(input.password),
     createdAt: new Date().toISOString(),
   };
 
@@ -903,17 +925,59 @@ export async function findOrCreateOAuthUser(input: {
   return user;
 }
 
-export async function verifyUserCredentials(email: string, password: string) {
+export async function verifyUserCredentials(
+  email: string,
+  password: string,
+): Promise<CredentialVerificationResult> {
   const data = await readScholarScoutData();
   const user = data.users.find(
     (candidate) => candidate.email === normalizeEmail(email),
   );
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (!user) {
+    return { status: 'unknown-account', user: null };
+  }
+
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    return { status: 'incorrect-password', user: null };
+  }
+
+  return { status: 'verified', user };
+}
+
+/** Issues an opaque credential-only handoff that NextAuth may consume exactly once. */
+export function issueCredentialGrant(input: {
+  email: string;
+  ip: string;
+  user: StoredUser;
+  now?: Date;
+}): string {
+  const now = input.now?.getTime() ?? Date.now();
+  const grant = randomBytes(32).toString('base64url');
+
+  pruneExpiredCredentialGrants(now);
+  credentialGrants.set(grant, {
+    email: normalizeEmail(input.email),
+    ip: input.ip,
+    expiresAt: now + CREDENTIAL_GRANT_TTL_MS,
+    user: input.user,
+  });
+
+  return grant;
+}
+
+/** Atomically consumes a short-lived server grant without accepting raw credentials. */
+export function consumeCredentialGrant(grant: string): StoredUser | null {
+  const now = Date.now();
+  pruneExpiredCredentialGrants(now);
+  const storedGrant = credentialGrants.get(grant);
+  credentialGrants.delete(grant);
+
+  if (!storedGrant || storedGrant.expiresAt <= now) {
     return null;
   }
 
-  return user;
+  return storedGrant.user;
 }
 
 export async function getUserById(userId: string) {
@@ -1623,25 +1687,35 @@ function isShortlistProgrammePlan(
   );
 }
 
-function hashPassword(password: string) {
+async function hashPassword(password: string): Promise<string> {
   const salt = randomUUID();
-  const hash = scryptSync(password, salt, 64).toString('hex');
+  const hash = Buffer.from(await scryptAsync(password, salt, 64)).toString('hex');
   return `${salt}:${hash}`;
 }
 
-function verifyPassword(password: string, storedHash: string) {
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   const [salt, hash] = storedHash.split(':');
 
   if (!salt || !hash) {
     return false;
   }
 
-  const candidate = Buffer.from(scryptSync(password, salt, 64).toString('hex'));
+  const candidate = Buffer.from(
+    Buffer.from(await scryptAsync(password, salt, 64)).toString('hex'),
+  );
   const expected = Buffer.from(hash);
 
   return (
     candidate.length === expected.length && timingSafeEqual(candidate, expected)
   );
+}
+
+function pruneExpiredCredentialGrants(now: number): void {
+  credentialGrants.forEach((value, grant) => {
+    if (value.expiresAt <= now) {
+      credentialGrants.delete(grant);
+    }
+  });
 }
 
 async function readStreamText(stream: ReadableStream<Uint8Array>) {

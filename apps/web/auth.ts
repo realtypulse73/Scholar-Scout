@@ -3,8 +3,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import {
+  consumeCredentialGrant,
   findOrCreateOAuthUser,
-  verifyUserCredentials,
 } from '@/lib/server/data-store';
 
 export const authOptions: NextAuthOptions = {
@@ -18,18 +18,16 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Email and password',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        grant: { label: 'Credential grant', type: 'hidden' },
       },
       async authorize(credentials) {
-        const email = credentials?.email;
-        const password = credentials?.password;
+        const grant = credentials?.grant;
 
-        if (!email || !password) {
+        if (typeof grant !== 'string' || !grant) {
           return null;
         }
 
-        const user = await verifyUserCredentials(email, password);
+        const user = consumeCredentialGrant(grant);
 
         if (!user) {
           return null;
