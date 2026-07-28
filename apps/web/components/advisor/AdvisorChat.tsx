@@ -91,18 +91,30 @@ export default function AdvisorChat() {
       const response = await fetch('/api/advisor-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userKey: 'local-student',
-          message: trimmed,
-          context: simulationContext ?? undefined,
-        }),
+        body: JSON.stringify({ message: trimmed }),
       });
-      const body = (await response.json()) as { reply?: string; error?: string };
+      const body = (await response.json()) as {
+        reply?: string;
+        error?: string;
+        fallback?: boolean;
+        crisis?: boolean;
+        resetAt?: string;
+      };
 
-      if (!response.ok || !body.reply) {
-        throw new Error(body.error ?? 'Advisor reply was unavailable.');
+      if (!response.ok) {
+        setError(getAdvisorError(response.status, body));
+        return;
       }
 
+      if (!body.reply) {
+        throw new Error('Advisor reply was unavailable.');
+      }
+
+      if (body.crisis) {
+        setError('Please prioritize immediate support from a qualified person or emergency service.');
+      } else if (body.fallback) {
+        setError('The advisor is sharing a safe general next step while tailored guidance is unavailable.');
+      }
       setMessages([
         ...nextMessages,
         { role: 'advisor', text: body.reply },
@@ -214,6 +226,29 @@ export default function AdvisorChat() {
       </Card>
     </div>
   );
+}
+
+function getAdvisorError(
+  status: number,
+  body: { error?: string; resetAt?: string },
+): string {
+  if (status === 400) {
+    return body.error ?? 'Please send one valid advisor message.';
+  }
+
+  if (status === 429) {
+    const resetAt = body.resetAt ? new Date(body.resetAt) : null;
+    const resetLabel = resetAt && !Number.isNaN(resetAt.getTime())
+      ? ` Try again after ${resetAt.toLocaleString()}.`
+      : '';
+    return `${body.error ?? 'Your daily advisor limit has been reached.'}${resetLabel}`;
+  }
+
+  if (status === 503) {
+    return 'The advisor is not available right now. Please try again shortly.';
+  }
+
+  return 'The advisor could not answer just now. Try again in a moment.';
 }
 
 function parseSimulationContext(value: string | null) {
