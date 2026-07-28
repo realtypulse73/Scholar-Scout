@@ -3,12 +3,14 @@
  */
 
 import { getServerSession } from 'next-auth';
+import { GET as listBackups } from '@/app/api/admin/data/backups/route';
 import { POST as validateImport } from '@/app/api/admin/data/import/validate/route';
 import { POST as restoreImport } from '@/app/api/admin/data/import/restore/route';
 import { GET as dataHealth } from '@/app/api/admin/data/health/route';
 import { GET as planBackupRestore } from '@/app/api/admin/data/backups/[id]/plan/route';
 import { POST as restoreBackup } from '@/app/api/admin/data/backups/[id]/restore/route';
 import {
+  getPrivilegedOperationAuditEvents,
   SCHOLARSCOUT_RESTORE_CONFIRMATION,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
@@ -42,11 +44,74 @@ class MemoryDataStore implements ScholarScoutDataStore {
 describe('admin data API routes', () => {
   const getSessionMock = jest.mocked(getServerSession);
   const originalHealthToken = process.env.SCHOLARSCOUT_HEALTH_TOKEN;
+  const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
 
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
     getSessionMock.mockReset();
     restoreEnv('SCHOLARSCOUT_HEALTH_TOKEN', originalHealthToken);
+    restoreEnv('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
+  });
+
+  it('checks the live staff allowlist and audits data backup and import decisions', async () => {
+    const store = new MemoryDataStore();
+    store.data = dataWithBackup();
+    setScholarScoutDataStoreForTests(store);
+    getSessionMock.mockResolvedValue(staffSession());
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    await expectStatus(listBackups(), 200);
+    await expectStatus(validateImport(jsonRequest(validSnapshot())), 200);
+    await expectStatus(
+      restoreImport(
+        jsonRequest({
+          snapshot: validSnapshot(),
+          confirmation: 'restore',
+        }),
+      ),
+      400,
+    );
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'removed@example.com';
+    await expectStatus(listBackups(), 403);
+    await expectStatus(validateImport(jsonRequest(validSnapshot())), 403);
+    await expectStatus(
+      restoreImport(
+        jsonRequest({
+          snapshot: validSnapshot(),
+          confirmation: SCHOLARSCOUT_RESTORE_CONFIRMATION,
+        }),
+      ),
+      403,
+    );
+
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'not-an-email';
+    await expectStatus(listBackups(), 403);
+    delete process.env.SCHOLARSCOUT_STAFF_EMAILS;
+    await expectStatus(validateImport(jsonRequest(validSnapshot())), 403);
+
+    await expect(getPrivilegedOperationAuditEvents()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'list-data-backups',
+          route: '/api/admin/data/backups',
+          outcome: 'allowed',
+        }),
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'validate-data-import',
+          route: '/api/admin/data/import/validate',
+          outcome: 'denied',
+        }),
+        expect.objectContaining({
+          actorId: 'staff-1',
+          action: 'restore-data-import',
+          route: '/api/admin/data/import/restore',
+          outcome: 'denied',
+        }),
+      ]),
+    );
   });
 
   it('requires staff sessions for import validation, backup planning, and backup restore', async () => {
@@ -61,6 +126,7 @@ describe('admin data API routes', () => {
   });
 
   it('validates import snapshots and reports invalid JSON practically', async () => {
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
     getSessionMock.mockResolvedValue(staffSession());
 
     const invalidJsonResponse = await validateImport(
@@ -92,6 +158,7 @@ describe('admin data API routes', () => {
   it('requires confirmation before import restore writes data', async () => {
     const store = new MemoryDataStore();
     setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
     getSessionMock.mockResolvedValue(staffSession());
 
     const response = await restoreImport(
@@ -112,6 +179,7 @@ describe('admin data API routes', () => {
     const store = new MemoryDataStore();
     store.data = dataWithBackup();
     setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
     getSessionMock.mockResolvedValue(staffSession());
 
     const missingResponse = await planBackupRestore(
@@ -149,6 +217,7 @@ describe('admin data API routes', () => {
     const store = new MemoryDataStore();
     store.data = dataWithBackup();
     setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
     getSessionMock.mockResolvedValue(staffSession());
 
     const confirmationResponse = await restoreBackup(
@@ -240,6 +309,7 @@ function staffSession() {
   return {
     user: {
       id: 'staff-1',
+      email: 'staff@example.com',
       role: 'staff',
     },
   };
