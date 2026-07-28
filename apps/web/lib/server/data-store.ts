@@ -9,7 +9,7 @@ import {
 } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
-import { promisify, TextDecoder } from 'util';
+import { TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
 import type { OnboardingData } from '@/lib/onboarding-types';
 import {
@@ -68,7 +68,6 @@ const credentialGrants = new Map<
     user: StoredUser;
   }
 >();
-const scryptAsync = promisify(scrypt);
 
 export interface GuestLifecycleRecord {
   id: string;
@@ -1689,7 +1688,7 @@ function isShortlistProgrammePlan(
 
 async function hashPassword(password: string): Promise<string> {
   const salt = randomUUID();
-  const hash = Buffer.from(await scryptAsync(password, salt, 64)).toString('hex');
+  const hash = (await derivePasswordKey(password, salt)).toString('hex');
   return `${salt}:${hash}`;
 }
 
@@ -1701,13 +1700,26 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
   }
 
   const candidate = Buffer.from(
-    Buffer.from(await scryptAsync(password, salt, 64)).toString('hex'),
+    (await derivePasswordKey(password, salt)).toString('hex'),
   );
   const expected = Buffer.from(hash);
 
   return (
     candidate.length === expected.length && timingSafeEqual(candidate, expected)
   );
+}
+
+function derivePasswordKey(password: string, salt: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, 64, (error, key) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(key);
+    });
+  });
 }
 
 function pruneExpiredCredentialGrants(now: number): void {
