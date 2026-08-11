@@ -1,19 +1,15 @@
 ---
-status: testing
+status: passed
 phase: 01-release-and-ci-baseline
 source: [01-VERIFICATION.md]
 started: 2026-07-26T00:00:00-04:00
-updated: 2026-07-26T02:10:00-04:00
+updated: 2026-08-11T19:50:00-04:00
 ---
 
 ## Current Test
 
-number: 5
-name: Controlled smoke-failure response
-expected: |
-  A safe controlled smoke-failure exercise creates or updates the incident issue,
-  retains evidence, and records a human rollback acknowledgement without automatic rollback.
-awaiting: explicit authorization for a safe production failure exercise
+number: complete
+name: All Phase 1 UAT checks passed
 
 ## Tests
 
@@ -44,14 +40,15 @@ evidence: "GitHub Actions run 30190594818 (repository_dispatch, commit 0e89216) 
 ### 5. Controlled smoke-failure response
 
 expected: A safe controlled smoke-failure exercise creates or updates the incident issue, retains evidence, and records a human rollback acknowledgement without automatic rollback.
-result: pending
+result: pass
+evidence: "Authorized controlled drill run 31547930585 completed with an intentional labelled failure only; production-smoke-report artifact 9123162473 is retained through 2026-08-25; incident #12 was updated and acknowledgement comment 5260218236 records the runbook review and no automatic rollback."
 
 ## Summary
 
 total: 5
-passed: 4
+passed: 5
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
