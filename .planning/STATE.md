@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 Phase: 02 (authentication-api-ai-and-webhook-controls) — EXECUTING
 Plan: 7 of 13
 Status: Ready to execute
-Last activity: 2026-07-28 — Phase 02 execution started
+Last activity: 2026-08-11 — Completed quick task 260811-q1h: Create the Phase 2 API coverage matrix required by the verification gate.
 
 Progress: [██████████] 100%
 
@@ -153,6 +153,7 @@ None yet.
 | 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
 | 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
 | 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
+| 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | pending | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
 
 ## Deferred Items
 
