@@ -77,6 +77,13 @@ if (staffCookie) {
   });
 }
 
+checks.push({
+  name: 'controlled UAT smoke-failure drill',
+  status: 'failed',
+  detail:
+    'Intentional non-destructive verification of the post-deploy smoke incident path.',
+});
+
 const failed = checks.filter((check) => check.status === 'failed');
 const skipped = checks.filter((check) => check.status === 'skipped');
 const summary = {
