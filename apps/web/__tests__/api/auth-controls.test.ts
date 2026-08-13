@@ -176,7 +176,7 @@ describe('student actor controls', () => {
     await registerGuestLifecycle({
       guestId,
       credentialHash: hashGuestCredential(guestCredential),
-      now: new Date('2026-07-28T12:00:00.000Z'),
+      now: new Date(Date.now() - 60_000),
     });
     getSessionMock.mockResolvedValue({ user: { id: 'account-route' } } as never);
     cookieStore.get.mockReturnValue({ value: guestCredential });
