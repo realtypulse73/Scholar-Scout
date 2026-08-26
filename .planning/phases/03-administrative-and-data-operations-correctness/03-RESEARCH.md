@@ -392,22 +392,19 @@ This ordering is [VERIFIED: dependency direction `components → routes → lib/
 | A2 | Use a 5 MiB maximum import-package request size. [ASSUMED] | Discretion recommendation | Existing production snapshots may exceed it. Before execution, measure a sanitized production-size sample or expose a server config with a hard upper bound. |
 | A3 | A dedicated `SCHOLARSCOUT_DATA_PACKAGE_SIGNING_SECRET` can be provisioned in every target environment. [ASSUMED] | Signing architecture | Missing secret should make package capabilities unavailable, not fall back to `NEXTAUTH_SECRET`; deployment configuration and readiness checks must be updated. |
 
-## Open Questions
+## Resolved Planning Decisions
 
-1. **Package signing key lifecycle**
+1. **Package signing key lifecycle — RESOLVED**
    - What we know: D-14 requires a signed envelope, and no dedicated package-signing secret is currently configured. [VERIFIED: context and env references]
-   - What's unclear: rotation/grace policy for validating older retained backups.
-   - Recommendation: include a non-secret key ID in the envelope and support the current key plus explicitly configured previous verification key; fail the capability closed when none is configured.
+   - Resolution: the current dedicated key signs every new package and plan. Verification accepts the current key plus one explicitly configured previous verification key, selected by non-secret key ID, only while retained packages signed by it remain within the 30-day/10-backup or incident-hold window. No implicit key guessing and no `NEXTAUTH_SECRET` fallback are allowed; missing current signing material fails package capabilities closed. Operators remove the previous key after the bounded grace ends and no held package references it.
 
-2. **Plan replay control across serverless instances**
+2. **Plan replay control across serverless instances — RESOLVED**
    - What we know: a process-local map is not shared across Vercel instances, while D-07 requires short-lived binding. [VERIFIED: Vercel deployment and process-local singleton pattern]
-   - What's unclear: whether Phase 3 may persist consumed-plan markers in the shared document.
-   - Recommendation: include `planId` in the lifecycle audit and make apply idempotently return the recorded result when the same valid plan is repeated; verify this in the same composed document write. Full distributed compare-and-set remains Phase 4.
+   - Resolution: include `planId` in the trusted lifecycle audit and make apply idempotently return the recorded result when the same valid plan is repeated; verify this in the same composed document write. Full distributed compare-and-set remains Phase 4.
 
-3. **Incident hold resolution authority**
+3. **Incident hold resolution authority — RESOLVED**
    - What we know: D-15 requires unresolved incidents to hold backups, but no incident model or resolution route exists. [VERIFIED: repository search]
-   - What's unclear: who resolves a hold and through what supported operation.
-   - Recommendation: Phase 3 should create/retain holds and surface them; if no explicit resolution workflow is approved, do not add a release action and require a documented maintainer recovery process.
+   - Resolution: only a freshly authorized active staff member may resolve a hold through a server route that requires a non-empty reason and records a privacy-minimal hold-release lifecycle event. The route rechecks current storage health and backup identity before the single write. Phase 3 exposes hold status but adds no delete or hold-release UI action; the supported operation is documented for incident responders.
 
 ## Environment Availability
 
@@ -466,7 +463,7 @@ The current focused suite could not be executed in this research session because
 - [ ] `apps/web/__tests__/lib/data-recovery.test.ts` — envelope, digest, plan, retention, audit, and apply invariants.
 - [ ] Extend `apps/web/__tests__/lib/data-store.test.ts` — adapter absence versus failure and persisted-document validation.
 - [ ] Extend `apps/web/__tests__/api/admin-data-routes.test.ts` — capability, bounded input, 409/410/413/503, actor binding, and no-write failures.
-- [ ] `apps/web/__tests__/components/ProgrammeAdminManager.test.tsx` — approved UI state/accessibility contract.
+- [ ] `apps/web/__tests__/components/ProgrammeAdminManager.test.tsx` — Wave 0 owner is 03-01 Task 1; create deterministic fetch fixtures and approved UI state/accessibility contract before UI implementation.
 - [ ] Shared deterministic fixtures for clock, signing key, valid envelope, digest, and throwing/counting store.
 - [ ] Repair/use the pinned Node 20 + pnpm 10.34.5 command path before treating test results as evidence.
 

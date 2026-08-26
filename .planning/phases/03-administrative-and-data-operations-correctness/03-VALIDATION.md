@@ -41,8 +41,8 @@ created: 2026-08-25
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 03-W0-01 | TBD | 0 | OPS-03 | T-03-01 | Adapter absence is distinct from corrupt, unreadable, timeout, or provider failure; failures never become editable empty data | unit | focused `data-store.test.ts` and `data-recovery.test.ts` | ❌ W0 | ⬜ pending |
 | 03-W0-02 | TBD | 0 | DATA-03 | Envelopes, plans, retention, audit, and apply invariants reject tampering, replay, stale state, oversized input, and partial writes | unit | focused `data-recovery.test.ts` | ❌ W0 | ⬜ pending |
-| 03-W0-03 | TBD | 0 | OPS-02, OPS-03, DATA-03 | Staff authorization precedes storage access; capability and recovery routes return bounded 4xx/5xx contracts and never write on failure | route | focused `admin-data-routes.test.ts` | ⚠ extend | ⬜ pending |
-| 03-W0-04 | TBD | 0 | OPS-02, DATA-03 | Loading, empty, unavailable, preview, confirmation, conflict, pending, success, failure, focus, and responsive-safe states follow UI-SPEC | component | focused `ProgrammeAdminManager.test.tsx` | ❌ W0 | ⬜ pending |
+| 03-W0-03 | 03-01 Task 1; 03-03 Tasks 1–3; 03-04 Tasks 1–2 | 0 | OPS-02, OPS-03, DATA-03 | Staff authorization precedes storage access; capability and recovery routes return bounded 4xx/5xx contracts and never write on failure; incident-hold release additionally proves exact identity/reason parsing, fresh healthy reads, 400/404/409/503 mappings, one-write audited success, and no capability/UI exposure | route | focused `admin-data-routes.test.ts` | ⚠ extend | ⬜ pending |
+| 03-W0-04 | 03-01 Task 1 | 0 | OPS-02, DATA-03 | Loading, empty, unavailable, preview, confirmation, conflict, pending, success, failure, focus, and responsive-safe states follow UI-SPEC | component | focused `ProgrammeAdminManager.test.tsx` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -52,8 +52,8 @@ created: 2026-08-25
 
 - [ ] `apps/web/__tests__/lib/data-recovery.test.ts` — envelope, digest, server-plan, retention, audit, replay, and apply invariants.
 - [ ] Extend `apps/web/__tests__/lib/data-store.test.ts` — adapter absence versus malformed, unreadable, timeout, and provider failure.
-- [ ] Extend `apps/web/__tests__/api/admin-data-routes.test.ts` — capability contract, bounded input, 409/410/413/503, actor binding, and no-write failures.
-- [ ] `apps/web/__tests__/components/ProgrammeAdminManager.test.tsx` — approved UI state, focus, live-region, duplicate-submission, and responsive-semantic contract.
+- [ ] Extend `apps/web/__tests__/api/admin-data-routes.test.ts` — capability contract, bounded input, 409/410/413/503, actor binding, no-write failures, and the exact staff-only `/api/admin/data/backups/[id]/hold/release` contract with authorization ordering, backup/incident identity, fresh-health, audit/redaction, zero/one-write, and capability non-exposure assertions.
+- [ ] `apps/web/__tests__/components/ProgrammeAdminManager.test.tsx` — created by 03-01 Task 1 with deterministic fetch fixtures and the approved UI state, focus, live-region, duplicate-submission, and responsive-semantic contract before 03-05 implementation.
 - [ ] Shared deterministic fixtures for clock, signing key, valid envelope, digest, and throwing/counting store.
 - [ ] Repair or explicitly select the pinned Node 20 and pnpm 10.34.5 command path before treating test output as evidence.
 
