@@ -102,13 +102,27 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 03-01-PLAN.md — Prove fail-closed storage reads through an authorized capability tracer and Wave 0 tests
 - [ ] 03-02-PLAN.md — Implement signed envelopes, bound restore plans, one-write apply, retention, and audit policy
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 03-03-PLAN.md — Wire authorized backup list, preview, and apply route contracts
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 03-04-PLAN.md — Wire bounded signed import validation/apply and signing readiness
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 03-05-PLAN.md — Deliver the capability-driven accessible recovery UI and visual backstops
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 03-06-PLAN.md — Close adapter semantics, coverage, prohibitions, and full validation evidence
+
 **UI hint**: yes
 **Risk**: `ProgrammeAdminManager` currently renders controls for missing endpoints and whole-snapshot restore is destructive; establish privileged route contracts and recovery semantics before reconnecting controls.
 
