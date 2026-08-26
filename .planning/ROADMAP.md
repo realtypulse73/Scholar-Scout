@@ -99,7 +99,16 @@ Plans:
   2. A storage read failure is surfaced as a recoverable operational error and cannot silently appear as an empty Scholar Scout data set that a later save overwrites.
   3. An authorized administrator can validate backup, restore, and import inputs with retention limits and recoverable audit evidence before a data-changing operation occurs.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+
+- [ ] 03-01-PLAN.md — Prove fail-closed storage reads through an authorized capability tracer and Wave 0 tests
+- [ ] 03-02-PLAN.md — Implement signed envelopes, bound restore plans, one-write apply, retention, and audit policy
+- [ ] 03-03-PLAN.md — Wire authorized backup list, preview, and apply route contracts
+- [ ] 03-04-PLAN.md — Wire bounded signed import validation/apply and signing readiness
+- [ ] 03-05-PLAN.md — Deliver the capability-driven accessible recovery UI and visual backstops
+- [ ] 03-06-PLAN.md — Close adapter semantics, coverage, prohibitions, and full validation evidence
 **UI hint**: yes
 **Risk**: `ProgrammeAdminManager` currently renders controls for missing endpoints and whole-snapshot restore is destructive; establish privileged route contracts and recovery semantics before reconnecting controls.
 
