@@ -212,25 +212,44 @@ describe('admin data API routes', () => {
     expect(JSON.stringify(await jsonBody(response))).not.toContain('private-provider');
   });
 
-  it('requires confirmation before import restore writes data', async () => {
+  it('applies only an exact staged import plan with one application write', async () => {
     const store = new MemoryDataStore();
     setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     getSessionMock.mockResolvedValue(staffSession());
 
-    const response = await restoreImport(
+    const validation = await validateImport(jsonRequest(createImportEnvelope()));
+    const validationBody = await jsonBody(validation) as { planToken: unknown };
+    const writesAfterValidation = store.writeCount;
+
+    const extraFieldResponse = await restoreImport(
       jsonRequest({
+        planToken: validationBody.planToken,
+        reason: 'Apply tested import',
+        confirmation: SCHOLARSCOUT_RESTORE_CONFIRMATION,
         snapshot: validSnapshot(),
-        confirmation: 'restore',
       }),
     );
+    expect(extraFieldResponse.status).toBe(400);
 
-    expect(response.status).toBe(400);
-    const restoreBody = await jsonBody(response);
-    expect(restoreBody).toMatchObject({
-      error: expect.stringContaining(SCHOLARSCOUT_RESTORE_CONFIRMATION),
+    const response = await restoreImport(jsonRequest({
+      planToken: validationBody.planToken,
+      reason: 'Apply tested import',
+      confirmation: SCHOLARSCOUT_RESTORE_CONFIRMATION,
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(jsonBody(response)).resolves.toMatchObject({
+      ok: true,
+      sourceId: 'import-package-1',
+      counts: expect.objectContaining({ users: 1 }),
     });
-    expect(store.data.users).toHaveLength(0);
+    expect(store.writeCount).toBe(writesAfterValidation + 2);
+    expect(store.data.users).toEqual([
+      expect.objectContaining({ id: 'restored-user' }),
+    ]);
   });
 
   it('checks the live staff allowlist and audits status and backup restore decisions', async () => {
