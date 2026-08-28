@@ -20,7 +20,14 @@ export async function GET() {
         const timeOrder = Date.parse(right.createdAt) - Date.parse(left.createdAt);
         return timeOrder || right.id.localeCompare(left.id);
       })
-      .map(({ data: _snapshot, ...backup }) => backup);
+      .map((backup) => ({
+        id: backup.id,
+        createdAt: backup.createdAt,
+        actorUserId: backup.actorUserId,
+        reason: backup.reason,
+        counts: backup.counts,
+        incidentHold: backup.incidentHold,
+      }));
 
     return NextResponse.json({ backups, empty: backups.length === 0 });
   } catch {

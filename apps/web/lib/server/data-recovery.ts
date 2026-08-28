@@ -552,7 +552,12 @@ export async function releaseRecoveryIncidentHold(
     reason: string;
   },
   dependencies: Omit<RecoveryMutationDependencies, 'signing' | 'backupId' | 'incidentId'> = {},
-): Promise<void> {
+): Promise<{
+  backupId: string;
+  incidentId: string;
+  resolvedAt: string;
+  auditId: string;
+}> {
   if (!input.authorized) throw new Error('recovery-authorization-required');
   const reason = normalizeRecoveryReason(input.reason);
   const read = dependencies.read ?? readScholarScoutData;
@@ -560,14 +565,18 @@ export async function releaseRecoveryIncidentHold(
   const now = dependencies.now?.() ?? new Date();
   const data = await read();
   const backup = (data.restoreBackups ?? []).find((item) => item.id === input.backupId);
-  if (
-    !backup ||
-    backup.incidentHold?.incidentId !== input.incidentId ||
-    backup.incidentHold.status !== 'unresolved'
-  ) {
-    throw new Error('recovery-incident-hold-not-found');
+  if (!backup) {
+    throw new Error('recovery-backup-not-found');
+  }
+  if (!backup.incidentHold || backup.incidentHold.incidentId !== input.incidentId) {
+    throw new Error('recovery-incident-hold-mismatch');
+  }
+  if (backup.incidentHold.status !== 'unresolved') {
+    throw new Error('recovery-incident-hold-changed');
   }
   const auditId = (dependencies.auditId ?? randomUUID)();
+  if (!isSafeId(auditId)) throw new Error('invalid-recovery-identifier');
+  const resolvedAt = now.toISOString();
   const updatedBackups = (data.restoreBackups ?? []).map((item) =>
     item.id === input.backupId
       ? {
@@ -575,7 +584,7 @@ export async function releaseRecoveryIncidentHold(
           incidentHold: {
             ...item.incidentHold!,
             status: 'resolved' as const,
-            resolvedAt: now.toISOString(),
+            resolvedAt,
             resolvedBy: input.actorId,
             reason,
           },
@@ -597,6 +606,12 @@ export async function releaseRecoveryIncidentHold(
     restoreBackups: updatedBackups,
     recoveryLifecycleEvents: [...(data.recoveryLifecycleEvents ?? []), event],
   });
+  return {
+    backupId: input.backupId,
+    incidentId: input.incidentId,
+    resolvedAt,
+    auditId,
+  };
 }
 
 function validateRecoveryPlanToken(
@@ -636,7 +651,8 @@ function normalizeRecoveryReason(reason: string): string {
 }
 
 export function recoveryDataDigest(data: ScholarScoutData): string {
-  const { privilegedOperationAuditEvents: _operationalEvidence, ...applicationData } = data;
+  const applicationData = { ...data };
+  delete applicationData.privilegedOperationAuditEvents;
   return createHash('sha256').update(canonicalSerialize(applicationData)).digest('hex');
 }
 
