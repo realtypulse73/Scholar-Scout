@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: administrative-and-data-operations-correctness
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-08-28T20:11:53.255Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-08-28T20:25:57.058Z"
 last_activity: 2026-08-28
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 25
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 03 (administrative-and-data-operations-correctness) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-08-28 — Phase 03 execution started
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 84%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [████████░░] 80%
 | Phase 02-authentication-api-ai-and-webhook-controls P13 | 11 min | 2 tasks | 4 files |
 | Phase 02 P11 | 24m | 2 tasks | 4 files |
 | Phase 03 P01 | 25min | 2 tasks | 7 files |
+| Phase 03 P02 | 15min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,8 @@ Progress: [████████░░] 80%
 - [Phase ?]: Browser credentials exchange for a one-use grant and run guest migration before profile navigation.
 - [Phase 03]: Treat only verified missing storage as empty data. — Operational and invalid reads must fail closed to prevent destructive overwrite.
 - [Phase 03]: Use stable safe failure categories and independent privacy-minimal evidence. — Provider details and student data must not enter responses or outage evidence.
+- [Phase 03]: Use dedicated current and optional previous recovery keys; never fall back to NEXTAUTH_SECRET. — Separates authentication and recovery trust domains while supporting bounded package rotation.
+- [Phase 03]: Persist successful recovery plan outcomes for idempotent retry. — Repeated valid submissions return the recorded result without another whole-document write.
 
 ### Roadmap Evolution
 
@@ -168,6 +171,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-28T20:11:53.230Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-08-28T20:25:57.033Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
