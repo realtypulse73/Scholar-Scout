@@ -1,22 +1,26 @@
 ---
-status: partial
+status: testing
 phase: 03-administrative-and-data-operations-correctness
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md, 03-06-SUMMARY.md]
 started: 2026-08-28T21:40:00-04:00
-updated: 2026-08-28T22:00:00-04:00
+updated: 2026-08-28T22:10:00-04:00
 ---
 
 ## Current Test
 
-[testing paused — Test 1 sign-in smoke passed; staff-only admin check blocked]
+number: 8
+name: Authorized Backup List and Count-Only Preview
+expected: |
+  Data operations lists available backups newest first. Selecting Preview shows only counts and safe identifiers, never student or snapshot contents.
+awaiting: user response
 
 ## Tests
 
 ### 1. Cold Start and Admin Page Smoke Test
 expected: The preview starts cleanly, sign-in loads, and an authorized staff user can open programme administration and see Data operations without an error screen.
-result: blocked
-blocked_by: third-party
-reason: The fresh preview sign-in page loaded successfully and visibly showed the disabled Continue with Apple control plus its unavailable explanation. No authorized Scholar Scout staff session is active in the browser, so programme administration did not expose Data operations and the staff-only half of this test could not be completed.
+result: issue
+reported: "The Apple sign-in control was visible and correct, but after the user reported signing into Scholar Scout, /admin/programmes still did not show Data operations and rendered an error alert."
+severity: major
 
 ### 2. Fresh Authorized Capabilities
 expected: Authorized capability requests use fresh verified counts and server-owned operation availability.
@@ -82,14 +86,22 @@ result: [pending]
 
 total: 13
 passed: 6
-issues: 0
+issues: 1
 pending: 6
 skipped: 0
-blocked: 1
+blocked: 0
 
 ## Gaps
 
-[none yet]
+- truth: "After an authorized staff sign-in, programme administration loads without an error and shows Data operations."
+  status: failed
+  reason: "User reported the staff sign-in was complete, but the refreshed deployed admin route did not render Data operations and contained an error alert."
+  severity: major
+  test: 1
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
 
 ## Coverage Notes
 
