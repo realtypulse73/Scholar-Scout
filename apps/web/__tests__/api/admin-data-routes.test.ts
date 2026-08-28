@@ -19,6 +19,7 @@ import {
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import { createSignedRecoveryEnvelope } from '@/lib/server/data-recovery';
 
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),
@@ -138,8 +139,12 @@ describe('admin data API routes', () => {
     );
   });
 
-  it('validates import snapshots and reports invalid JSON practically', async () => {
+  it('validates only bounded signed import envelopes without application writes', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     getSessionMock.mockResolvedValue(staffSession());
 
     const invalidJsonResponse = await validateImport(
@@ -148,24 +153,56 @@ describe('admin data API routes', () => {
         body: '{',
       }),
     );
-    await expect(jsonBody(invalidJsonResponse)).resolves.toMatchObject({
-      isValid: false,
-      errors: ['Snapshot must be valid JSON.'],
-    });
+    await expect(jsonBody(invalidJsonResponse)).resolves.toMatchObject({ error: 'invalid-recovery-envelope' });
     expect(invalidJsonResponse.status).toBe(400);
 
-    const validResponse = await validateImport(jsonRequest(validSnapshot()));
+    const writesBeforeValid = store.writeCount;
+    const validResponse = await validateImport(jsonRequest(createImportEnvelope()));
     await expect(jsonBody(validResponse)).resolves.toMatchObject({
-      isValid: true,
-      counts: {
-        users: 1,
-        onboardingProfiles: 0,
-        shortlists: 0,
-        programmeRecords: 0,
-        auditEvents: 0,
+      plan: {
+        sourceId: 'import-package-1',
+        rows: expect.arrayContaining([
+          expect.objectContaining({ key: 'users', restoredCount: 1 }),
+        ]),
       },
+      planToken: expect.objectContaining({ signature: expect.any(String) }),
     });
     expect(validResponse.status).toBe(200);
+    expect(store.writeCount).toBe(writesBeforeValid + 1);
+
+    const oversizedResponse = await validateImport(
+      new Request('http://test.local', {
+        method: 'POST',
+        headers: { 'content-length': String(5 * 1024 * 1024 + 1) },
+        body: '{}',
+      }),
+    );
+    expect(oversizedResponse.status).toBe(413);
+
+    const tampered = createImportEnvelope();
+    tampered.data.users[0].email = 'private-provider.example@example.com';
+    const rejectedResponse = await validateImport(jsonRequest(tampered));
+    const rejectedBody = await jsonBody(rejectedResponse);
+    expect(rejectedResponse.status).toBe(400);
+    expect(JSON.stringify(rejectedBody)).not.toContain('private-provider');
+  });
+
+  it('fails import validation closed when signing or storage is unavailable', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    getSessionMock.mockResolvedValue(staffSession());
+
+    delete process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID;
+    delete process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET;
+    await expectStatus(validateImport(jsonRequest({})), 503);
+
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
+    jest.spyOn(store, 'read').mockRejectedValueOnce(new Error('private-provider token'));
+    const response = await validateImport(jsonRequest(createImportEnvelope()));
+    expect(response.status).toBe(503);
+    expect(JSON.stringify(await jsonBody(response))).not.toContain('private-provider');
   });
 
   it('requires confirmation before import restore writes data', async () => {
@@ -599,6 +636,17 @@ function validSnapshot(): ScholarScoutData {
     programmeRecords: [],
     auditEvents: [],
   };
+}
+
+function createImportEnvelope() {
+  return createSignedRecoveryEnvelope({
+    data: validSnapshot(),
+    sourceId: 'import-package-1',
+    signing: {
+      currentKeyId: 'route-key',
+      currentSecret: 'route-test-secret-that-is-at-least-32-bytes',
+    },
+  });
 }
 
 function dataWithBackup(): ScholarScoutData {
