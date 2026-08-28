@@ -10,7 +10,7 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 
 - [x] **Phase 1: Release and CI Baseline** - Make Scholar Scout's supported install and pull-request quality signal trustworthy. (completed 2026-08-13)
 - [x] **Phase 2: Authentication, API, AI, and Webhook Controls** - Protect student data, privileged actions, and cost-bearing integrations at their server boundaries. (completed 2026-08-28)
-- [ ] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy.
+- [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
 - [ ] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations.
 - [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
 - [ ] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks.
@@ -177,7 +177,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Release and CI Baseline | 6/6 | Complete    | 2026-08-13 |
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
-| 3. Administrative and Data Operations Correctness | 6/6 | In Progress|  |
+| 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 0/TBD | Not started | - |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
