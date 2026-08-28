@@ -99,7 +99,7 @@ Plans:
   2. A storage read failure is surfaced as a recoverable operational error and cannot silently appear as an empty Scholar Scout data set that a later save overwrites.
   3. An authorized administrator can validate backup, restore, and import inputs with retention limits and recoverable audit evidence before a data-changing operation occurs.
 
-**Plans**: 4/6 plans executed
+**Plans**: 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -117,7 +117,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-05-PLAN.md — Deliver the capability-driven accessible recovery UI and visual backstops
+- [x] 03-05-PLAN.md — Deliver the capability-driven accessible recovery UI and visual backstops
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -177,7 +177,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Release and CI Baseline | 6/6 | Complete    | 2026-08-13 |
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
-| 3. Administrative and Data Operations Correctness | 4/6 | In Progress|  |
+| 3. Administrative and Data Operations Correctness | 5/6 | In Progress|  |
 | 4. Incremental Durable Persistence Boundaries | 0/TBD | Not started | - |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
