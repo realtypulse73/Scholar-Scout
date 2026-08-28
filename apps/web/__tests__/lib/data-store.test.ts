@@ -6,6 +6,9 @@ import {
 } from '@vercel/blob';
 import { ReadableStream } from 'stream/web';
 import { TextEncoder } from 'util';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   findOrCreateOAuthUser,
   hashGuestCredential,
@@ -13,6 +16,7 @@ import {
   getDataStoreConfigurationSummary,
   getScholarScoutDataStore,
   getScholarScoutDataStoreStatus,
+  JsonScholarScoutDataStore,
   getScholarScoutRestoreBackupPlan,
   getScholarScoutRestoreBackups,
   getRestoreBackupRetentionStatus,
@@ -24,6 +28,7 @@ import {
   saveShortlist,
   saveShortlistPlans,
   setScholarScoutDataStoreForTests,
+  ScholarScoutDataStoreReadError,
   registerGuestLifecycle,
   validateScholarScoutDataImport,
   writeScholarScoutData,
@@ -273,6 +278,52 @@ describe('ScholarScout data store adapter', () => {
     );
   });
 
+  it('treats only HTTP 404 as verified absence and rejects invalid provider documents', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'http';
+    process.env.SCHOLARSCOUT_DATA_SERVICE_URL =
+      'https://data.example.test/scholarscout';
+
+    globalThis.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 404,
+    })) as typeof fetch;
+    await expect(readScholarScoutData()).resolves.toMatchObject(initialData);
+
+    setScholarScoutDataStoreForTests(null);
+    globalThis.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...initialData, users: null }),
+    })) as typeof fetch;
+    await expect(readScholarScoutData()).rejects.toMatchObject({
+      category: 'invalid-data',
+    });
+
+    setScholarScoutDataStoreForTests(null);
+    globalThis.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 503,
+    })) as typeof fetch;
+    await expect(readScholarScoutData()).rejects.toBeInstanceOf(
+      ScholarScoutDataStoreReadError,
+    );
+  });
+
+  it('rejects malformed JSON storage instead of replacing it with empty data', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-store-'));
+    const filePath = path.join(directory, 'data.json');
+    await writeFile(filePath, '{', 'utf8');
+
+    try {
+      const store = new JsonScholarScoutDataStore(filePath);
+      await expect(store.read()).rejects.toMatchObject({
+        category: 'invalid-data',
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('requires a read-write token for the Vercel Blob data adapter', () => {
     process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
     delete process.env.BLOB_READ_WRITE_TOKEN;
@@ -364,6 +415,24 @@ describe('ScholarScout data store adapter', () => {
         token: 'blob-token',
       }),
     );
+  });
+
+  it('distinguishes a missing Blob from an invalid stored Blob document', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
+    const getMock = jest.mocked(get);
+
+    getMock.mockResolvedValueOnce(null as unknown as GetBlobResult);
+    await expect(readScholarScoutData()).resolves.toMatchObject(initialData);
+
+    setScholarScoutDataStoreForTests(null);
+    getMock.mockResolvedValueOnce({
+      statusCode: 200,
+      stream: createTextStream(JSON.stringify({ ...initialData, shortlists: [] })),
+    } as unknown as GetBlobResult);
+    await expect(readScholarScoutData()).rejects.toMatchObject({
+      category: 'invalid-data',
+    });
   });
 
   it('creates OAuth users with staff allowlist roles', async () => {
