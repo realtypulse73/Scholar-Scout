@@ -16,8 +16,8 @@
 ### Reliability and Operations
 
 - [x] **OPS-01**: Every pull request receives a relevant Scholar Scout build, typecheck, lint, and test result; no unrelated CrimClock job can fail the pipeline.
-- [ ] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
-- [ ] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
+- [x] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
+- [x] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
 - [ ] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
 - [x] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
 
@@ -25,7 +25,7 @@
 
 - [ ] **DATA-01**: Concurrent user and staff writes cannot silently overwrite each other; write operations have an atomic transaction or explicit version-conflict outcome.
 - [ ] **DATA-02**: User, programme, and operational records can be accessed and changed through bounded domain operations rather than rewriting an unbounded shared document for every event.
-- [ ] **DATA-03**: Backup, restore, and import workflows use authenticated operations, validation, retention limits, and recoverable audit evidence.
+- [x] **DATA-03**: Backup, restore, and import workflows use authenticated operations, validation, retention limits, and recoverable audit evidence.
 
 ### Product Completion and Community Safety
 
@@ -87,13 +87,13 @@
 | SEC-04 | Phase 2 | Complete |
 | SEC-05 | Phase 2 | Complete |
 | OPS-01 | Phase 1 | Complete |
-| OPS-02 | Phase 3 | Pending |
-| OPS-03 | Phase 3 | Pending |
+| OPS-02 | Phase 3 | Complete |
+| OPS-03 | Phase 3 | Complete |
 | OPS-04 | Phase 6 | Pending |
 | OPS-05 | Phase 1 | Complete |
 | DATA-01 | Phase 4 | Pending |
 | DATA-02 | Phase 4 | Pending |
-| DATA-03 | Phase 3 | Pending |
+| DATA-03 | Phase 3 | Complete |
 | PROD-01 | Phase 5 | Pending |
 | PROD-02 | Phase 5 | Pending |
 | PROD-03 | Phase 5 | Pending |

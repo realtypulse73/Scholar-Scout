@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: administrative-and-data-operations-correctness
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-08-28T20:41:02.686Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-08-28T20:51:53.771Z"
 last_activity: 2026-08-28
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 25
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 03 (administrative-and-data-operations-correctness) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-08-28 — Phase 03 execution started
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Progress: [█████████░] 88%
 | Phase 03 P01 | 25min | 2 tasks | 7 files |
 | Phase 03 P02 | 15min | 2 tasks | 3 files |
 | Phase 03 P03 | 12min | 3 tasks | 7 files |
+| Phase 03 P04 | 8min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,8 @@ Progress: [█████████░] 88%
 - [Phase 03]: Persist successful recovery plan outcomes for idempotent retry. — Repeated valid submissions return the recorded result without another whole-document write.
 - [Phase ?]: Treat privileged authorization evidence as operational metadata outside the recovery state digest so authorization cannot invalidate a freshly issued plan.
 - [Phase ?]: Keep incident-hold release as an authenticated operator-only route and exclude it from advertised UI capabilities.
+- [Phase ?]: Import apply carries the signed envelope inside the staged plan token so it accepts no second raw snapshot field.
+- [Phase ?]: Production recovery signing uses dedicated current material and optional previous material only as a complete pair; NEXTAUTH_SECRET is never a fallback.
 
 ### Roadmap Evolution
 
@@ -174,6 +177,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-28T20:41:02.661Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-08-28T20:51:53.747Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
