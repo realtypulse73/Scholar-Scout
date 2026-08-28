@@ -89,6 +89,17 @@ export default function AuthForm({ mode }: AuthFormProps) {
           >
             Continue with Google
           </button>
+          <button
+            type="button"
+            disabled
+            aria-describedby="apple-sign-in-status"
+            className="inline-flex min-h-touch w-full cursor-not-allowed items-center justify-center rounded-card border border-ink-200 bg-ink-50 px-4 text-sm font-semibold text-ink-500"
+          >
+            Continue with Apple
+          </button>
+          <p id="apple-sign-in-status" className="text-center text-xs text-ink-600">
+            Apple sign-in is not available yet.
+          </p>
           <div className="flex items-center gap-3" aria-hidden="true">
             <div className="h-px flex-1 bg-ink-200" />
             <span className="text-xs font-semibold uppercase text-ink-500">

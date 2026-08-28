@@ -30,6 +30,21 @@ describe('AuthForm', () => {
     global.fetch = fetchMock as typeof fetch;
   });
 
+  it('shows Apple sign-in as unavailable without initiating an unconfigured provider', async () => {
+    const user = userEvent.setup();
+
+    const { rerender } = render(<AuthForm mode="sign-in" />);
+    const appleButton = screen.getByRole('button', { name: 'Continue with Apple' });
+
+    expect(appleButton).toBeDisabled();
+    expect(appleButton).toHaveAccessibleDescription('Apple sign-in is not available yet.');
+    await user.click(appleButton);
+    expect(signInMock).not.toHaveBeenCalled();
+
+    rerender(<AuthForm mode="sign-up" />);
+    expect(screen.queryByRole('button', { name: 'Continue with Apple' })).not.toBeInTheDocument();
+  });
+
   it('exchanges only email and password for an opaque grant before migrating and navigating', async () => {
     const user = userEvent.setup();
     fetchMock
