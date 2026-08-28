@@ -66,11 +66,29 @@ export function createScholarScoutDataService({
 }
 
 async function handleRead(response, dataFile) {
+  let file;
+
   try {
-    const file = await readFile(dataFile, 'utf8');
+    file = await readFile(dataFile, 'utf8');
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') {
+      sendJson(response, 404, { error: 'No ScholarScout data document yet' });
+      return;
+    }
+
+    sendJson(response, 500, { error: 'Data service error' });
+    return;
+  }
+
+  try {
     sendJson(response, 200, normalizeData(JSON.parse(file)));
-  } catch {
-    sendJson(response, 404, { error: 'No ScholarScout data document yet' });
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      sendJson(response, 500, { error: 'Invalid stored data document' });
+      return;
+    }
+
+    sendJson(response, 500, { error: 'Data service error' });
   }
 }
 
