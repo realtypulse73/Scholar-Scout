@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 04
 current_phase_name: incremental-durable-persistence-boundaries
-status: discussing
-stopped_at: Phase 4 discussion preflight; awaiting first product/technical boundary decision
-last_updated: "2026-08-29T03:40:00.000Z"
+status: planning
+stopped_at: Phase 4 roadmap context captured; ready for research and plan generation
+last_updated: "2026-08-29T04:05:00.000Z"
 last_activity: 2026-08-28
-last_activity_desc: Phase 03 verified complete and Phase 04 discussion preflight started
+last_activity_desc: Phase 04 roadmap context captured and planning preflight started
 progress:
   total_phases: 4
   completed_phases: 3
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 ## Current Position
 
-Phase: 04 (incremental-durable-persistence-boundaries) — DISCUSSING
+Phase: 04 (incremental-durable-persistence-boundaries) — PLANNING
 Plan: 0 of TBD
-Status: Phase 3 verified complete; Phase 4 discussion preflight started
-Last activity: 2026-08-28 — Phase 4 workflow started after Phase 3 verification passed
+Status: Roadmap-defined context captured; ready for research and plan generation
+Last activity: 2026-08-28 — Phase 4 planning preflight started from canonical roadmap scope
 
 Progress: [██████████] 100%
 
@@ -181,5 +181,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-28T21:28:40.004Z
-Stopped at: Phase 4 discussion preflight; awaiting first product/technical boundary decision
+Stopped at: Phase 4 roadmap context captured; ready for research and plan generation
 Resume file: None
