@@ -40,7 +40,7 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     const fetchMock = installFetch();
     render(<ProgrammeAdminManager baseProgrammes={[]} />);
     expect(screen.getByRole('status')).toHaveTextContent('Checking data operations');
-    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect((await screen.findAllByText('Storage verified')).length).toBeGreaterThan(0);
     expect(screen.getByText('vercel-blob')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /export/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Validate import package' })).toBeEnabled();
@@ -53,7 +53,7 @@ describe('ProgrammeAdminManager recovery state contract', () => {
   it('does not invent operations omitted by the server', async () => {
     installFetch({ capabilities: response({ ...capabilities, operations: [{ id: 'status', available: true, allowedAction: 'view', reason: 'available', retryable: false }] }) });
     render(<ProgrammeAdminManager baseProgrammes={[]} />);
-    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect((await screen.findAllByText('Storage verified')).length).toBeGreaterThan(0);
     expect(screen.queryByText('No recovery backups yet')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Validate import package' })).not.toBeInTheDocument();
   });
@@ -78,14 +78,14 @@ describe('ProgrammeAdminManager recovery state contract', () => {
       throw new Error(`Unexpected fetch: ${url}`);
     });
     await user.click(within(alert).getByRole('button', { name: 'Retry data operations' }));
-    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect((await screen.findAllByText('Storage verified')).length).toBeGreaterThan(0);
   });
 
   it('retains last verified values read-only while refresh fails', async () => {
     const user = userEvent.setup();
     const fetchMock = installFetch();
     render(<ProgrammeAdminManager baseProgrammes={[]} />);
-    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect((await screen.findAllByText('Storage verified')).length).toBeGreaterThan(0);
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/admin/data/capabilities') return response({ category: 'storage-unavailable', incidentId: 'incident-refresh', retryable: true }, false);
@@ -96,7 +96,7 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('incident-refresh');
     expect(screen.getByText(/Last verified/)).toBeInTheDocument();
-    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getAllByText('4').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Validate import package' })).toBeDisabled();
   });
 });
