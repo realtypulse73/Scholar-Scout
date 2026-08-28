@@ -11,6 +11,7 @@ import { GET as dataHealth } from '@/app/api/admin/data/health/route';
 import { GET as dataCapabilities } from '@/app/api/admin/data/capabilities/route';
 import { GET as planBackupRestore } from '@/app/api/admin/data/backups/[id]/plan/route';
 import { POST as restoreBackup } from '@/app/api/admin/data/backups/[id]/restore/route';
+import { POST as releaseBackupHold } from '@/app/api/admin/data/backups/[id]/hold/release/route';
 import {
   getPrivilegedOperationAuditEvents,
   SCHOLARSCOUT_RESTORE_CONFIRMATION,
@@ -435,6 +436,71 @@ describe('admin data API routes', () => {
       outcome: 'succeeded',
     });
     expect(JSON.stringify(applyBody)).not.toContain('restored@example.com');
+  });
+
+  it('releases only the named active incident hold through the operator route', async () => {
+    const store = new MemoryDataStore();
+    store.data = dataWithBackup();
+    store.data.restoreBackups![0].incidentHold = {
+      incidentId: 'incident-1',
+      status: 'unresolved',
+      createdAt: '2026-05-05T00:00:00.000Z',
+    };
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    getSessionMock.mockResolvedValue(staffSession());
+
+    const invalid = await releaseBackupHold(
+      jsonRequest({ incidentId: 'incident-1', reason: 'Resolved', extra: true }),
+      routeContext('backup-1'),
+    );
+    expect(invalid.status).toBe(400);
+    expect(store.data.restoreBackups![0].incidentHold?.status).toBe('unresolved');
+
+    const mismatch = await releaseBackupHold(
+      jsonRequest({ incidentId: 'incident-other', reason: 'Resolved' }),
+      routeContext('backup-1'),
+    );
+    expect(mismatch.status).toBe(409);
+
+    const response = await releaseBackupHold(
+      jsonRequest({ incidentId: 'incident-1', reason: ' Incident reviewed ' }),
+      routeContext('backup-1'),
+    );
+    const body = await jsonBody(response);
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      ok: true,
+      backupId: 'backup-1',
+      incidentId: 'incident-1',
+      resolvedAt: expect.any(String),
+      auditId: expect.any(String),
+    });
+    expect(store.data.restoreBackups![0].incidentHold).toMatchObject({
+      status: 'resolved',
+      resolvedBy: 'staff-1',
+      reason: 'Incident reviewed',
+    });
+    expect(store.data.recoveryLifecycleEvents?.at(-1)).toMatchObject({
+      actorId: 'staff-1',
+      action: 'release-incident-hold',
+      backupId: 'backup-1',
+      incidentId: 'incident-1',
+      outcome: 'succeeded',
+    });
+    expect(JSON.stringify(body)).not.toContain('restored@example.com');
+  });
+
+  it('keeps incident-hold release absent from advertised capabilities', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    getSessionMock.mockResolvedValue(staffSession());
+
+    const response = await dataCapabilities();
+    const body = await jsonBody(response) as { operations: Array<{ id: string }> };
+    expect(response.status).toBe(200);
+    expect(body.operations.map((operation) => operation.id)).not.toContain('hold-release');
   });
 
   it('protects service-token data health and returns data status', async () => {
