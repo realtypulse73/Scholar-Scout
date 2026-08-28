@@ -376,6 +376,7 @@ describe('admin data API routes', () => {
     const store = new MemoryDataStore();
     const read = jest
       .spyOn(store, 'read')
+      .mockResolvedValueOnce(cloneData(store.data))
       .mockRejectedValueOnce(new Error('private-provider.example token=secret'));
     setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
@@ -392,7 +393,7 @@ describe('admin data API routes', () => {
       retryable: true,
     });
     expect(JSON.stringify(body)).not.toContain('private-provider');
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(2);
   });
 });
 

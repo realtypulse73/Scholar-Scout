@@ -793,6 +793,18 @@ export async function readScholarScoutData() {
   return normalizeScholarScoutData(await getScholarScoutDataStore().read());
 }
 
+export type ScholarScoutDataStoreReadFailureCategory =
+  | 'unavailable'
+  | 'timeout'
+  | 'invalid-data';
+
+export class ScholarScoutDataStoreReadError extends Error {
+  constructor(readonly category: ScholarScoutDataStoreReadFailureCategory) {
+    super('ScholarScout stored data could not be read safely.');
+    this.name = 'ScholarScoutDataStoreReadError';
+  }
+}
+
 export async function writeScholarScoutData(data: ScholarScoutData) {
   await getScholarScoutDataStore().write(normalizeScholarScoutData(data));
 }
