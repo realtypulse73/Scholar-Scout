@@ -1,18 +1,15 @@
 ---
-status: testing
+status: passed
 phase: 03-administrative-and-data-operations-correctness
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md, 03-06-SUMMARY.md]
 started: 2026-08-28T21:40:00-04:00
-updated: 2026-08-28T22:46:00-04:00
+updated: 2026-08-28T23:28:10-04:00
 ---
 
 ## Current Test
 
-number: 8
-name: Authorized Backup List and Count-Only Preview
-expected: |
-  Data operations lists available backups newest first. Selecting Preview shows only counts and safe identifiers, never student or snapshot contents.
-awaiting: authorization for a disposable Preview-only recovery fixture and apply/restore cycle
+number: complete
+name: All Phase 3 UAT checks passed
 
 ## Tests
 
@@ -60,27 +57,27 @@ coverage_id: 03-02-D3
 
 ### 8. Authorized Backup List and Count-Only Preview
 expected: Data operations lists available backups newest first. Selecting Preview shows only counts and safe identifiers, never student or snapshot contents.
-result: blocked
+result: pass
 source: manual
-evidence: The authenticated Preview rendered Recovery backup history safely and reported 0 saved backups. With no backup available, ordering and count-only preview cannot be exercised without first creating a data-changing recovery fixture.
+evidence: An authorized disposable Preview-only identical-state recovery fixture created bounded backups. The authenticated UI listed the newest backup first with safe identifiers and counts only, and Preview restore impact exposed only count deltas and digests rather than snapshot or student contents.
 
 ### 9. Exact Restore Confirmation
 expected: After a valid preview, the reason and exact confirmation controls appear. Apply stays disabled until the required phrase is entered and reports a clear complete or unchanged result.
-result: blocked
+result: pass
 source: manual
-evidence: No recovery backup exists in Preview, so a valid restore preview and its confirmation gate cannot be reached without an authorized data-changing fixture/apply cycle.
+evidence: The read-only impact preview exposed operator reason and the exact RESTORE SCHOLARSCOUT DATA phrase. Apply remained disabled before the exact phrase, enabled afterward, and an identical-state restore reported Recovery completed with a new bounded backup and safe incident identifier.
 
 ### 10. Signed Import Validation
 expected: Import validation is visibly non-mutating. A valid signed package produces a count-only preview; an invalid or oversized package produces a safe error without enabling Apply.
-result: blocked
+result: pass
 source: manual
-evidence: The live UI clearly labels validation as non-mutating and exposes a bounded 5 MiB signed-package input, but no approved signed Preview fixture is available to exercise valid and invalid package outcomes.
+evidence: A disposable Preview signing key produced a synthetic empty-data package. Validation yielded a count-only read-only plan without applying it; a structurally invalid package returned invalid-recovery-envelope plus a safe validation incident identifier and exposed no Apply control.
 
 ### 11. Capability Failure and Retry
 expected: If a refresh fails, the page labels previous counts as last verified, shows Retry and a safe incident identifier, focuses the alert, and disables every data-changing action until a fresh read succeeds.
-result: blocked
+result: pass
 source: manual
-evidence: The live Preview storage check is healthy. Inducing a provider failure would require an explicit Preview configuration/outage exercise and is not safe to perform implicitly against the shared deployment.
+evidence: A Preview-only failure cookie made capability refresh return storage-timeout with a safe incident ID. The alert received focus, prior counts were labeled Last verified, restore preview and import validation were disabled, and Retry restored Storage verified plus enabled actions after the failure was disarmed.
 
 ### 12. Responsive and Accessible Recovery UI
 expected: At phone, tablet, and desktop widths, long identifiers wrap or scroll inside their own region; keyboard focus remains visible; alerts and results are announced once with operation-specific text.
@@ -97,11 +94,18 @@ evidence: Both operator runbooks state that approved recovery performs one appli
 ## Summary
 
 total: 13
-passed: 9
+passed: 13
 issues: 0
 pending: 0
 skipped: 0
-blocked: 4
+blocked: 0
+
+## Preview UAT Cleanup
+
+- The temporary fixture routes were deployed only to isolated non-production Preview deployments and were never committed to GitHub.
+- The normal GitHub-backed branch deployment was restored to the branch Preview alias after testing.
+- The disposable Preview recovery signing key ID and Sensitive signing secret were removed from Vercel after testing.
+- One bounded recovery backup remains as audit evidence because Phase 3 intentionally has no delete route. Its incident hold was released through the authorized server route so normal retention can expire it.
 
 ## Gaps
 
