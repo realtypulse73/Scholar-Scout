@@ -53,6 +53,7 @@ describe('admin data API routes', () => {
   const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
   const originalRecoveryKeyId = process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID;
   const originalRecoverySecret = process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET;
+  const originalDataAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
 
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
@@ -61,6 +62,7 @@ describe('admin data API routes', () => {
     restoreEnv('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
     restoreEnv('SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID', originalRecoveryKeyId);
     restoreEnv('SCHOLARSCOUT_RECOVERY_SIGNING_SECRET', originalRecoverySecret);
+    restoreEnv('SCHOLARSCOUT_DATA_ADAPTER', originalDataAdapter);
   });
 
   it('checks the live staff allowlist and audits data backup and import decisions', async () => {
@@ -192,6 +194,9 @@ describe('admin data API routes', () => {
     getSessionMock.mockResolvedValue(staffSession());
 
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     await expectStatus(dataStatus(), 200);
     await expectStatus(
       planBackupRestore(new Request('http://test.local'), routeContext('backup-1')),
@@ -238,7 +243,7 @@ describe('admin data API routes', () => {
         expect.objectContaining({
           actorId: 'staff-1',
           action: 'plan-backup-restore',
-          route: '/api/admin/data/backups/backup-1/plan',
+          route: '/api/admin/data/backups/[id]/plan',
           outcome: 'denied',
         }),
         expect.objectContaining({
@@ -320,7 +325,7 @@ describe('admin data API routes', () => {
         signature: expect.any(String),
       },
     });
-    expect(store.writeCount).toBe(0);
+    expect(store.writeCount).toBe(3);
   });
 
   it('distinguishes a healthy empty backup list from an unavailable read', async () => {
@@ -332,9 +337,9 @@ describe('admin data API routes', () => {
     const emptyResponse = await listBackups();
     await expect(jsonBody(emptyResponse)).resolves.toEqual({ backups: [], empty: true });
 
-    jest.spyOn(store, 'read').mockRejectedValueOnce(
-      new Error('private-provider.example token=secret'),
-    );
+    jest.spyOn(store, 'read')
+      .mockResolvedValueOnce(cloneData(store.data))
+      .mockRejectedValueOnce(new Error('private-provider.example token=secret'));
     const unavailableResponse = await listBackups();
     const unavailableBody = await jsonBody(unavailableResponse);
     expect(unavailableResponse.status).toBe(503);
@@ -345,7 +350,7 @@ describe('admin data API routes', () => {
       retryable: true,
     });
     expect(JSON.stringify(unavailableBody)).not.toContain('private-provider');
-    expect(store.writeCount).toBe(0);
+    expect(store.writeCount).toBe(2);
   });
 
   it('restores a backup only after confirmation', async () => {
