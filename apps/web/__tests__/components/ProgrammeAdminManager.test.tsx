@@ -1,60 +1,102 @@
-import type { ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import ProgrammeAdminManager from '@/components/admin/ProgrammeAdminManager';
 
-type RecoveryFixture =
-  | { state: 'loading' }
-  | { state: 'unavailable'; incidentId: string; retryable: true }
-  | { state: 'last-known'; verifiedAt: string }
-  | { state: 'ready'; verifiedAt: string };
+const counts = { users: 4, onboardingProfiles: 3, shortlists: 2, programmeRecords: 1, auditEvents: 5 };
+const capabilities = {
+  health: 'healthy', adapter: 'vercel-blob', lastVerifiedAt: '2026-08-28T13:00:00.000Z', counts,
+  operations: [
+    { id: 'status', available: true, allowedAction: 'view', reason: 'available', retryable: false },
+    { id: 'backup-list', available: true, allowedAction: 'view', reason: 'available', retryable: false },
+    { id: 'import-validate', available: true, allowedAction: 'validate', reason: 'available', retryable: false },
+  ],
+};
+const backups = [{
+  id: 'backup-long-identifier-1234567890', createdAt: '2026-08-28T12:00:00.000Z',
+  actorUserId: 'staff-1', reason: 'pre-restore', counts,
+  incidentHold: { incidentId: 'incident-long-identifier-1234567890', status: 'unresolved', createdAt: '2026-08-28T12:05:00.000Z' },
+}];
 
-function RecoveryStateFixture({ fixture }: { fixture: RecoveryFixture }) {
-  let content: ReactNode;
+function response(body: unknown, ok = true, status = ok ? 200 : 503) {
+  return { ok, status, json: async () => body } as Response;
+}
 
-  if (fixture.state === 'loading') {
-    content = <p role="status">Checking data operations…</p>;
-  } else if (fixture.state === 'unavailable') {
-    content = (
-      <div role="alert">
-        Data operations are unavailable. Incident {fixture.incidentId}.
-        <button type="button">Retry</button>
-      </div>
-    );
-  } else {
-    content = (
-      <section aria-label="Data operations">
-        <p>Last verified {fixture.verifiedAt}</p>
-        <button type="button" disabled={fixture.state === 'last-known'}>
-          Restore data
-        </button>
-      </section>
-    );
-  }
-
-  return <div>{content}</div>;
+function installFetch(options: { capabilities?: Response; backups?: Response } = {}) {
+  const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === '/api/admin/programmes') return response({ records: [], auditEvents: [] });
+    if (url === '/api/admin/data/capabilities') return options.capabilities ?? response(capabilities);
+    if (url === '/api/admin/data/backups') return options.backups ?? response({ backups });
+    throw new Error(`Unexpected fetch: ${url}`);
+  });
+  global.fetch = fetchMock as typeof fetch;
+  return fetchMock;
 }
 
 describe('ProgrammeAdminManager recovery state contract', () => {
-  it.each<RecoveryFixture>([
-    { state: 'loading' },
-    { state: 'unavailable', incidentId: 'incident-1', retryable: true },
-    { state: 'last-known', verifiedAt: '2026-08-28T13:00:00.000Z' },
-    { state: 'ready', verifiedAt: '2026-08-28T13:00:00.000Z' },
-  ])('exposes an accessible $state state', (fixture) => {
-    render(<RecoveryStateFixture fixture={fixture} />);
+  beforeEach(() => { jest.resetAllMocks(); window.localStorage.clear(); });
 
-    if (fixture.state === 'loading') {
-      expect(screen.getByRole('status')).toBeInTheDocument();
-    } else if (fixture.state === 'unavailable') {
-      expect(screen.getByRole('alert')).toHaveTextContent(fixture.incidentId);
-      expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
-    } else {
-      expect(screen.getByRole('region', { name: 'Data operations' })).toBeInTheDocument();
-      const restoreButton = screen.getByRole('button', { name: 'Restore data' });
-      if (fixture.state === 'ready') {
-        expect(restoreButton).toBeEnabled();
-      } else {
-        expect(restoreButton).toBeDisabled();
-      }
-    }
+  it('renders only server-advertised operations and held backups', async () => {
+    const fetchMock = installFetch();
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Checking data operations');
+    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect(screen.getByText('vercel-blob')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /export/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Validate import package' })).toBeEnabled();
+    expect(screen.getByText('Retention hold')).toBeInTheDocument();
+    expect(screen.getByText('backup-long-identifier-1234567890')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not invent operations omitted by the server', async () => {
+    installFetch({ capabilities: response({ ...capabilities, operations: [{ id: 'status', available: true, allowedAction: 'view', reason: 'available', retryable: false }] }) });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    expect(screen.queryByText('No recovery backups yet')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Validate import package' })).not.toBeInTheDocument();
+  });
+
+  it('focuses a safe unavailable alert and retries a fresh capability read', async () => {
+    const user = userEvent.setup();
+    const unavailable = response({ error: 'data-service-unavailable', category: 'storage-timeout', incidentId: 'incident-retry-1', retryable: true }, false);
+    const fetchMock = installFetch({ capabilities: unavailable });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveFocus();
+    expect(alert).toHaveTextContent('Data operations are unavailable');
+    expect(alert).toHaveTextContent('storage-timeout');
+    expect(alert).toHaveTextContent('incident-retry-1');
+    expect(screen.queryByRole('button', { name: /apply|restore/i })).not.toBeInTheDocument();
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/admin/programmes') return response({ records: [], auditEvents: [] });
+      if (url === '/api/admin/data/capabilities') return response(capabilities);
+      if (url === '/api/admin/data/backups') return response({ backups: [] });
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    await user.click(within(alert).getByRole('button', { name: 'Retry data operations' }));
+    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+  });
+
+  it('retains last verified values read-only while refresh fails', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    expect(await screen.findByText('Storage verified')).toBeInTheDocument();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/admin/data/capabilities') return response({ category: 'storage-unavailable', incidentId: 'incident-refresh', retryable: true }, false);
+      if (url === '/api/admin/programmes') return response({ records: [], auditEvents: [] });
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    await user.click(screen.getByRole('button', { name: 'Refresh data operations' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('incident-refresh');
+    expect(screen.getByText(/Last verified/)).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Validate import package' })).toBeDisabled();
   });
 });
