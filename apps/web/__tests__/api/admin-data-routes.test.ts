@@ -33,12 +33,16 @@ const initialData: ScholarScoutData = {
 
 class MemoryDataStore implements ScholarScoutDataStore {
   data = cloneData(initialData);
+  readCount = 0;
+  writeCount = 0;
 
   async read() {
+    this.readCount += 1;
     return cloneData(this.data);
   }
 
   async write(data: ScholarScoutData) {
+    this.writeCount += 1;
     this.data = cloneData(data);
   }
 }
@@ -47,12 +51,16 @@ describe('admin data API routes', () => {
   const getSessionMock = jest.mocked(getServerSession);
   const originalHealthToken = process.env.SCHOLARSCOUT_HEALTH_TOKEN;
   const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
+  const originalRecoveryKeyId = process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID;
+  const originalRecoverySecret = process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET;
 
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
     getSessionMock.mockReset();
     restoreEnv('SCHOLARSCOUT_HEALTH_TOKEN', originalHealthToken);
     restoreEnv('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
+    restoreEnv('SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID', originalRecoveryKeyId);
+    restoreEnv('SCHOLARSCOUT_RECOVERY_SIGNING_SECRET', originalRecoverySecret);
   });
 
   it('checks the live staff allowlist and audits data backup and import decisions', async () => {
@@ -243,12 +251,40 @@ describe('admin data API routes', () => {
     );
   });
 
-  it('plans backup restores and returns not found for missing backups', async () => {
+  it('lists safe newest-first backup summaries and creates a count-only bound plan', async () => {
     const store = new MemoryDataStore();
     store.data = dataWithBackup();
+    store.data.restoreBackups = [
+      ...store.data.restoreBackups!,
+      {
+        ...store.data.restoreBackups![0],
+        id: 'backup-2',
+        createdAt: '2026-05-06T00:00:00.000Z',
+        data: {
+          ...validSnapshot(),
+          users: [
+            ...validSnapshot().users,
+            {
+              ...validSnapshot().users[0],
+              id: 'restored-user-2',
+              email: 'second@example.com',
+            },
+          ],
+        },
+      },
+    ];
     setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     getSessionMock.mockResolvedValue(staffSession());
+
+    const listResponse = await listBackups();
+    const listBody = await jsonBody(listResponse) as { backups: Array<Record<string, unknown>> };
+    expect(listResponse.status).toBe(200);
+    expect(listBody.backups.map((backup) => backup.id)).toEqual(['backup-2', 'backup-1']);
+    expect(JSON.stringify(listBody)).not.toContain('restored@example.com');
+    expect(JSON.stringify(listBody)).not.toContain('passwordHash');
 
     const missingResponse = await planBackupRestore(
       new Request('http://test.local'),
@@ -264,10 +300,8 @@ describe('admin data API routes', () => {
     expect(response.status).toBe(200);
     await expect(jsonBody(response)).resolves.toMatchObject({
       plan: {
-        backup: {
-          id: 'backup-1',
-          actorLabel: 'Staff User',
-        },
+        sourceId: 'backup-1',
+        expiresAt: expect.any(String),
         rows: expect.arrayContaining([
           {
             key: 'users',
@@ -278,7 +312,40 @@ describe('admin data API routes', () => {
           },
         ]),
       },
+      planToken: {
+        claims: {
+          actorId: 'staff-1',
+          sourceId: 'backup-1',
+        },
+        signature: expect.any(String),
+      },
     });
+    expect(store.writeCount).toBe(0);
+  });
+
+  it('distinguishes a healthy empty backup list from an unavailable read', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    getSessionMock.mockResolvedValue(staffSession());
+
+    const emptyResponse = await listBackups();
+    await expect(jsonBody(emptyResponse)).resolves.toEqual({ backups: [], empty: true });
+
+    jest.spyOn(store, 'read').mockRejectedValueOnce(
+      new Error('private-provider.example token=secret'),
+    );
+    const unavailableResponse = await listBackups();
+    const unavailableBody = await jsonBody(unavailableResponse);
+    expect(unavailableResponse.status).toBe(503);
+    expect(unavailableBody).toEqual({
+      error: 'data-service-unavailable',
+      category: 'storage-unavailable',
+      incidentId: expect.any(String),
+      retryable: true,
+    });
+    expect(JSON.stringify(unavailableBody)).not.toContain('private-provider');
+    expect(store.writeCount).toBe(0);
   });
 
   it('restores a backup only after confirmation', async () => {
