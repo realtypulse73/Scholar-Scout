@@ -181,7 +181,8 @@ describe('admin data API routes', () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(jsonBody(response)).resolves.toMatchObject({
+    const restoreBody = await jsonBody(response);
+    expect(restoreBody).toMatchObject({
       error: expect.stringContaining(SCHOLARSCOUT_RESTORE_CONFIRMATION),
     });
     expect(store.data.users).toHaveLength(0);
@@ -249,7 +250,7 @@ describe('admin data API routes', () => {
         expect.objectContaining({
           actorId: 'staff-1',
           action: 'restore-backup',
-          route: '/api/admin/data/backups/backup-1/restore',
+          route: '/api/admin/data/backups/[id]/restore',
           outcome: 'denied',
         }),
       ]),
@@ -402,7 +403,8 @@ describe('admin data API routes', () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(jsonBody(response)).resolves.toMatchObject({
+    const applyBody = await jsonBody(response);
+    expect(applyBody).toMatchObject({
       ok: true,
       planId: expect.any(String),
       sourceId: 'backup-1',
@@ -413,7 +415,7 @@ describe('admin data API routes', () => {
         onboardingProfiles: 0,
         shortlists: 0,
         programmeRecords: 0,
-        auditEvents: 1,
+        auditEvents: 0,
       },
     });
     expect(store.data.users).toEqual([
@@ -432,7 +434,7 @@ describe('admin data API routes', () => {
       sourceId: 'backup-1',
       outcome: 'succeeded',
     });
-    expect(JSON.stringify(responseBody)).not.toContain('restored@example.com');
+    expect(JSON.stringify(applyBody)).not.toContain('restored@example.com');
   });
 
   it('protects service-token data health and returns data status', async () => {

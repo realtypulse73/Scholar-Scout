@@ -636,7 +636,8 @@ function normalizeRecoveryReason(reason: string): string {
 }
 
 export function recoveryDataDigest(data: ScholarScoutData): string {
-  return createHash('sha256').update(canonicalSerialize(data)).digest('hex');
+  const { privilegedOperationAuditEvents: _operationalEvidence, ...applicationData } = data;
+  return createHash('sha256').update(canonicalSerialize(applicationData)).digest('hex');
 }
 
 export function getRecoverySigningConfiguration(): RecoverySigningConfiguration {
