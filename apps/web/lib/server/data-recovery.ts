@@ -11,7 +11,11 @@ import {
   readScholarScoutData,
   ScholarScoutDataStoreReadError,
   validateScholarScoutDataImport,
+  writeScholarScoutData,
+  type RecoveryLifecycleEvent,
   type ScholarScoutData,
+  type ScholarScoutDataBackup,
+  type RecoveryPlanOutcome,
 } from '@/lib/server/data-store';
 
 export const RECOVERY_ENVELOPE_MAX_BYTES = 5 * 1024 * 1024;
@@ -82,11 +86,31 @@ export interface DataRecoveryFailure {
 
 export interface OperationalEvidenceEvent {
   actorId: string;
-  action: 'read-data-capabilities';
+  action: 'read-data-capabilities' | 'apply-recovery-plan' | 'release-incident-hold';
   category: DataRecoveryFailureCategory;
   incidentId: string;
   timestamp: string;
   outcome: 'failed-no-write';
+}
+
+export const RECOVERY_BACKUP_MAX_COUNT = 10;
+export const RECOVERY_BACKUP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
+export const RECOVERY_CONFIRMATION_PHRASE = 'RESTORE SCHOLARSCOUT DATA';
+const RECOVERY_REASON_MAX_LENGTH = 500;
+
+interface RecoveryMutationDependencies {
+  read?: () => Promise<ScholarScoutData>;
+  write?: (data: ScholarScoutData) => Promise<void>;
+  now?: () => Date;
+  signing?: RecoverySigningConfiguration;
+  backupId?: () => string;
+  auditId?: () => string;
+  incidentId?: () => string;
+  evidenceSink?: OperationalEvidenceSink;
+}
+
+export interface RecoveryApplyResult extends RecoveryPlanOutcome {
+  counts: AdminDataCapabilities['counts'];
 }
 
 export type OperationalEvidenceSink = (
@@ -303,7 +327,10 @@ export function validateRecoveryEnvelope(
   const unsigned = {
     version: 1 as const,
     keyId: parsed.keyId,
-    source: parsed.source,
+    source: {
+      id: parsed.source.id as string,
+      createdAt: parsed.source.createdAt as string,
+    },
     data,
     digest: parsed.digest,
   };
@@ -363,6 +390,249 @@ export function issueRecoveryPlan(input: {
     preview: { planId, sourceId: envelope.source.id, expiresAt, rows },
     token,
   };
+}
+
+/** Applies a verified recovery plan with one composed store write. */
+export async function applyRecoveryPlan(
+  input: {
+    actorId: string;
+    envelope: unknown;
+    token: unknown;
+    reason: string;
+    confirmation: string;
+  },
+  dependencies: RecoveryMutationDependencies = {},
+): Promise<RecoveryApplyResult> {
+  const read = dependencies.read ?? readScholarScoutData;
+  const write = dependencies.write ?? writeScholarScoutData;
+  const now = dependencies.now?.() ?? new Date();
+  const signing = requireCurrentSigning(
+    dependencies.signing ?? getRecoverySigningConfiguration(),
+  );
+  const reason = normalizeRecoveryReason(input.reason);
+
+  if (input.confirmation !== RECOVERY_CONFIRMATION_PHRASE) {
+    throw new Error('invalid-recovery-confirmation');
+  }
+
+  try {
+    const token = validateRecoveryPlanToken(input.token, signing);
+    if (token.claims.actorId !== input.actorId) throw new Error('recovery-plan-mismatch');
+    if (now.getTime() >= Date.parse(token.claims.expiresAt)) {
+      throw new Error('recovery-plan-expired');
+    }
+    const envelope = validateRecoveryEnvelope(input.envelope, { now, signing });
+    if (
+      token.claims.sourceId !== envelope.source.id ||
+      token.claims.sourceDigest !== envelope.digest
+    ) {
+      throw new Error('recovery-plan-mismatch');
+    }
+
+    const currentData = await read();
+    const priorOutcome = (currentData.recoveryPlanOutcomes ?? []).find(
+      (outcome) => outcome.planId === token.claims.planId,
+    );
+    if (priorOutcome) {
+      if (
+        priorOutcome.actorId !== input.actorId ||
+        priorOutcome.sourceId !== envelope.source.id
+      ) {
+        throw new Error('recovery-plan-replayed');
+      }
+      return { ...priorOutcome, counts: getRecoveryCounts(currentData) };
+    }
+    if (!safeEqual(token.claims.currentDataDigest, recoveryDataDigest(currentData))) {
+      throw new Error('recovery-state-changed');
+    }
+
+    const appliedAt = now.toISOString();
+    const backupId = (dependencies.backupId ?? randomUUID)();
+    const incidentId = (dependencies.incidentId ?? randomUUID)();
+    const auditId = (dependencies.auditId ?? randomUUID)();
+    if (![backupId, incidentId, auditId].every(isSafeId)) {
+      throw new Error('invalid-recovery-identifier');
+    }
+    const backup: ScholarScoutDataBackup = {
+      id: backupId,
+      createdAt: appliedAt,
+      actorUserId: input.actorId,
+      reason,
+      counts: getRecoveryCounts(currentData),
+      data: { ...currentData, restoreBackups: [] },
+      incidentHold: {
+        incidentId,
+        status: 'unresolved',
+        createdAt: appliedAt,
+      },
+    };
+    const lifecycleEvent: RecoveryLifecycleEvent = {
+      id: auditId,
+      actorId: input.actorId,
+      action: 'apply-recovery-plan',
+      category: 'recovery',
+      planId: token.claims.planId,
+      sourceId: envelope.source.id,
+      incidentId,
+      backupId,
+      timestamp: appliedAt,
+      outcome: 'succeeded',
+    };
+    const outcome: RecoveryPlanOutcome = {
+      planId: token.claims.planId,
+      actorId: input.actorId,
+      sourceId: envelope.source.id,
+      backupId,
+      incidentId,
+      appliedAt,
+      outcome: 'succeeded',
+    };
+    const restoredData: ScholarScoutData = {
+      ...envelope.data,
+      restoreBackups: pruneRecoveryBackups(
+        [backup, ...(envelope.data.restoreBackups ?? [])],
+        now,
+      ),
+      recoveryLifecycleEvents: [
+        ...(envelope.data.recoveryLifecycleEvents ?? []),
+        lifecycleEvent,
+      ],
+      recoveryPlanOutcomes: [
+        ...(envelope.data.recoveryPlanOutcomes ?? []),
+        outcome,
+      ],
+    };
+    assertValidRecoveryData(restoredData);
+    await write(restoredData);
+    return { ...outcome, counts: getRecoveryCounts(restoredData) };
+  } catch (error) {
+    const incidentId = dependencies.incidentId?.() ?? randomUUID();
+    await (dependencies.evidenceSink ?? defaultEvidenceSink)({
+      actorId: input.actorId,
+      action: 'apply-recovery-plan',
+      category: getSafeFailureCategory(error),
+      incidentId,
+      timestamp: now.toISOString(),
+      outcome: 'failed-no-write',
+    });
+    throw error;
+  }
+}
+
+/** Applies deterministic retention while preserving every unresolved incident hold. */
+export function pruneRecoveryBackups(
+  backups: ScholarScoutDataBackup[],
+  now = new Date(),
+): ScholarScoutDataBackup[] {
+  const ids = backups.map((backup) => backup.id);
+  if (new Set(ids).size !== ids.length) throw new Error('duplicate-recovery-backup-id');
+  const cutoff = now.getTime() - RECOVERY_BACKUP_MAX_AGE_MS;
+  const sorted = [...backups].sort((left, right) => {
+    const timeOrder = Date.parse(right.createdAt) - Date.parse(left.createdAt);
+    return timeOrder || right.id.localeCompare(left.id);
+  });
+  const unheld = sorted
+    .filter((backup) => backup.incidentHold?.status !== 'unresolved')
+    .filter((backup) => Date.parse(backup.createdAt) > cutoff)
+    .slice(0, RECOVERY_BACKUP_MAX_COUNT);
+  const retainedIds = new Set(unheld.map((backup) => backup.id));
+  sorted
+    .filter((backup) => backup.incidentHold?.status === 'unresolved')
+    .forEach((backup) => retainedIds.add(backup.id));
+  return sorted.filter((backup) => retainedIds.has(backup.id));
+}
+
+/** Releases a matching incident hold after the caller performs fresh staff authorization. */
+export async function releaseRecoveryIncidentHold(
+  input: {
+    actorId: string;
+    authorized: boolean;
+    backupId: string;
+    incidentId: string;
+    reason: string;
+  },
+  dependencies: Omit<RecoveryMutationDependencies, 'signing' | 'backupId' | 'incidentId'> = {},
+): Promise<void> {
+  if (!input.authorized) throw new Error('recovery-authorization-required');
+  const reason = normalizeRecoveryReason(input.reason);
+  const read = dependencies.read ?? readScholarScoutData;
+  const write = dependencies.write ?? writeScholarScoutData;
+  const now = dependencies.now?.() ?? new Date();
+  const data = await read();
+  const backup = (data.restoreBackups ?? []).find((item) => item.id === input.backupId);
+  if (
+    !backup ||
+    backup.incidentHold?.incidentId !== input.incidentId ||
+    backup.incidentHold.status !== 'unresolved'
+  ) {
+    throw new Error('recovery-incident-hold-not-found');
+  }
+  const auditId = (dependencies.auditId ?? randomUUID)();
+  const updatedBackups = (data.restoreBackups ?? []).map((item) =>
+    item.id === input.backupId
+      ? {
+          ...item,
+          incidentHold: {
+            ...item.incidentHold!,
+            status: 'resolved' as const,
+            resolvedAt: now.toISOString(),
+            resolvedBy: input.actorId,
+            reason,
+          },
+        }
+      : item,
+  );
+  const event: RecoveryLifecycleEvent = {
+    id: auditId,
+    actorId: input.actorId,
+    action: 'release-incident-hold',
+    category: 'recovery',
+    incidentId: input.incidentId,
+    backupId: input.backupId,
+    timestamp: now.toISOString(),
+    outcome: 'succeeded',
+  };
+  await write({
+    ...data,
+    restoreBackups: updatedBackups,
+    recoveryLifecycleEvents: [...(data.recoveryLifecycleEvents ?? []), event],
+  });
+}
+
+function validateRecoveryPlanToken(
+  input: unknown,
+  signing: RecoverySigningConfiguration,
+): SignedRecoveryPlanToken {
+  if (
+    !isExactRecord(input, ['claims', 'signature']) ||
+    !isExactRecord(input.claims, [
+      'version', 'keyId', 'planId', 'actorId', 'sourceId', 'sourceDigest',
+      'currentDataDigest', 'issuedAt', 'expiresAt',
+    ]) ||
+    input.claims.version !== 1 ||
+    ![input.claims.keyId, input.claims.planId, input.claims.actorId, input.claims.sourceId].every(isSafeId) ||
+    typeof input.claims.sourceDigest !== 'string' ||
+    typeof input.claims.currentDataDigest !== 'string' ||
+    typeof input.claims.issuedAt !== 'string' ||
+    typeof input.claims.expiresAt !== 'string' ||
+    typeof input.signature !== 'string'
+  ) {
+    throw new Error('invalid-recovery-plan');
+  }
+  const claims = input.claims as unknown as RecoveryPlanClaims;
+  const secret = selectVerificationSecret(claims.keyId, signing);
+  if (!safeEqual(input.signature, signCanonical(claims, secret))) {
+    throw new Error('invalid-recovery-plan-signature');
+  }
+  return { claims, signature: input.signature };
+}
+
+function normalizeRecoveryReason(reason: string): string {
+  const normalized = reason?.trim();
+  if (!normalized || normalized.length > RECOVERY_REASON_MAX_LENGTH) {
+    throw new Error('invalid-recovery-reason');
+  }
+  return normalized;
 }
 
 export function recoveryDataDigest(data: ScholarScoutData): string {
@@ -447,8 +717,9 @@ function assertBoundedStructure(value: unknown, depth = 0): void {
 }
 
 function isExactRecord(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) &&
-    Object.keys(value).length === keys.length && Object.keys(value).every((key) => keys.includes(key));
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.keys(value).length === keys.length &&
+    Object.keys(value).every((key) => keys.includes(key));
 }
 
 function isSafeId(value: unknown): value is string {

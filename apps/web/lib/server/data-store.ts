@@ -119,6 +119,31 @@ export interface ScholarScoutData {
   guestQuotaBindings?: Record<string, GuestQuotaBinding>;
   guestMigrationAuditRecords?: GuestMigrationAuditRecord[];
   privilegedOperationAuditEvents?: PrivilegedOperationAuditEvent[];
+  recoveryLifecycleEvents?: RecoveryLifecycleEvent[];
+  recoveryPlanOutcomes?: RecoveryPlanOutcome[];
+}
+
+export interface RecoveryLifecycleEvent {
+  id: string;
+  actorId: string;
+  action: 'apply-recovery-plan' | 'release-incident-hold' | 'prune-recovery-backup';
+  category: 'recovery';
+  timestamp: string;
+  outcome: 'succeeded' | 'failed-no-write';
+  planId?: string;
+  sourceId?: string;
+  incidentId?: string;
+  backupId?: string;
+}
+
+export interface RecoveryPlanOutcome {
+  planId: string;
+  actorId: string;
+  sourceId: string;
+  backupId: string;
+  incidentId: string;
+  appliedAt: string;
+  outcome: 'succeeded';
 }
 
 export interface ScholarScoutDataBackup {
@@ -128,6 +153,14 @@ export interface ScholarScoutDataBackup {
   reason: string;
   counts: ScholarScoutDataStoreStatus['counts'];
   data: ScholarScoutData;
+  incidentHold?: {
+    incidentId: string;
+    status: 'unresolved' | 'resolved';
+    createdAt: string;
+    resolvedAt?: string;
+    resolvedBy?: string;
+    reason?: string;
+  };
 }
 
 export interface ScholarScoutDataBackupSummary {
@@ -212,6 +245,8 @@ const INITIAL_DATA: ScholarScoutData = {
   guestQuotaBindings: {},
   guestMigrationAuditRecords: [],
   privilegedOperationAuditEvents: [],
+  recoveryLifecycleEvents: [],
+  recoveryPlanOutcomes: [],
 };
 
 const dataFilePath =
@@ -1527,7 +1562,40 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
     privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
       ? data.privilegedOperationAuditEvents.filter(isPrivilegedOperationAuditEvent)
       : [],
+    recoveryLifecycleEvents: Array.isArray(data.recoveryLifecycleEvents)
+      ? data.recoveryLifecycleEvents.filter(isRecoveryLifecycleEvent)
+      : [],
+    recoveryPlanOutcomes: Array.isArray(data.recoveryPlanOutcomes)
+      ? data.recoveryPlanOutcomes.filter(isRecoveryPlanOutcome)
+      : [],
   };
+}
+
+function isRecoveryLifecycleEvent(value: unknown): value is RecoveryLifecycleEvent {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.actorId === 'string' &&
+    (value.action === 'apply-recovery-plan' ||
+      value.action === 'release-incident-hold' ||
+      value.action === 'prune-recovery-backup') &&
+    value.category === 'recovery' &&
+    isValidTimestamp(value.timestamp) &&
+    (value.outcome === 'succeeded' || value.outcome === 'failed-no-write')
+  );
+}
+
+function isRecoveryPlanOutcome(value: unknown): value is RecoveryPlanOutcome {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.planId === 'string' &&
+    typeof value.actorId === 'string' &&
+    typeof value.sourceId === 'string' &&
+    typeof value.backupId === 'string' &&
+    typeof value.incidentId === 'string' &&
+    isValidTimestamp(value.appliedAt) &&
+    value.outcome === 'succeeded'
+  );
 }
 
 function parseStoredScholarScoutData(input: unknown): ScholarScoutData {
