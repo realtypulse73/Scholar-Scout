@@ -8,6 +8,7 @@ import { POST as validateImport } from '@/app/api/admin/data/import/validate/rou
 import { POST as restoreImport } from '@/app/api/admin/data/import/restore/route';
 import { GET as dataStatus } from '@/app/api/admin/data/status/route';
 import { GET as dataHealth } from '@/app/api/admin/data/health/route';
+import { GET as dataCapabilities } from '@/app/api/admin/data/capabilities/route';
 import { GET as planBackupRestore } from '@/app/api/admin/data/backups/[id]/plan/route';
 import { POST as restoreBackup } from '@/app/api/admin/data/backups/[id]/restore/route';
 import {
@@ -369,6 +370,29 @@ describe('admin data API routes', () => {
 
     delete process.env.SCHOLARSCOUT_HEALTH_TOKEN;
     await expectStatus(dataHealth(new Request('http://test.local')), 503);
+  });
+
+  it('returns fresh staff-authorized capabilities without exposing provider errors', async () => {
+    const store = new MemoryDataStore();
+    const read = jest
+      .spyOn(store, 'read')
+      .mockRejectedValueOnce(new Error('private-provider.example token=secret'));
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    getSessionMock.mockResolvedValue(staffSession());
+
+    const response = await dataCapabilities();
+    const body = await jsonBody(response);
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({
+      error: 'data-service-unavailable',
+      category: 'storage-unavailable',
+      incidentId: expect.any(String),
+      retryable: true,
+    });
+    expect(JSON.stringify(body)).not.toContain('private-provider');
+    expect(read).toHaveBeenCalledTimes(1);
   });
 });
 
