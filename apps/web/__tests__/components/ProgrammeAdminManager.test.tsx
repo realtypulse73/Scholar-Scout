@@ -59,6 +59,14 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     expect(screen.queryByRole('button', { name: 'Validate import package' })).not.toBeInTheDocument();
   });
 
+  it('renders a verified zero-backup state separately from a failed read', async () => {
+    installFetch({ backups: response({ backups: [], empty: true }) });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    expect(await screen.findByText('No recovery backups yet')).toBeInTheDocument();
+    expect(screen.getByText(/No action is needed/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('focuses a safe unavailable alert and retries a fresh capability read', async () => {
     const user = userEvent.setup();
     const unavailable = response({ error: 'data-service-unavailable', category: 'storage-timeout', incidentId: 'incident-retry-1', retryable: true }, false);
@@ -180,5 +188,30 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     expect(await screen.findByText(/recovery-state-changed/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Type RESTORE SCHOLARSCOUT DATA/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Validate import package' })).toHaveFocus();
+  });
+
+  it('preserves the operator reason after a retryable apply failure', async () => {
+    const user = userEvent.setup();
+    const plan = {
+      planId: 'plan-retry', sourceId: backups[0].id, expiresAt: '2026-08-28T13:10:00.000Z',
+      rows: [{ key: 'users', label: 'Users', currentCount: 4, restoredCount: 3, delta: -1 }],
+    };
+    const planToken = {
+      claims: { planId: plan.planId, sourceId: plan.sourceId, sourceDigest: 'a'.repeat(64), currentDataDigest: 'b'.repeat(64), issuedAt: '2026-08-28T13:00:00.000Z', expiresAt: plan.expiresAt },
+      signature: 'c'.repeat(64),
+    };
+    installFetch({ route: async (url) => {
+      if (url.endsWith('/plan')) return response({ plan, planToken });
+      if (url.endsWith('/restore')) return response({ ok: false, error: 'data-service-unavailable', retryable: true }, false);
+      throw new Error(`Unexpected fetch: ${url}`);
+    } });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    await screen.findAllByText('Storage verified');
+    await user.click(screen.getByRole('button', { name: 'Preview restore impact' }));
+    await user.type(await screen.findByLabelText('Operator reason'), 'Keep this reason');
+    await user.type(screen.getByLabelText(/Type RESTORE SCHOLARSCOUT DATA/), 'RESTORE SCHOLARSCOUT DATA');
+    await user.click(screen.getByRole('button', { name: 'Apply restore' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('data-service-unavailable');
+    expect(screen.getByLabelText('Operator reason')).toHaveValue('Keep this reason');
   });
 });

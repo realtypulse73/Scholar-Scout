@@ -172,6 +172,8 @@ export default function ProgrammeAdminManager({
   const [recoveryConfirmation, setRecoveryConfirmation] = useState('');
   const [recoveryResult, setRecoveryResult] = useState<DataRestoreResult | null>(null);
   const [pendingAction, setPendingAction] = useState<'refresh' | 'preview' | 'validate' | 'apply' | null>(null);
+  const [needsRepreview, setNeedsRepreview] = useState(false);
+  const [retryOperationId, setRetryOperationId] = useState('validate-import-package');
   const [importSnapshot, setImportSnapshot] = useState('');
   const alertRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLHeadingElement>(null);
@@ -224,6 +226,8 @@ export default function ProgrammeAdminManager({
 
   useEffect(() => {
     void refreshDataStatus();
+    // The initial capability read is intentionally one-shot; refreshes are staff-triggered.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -243,6 +247,10 @@ export default function ProgrammeAdminManager({
   useEffect(() => {
     if (recoveryResult) resultRef.current?.focus();
   }, [recoveryResult]);
+
+  useEffect(() => {
+    if (needsRepreview) document.getElementById(retryOperationId)?.focus();
+  }, [needsRepreview, retryOperationId]);
 
   function persist(nextDrafts: ProgrammeDraft[], nextMessage: string) {
     setDrafts(nextDrafts);
@@ -413,10 +421,12 @@ export default function ProgrammeAdminManager({
   async function handlePlanBackupRestore(backupId: string) {
     if (pendingAction) return;
     setPendingAction('preview');
+    setNeedsRepreview(false);
     setRecoveryPlan(null);
     setRecoveryError(null);
     setRecoveryResult(null);
     setRecoveryConfirmation('');
+    setNeedsRepreview(false);
 
     const response = await fetch(
       `/api/admin/data/backups/${encodeURIComponent(backupId)}/plan`,
@@ -498,6 +508,7 @@ export default function ProgrammeAdminManager({
     } else if (response.status === 409 || response.status === 410) {
       setRecoveryPlan(null);
       setRecoveryConfirmation('');
+      setNeedsRepreview(true);
     }
     setPendingAction(null);
   }
@@ -943,11 +954,15 @@ export default function ProgrammeAdminManager({
                             <DataMetric label="Audit" value={backup.counts.auditEvents} />
                           </div>
                           <Button
+                            id={`recovery-preview-${backup.id}`}
                             className="mt-3"
                             variant="secondary"
                             size="sm"
                             disabled={!mutationsAllowed || pendingAction !== null}
-                            onClick={() => void handlePlanBackupRestore(backup.id)}
+                            onClick={() => {
+                              setRetryOperationId(`recovery-preview-${backup.id}`);
+                              void handlePlanBackupRestore(backup.id);
+                            }}
                           >
                             {pendingAction === 'preview' ? 'Preparing restore preview…' : 'Preview restore impact'}
                           </Button>
@@ -983,9 +998,13 @@ export default function ProgrammeAdminManager({
                     className="mt-2 min-h-32 w-full rounded-card border border-ink-200 bg-ink-50 px-3 py-2 font-mono text-xs text-ink-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   />
                   <Button
+                    id="validate-import-package"
                     className="mt-3"
                     disabled={!mutationsAllowed || pendingAction !== null}
-                    onClick={() => void handleValidateImport()}
+                    onClick={() => {
+                      setRetryOperationId('validate-import-package');
+                      void handleValidateImport();
+                    }}
                   >
                     {pendingAction === 'validate' ? 'Validating import package…' : 'Validate import package'}
                   </Button>
@@ -1084,7 +1103,11 @@ export default function ProgrammeAdminManager({
               ) : null}
 
               {recoveryResult ? (
-                <div className={`rounded-card border p-4 ${recoveryResult.ok ? 'border-success-600 bg-success-50' : 'border-danger-600 bg-danger-50'}`}>
+                <div
+                  role={recoveryResult.ok ? 'status' : 'alert'}
+                  aria-live={recoveryResult.ok ? 'polite' : undefined}
+                  className={`rounded-card border p-4 ${recoveryResult.ok ? 'border-success-600 bg-success-50' : 'border-danger-600 bg-danger-50'}`}
+                >
                   <h3 ref={resultRef} tabIndex={-1} className="font-semibold text-ink-900 outline-none focus:ring-2 focus:ring-brand-500">
                     {recoveryResult.ok ? 'Recovery completed' : 'Recovery unchanged'}
                   </h3>
