@@ -1,26 +1,22 @@
 ---
-status: testing
+status: partial
 phase: 03-administrative-and-data-operations-correctness
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md, 03-06-SUMMARY.md]
 started: 2026-08-28T21:40:00-04:00
-updated: 2026-08-28T22:10:00-04:00
+updated: 2026-08-28T22:30:00-04:00
 ---
 
 ## Current Test
 
-number: 8
-name: Authorized Backup List and Count-Only Preview
-expected: |
-  Data operations lists available backups newest first. Selecting Preview shows only counts and safe identifiers, never student or snapshot contents.
-awaiting: user response
+[testing paused — Test 1 configuration fixed; fresh staff sign-in required for retest]
 
 ## Tests
 
 ### 1. Cold Start and Admin Page Smoke Test
 expected: The preview starts cleanly, sign-in loads, and an authorized staff user can open programme administration and see Data operations without an error screen.
-result: issue
-reported: "The Apple sign-in control was visible and correct, but after the user reported signing into Scholar Scout, /admin/programmes still did not show Data operations and rendered an error alert."
-severity: major
+result: blocked
+blocked_by: third-party
+reason: Preview staff allowlisting is now configured and redeployed; Apple sign-in display passes and the prior admin error alert is gone. The verification browser has no active Scholar Scout session after redeployment, so the staff-only Data operations check requires one fresh user sign-in before final pass/fail.
 
 ### 2. Fresh Authorized Capabilities
 expected: Authorized capability requests use fresh verified counts and server-owned operation availability.
@@ -86,22 +82,23 @@ result: [pending]
 
 total: 13
 passed: 6
-issues: 1
+issues: 0
 pending: 6
 skipped: 0
-blocked: 0
+blocked: 1
 
 ## Gaps
 
 - truth: "After an authorized staff sign-in, programme administration loads without an error and shows Data operations."
-  status: failed
-  reason: "User reported the staff sign-in was complete, but the refreshed deployed admin route did not render Data operations and contained an error alert."
+  status: resolved_pending_retest
+  reason: "Root cause was a missing Preview staff allowlist. The variable was added to Preview and a fresh branch deployment completed; final verification awaits a new Scholar Scout session."
   severity: major
   test: 1
-  root_cause: ""
+  root_cause: "The Vercel Preview environment did not define SCHOLARSCOUT_STAFF_EMAILS, so active-staff authorization correctly failed closed."
   artifacts: []
-  missing: []
-  debug_session: ""
+  missing:
+    - "Fresh staff sign-in and final deployed Data operations visibility check"
+  debug_session: ".planning/debug/resolved/staff-admin-data-ops-missing.md"
 
 ## Coverage Notes
 
