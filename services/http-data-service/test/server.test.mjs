@@ -1,6 +1,6 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createScholarScoutDataService } from '../src/server.mjs';
@@ -37,6 +37,41 @@ describe('ScholarScout HTTP data service fixture', () => {
     });
 
     assert.equal(response.status, 404);
+  });
+
+  it('fails closed when the stored document is malformed', async () => {
+    await writeFile(dataFile, '{malformed stored json');
+
+    const response = await fetch(baseUrl, {
+      headers: { Authorization: 'Bearer test-token' },
+    });
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: 'Invalid stored data document' });
+    await rm(dataFile);
+  });
+
+  it('distinguishes provider read failure from a missing document', async () => {
+    const unreadablePath = path.join(tempDir, 'provider-directory');
+    await mkdir(unreadablePath);
+    const failureServer = createScholarScoutDataService({
+      dataFile: unreadablePath,
+      token: 'test-token',
+    });
+    await new Promise((resolve) => failureServer.listen(0, resolve));
+    const address = failureServer.address();
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/scholarscout`,
+        { headers: { Authorization: 'Bearer test-token' } },
+      );
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(await response.json(), { error: 'Data service error' });
+    } finally {
+      await new Promise((resolve) => failureServer.close(resolve));
+    }
   });
 
   it('exposes a health check outside the data document route', async () => {
