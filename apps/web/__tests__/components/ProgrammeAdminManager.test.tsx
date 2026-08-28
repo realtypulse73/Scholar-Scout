@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProgrammeAdminManager from '@/components/admin/ProgrammeAdminManager';
 
@@ -21,12 +21,13 @@ function response(body: unknown, ok = true, status = ok ? 200 : 503) {
   return { ok, status, json: async () => body } as Response;
 }
 
-function installFetch(options: { capabilities?: Response; backups?: Response } = {}) {
-  const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+function installFetch(options: { capabilities?: Response; backups?: Response; route?: (url: string, init?: RequestInit) => Promise<Response> } = {}) {
+  const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === '/api/admin/programmes') return response({ records: [], auditEvents: [] });
     if (url === '/api/admin/data/capabilities') return options.capabilities ?? response(capabilities);
     if (url === '/api/admin/data/backups') return options.backups ?? response({ backups });
+    if (options.route) return options.route(url, init);
     throw new Error(`Unexpected fetch: ${url}`);
   });
   global.fetch = fetchMock as typeof fetch;
@@ -98,5 +99,86 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     expect(screen.getByText(/Last verified/)).toBeInTheDocument();
     expect(screen.getAllByText('4').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Validate import package' })).toBeDisabled();
+  });
+
+  it('uses a count-only signed plan before enabling one exact restore apply', async () => {
+    const user = userEvent.setup();
+    let resolveApply: ((value: Response) => void) | undefined;
+    const applyResponse = new Promise<Response>((resolve) => { resolveApply = resolve; });
+    const plan = {
+      planId: 'plan-1', sourceId: backups[0].id, expiresAt: '2026-08-28T13:10:00.000Z',
+      rows: [{ key: 'users', label: 'Users', currentCount: 4, restoredCount: 3, delta: -1 }],
+    };
+    const planToken = {
+      claims: {
+        planId: 'plan-1', sourceId: backups[0].id,
+        sourceDigest: 'a'.repeat(64), currentDataDigest: 'b'.repeat(64),
+        issuedAt: '2026-08-28T13:00:00.000Z', expiresAt: plan.expiresAt,
+      },
+      signature: 'c'.repeat(64),
+    };
+    const fetchMock = installFetch({
+      route: async (url) => {
+        if (url.endsWith('/plan')) return response({ plan, planToken });
+        if (url.endsWith('/restore')) return applyResponse;
+        throw new Error(`Unexpected fetch: ${url}`);
+      },
+    });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    await screen.findAllByText('Storage verified');
+
+    await user.click(screen.getByRole('button', { name: 'Preview restore impact' }));
+    const preview = await screen.findByRole('heading', { name: 'Impact preview' });
+    expect(preview).toHaveFocus();
+    expect(screen.getByRole('columnheader', { name: 'After restore' })).toBeInTheDocument();
+    expect(screen.queryByText(/student@example/i)).not.toBeInTheDocument();
+    const apply = screen.getByRole('button', { name: 'Apply restore' });
+    expect(apply).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Operator reason'), 'Approved recovery rehearsal');
+    await user.type(screen.getByLabelText(/Type RESTORE SCHOLARSCOUT DATA/), 'RESTORE SCHOLARSCOUT DATA');
+    expect(apply).toBeEnabled();
+    await user.click(apply);
+    expect(screen.getByRole('button', { name: 'Applying restore…' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Applying restore…' }));
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/restore'))).toHaveLength(1);
+    resolveApply?.(response({ ok: true, backupId: 'backup-created', incidentId: 'incident-applied', appliedAt: '2026-08-28T13:01:00.000Z' }));
+    expect(await screen.findByRole('heading', { name: 'Recovery completed' })).toHaveFocus();
+    const request = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/restore'));
+    expect(JSON.parse(String(request?.[1]?.body))).toEqual({
+      planToken, reason: 'Approved recovery rehearsal', confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    });
+  });
+
+  it('validates raw import server-side and clears a conflicted plan', async () => {
+    const user = userEvent.setup();
+    const packageText = JSON.stringify({ signed: 'package' });
+    const plan = {
+      planId: 'import-plan', sourceId: 'package-1', expiresAt: '2026-08-28T13:10:00.000Z',
+      rows: [{ key: 'auditEvents', label: 'Audit events', currentCount: 5, restoredCount: 6, delta: 1 }],
+    };
+    const recoveryToken = {
+      claims: { planId: 'import-plan', sourceId: 'package-1', sourceDigest: 'd'.repeat(64), currentDataDigest: 'e'.repeat(64), issuedAt: '2026-08-28T13:00:00.000Z', expiresAt: plan.expiresAt },
+      signature: 'f'.repeat(64),
+    };
+    const fetchMock = installFetch({
+      route: async (url) => {
+        if (url.endsWith('/import/validate')) return response({ plan, planToken: { recoveryToken, encodedEnvelope: 'encoded' } });
+        if (url.endsWith('/import/restore')) return response({ ok: false, error: 'recovery-state-changed' }, false, 409);
+        throw new Error(`Unexpected fetch: ${url}`);
+      },
+    });
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    await screen.findAllByText('Storage verified');
+    fireEvent.change(screen.getByLabelText('Signed recovery package'), { target: { value: packageText } });
+    await user.click(screen.getByRole('button', { name: 'Validate import package' }));
+    expect(await screen.findByText('Import package validated. Review the impact before applying it.')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/data/import/validate', expect.objectContaining({ body: packageText }));
+    await user.type(screen.getByLabelText('Operator reason'), 'Current data changed');
+    await user.type(screen.getByLabelText(/Type RESTORE SCHOLARSCOUT DATA/), 'RESTORE SCHOLARSCOUT DATA');
+    await user.click(screen.getByRole('button', { name: 'Apply import' }));
+    expect(await screen.findByText(/recovery-state-changed/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Type RESTORE SCHOLARSCOUT DATA/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Validate import package' })).toHaveFocus();
   });
 });
