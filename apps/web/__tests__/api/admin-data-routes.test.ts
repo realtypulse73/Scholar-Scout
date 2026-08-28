@@ -246,7 +246,8 @@ describe('admin data API routes', () => {
       sourceId: 'import-package-1',
       counts: expect.objectContaining({ users: 1 }),
     });
-    expect(store.writeCount).toBe(writesAfterValidation + 2);
+    // Two independent authorization-evidence writes plus one composed application write.
+    expect(store.writeCount).toBe(writesAfterValidation + 3);
     expect(store.data.users).toEqual([
       expect.objectContaining({ id: 'restored-user' }),
     ]);
