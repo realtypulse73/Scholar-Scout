@@ -74,8 +74,10 @@ describe('admin data API routes', () => {
     getSessionMock.mockResolvedValue(staffSession());
 
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     await expectStatus(listBackups(), 200);
-    await expectStatus(validateImport(jsonRequest(validSnapshot())), 200);
+    await expectStatus(validateImport(jsonRequest(createImportEnvelope())), 200);
     await expectStatus(
       restoreImport(
         jsonRequest({
@@ -165,7 +167,10 @@ describe('admin data API routes', () => {
           expect.objectContaining({ key: 'users', restoredCount: 1 }),
         ]),
       },
-      planToken: expect.objectContaining({ signature: expect.any(String) }),
+      planToken: expect.objectContaining({
+        recoveryToken: expect.objectContaining({ signature: expect.any(String) }),
+        encodedEnvelope: expect.any(String),
+      }),
     });
     expect(validResponse.status).toBe(200);
     expect(store.writeCount).toBe(writesBeforeValid + 1);
@@ -199,7 +204,9 @@ describe('admin data API routes', () => {
 
     process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
     process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
-    jest.spyOn(store, 'read').mockRejectedValueOnce(new Error('private-provider token'));
+    jest.spyOn(store, 'read')
+      .mockResolvedValueOnce(cloneData(store.data))
+      .mockRejectedValueOnce(new Error('private-provider token'));
     const response = await validateImport(jsonRequest(createImportEnvelope()));
     expect(response.status).toBe(503);
     expect(JSON.stringify(await jsonBody(response))).not.toContain('private-provider');
