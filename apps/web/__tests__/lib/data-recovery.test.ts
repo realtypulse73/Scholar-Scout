@@ -71,7 +71,9 @@ describe('admin data recovery capabilities', () => {
         },
         incidentId: () => 'incident-safe-1',
         now: () => new Date('2026-08-28T13:00:00.000Z'),
-        evidenceSink: (event) => events.push(event),
+        evidenceSink: (event) => {
+          events.push(event);
+        },
       }),
     ).rejects.toEqual(
       new DataRecoveryUnavailableError({

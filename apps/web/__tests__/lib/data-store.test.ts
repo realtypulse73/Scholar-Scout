@@ -249,7 +249,7 @@ describe('ScholarScout data store adapter', () => {
         status: 200,
         json: async () => ({
           ...initialData,
-          programmeRecords: [{ ...programmes[0], id: 'service-record' }],
+          programmeRecords: [storedProgramme('service-record')],
         }),
       } as Response;
     });
@@ -283,27 +283,27 @@ describe('ScholarScout data store adapter', () => {
     process.env.SCHOLARSCOUT_DATA_SERVICE_URL =
       'https://data.example.test/scholarscout';
 
-    globalThis.fetch = jest.fn(async () => ({
+    globalThis.fetch = jest.fn(async (): Promise<Response> => ({
       ok: false,
       status: 404,
-    })) as typeof fetch;
+    }) as Response);
     await expect(readScholarScoutData()).resolves.toMatchObject(initialData);
 
     setScholarScoutDataStoreForTests(null);
-    globalThis.fetch = jest.fn(async () => ({
+    globalThis.fetch = jest.fn(async (): Promise<Response> => ({
       ok: true,
       status: 200,
       json: async () => ({ ...initialData, users: null }),
-    })) as typeof fetch;
+    }) as Response);
     await expect(readScholarScoutData()).rejects.toMatchObject({
       category: 'invalid-data',
     });
 
     setScholarScoutDataStoreForTests(null);
-    globalThis.fetch = jest.fn(async () => ({
+    globalThis.fetch = jest.fn(async (): Promise<Response> => ({
       ok: false,
       status: 503,
-    })) as typeof fetch;
+    }) as Response);
     await expect(readScholarScoutData()).rejects.toBeInstanceOf(
       ScholarScoutDataStoreReadError,
     );
@@ -370,7 +370,7 @@ describe('ScholarScout data store adapter', () => {
       stream: createTextStream(
         JSON.stringify({
           ...initialData,
-          programmeRecords: [{ ...programmes[0], id: 'blob-record' }],
+          programmeRecords: [storedProgramme('blob-record')],
         }),
       ),
       headers: new Headers(),
@@ -1200,6 +1200,26 @@ function createTextStream(value: string) {
       controller.close();
     },
   });
+}
+
+function storedProgramme(id: string) {
+  return {
+    ...programmes[0],
+    id,
+    publicationStatus: 'published' as const,
+    sourceName: 'Verified catalogue',
+    sourceConfidence: 'verified' as const,
+    sourceNotes: 'Validated adapter fixture.',
+    sourceChecks: [
+      'tuition',
+      'credential',
+      'duration',
+      'delivery',
+      'support',
+      'next-steps',
+    ] as const,
+    lastVerifiedAt: '2026-08-28',
+  };
 }
 
 function restoreEnv(key: string, value: string | undefined) {

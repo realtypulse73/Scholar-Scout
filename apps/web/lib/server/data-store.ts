@@ -218,15 +218,25 @@ const dataFilePath =
   process.env.SCHOLARSCOUT_DATA_FILE ??
   path.join(process.cwd(), 'data', 'scholarscout-data.json');
 
-class JsonScholarScoutDataStore implements ScholarScoutDataStore {
+export class JsonScholarScoutDataStore implements ScholarScoutDataStore {
   constructor(private readonly filePath: string) {}
 
   async read() {
     try {
       const file = await readFile(this.filePath, 'utf8');
-      return { ...INITIAL_DATA, ...JSON.parse(file) } as ScholarScoutData;
-    } catch {
-      return INITIAL_DATA;
+      return parseStoredScholarScoutData(JSON.parse(file));
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return createInitialData();
+      }
+
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError ? 'invalid-data' : 'unavailable',
+      );
     }
   }
 
@@ -243,22 +253,38 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
-    const response = await fetch(this.serviceUrl, {
-      headers: this.getHeaders(),
-      cache: 'no-store',
-    });
+    let response: Response;
 
-    if (response.status === 404) {
-      return INITIAL_DATA;
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        `ScholarScout data service read failed with ${response.status}.`,
+    try {
+      response = await fetch(this.serviceUrl, {
+        headers: this.getHeaders(),
+        cache: 'no-store',
+      });
+    } catch (error) {
+      throw new ScholarScoutDataStoreReadError(
+        isTimeoutError(error) ? 'timeout' : 'unavailable',
       );
     }
 
-    return { ...INITIAL_DATA, ...(await response.json()) } as ScholarScoutData;
+    if (response.status === 404) {
+      return createInitialData();
+    }
+
+    if (!response.ok) {
+      throw new ScholarScoutDataStoreReadError('unavailable');
+    }
+
+    try {
+      return parseStoredScholarScoutData(await response.json());
+    } catch (error) {
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError ? 'invalid-data' : 'unavailable',
+      );
+    }
   }
 
   async write(data: ScholarScoutData) {
@@ -296,19 +322,41 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
-    const { get } = await import('@vercel/blob');
-    const blob = await get(this.pathname, {
-      access: 'private',
-      token: this.token,
-      useCache: false,
-    });
+    try {
+      const { get } = await import('@vercel/blob');
+      const blob = await get(this.pathname, {
+        access: 'private',
+        token: this.token,
+        useCache: false,
+      });
 
-    if (!blob?.stream) {
-      return INITIAL_DATA;
+      if (!blob) {
+        return createInitialData();
+      }
+
+      if (blob.statusCode !== 200) {
+        throw new ScholarScoutDataStoreReadError('unavailable');
+      }
+
+      if (!blob.stream) {
+        throw new ScholarScoutDataStoreReadError('invalid-data');
+      }
+
+      const body = await readStreamText(blob.stream);
+      return parseStoredScholarScoutData(JSON.parse(body));
+    } catch (error) {
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError
+          ? 'invalid-data'
+          : isTimeoutError(error)
+            ? 'timeout'
+            : 'unavailable',
+      );
     }
-
-    const body = await readStreamText(blob.stream);
-    return { ...INITIAL_DATA, ...JSON.parse(body) } as ScholarScoutData;
   }
 
   async write(data: ScholarScoutData) {
@@ -1480,6 +1528,35 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
       ? data.privilegedOperationAuditEvents.filter(isPrivilegedOperationAuditEvent)
       : [],
   };
+}
+
+function parseStoredScholarScoutData(input: unknown): ScholarScoutData {
+  const validation = validateScholarScoutDataImport(input);
+
+  if (!validation.isValid || !isPlainObject(input)) {
+    throw new ScholarScoutDataStoreReadError('invalid-data');
+  }
+
+  return normalizeScholarScoutData(input as unknown as ScholarScoutData);
+}
+
+function createInitialData(): ScholarScoutData {
+  return JSON.parse(JSON.stringify(INITIAL_DATA)) as ScholarScoutData;
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+  return (
+    isPlainObject(error) &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'AbortError' || error.name === 'TimeoutError')
+  );
 }
 
 function normalizeGuestQuotaBindings(
