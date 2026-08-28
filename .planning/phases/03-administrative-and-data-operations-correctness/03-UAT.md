@@ -3,12 +3,12 @@ status: partial
 phase: 03-administrative-and-data-operations-correctness
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md, 03-06-SUMMARY.md]
 started: 2026-08-28T21:40:00-04:00
-updated: 2026-08-28T21:50:00-04:00
+updated: 2026-08-28T22:00:00-04:00
 ---
 
 ## Current Test
 
-[testing paused — Test 1 blocked by Vercel Standard Protection]
+[testing paused — Test 1 sign-in smoke passed; staff-only admin check blocked]
 
 ## Tests
 
@@ -16,7 +16,7 @@ updated: 2026-08-28T21:50:00-04:00
 expected: The preview starts cleanly, sign-in loads, and an authorized staff user can open programme administration and see Data operations without an error screen.
 result: blocked
 blocked_by: third-party
-reason: Fresh preview deployment succeeded for commit 371054b, but the preview sign-in route redirects this verification browser to Vercel login. An authorized Vercel preview session and Scholar Scout staff account are required to complete the visible smoke test.
+reason: The fresh preview sign-in page loaded successfully and visibly showed the disabled Continue with Apple control plus its unavailable explanation. No authorized Scholar Scout staff session is active in the browser, so programme administration did not expose Data operations and the staff-only half of this test could not be completed.
 
 ### 2. Fresh Authorized Capabilities
 expected: Authorized capability requests use fresh verified counts and server-owned operation availability.
