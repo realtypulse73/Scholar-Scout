@@ -303,7 +303,8 @@ describe('admin data API routes', () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(jsonBody(response)).resolves.toMatchObject({
+    const responseBody = await jsonBody(response);
+    expect(responseBody).toMatchObject({
       plan: {
         sourceId: 'backup-1',
         expiresAt: expect.any(String),
@@ -353,23 +354,48 @@ describe('admin data API routes', () => {
     expect(store.writeCount).toBe(2);
   });
 
-  it('restores a backup only after confirmation', async () => {
+  it('applies only an exact bound backup plan and writes recovery data once', async () => {
     const store = new MemoryDataStore();
     store.data = dataWithBackup();
     setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'staff@example.com';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID = 'route-key';
+    process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET = 'route-test-secret-that-is-at-least-32-bytes';
     getSessionMock.mockResolvedValue(staffSession());
 
+    const planResponse = await planBackupRestore(
+      new Request('http://test.local'),
+      routeContext('backup-1'),
+    );
+    const planBody = await jsonBody(planResponse) as { planToken: unknown };
+    const writesAfterPlan = store.writeCount;
     const confirmationResponse = await restoreBackup(
-      jsonRequest({ confirmation: 'restore' }),
+      jsonRequest({
+        planToken: planBody.planToken,
+        confirmation: 'restore',
+        reason: 'Route test restore',
+      }),
       routeContext('backup-1'),
     );
     expect(confirmationResponse.status).toBe(400);
     expect(store.data.users).toHaveLength(2);
+    expect(store.writeCount).toBe(writesAfterPlan + 1);
+
+    const extraFieldResponse = await restoreBackup(
+      jsonRequest({
+        planToken: planBody.planToken,
+        confirmation: 'RESTORE SCHOLARSCOUT DATA',
+        reason: 'Route test restore',
+        snapshot: validSnapshot(),
+      }),
+      routeContext('backup-1'),
+    );
+    expect(extraFieldResponse.status).toBe(400);
 
     const response = await restoreBackup(
       jsonRequest({
-        confirmation: SCHOLARSCOUT_RESTORE_CONFIRMATION,
+        planToken: planBody.planToken,
+        confirmation: 'RESTORE SCHOLARSCOUT DATA',
         reason: 'Route test restore',
       }),
       routeContext('backup-1'),
@@ -378,7 +404,10 @@ describe('admin data API routes', () => {
     expect(response.status).toBe(200);
     await expect(jsonBody(response)).resolves.toMatchObject({
       ok: true,
-      sourceBackupId: 'backup-1',
+      planId: expect.any(String),
+      sourceId: 'backup-1',
+      backupId: expect.any(String),
+      incidentId: expect.any(String),
       counts: {
         users: 1,
         onboardingProfiles: 0,
@@ -393,11 +422,17 @@ describe('admin data API routes', () => {
     expect(store.data.restoreBackups?.[0]).toMatchObject({
       actorUserId: 'staff-1',
       reason: 'Route test restore',
+      incidentHold: {
+        status: 'unresolved',
+        incidentId: expect.any(String),
+      },
     });
-    expect(store.data.auditEvents[0]).toMatchObject({
-      action: 'restore-backup',
-      entityId: 'backup-1',
+    expect(store.data.recoveryLifecycleEvents?.[0]).toMatchObject({
+      action: 'apply-recovery-plan',
+      sourceId: 'backup-1',
+      outcome: 'succeeded',
     });
+    expect(JSON.stringify(responseBody)).not.toContain('restored@example.com');
   });
 
   it('protects service-token data health and returns data status', async () => {
