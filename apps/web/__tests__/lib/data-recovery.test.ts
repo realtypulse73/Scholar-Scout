@@ -1,8 +1,11 @@
 import {
+  applyRecoveryPlan,
   createSignedRecoveryEnvelope,
   DataRecoveryUnavailableError,
   issueRecoveryPlan,
+  pruneRecoveryBackups,
   readAdminDataCapabilities,
+  releaseRecoveryIncidentHold,
   validateRecoveryEnvelope,
   type OperationalEvidenceEvent,
 } from '@/lib/server/data-recovery';
@@ -238,6 +241,173 @@ describe('signed recovery envelopes and bound plans', () => {
       sourceId: 'import-safe-1',
       sourceDigest: envelope.digest,
       expiresAt: '2026-08-28T14:10:00.000Z',
+    });
+  });
+
+  it('applies a fresh plan once with a pre-change backup and minimal lifecycle audit', async () => {
+    const currentData: ScholarScoutData = {
+      ...emptyData,
+      shortlists: { 'student-current': ['programme-current'] },
+    };
+    const targetData: ScholarScoutData = {
+      ...emptyData,
+      shortlists: { 'student-restored': ['programme-restored'] },
+    };
+    const envelope = createSignedRecoveryEnvelope({
+      data: targetData,
+      sourceId: 'import-apply-1',
+      now,
+      signing,
+    });
+    const { token } = issueRecoveryPlan({
+      actorId: 'staff-1',
+      envelope,
+      currentData,
+      now,
+      signing,
+      planId: () => 'plan-apply-1',
+    });
+    let stored = currentData;
+    const write = jest.fn(async (data: ScholarScoutData) => {
+      stored = data;
+    });
+    const dependencies = {
+      read: jest.fn(async () => stored),
+      write,
+      now: () => new Date('2026-08-28T14:05:00.000Z'),
+      signing,
+      backupId: () => 'backup-prechange-1',
+      auditId: () => 'audit-apply-1',
+      incidentId: () => 'incident-apply-1',
+    };
+
+    const result = await applyRecoveryPlan({
+      actorId: 'staff-1',
+      envelope,
+      token,
+      reason: 'Recover from verified incident',
+      confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, dependencies);
+
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(stored.shortlists).toEqual(targetData.shortlists);
+    expect(stored.restoreBackups).toEqual([
+      expect.objectContaining({
+        id: 'backup-prechange-1',
+        data: expect.objectContaining({
+          shortlists: currentData.shortlists,
+          restoreBackups: [],
+        }),
+        incidentHold: expect.objectContaining({
+          incidentId: 'incident-apply-1',
+          status: 'unresolved',
+        }),
+      }),
+    ]);
+    expect(stored.recoveryLifecycleEvents).toEqual([
+      expect.objectContaining({
+        id: 'audit-apply-1',
+        actorId: 'staff-1',
+        action: 'apply-recovery-plan',
+        planId: 'plan-apply-1',
+        incidentId: 'incident-apply-1',
+        outcome: 'succeeded',
+      }),
+    ]);
+    expect(JSON.stringify(stored.recoveryLifecycleEvents)).not.toContain('student-');
+
+    await expect(
+      applyRecoveryPlan({
+        actorId: 'staff-1',
+        envelope,
+        token,
+        reason: 'Recover from verified incident',
+        confirmation: 'RESTORE SCHOLARSCOUT DATA',
+      }, dependencies),
+    ).resolves.toEqual(result);
+    expect(write).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects invalid confirmation, stale state, expiry equality, and actor changes without writes', async () => {
+    const envelope = createSignedRecoveryEnvelope({
+      data: emptyData,
+      sourceId: 'import-reject-1',
+      now,
+      signing,
+    });
+    const { token } = issueRecoveryPlan({
+      actorId: 'staff-1',
+      envelope,
+      currentData: emptyData,
+      now,
+      signing,
+      planId: () => 'plan-reject-1',
+    });
+    const write = jest.fn();
+
+    await expect(applyRecoveryPlan({
+      actorId: 'staff-1', envelope, token, reason: ' ', confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, { read: async () => emptyData, write, now: () => now, signing })).rejects.toThrow('invalid-recovery-reason');
+    await expect(applyRecoveryPlan({
+      actorId: 'staff-2', envelope, token, reason: 'Valid reason', confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, { read: async () => emptyData, write, now: () => now, signing })).rejects.toThrow('recovery-plan-mismatch');
+    await expect(applyRecoveryPlan({
+      actorId: 'staff-1', envelope, token, reason: 'Valid reason', confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, { read: async () => ({ ...emptyData, shortlists: { changed: [] } }), write, now: () => now, signing })).rejects.toThrow('recovery-state-changed');
+    await expect(applyRecoveryPlan({
+      actorId: 'staff-1', envelope, token, reason: 'Valid reason', confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, { read: async () => emptyData, write, now: () => new Date(token.claims.expiresAt), signing })).rejects.toThrow('recovery-plan-expired');
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('retains ten fresh backups newest-first, expires equality, preserves holds, and rejects duplicates', () => {
+    const backup = (id: string, createdAt: string, held = false) => ({
+      id,
+      createdAt,
+      actorUserId: 'staff-1',
+      reason: 'Fixture',
+      counts: { users: 0, onboardingProfiles: 0, shortlists: 0, programmeRecords: 0, auditEvents: 0 },
+      data: emptyData,
+      ...(held ? { incidentHold: { incidentId: `incident-${id}`, status: 'unresolved' as const, createdAt } } : {}),
+    });
+    const backups = [
+      backup('held-old', '2026-01-01T00:00:00.000Z', true),
+      backup('expired-equality', '2026-07-29T14:00:00.000Z'),
+      ...Array.from({ length: 12 }, (_, index) =>
+        backup(`fresh-${String(index).padStart(2, '0')}`, '2026-08-27T14:00:00.000Z'),
+      ),
+    ];
+    const retained = pruneRecoveryBackups(backups, now);
+
+    expect(retained).toHaveLength(11);
+    expect(retained[0].id).toBe('fresh-11');
+    expect(retained[9].id).toBe('fresh-02');
+    expect(retained[10].id).toBe('held-old');
+    expect(retained.map((item) => item.id)).not.toContain('expired-equality');
+    expect(() => pruneRecoveryBackups([backups[0], backups[0]], now)).toThrow('duplicate-recovery-backup-id');
+  });
+
+  it('releases an incident hold only after fresh authorization and audits the one write', async () => {
+    const held = pruneRecoveryBackups([{
+      id: 'held-1', createdAt: now.toISOString(), actorUserId: 'staff-1', reason: 'Incident',
+      counts: { users: 0, onboardingProfiles: 0, shortlists: 0, programmeRecords: 0, auditEvents: 0 },
+      data: emptyData,
+      incidentHold: { incidentId: 'incident-held-1', status: 'unresolved' as const, createdAt: now.toISOString() },
+    }], now);
+    let stored: ScholarScoutData = { ...emptyData, restoreBackups: held };
+    const write = jest.fn(async (data: ScholarScoutData) => { stored = data; });
+
+    await expect(releaseRecoveryIncidentHold({
+      actorId: 'staff-2', authorized: false, backupId: 'held-1', incidentId: 'incident-held-1', reason: 'Resolved safely',
+    }, { read: async () => stored, write, now: () => now })).rejects.toThrow('recovery-authorization-required');
+    await releaseRecoveryIncidentHold({
+      actorId: 'staff-2', authorized: true, backupId: 'held-1', incidentId: 'incident-held-1', reason: 'Resolved safely',
+    }, { read: async () => stored, write, now: () => now, auditId: () => 'audit-release-1' });
+
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(stored.restoreBackups?.[0].incidentHold).toMatchObject({ status: 'resolved', resolvedBy: 'staff-2' });
+    expect(stored.recoveryLifecycleEvents?.[0]).toMatchObject({
+      id: 'audit-release-1', action: 'release-incident-hold', incidentId: 'incident-held-1', outcome: 'succeeded',
     });
   });
 });
