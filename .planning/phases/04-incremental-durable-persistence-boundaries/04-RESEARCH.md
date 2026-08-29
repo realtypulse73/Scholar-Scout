@@ -55,9 +55,9 @@ Scholar Scout currently has a two-method persistence port—`read()` and `write(
 
 Use programme records as the first tracer boundary. They already have a revision-bearing domain model, a typed `ProgrammeRevisionConflictError`, a staff-only route that returns an explicit `409`, and focused data-store coverage. That makes programme save the smallest adapter-spanning proof of DATA-01 while keeping the public behavior stable. [VERIFIED: `data-store.ts`; `apps/web/app/api/admin/programmes/route.ts`; `apps/web/__tests__/lib/data-store.test.ts`] Student onboarding/shortlist writes have greater user-progress loss impact and must follow in the same phase; operational append/audit paths then complete DATA-02 coverage, but analytics separation and jobs remain deferred. [VERIFIED: `data-store.ts`; `platform-store.ts`; `04-CONTEXT.md`; `.planning/REQUIREMENTS.md`]
 
-The compatible foundation should be a versioned read plus conditional whole-document write at the adapter port, followed by bounded domain-operation methods that hide the document mutation. HTTP should use strong ETag plus `If-Match` and return `412` on mismatch; Vercel Blob 2.6.1 already exposes ETags, `ifMatch`, and `BlobPreconditionFailedError`; the local JSON adapter should use an exclusive in-process mutation boundary plus temp-file replacement and a content version token, while remaining explicitly local/non-production. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match] [CITED: https://vercel.com/docs/vercel-blob] [VERIFIED: `pnpm-lock.yaml`; installed `@vercel/blob` type declarations] Recovery must continue to read/validate/compose once and conditionally apply one full document using the same expected version; it must not be decomposed into partial domain writes. [VERIFIED: `data-recovery.ts`; Phase 3 recovery artifacts]
+The compatible foundation should be a versioned read plus conditional whole-document write at the adapter port, followed by bounded domain-operation methods that hide the document mutation. HTTP uses strong ETag plus `If-Match` and returns `412` on mismatch. Vercel Blob existing writes use `allowOverwrite: true` plus the read ETag as `ifMatch`; absent creation uses `allowOverwrite: false` with no `ifMatch`, and pathname-exists or provider precondition errors normalize to conflict. The JSON adapter uses a cross-process sibling-lock protocol: exclusive `fs.open(lockPath, 'wx')`, re-read and compare under lock, write and fsync a unique same-directory temp file, atomically rename it, and release the lock in `finally`; bounded lock contention returns unavailable, and an apparently stale lock is never broken automatically. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match] [CITED: https://vercel.com/docs/vercel-blob] [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`] Recovery must continue to read/validate/compose once and conditionally apply one full document using the same expected version; it must not be decomposed into partial domain writes. [VERIFIED: `data-recovery.ts`; Phase 3 recovery artifacts]
 
-**Primary recommendation:** Add one versioned CAS-capable compatibility port, prove it end to end with `saveProgrammeRecord`, then migrate student and operational helpers into bounded operations while leaving Phase 3 recovery as a guarded whole-document operation. [VERIFIED: repository architecture and locked Phase 4 context]
+**Primary recommendation:** Add one versioned CAS-capable compatibility port using cross-process sibling-lock/fsync/rename for JSON, ETag preconditions for HTTP, and explicit existing-versus-absent conditional writes for Blob; prove it with `saveProgrammeRecord`, then migrate student and operational helpers using the exact retry allowlist while leaving Phase 3 recovery as a guarded whole-document operation. [VERIFIED: repository architecture; `04-01-PLAN.md`; `04-03-PLAN.md`; `04-VALIDATION.md`]
 
 ## Architectural Responsibility Map
 
@@ -78,7 +78,7 @@ The compatible foundation should be a versioned read plus conditional whole-docu
 |-------------------|---------|---------|--------------|
 | Next.js | 15.5.15 | Existing route handlers and server execution | Locked project foundation; no routing or platform migration is needed. [VERIFIED: `apps/web/package.json`; `AGENTS.md`] |
 | TypeScript | 5.x | Typed version tokens, operation results, and conflict errors | Existing strict server/domain language. [VERIFIED: `apps/web/tsconfig.json`; `AGENTS.md`] |
-| Node.js | 20.x | JSON filesystem adapter, hashing, temp-file/rename primitives | Locked runtime; existing server store already uses Node crypto and filesystem APIs. [VERIFIED: root `package.json`; `data-store.ts`] |
+| Node.js | 20.x | JSON filesystem adapter, hashing, exclusive sibling lock, fsync, and temp-file/rename primitives | Locked runtime; the validated plan uses `fs.open(..., 'wx')` plus compare-under-lock and fsynced same-directory atomic replacement for independent processes. [VERIFIED: root `package.json`; `data-store.ts`; `04-01-PLAN.md`; `04-VALIDATION.md`] |
 | `@vercel/blob` | 2.6.1 resolved | Private Blob read and ETag-conditional overwrite | Current lockfile version exposes `ifMatch`, ETags, and `BlobPreconditionFailedError`; no new package is required. [VERIFIED: `pnpm-lock.yaml`; local package declarations] [CITED: https://vercel.com/docs/vercel-blob] |
 | Native HTTP conditional requests | HTTP/1.1 semantics | Strong ETag read token and `If-Match` write precondition | Standard lost-update prevention; mismatch is `412 Precondition Failed`. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match] |
 
@@ -96,7 +96,7 @@ The compatible foundation should be a versioned read plus conditional whole-docu
 |------------|-----------|----------|
 | Compatibility CAS on the existing document port | Immediate relational/database migration | A database would provide stronger record transactions and queries, but violates the locked incremental/no-wholesale-migration boundary and would put all adapters and Phase 3 recovery at once at risk. [VERIFIED: `04-CONTEXT.md`; project constraints] |
 | Programme as tracer | Student shortlist/onboarding first | Student data has higher direct progress-loss impact, but lacks an existing revision/UI conflict contract; programme provides a smaller safe proof before applying the same port to student writes. [VERIFIED: current source/tests] |
-| Provider ETag/version token | Process-local mutex only | A mutex cannot coordinate Vercel serverless instances or a remote HTTP service; it is suitable only as part of local JSON compatibility. [VERIFIED: adapter topology; `.planning/codebase/CONCERNS.md`] |
+| Provider ETag/version token | Process-local mutex only | A mutex cannot coordinate independent local processes, Vercel serverless instances, or a remote HTTP service; JSON therefore uses an OS-exclusive sibling lock, while HTTP and Blob use provider preconditions. [VERIFIED: adapter topology; `04-01-PLAN.md`; `04-VALIDATION.md`] |
 
 **Installation:** No new dependency installation is required. Use the committed lockfile and Corepack-selected `pnpm@10.34.5`. [VERIFIED: root `package.json`; `pnpm-lock.yaml`]
 
@@ -126,7 +126,8 @@ bounded domain operation
                          /          |           \
                         v           v            v
                  JSON local     HTTP service   Vercel Blob
-                 lock+rename    ETag/If-Match  ETag/ifMatch
+              sibling lock +    ETag/If-Match  ETag/ifMatch
+              fsync + rename
                         \           |            /
                          +----------+-----------+
                                     |
@@ -207,13 +208,19 @@ if (result.status === 'conflict') {
 
 The final implementation should return a general persistence conflict carrying safe retry metadata and preserve `ProgrammeRevisionConflictError` at the route-facing compatibility seam. [VERIFIED: current route behavior; DATA-01]
 
-### Pattern 3: Bounded Retry Only for Commutative Operations
+### Pattern 3: Exact Stable-Identity Commutative Retry Allowlist
 
-**What:** On CAS conflict, reload and retry only operations whose reapplication is provably safe (for example, append with a pre-generated unique ID). User replacements such as onboarding, shortlist, or programme edits return conflict/retry instead of automatically overriding current data. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Conditional_requests] [VERIFIED: repository operation shapes]
+**What:** On CAS conflict, retry exactly once—two total CAS attempts—only for stable-ID, duplicate-safe appends. The allowlist is privileged audit, recovery lifecycle/outcome, feed interaction, analytics event, referral, and share. Each ID is generated before the first read and duplicate-ID application is a no-op. Guest lifecycle/migration, incident-hold replacement, account/profile/onboarding/shortlist, programme, simulation, memory, decision, recovery apply, and every operation without a stable ID never retry. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Conditional_requests] [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
 
-**When to use:** Operational append/audit paths may use a small bounded retry count; replacement/update paths must surface explicit conflict. [VERIFIED: DATA-01 and write inventory]
+**When to use:** Only the named allowlisted append families may make a second attempt; retry exhaustion and every denylisted operation surface explicit conflict without a third attempt. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
 
-### Pattern 4: Recovery Remains a Guarded Whole-Document Operation
+### Pattern 4: Cross-Process JSON CAS
+
+**What:** Acquire a sibling lock with `fs.open(lockPath, 'wx')`; while holding it, re-read and normalize the current file, compare the exact content version with the caller's expected version (including the absent token), write a unique same-directory temp file, fsync it, atomically rename it over the data path, and close/unlink the lock in `finally`. Contenders wait only for a bounded interval; timeout is unavailable, never permission to overwrite. Do not break an apparently stale lock automatically. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
+
+**When to use:** Every JSON adapter conditional write and absent-document creation. Validate with two independent Node processes synchronized after reading the same version; exactly one stale update and exactly one absent creator apply. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
+
+### Pattern 5: Recovery Remains a Guarded Whole-Document Operation
 
 **What:** Preserve Phase 3's signed envelope, current digest, one-write apply, backup retention, incident hold, and audit semantics, but pass the read version into the final conditional write. [VERIFIED: `data-recovery.ts`; `03-VERIFICATION.md`]
 
@@ -222,7 +229,7 @@ The final implementation should return a general persistence conflict carrying s
 ### Anti-Patterns to Avoid
 
 - **Check entity revision, then call unconditional `write(data)`:** another writer can commit after the check and before the write, so the apparent revision protection still loses data. [VERIFIED: current `saveProgrammeRecord` sequence]
-- **Retry every conflict automatically:** replacement operations can overwrite newer user intent; only proven commutative/idempotent transforms may retry. [VERIFIED: DATA-01; operation semantics]
+- **Retry every conflict automatically:** replacement operations can overwrite newer user intent; only the exact stable-ID, duplicate-safe append allowlist may retry, and only once. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
 - **Expose ETags to browser/domain code:** provider tokens are adapter concerns; leaking them upward couples routes to storage and complicates adapter compatibility. [VERIFIED: port-and-adapter constraint]
 - **Split recovery into many domain commits:** partial apply would violate Phase 3's one-write recovery and audit guarantee. [VERIFIED: Phase 3 recovery evidence]
 - **Claim JSON local storage is production-transactional:** the project already marks JSON non-durable; keep its guarantee scoped to supported local compatibility. [VERIFIED: `getDataStoreConfigurationSummary`; runbooks]
@@ -251,13 +258,13 @@ The final implementation should return a general persistence conflict carrying s
 ### Pitfall 2: Missing-Document Creation Race
 **What goes wrong:** Two first writers both observe an empty store and create divergent initial documents. [CITED: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Conditional_requests]
 **Why it happens:** A missing document has no ordinary ETag to match. [CITED: HTTP conditional request guide]
-**How to avoid:** Define an explicit absent-version token in the port; map HTTP creation to `If-None-Match: *`, Blob's supported create/conditional semantics, and exclusive JSON creation. [CITED: HTTP conditional request guide] [VERIFIED: Vercel Blob supports overwrite/create preconditions in resolved SDK]
+**How to avoid:** Define an explicit absent-version token in the port. Map HTTP creation to `If-None-Match: *`; map Blob creation to `allowOverwrite: false` without `ifMatch`, treating pathname-exists/precondition failures as conflict; and perform JSON creation while holding the exclusive sibling lock. [CITED: HTTP conditional request guide] [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
 **Warning signs:** Adapter tests cover stale overwrite but not two concurrent initial writes. [VERIFIED: current test inventory]
 
 ### Pitfall 3: Retrying Non-Commutative Student Replacements
 **What goes wrong:** A retry applies an old shortlist/profile over a newer user choice. [VERIFIED: student helpers replace keyed values]
 **Why it happens:** Generic retry logic treats replacement and append operations identically. [VERIFIED: operation inventory]
-**How to avoid:** Return conflict for replacement writes; retry only a pure transform that is idempotent or commutative and has a stable operation ID. [VERIFIED: DATA-01]
+**How to avoid:** Return conflict for every replacement or unstable-ID write. Retry exactly once only for privileged audit, recovery lifecycle/outcome, feed interaction, analytics event, referral, and share appends with IDs generated before the first read and duplicate-ID no-op behavior. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
 **Warning signs:** One helper catches all conflicts and loops without classifying the operation. [VERIFIED: required architecture]
 
 ### Pitfall 4: Audit Event Separated From Domain Commit
@@ -353,17 +360,21 @@ try {
 |---|-------|---------|---------------|
 | — | None. All planning recommendations are grounded in locked project artifacts, repository source, resolved package declarations, or official documentation. | — | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **How should a missing Vercel Blob be conditionally created through the exact 2.6.1 SDK path?**
-   - What we know: the resolved SDK supports `ifMatch`, ETags, overwrite control, and precondition errors. [VERIFIED: local type declarations]
-   - What's unclear: the exact first-create option/token should be confirmed with an executable mocked/provider contract rather than inferred from overwrite behavior. [VERIFIED: current repository lacks this test]
-   - Recommendation: make missing-document creation a Wave 0 adapter test and keep the absent-version mapping private to each adapter. [VERIFIED: DATA-01]
+1. **How should existing and missing Vercel Blobs be conditionally written? — Resolved**
+   - Existing write: use `allowOverwrite: true` plus the ETag from the versioned read as `ifMatch`; map `BlobPreconditionFailedError` to conflict with no write. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
+   - Absent create: use `allowOverwrite: false` with no `ifMatch`; map pathname-already-exists and provider precondition failure to conflict with no write. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
+   - Verification: mocked adapter tests run two absent-version creators and prove exactly one applies, plus a stale-ETag no-write conflict. [VERIFIED: `04-VALIDATION.md`]
 
-2. **Which operational appends may retry automatically?**
-   - What we know: audit and platform event records carry generated unique IDs, while decision logs and memory are replacements. [VERIFIED: source types/helpers]
-   - What's unclear: whether every append route is idempotent across caller retries. [VERIFIED: current source lacks a shared idempotency key contract]
-   - Recommendation: begin with no automatic retry except inside a tested bounded operation with a stable pre-generated ID; surface retryable conflict otherwise. [VERIFIED: safest DATA-01 interpretation]
+2. **Which operational appends may retry automatically? — Resolved**
+   - Allowlist: privileged audit, recovery lifecycle/outcome, feed interaction, analytics event, referral, and share. IDs are generated before the first read; duplicate-ID application is a no-op. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
+   - Limit: exactly one retry, for two total CAS attempts; exhaustion returns conflict and no third attempt occurs. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
+   - Denylist: guest lifecycle/migration, incident-hold replacement, account/profile/onboarding/shortlist, programme, simulation, memory, decision, recovery apply, and any unstable-ID operation never retry. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`]
+
+3. **How does JSON CAS coordinate independent processes? — Resolved**
+   - Use the cross-process sibling-lock, compare-under-lock, fsynced same-directory temp, and atomic-rename protocol. Bounded contention failure is unavailable; an apparently stale lock is never automatically removed. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
+   - Verification: independent-process race tests prove exactly one stale updater and one absent creator apply while the winning document remains valid. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
 
 ## Environment Availability
 
@@ -410,7 +421,7 @@ try {
 
 ### Wave 0 Gaps
 
-- [ ] Extend `apps/web/__tests__/lib/data-store.test.ts` with an interleaved two-reader CAS harness, absent-document race, HTTP ETag, and Blob `ifMatch`/precondition cases. [VERIFIED: current tests lack these interleavings]
+- [ ] Extend `apps/web/__tests__/lib/data-store.test.ts` with interleaved CAS, Blob existing-write `allowOverwrite: true` + `ifMatch`, absent-create `allowOverwrite: false` without `ifMatch`, and provider conflict cases; add independent-process JSON stale-update and absent-create races. [VERIFIED: `04-01-PLAN.md`; `04-VALIDATION.md`]
 - [ ] Extend `services/http-data-service/test/server.test.mjs` for strong ETag on GET, required `If-Match` on replacement, `If-None-Match: *` creation, `412` no-write behavior, and two concurrent writers. [VERIFIED: current service tests lack conditional writes]
 - [ ] Add focused admin programme route conflict coverage if no existing route test covers the CAS-derived `409`. [VERIFIED: test inventory]
 - [ ] Add student persistence operation tests covering onboarding, shortlist, shortlist plans, and audit atomicity. [VERIFIED: no focused server persistence test exists]
@@ -438,7 +449,7 @@ try {
 |---------|--------|---------------------|
 | Lost update from concurrent serverless instances | Tampering | Adapter-level strong CAS/ETag and explicit no-write conflict. [VERIFIED: DATA-01] |
 | Conflict response leaks current student data | Information Disclosure | Return safe category/version metadata only; programme route may return only its already-authorized current record. [VERIFIED: access-control boundaries] |
-| Retry amplification under contention | Denial of Service | Small bounded retry count only for idempotent/commutative operations; otherwise return conflict. [VERIFIED: recommended architecture] |
+| Retry amplification under contention | Denial of Service | Exactly one retry/two attempts only for the stable-ID duplicate-safe append allowlist; all replacements and unstable-ID operations return conflict. [VERIFIED: `04-03-PLAN.md`; `04-VALIDATION.md`] |
 | Stale recovery overwrites post-plan data | Tampering | Bind both application digest and adapter version; conditionally apply once. [VERIFIED: Phase 3 plus DATA-01] |
 | Conditional header omitted or forged by public caller | Spoofing / Tampering | App owns adapter token; HTTP data service requires server bearer auth and validates the current ETag itself. [VERIFIED: current HTTP auth boundary] |
 | Persistence version included in signed/exported data | Information Disclosure / Tampering | Keep version metadata outside `ScholarScoutData` and recovery envelopes. [VERIFIED: recovery contract] |
@@ -469,6 +480,7 @@ try {
 - Phase 3 context, research, summaries, UAT, security, validation, and verification — predecessor guarantees and explicitly deferred Phase 4 provider work.
 - `AGENTS.md`, `PROJECT-INDEX.md`, `.planning/codebase/*`, and adapter runbooks — project constraints and operational boundaries.
 - `pnpm-lock.yaml` and installed `@vercel/blob` 2.6.1 declarations — resolved SDK version and conditional-write types.
+- `04-01-PLAN.md`, `04-03-PLAN.md`, and `04-VALIDATION.md` — validated JSON cross-process CAS, Blob create/update mapping, and exact operational retry decisions.
 
 ### Secondary (MEDIUM confidence)
 
