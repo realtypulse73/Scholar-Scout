@@ -21,6 +21,7 @@ import {
   type SupportNeed,
 } from '@/lib/onboarding-types';
 import { validateStep } from '@/lib/onboarding-validation';
+import { ROLE_LANGUAGE } from '@/lib/role-language';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   serializeOnboardingProfile,
@@ -241,7 +242,7 @@ export default function OnboardingWizard() {
           ) : null}
 
           <p className="mt-6 rounded-card border border-brand-100 bg-brand-50 p-3 text-sm leading-6 text-brand-800">
-            You are not being screened out. These answers help ScholarScout rank
+            {ROLE_LANGUAGE.student.profile} These answers help ScholarScout rank
             practical next steps and show what to verify.
           </p>
 

@@ -7,7 +7,7 @@ const clickNext = () =>
 const clickBack = () =>
   fireEvent.click(screen.getByRole('button', { name: /back/i }));
 const clickSave = () =>
-  fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save my pathway profile' }));
 
 describe('OnboardingWizard 4-step flow', () => {
   beforeEach(() => {
@@ -49,6 +49,7 @@ describe('OnboardingWizard 4-step flow', () => {
 
     expect(screen.getByText('Preview')).toBeInTheDocument();
     expect(screen.getByText(/Your profile is ready to save/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your pathway profile helps tailor options; it is not an admissions decision/i)).toBeInTheDocument();
     clickSave();
 
     await waitFor(() => {
