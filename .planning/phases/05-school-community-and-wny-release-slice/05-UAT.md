@@ -3,12 +3,12 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-29T20:34:00.000Z
+updated: 2026-08-29T21:25:00.000Z
 ---
 
 ## Current Test
 
-[testing complete — 3 external prerequisites remain]
+[tests 1 and 3 remain externally gated]
 
 ## Tests
 
@@ -22,25 +22,24 @@ reason: "The deployed Preview now has 40 visible source links, no stale-link 404
 ### 2. Authenticated report and staff-resolution journey
 
 expected: As a signed-in student, report a public note, cancel once, then confirm once; as fresh staff, resolve the resulting queue entry. Cancellation restores focus to the initiating control, success hides only that row with a private confirmation, and staff actions remain restore/remove only.
-result: blocked
-blocked_by: Preview Blob conditional-write provider gate
-reason: "The canonical-path repair allowed the two generated isolated Preview accounts to register and authenticate; the staff allowlist is also verified. Before any public test content was submitted, a read-only staff moderation-page load deterministically exhausted its two required privacy-minimal audit CAS attempts, including after more than 70 seconds idle. Fresh student re-sign-in proves the document is readable, but the Preview provider rejects the required ETag conditional write."
+result: pass
+reason: "On the corrected isolated Preview, generated student content posted successfully. Cancelling the report dialog restored focus to the initiating report control; confirming the report hid only that note and displayed the private confirmation. A fresh generated allowlisted staff account saw the identity-minimal queue, restored the note, received a success status, and the queue became empty. No PersistenceConflictError occurred."
 
 ### 3. Live shared quota boundary
 
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: blocked
-blocked_by: Preview Blob conditional-write provider gate
-reason: "Upstash is configured and the generated isolated Preview student now authenticates, but the Preview Blob provider rejects the required ETag conditional write used by the staff audit append. The shared note/inbox test intentionally requires durable writes, so it remains blocked until the provider supports the configured conditional-write contract. No public test content was submitted."
+blocked_by: external-time-and-provider boundary
+reason: "On the configured Upstash Preview, five combined alternating generated note/inbox submissions were accepted and the sixth was denied without an exact remaining count. The real sliding-window expiry still requires elapsed provider time. A separate Preview with intentionally invalid non-secret Upstash values correctly failed closed at sign-in, but the shared provider guard prevents reaching an authenticated community write; its no-write result is technically covered by route tests, while a post-auth live outage check needs a session-preserving provider-failure mechanism."
 
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
 pending: 0
 skipped: 0
-blocked: 3
+blocked: 2
 
 ## Gaps
 
