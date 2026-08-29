@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
-current_phase_name: incremental-durable-persistence-boundaries
-status: gaps_found
-stopped_at: Phase 4 canonical verification found an HTTP concurrent-write atomicity gap
-last_updated: "2026-08-29T11:55:00.000Z"
+current_phase: 05
+current_phase_name: school-community-and-wny-release-slice
+status: not_started
+stopped_at: Phase 4 verified complete; Phase 5 is next
+last_updated: "2026-08-29T12:35:00.000Z"
 last_activity: 2026-08-29
-last_activity_desc: Phase 4 UAT passed; canonical verification found an HTTP CAS critical-section gap
+last_activity_desc: Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
 progress:
   total_phases: 5
   completed_phases: 3
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-25)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 04 — incremental-durable-persistence-boundaries
+**Current focus:** Phase 05 — school-community-and-wny-release-slice
 
 ## Current Position
 
-Phase: 04 (incremental-durable-persistence-boundaries) — VERIFYING
-Plan: 5 of 5
-Status: Verification gaps found — HTTP ETag check and asynchronous replacement are not one atomic critical section
-Last activity: 2026-08-29 — Phase 4 UAT passed; canonical verification found an HTTP CAS critical-section gap
+Phase: 05 (school-community-and-wny-release-slice) — NOT STARTED
+Plan: 0 of TBD
+Status: Phase 4 verified complete; Phase 5 is next
+Last activity: 2026-08-29 — Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
 
 Progress: [██████████] 100%
 
@@ -196,5 +196,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-29T07:10:03.047Z
-Stopped at: Phase 4 canonical verification found an HTTP concurrent-write atomicity gap
+Stopped at: Phase 4 verified complete; Phase 5 is next
 Resume file: None
