@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 Phase: 05 (school-community-and-wny-release-slice) — EXECUTING
 Plan: 1 of 5
 Status: Executing Phase 05
-Last activity: 2026-08-29 — Phase 05 execution started
+Last activity: 2026-08-29 — Completed validated quick task 260829-p2p: establish an auditable role-language contract and bounded first implementation batch
 
 Progress: [██████████] 100%
 
@@ -176,16 +176,17 @@ None yet.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260725-sao | Fix the missing admin data import validation route module | 2026-07-25 | 3a150a8 | [260725-sao-fix-the-missing-admin-data-import-valida](./quick/260725-sao-fix-the-missing-admin-data-import-valida/) |
-| 260726-0ls | Create an evidence-graded product specification from the student opportunity research briefs | 2026-07-26 | eeed666 | [260726-0ls-create-an-evidence-graded-product-specif](./quick/260726-0ls-create-an-evidence-graded-product-specif/) |
-| 260726-0qr | Create a project document index and add it to Codex project guidance | 2026-07-26 | 726e87f | [260726-0qr-create-a-project-document-index-and-add-](./quick/260726-0qr-create-a-project-document-index-and-add-/) |
-| 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
-| 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
-| 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
-| 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
-| 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260725-sao | Fix the missing admin data import validation route module | 2026-07-25 | 3a150a8 |  | [260725-sao-fix-the-missing-admin-data-import-valida](./quick/260725-sao-fix-the-missing-admin-data-import-valida/) |
+| 260726-0ls | Create an evidence-graded product specification from the student opportunity research briefs | 2026-07-26 | eeed666 |  | [260726-0ls-create-an-evidence-graded-product-specif](./quick/260726-0ls-create-an-evidence-graded-product-specif/) |
+| 260726-0qr | Create a project document index and add it to Codex project guidance | 2026-07-26 | 726e87f |  | [260726-0qr-create-a-project-document-index-and-add-](./quick/260726-0qr-create-a-project-document-index-and-add-/) |
+| 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e |  | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
+| 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 |  | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
+| 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e |  | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
+| 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 |  | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
+| 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 |  | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
+| 260829-p2p | Establish an auditable role-language contract and bounded first implementation batch | 2026-08-29 | e31f956 | Verified | [260829-p2p-establish-consistent-student-and-institu](./quick/260829-p2p-establish-consistent-student-and-institu/) |
 
 ## Deferred Items
 
