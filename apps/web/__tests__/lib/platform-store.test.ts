@@ -1,7 +1,9 @@
 import {
   appendAnalyticsEvent,
   appendFeedInteraction,
+  createReferral,
   saveSimulationResult,
+  trackShare,
 } from '@/lib/server/platform-store';
 import {
   setScholarScoutDataStoreForTests,
@@ -54,5 +56,19 @@ describe('bounded platform persistence', () => {
       userKey: 'account:one', simulationId: 'career-fit-lab', answers: [],
     })).rejects.toMatchObject({ name: 'PersistenceConflictError' });
     expect(store.writes).toBe(1);
+  });
+
+  it('uses the duplicate-safe append path for referral and share records', async () => {
+    const store = new ConflictStore();
+    setScholarScoutDataStoreForTests(store);
+    await createReferral('account:one');
+    await trackShare({ userKey: 'account:one', targetType: 'programme', targetId: 'programme-1' });
+    const platform = store.data as typeof store.data & {
+      referralRecords: Array<{ id: string }>;
+      shareRecords: Array<{ id: string }>;
+    };
+    expect(platform.referralRecords).toHaveLength(1);
+    expect(platform.shareRecords).toHaveLength(1);
+    expect(store.writes).toBe(2);
   });
 });

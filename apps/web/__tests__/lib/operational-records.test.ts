@@ -72,6 +72,40 @@ describe('bounded operational records', () => {
     ]);
   });
 
+  it('keeps the retry allowlist explicit and all replacement families denylisted', () => {
+    expect([
+      OPERATIONAL_MUTATION_POLICIES.privilegedAuditAppend,
+      OPERATIONAL_MUTATION_POLICIES.recoveryLifecycleAppend,
+      OPERATIONAL_MUTATION_POLICIES.recoveryOutcomeAppend,
+      OPERATIONAL_MUTATION_POLICIES.feedInteractionAppend,
+      OPERATIONAL_MUTATION_POLICIES.analyticsAppend,
+      OPERATIONAL_MUTATION_POLICIES.referralAppend,
+      OPERATIONAL_MUTATION_POLICIES.shareAppend,
+    ].every((policy) => policy.retry === 'stable-id-append-once')).toBe(true);
+    expect([
+      OPERATIONAL_MUTATION_POLICIES.guestLifecycleRegistration,
+      OPERATIONAL_MUTATION_POLICIES.guestMigration,
+      OPERATIONAL_MUTATION_POLICIES.incidentHoldReplacement,
+      OPERATIONAL_MUTATION_POLICIES.communityMutation,
+      OPERATIONAL_MUTATION_POLICIES.outcomeMetricsReplacement,
+      OPERATIONAL_MUTATION_POLICIES.simulationReplacement,
+      OPERATIONAL_MUTATION_POLICIES.memoryReplacement,
+      OPERATIONAL_MUTATION_POLICIES.decisionReplacement,
+    ].every((policy) => policy.retry === 'never')).toBe(true);
+  });
+
+  it('stops an allowlisted append after two conflicting attempts', async () => {
+    const store = new ConflictStore();
+    store.conflictsRemaining = 2;
+    setScholarScoutDataStoreForTests(store);
+    await expect(appendOperationalRecord({
+      policy: OPERATIONAL_MUTATION_POLICIES.recoveryLifecycleAppend,
+      collection: 'recoveryLifecycleEvents',
+      record: { id: 'recovery-event' },
+    })).rejects.toMatchObject({ name: 'PersistenceConflictError' });
+    expect(store.writes).toBe(2);
+  });
+
   it('makes a duplicate stable event a no-op', async () => {
     const store = new ConflictStore();
     store.data.privilegedOperationAuditEvents = [{
