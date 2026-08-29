@@ -19,6 +19,7 @@ import {
   getScholarScoutDataStore,
   getScholarScoutDataStoreStatus,
   JsonScholarScoutDataStore,
+  PersistenceConflictError,
   getScholarScoutRestoreBackupPlan,
   getScholarScoutRestoreBackups,
   getRestoreBackupRetentionStatus,
@@ -795,6 +796,29 @@ describe('ScholarScout data store adapter', () => {
 
     expect(store.data.users[0].id).toBe('current-user');
     expect(store.data.restoreBackups).toBeUndefined();
+  });
+
+  it('rejects a stale compatibility import without replacing current data', async () => {
+    const store = new MemoryDataStore();
+    store.data.users = [{
+      id: 'current-user',
+      email: 'current@example.com',
+      name: 'Current User',
+      role: 'student',
+      passwordHash: 'hash',
+      createdAt: '2026-05-05T00:00:00.000Z',
+    }];
+    const before = cloneData(store.data);
+    jest.spyOn(store, 'writeVersioned').mockResolvedValueOnce({ status: 'conflict' });
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(restoreScholarScoutDataFromImport({
+      actorUserId: 'staff-1',
+      snapshot: initialData,
+      reason: 'Compatibility restore',
+    })).rejects.toBeInstanceOf(PersistenceConflictError);
+
+    expect(store.data).toEqual(before);
   });
 
   it('summarizes restore backups without exposing backup documents', async () => {

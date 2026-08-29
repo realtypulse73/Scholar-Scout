@@ -790,7 +790,8 @@ export async function restoreScholarScoutDataFromImport(input: {
     });
   }
 
-  const currentData = await readScholarScoutData();
+  const currentSnapshot = await readVersionedScholarScoutData();
+  const currentData = currentSnapshot.data;
   const restoredAt = new Date().toISOString();
   const backup: ScholarScoutDataBackup = {
     id: randomUUID(),
@@ -821,7 +822,11 @@ export async function restoreScholarScoutDataFromImport(input: {
     ],
   };
 
-  await writeScholarScoutData(restoredData);
+  const writeResult = await writeVersionedScholarScoutData(
+    restoredData,
+    currentSnapshot.version,
+  );
+  if (writeResult.status === 'conflict') throw new PersistenceConflictError();
 
   return {
     backupId: backup.id,
@@ -835,7 +840,8 @@ export async function restoreScholarScoutDataFromBackup(input: {
   backupId: string;
   reason?: string;
 }): Promise<ScholarScoutDataRestoreResult | null> {
-  const currentData = await readScholarScoutData();
+  const currentSnapshot = await readVersionedScholarScoutData();
+  const currentData = currentSnapshot.data;
   const sourceBackup = (currentData.restoreBackups ?? []).find(
     (candidate) => candidate.id === input.backupId,
   );
@@ -884,7 +890,11 @@ export async function restoreScholarScoutDataFromBackup(input: {
     ],
   };
 
-  await writeScholarScoutData(restoredData);
+  const writeResult = await writeVersionedScholarScoutData(
+    restoredData,
+    currentSnapshot.version,
+  );
+  if (writeResult.status === 'conflict') throw new PersistenceConflictError();
 
   return {
     backupId: backup.id,
