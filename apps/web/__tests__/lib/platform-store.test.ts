@@ -42,7 +42,7 @@ describe('bounded platform persistence', () => {
 
     store.conflictsRemaining = 1;
     const before = store.writes;
-    await appendAnalyticsEvent({ area: 'discovery', name: 'view', userKey: 'account:one' });
+    await appendAnalyticsEvent({ area: 'feed', name: 'view', userKey: 'account:one' });
     expect(store.writes - before).toBe(2);
   });
 
@@ -51,8 +51,8 @@ describe('bounded platform persistence', () => {
     store.conflictsRemaining = 1;
     setScholarScoutDataStoreForTests(store);
     await expect(saveSimulationResult({
-      userKey: 'account:one', simulationId: 'missing', answers: [],
-    })).rejects.toThrow();
-    expect(store.writes).toBeLessThanOrEqual(1);
+      userKey: 'account:one', simulationId: 'career-fit-lab', answers: [],
+    })).rejects.toMatchObject({ name: 'PersistenceConflictError' });
+    expect(store.writes).toBe(1);
   });
 });

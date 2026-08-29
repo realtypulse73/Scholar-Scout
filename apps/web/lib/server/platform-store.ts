@@ -3,9 +3,13 @@ import 'server-only';
 import { randomUUID } from 'crypto';
 import {
   readScholarScoutData,
-  writeScholarScoutData,
   type ScholarScoutData,
 } from '@/lib/server/data-store';
+import {
+  appendOperationalRecord,
+  applyOperationalReplacement,
+  OPERATIONAL_MUTATION_POLICIES,
+} from '@/lib/server/operational-records';
 import {
   feedItems,
   getStudentStage,
@@ -91,18 +95,19 @@ export interface GuestMigrationResult {
 }
 
 export async function readPlatformData(): Promise<PlatformData> {
-  const data = (await readScholarScoutData()) as PlatformData;
+  return normalizePlatformData(await readScholarScoutData());
+}
 
-  return {
-    ...data,
-    feedInteractions: data.feedInteractions ?? [],
-    simulationResults: data.simulationResults ?? [],
-    memoryRecords: data.memoryRecords ?? [],
-    referralRecords: data.referralRecords ?? [],
-    shareRecords: data.shareRecords ?? [],
-    analyticsEvents: data.analyticsEvents ?? [],
-    decisionLogs: data.decisionLogs ?? [],
-  };
+function normalizePlatformData(data: ScholarScoutData): PlatformData {
+  const platform = data as PlatformData;
+  platform.feedInteractions = platform.feedInteractions ?? [];
+  platform.simulationResults = platform.simulationResults ?? [];
+  platform.memoryRecords = platform.memoryRecords ?? [];
+  platform.referralRecords = platform.referralRecords ?? [];
+  platform.shareRecords = platform.shareRecords ?? [];
+  platform.analyticsEvents = platform.analyticsEvents ?? [];
+  platform.decisionLogs = platform.decisionLogs ?? [];
+  return platform;
 }
 
 /**
@@ -114,7 +119,10 @@ export async function migrateGuestOwnedRecords(input: {
   accountId: string;
   now?: Date;
 }): Promise<GuestMigrationResult> {
-  const data = await readPlatformData();
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.guestMigration,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
   const lifecycle = data.guestLifecycles?.find((guest) => guest.id === input.guestId);
 
   if (!lifecycle) {
@@ -228,13 +236,13 @@ export async function migrateGuestOwnedRecords(input: {
       transferredCollections,
     },
   ];
-  await writeScholarScoutData(data);
-
   return {
     migrated: true,
     alreadyMigrated: false,
     guestWindowId: lifecycle.quotaWindowId,
   };
+    },
+  );
 }
 
 function migrateUserKeyRecords<T extends { userKey: string }>(
@@ -278,7 +286,6 @@ export async function appendFeedInteraction(input: {
   watchSeconds: number;
   skipped: boolean;
 }) {
-  const data = await readPlatformData();
   const record: FeedInteractionRecord = {
     id: randomUUID(),
     userKey: input.userKey,
@@ -288,8 +295,11 @@ export async function appendFeedInteraction(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.feedInteractions = [...(data.feedInteractions ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.feedInteractionAppend,
+    collection: 'feedInteractions',
+    record,
+  });
   await updateMemory(input.userKey);
 
   return record;
@@ -307,7 +317,6 @@ export async function saveSimulationResult(input: {
   }
 
   const result = scoreSimulation(simulation, input.answers);
-  const data = await readPlatformData();
   const record: SimulationResultRecord = {
     id: randomUUID(),
     userKey: input.userKey,
@@ -320,8 +329,13 @@ export async function saveSimulationResult(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.simulationResults = [...(data.simulationResults ?? []), record];
-  await writeScholarScoutData(data);
+  await applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.simulationReplacement,
+    (data) => {
+      const platform = normalizePlatformData(data);
+      platform.simulationResults = [...(platform.simulationResults ?? []), record];
+    },
+  );
   await updateMemory(input.userKey);
 
   return record;
@@ -352,7 +366,6 @@ export async function appendAnalyticsEvent(input: {
   userKey: string;
   metadata?: Record<string, string | number | boolean>;
 }) {
-  const data = await readPlatformData();
   const event: AnalyticsEventRecord = {
     id: randomUUID(),
     area: input.area,
@@ -362,14 +375,16 @@ export async function appendAnalyticsEvent(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.analyticsEvents = [...(data.analyticsEvents ?? []), event];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.analyticsAppend,
+    collection: 'analyticsEvents',
+    record: event,
+  });
 
   return event;
 }
 
 export async function createReferral(referrer: string) {
-  const data = await readPlatformData();
   const code = `${referrer.replace(/[^a-z0-9]/gi, '').slice(0, 10) || 'scout'}-${randomUUID().slice(0, 8)}`.toLowerCase();
   const record: ReferralRecord = {
     id: randomUUID(),
@@ -379,8 +394,11 @@ export async function createReferral(referrer: string) {
     createdAt: new Date().toISOString(),
   };
 
-  data.referralRecords = [...(data.referralRecords ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.referralAppend,
+    collection: 'referralRecords',
+    record,
+  });
 
   return record;
 }
@@ -390,7 +408,6 @@ export async function trackShare(input: {
   targetType: ShareRecord['targetType'];
   targetId: string;
 }) {
-  const data = await readPlatformData();
   const deepLink = `https://scholarscout.app/share/${input.targetType}/${input.targetId}`;
   const record: ShareRecord = {
     id: randomUUID(),
@@ -401,14 +418,20 @@ export async function trackShare(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.shareRecords = [...(data.shareRecords ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.shareAppend,
+    collection: 'shareRecords',
+    record,
+  });
 
   return record;
 }
 
 export async function updateMemory(userKey: string) {
-  const data = await readPlatformData();
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.memoryReplacement,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
   const eventCount = (data.feedInteractions ?? []).filter(
     (record) => record.userKey === userKey,
   ).length;
@@ -429,9 +452,9 @@ export async function updateMemory(userKey: string) {
     ...(data.memoryRecords ?? []).filter((record) => record.userKey !== userKey),
     memory,
   ];
-  await writeScholarScoutData(data);
-
   return memory;
+    },
+  );
 }
 
 export async function getMemory(userKey: string) {
@@ -445,7 +468,10 @@ export async function getMemory(userKey: string) {
 }
 
 export async function runAndStoreDecisions() {
-  const data = await readPlatformData();
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.decisionReplacement,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
   const watchSecondsByFeedId: Record<string, number> = {};
   const skipsByFeedId: Record<string, number> = {};
 
@@ -466,9 +492,9 @@ export async function runAndStoreDecisions() {
   });
 
   data.decisionLogs = decisions;
-  await writeScholarScoutData(data);
-
   return decisions;
+    },
+  );
 }
 
 export async function getPlatformMetrics() {
