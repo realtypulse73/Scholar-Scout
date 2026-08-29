@@ -160,7 +160,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 7 added: Governed Opportunity and Support Matching
-- Phase 8 added: Multi-Metro and Hempstead Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Hempstead Union Free School District in Hempstead, New York, with scoped data, location behavior, validation, rollout, and final-release traceability. Preserve Phase 5's locked WNY slice and mandatory human verification gate.
+- Phase 8 added: Multi-Metro and Greater Hempstead Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. The Hempstead Union Free School District is an official local resource, not the product boundary. Preserve Phase 5's locked WNY slice and mandatory human verification gate.
 
 ### Pending Todos
 
