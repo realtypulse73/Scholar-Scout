@@ -29,7 +29,7 @@
 
 ### Product Completion and Community Safety
 
-- [ ] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
+- [x] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
 - [ ] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
 - [ ] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
 - [ ] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
@@ -94,7 +94,7 @@
 | DATA-01 | Phase 4 | Complete |
 | DATA-02 | Phase 4 | Complete |
 | DATA-03 | Phase 3 | Complete |
-| PROD-01 | Phase 5 | Pending |
+| PROD-01 | Phase 5 | Complete |
 | PROD-02 | Phase 5 | Pending |
 | PROD-03 | Phase 5 | Pending |
 | PROD-04 | Phase 6 | Pending |
