@@ -560,6 +560,7 @@ describe('ScholarScout data store adapter', () => {
       expect.stringContaining('blob-record'),
       expect.objectContaining({
         access: 'private',
+        addRandomSuffix: false,
         allowOverwrite: true,
         ifMatch: 'etag',
         cacheControlMaxAge: 60,
@@ -606,7 +607,9 @@ describe('ScholarScout data store adapter', () => {
       expect.not.objectContaining({ ifMatch: expect.anything() }),
     );
     expect(putMock).toHaveBeenCalledWith(
-      expect.any(String), expect.any(String), expect.objectContaining({ allowOverwrite: false }),
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ addRandomSuffix: false, allowOverwrite: false }),
     );
   });
 

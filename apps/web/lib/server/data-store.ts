@@ -504,9 +504,12 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       const result = await blobModule.put(
         this.pathname,
         JSON.stringify(normalizeScholarScoutData(data), null, 2),
-        {
-          access: 'private',
-          allowOverwrite: expectedVersion !== null,
+          {
+            access: 'private',
+            // The document is always read by this exact pathname; Blob otherwise
+            // adds a suffix by default and a successful write becomes unreadable.
+            addRandomSuffix: false,
+            allowOverwrite: expectedVersion !== null,
           ...(expectedVersion === null ? {} : { ifMatch: expectedVersion }),
           cacheControlMaxAge: 60,
           contentType: 'application/json',
