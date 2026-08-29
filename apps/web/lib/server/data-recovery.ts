@@ -9,13 +9,17 @@ import {
 import {
   getDataStoreConfigurationSummary,
   readScholarScoutData,
+  readVersionedScholarScoutData,
   ScholarScoutDataStoreReadError,
   validateScholarScoutDataImport,
   writeScholarScoutData,
+  writeVersionedScholarScoutData,
+  type ConditionalWriteResult,
   type RecoveryLifecycleEvent,
   type ScholarScoutData,
   type ScholarScoutDataBackup,
   type RecoveryPlanOutcome,
+  type VersionedScholarScoutData,
 } from '@/lib/server/data-store';
 
 export const RECOVERY_ENVELOPE_MAX_BYTES = 5 * 1024 * 1024;
@@ -101,6 +105,11 @@ const RECOVERY_REASON_MAX_LENGTH = 500;
 interface RecoveryMutationDependencies {
   read?: () => Promise<ScholarScoutData>;
   write?: (data: ScholarScoutData) => Promise<void>;
+  readVersioned?: () => Promise<VersionedScholarScoutData>;
+  writeVersioned?: (
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ) => Promise<ConditionalWriteResult>;
   now?: () => Date;
   signing?: RecoverySigningConfiguration;
   backupId?: () => string;
@@ -403,8 +412,19 @@ export async function applyRecoveryPlan(
   },
   dependencies: RecoveryMutationDependencies = {},
 ): Promise<RecoveryApplyResult> {
-  const read = dependencies.read ?? readScholarScoutData;
-  const write = dependencies.write ?? writeScholarScoutData;
+  const readVersioned = dependencies.readVersioned ?? (
+    dependencies.read
+      ? async () => ({ data: await dependencies.read!(), version: null })
+      : readVersionedScholarScoutData
+  );
+  const writeVersioned = dependencies.writeVersioned ?? (
+    dependencies.write
+      ? async (data: ScholarScoutData) => {
+          await dependencies.write!(data);
+          return { status: 'applied' as const, version: '' };
+        }
+      : writeVersionedScholarScoutData
+  );
   const now = dependencies.now?.() ?? new Date();
   const signing = requireCurrentSigning(
     dependencies.signing ?? getRecoverySigningConfiguration(),
@@ -429,7 +449,8 @@ export async function applyRecoveryPlan(
       throw new Error('recovery-plan-mismatch');
     }
 
-    const currentData = await read();
+    const snapshot = await readVersioned();
+    const currentData = snapshot.data;
     const priorOutcome = (currentData.recoveryPlanOutcomes ?? []).find(
       (outcome) => outcome.planId === token.claims.planId,
     );
@@ -503,7 +524,10 @@ export async function applyRecoveryPlan(
       ],
     };
     assertValidRecoveryData(restoredData);
-    await write(restoredData);
+    const writeResult = await writeVersioned(restoredData, snapshot.version);
+    if (writeResult.status === 'conflict') {
+      throw new Error('recovery-state-changed');
+    }
     return { ...outcome, counts: getRecoveryCounts(restoredData) };
   } catch (error) {
     const incidentId = dependencies.incidentId?.() ?? randomUUID();
