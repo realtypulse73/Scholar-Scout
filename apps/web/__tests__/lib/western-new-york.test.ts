@@ -29,4 +29,21 @@ describe('rankWesternNewYorkInstitutions', () => {
     expect(result.accessScore).toBe(0);
     expect(result.reviewItems).toContain('Confirm the current testing policy before applying.');
   });
+
+  it('sorts equal access scores by institution name', () => {
+    const results = rankWesternNewYorkInstitutions([
+      institution({ id: 'zeta', name: 'Žižkov College' }),
+      institution({ id: 'alpha', name: 'Álpha University' }),
+    ], {
+      hasChildren: false,
+      transportation: 'unsure',
+      testStatus: 'taken',
+      gpaStatus: 'provided',
+    });
+
+    expect(results.map((result) => result.institution.name)).toEqual([
+      'Álpha University',
+      'Žižkov College',
+    ]);
+  });
 });

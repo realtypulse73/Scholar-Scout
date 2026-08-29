@@ -1,5 +1,27 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CommunityModerationQueue from '@/components/admin/CommunityModerationQueue';
+import WesternNewYorkDirectory from '@/components/western-new-york/WesternNewYorkDirectory';
+import type { WesternNewYorkInstitution } from '@/lib/western-new-york';
+
+jest.mock('@/lib/platform', () => ({
+  creatorProfiles: [{ schoolSlug: 'test-school', school: 'Tést School', username: 'student', displayName: 'Student', currentStage: 'Applying' }],
+}));
+jest.mock('@/lib/server/programme-records', () => ({
+  getGovernedProgrammes: jest.fn(),
+}));
+
+const directoryInstitution: WesternNewYorkInstitution = {
+  id: 'unicode-school',
+  name: 'École de Buffalo',
+  city: 'Buffalo',
+  kind: 'college',
+  officialUrl: 'https://example.edu',
+  mediaUrl: 'https://example.edu/visit',
+  admissions: { testPolicy: 'verify-with-school', gpaGuidance: 'Confirm programme requirements.', admissionsUrl: 'https://example.edu/apply' },
+  logistics: { publicTransit: 'route-review-needed', childcare: 'discuss-with-school', note: 'Confirm your route.' },
+  accountability: { notice: 'Review official sources.', sources: [{ label: 'Official source — Études', url: 'https://example.edu/source', status: 'review-before-applying' }] },
+  sourceCheckedOn: '2026-08-29',
+};
 
 const record = {
   noteId: 'pending-1',
@@ -64,5 +86,23 @@ describe('CommunityModerationQueue', () => {
 
     expect(screen.getByRole('heading', { name: 'No notes need review' })).toBeInTheDocument();
     expect(screen.getByText('Reported notes will appear here for a restore or removal decision.')).toBeInTheDocument();
+  });
+});
+
+describe('discovery release surfaces', () => {
+  it('renders approved source guidance and labelled official links for WNY results', () => {
+    render(<WesternNewYorkDirectory institutions={[directoryInstitution]} />);
+
+    expect(screen.getByRole('heading', { name: 'Verify before applying' })).toBeInTheDocument();
+    expect(screen.getByText('Use the official links on each listing to confirm programme requirements, deadlines, costs, support availability, and current policies directly with the institution.')).toBeInTheDocument();
+    expect(screen.getByText('Check these details with the institution')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Official source — Études' })).toHaveAttribute('rel', 'noreferrer');
+  });
+
+  it('renders the WNY recovery state when there are no institutions', () => {
+    render(<WesternNewYorkDirectory institutions={[]} />);
+
+    expect(screen.getByRole('heading', { name: 'No pathways match these priorities yet' })).toBeInTheDocument();
+    expect(screen.getByText('Try adjusting your access priorities, then use the official sources to compare options directly.')).toBeInTheDocument();
   });
 });
