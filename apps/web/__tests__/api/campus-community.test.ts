@@ -25,6 +25,7 @@ jest.mock('@/lib/server/data-store', () => ({
   createCampusNote: jest.fn(),
   createUploaderInboxRequest: jest.fn(),
   getCampusNotes: jest.fn(),
+  PersistenceConflictError: class PersistenceConflictError extends Error {},
 }));
 jest.mock('@/lib/server/rate-limit', () => ({
   reserveCommunitySubmission: jest.fn(),
@@ -196,6 +197,27 @@ describe('campus community API safety boundary', () => {
     expect(response.status).toBe(400);
     expect(reserveCommunitySubmission).not.toHaveBeenCalled();
     expect(createUploaderInboxRequest).not.toHaveBeenCalled();
+  });
+
+  it('does not expose internal inbox write failures to the browser', async () => {
+    jest.mocked(createUploaderInboxRequest).mockRejectedValue(
+      new Error('Missing SCHOLARSCOUT_DATA_SERVICE_TOKEN for the http adapter'),
+    );
+
+    const response = await createPeerConnection(new Request('http://localhost/api/peer-connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uploader_username: 'maya-health',
+        program_id: 'north-valley-health',
+        body: storedInboxRequest.body,
+      }),
+    }));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Inbox requests are temporarily unavailable. Please try again later.',
+    });
   });
 
   it.each([

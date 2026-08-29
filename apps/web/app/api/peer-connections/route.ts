@@ -4,6 +4,7 @@ import { authOptions } from '@/auth';
 import { creatorProfiles } from '@/lib/platform';
 import {
   createUploaderInboxRequest,
+  PersistenceConflictError,
 } from '@/lib/server/data-store';
 import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
 import {
@@ -71,9 +72,16 @@ export async function POST(request: Request) {
     const inboxRequest = await createUploaderInboxRequest(session.user.id, draft);
     return NextResponse.json({ request: toPublicUploaderInboxRequest(inboxRequest) }, { status: 201 });
   } catch (error) {
+    if (error instanceof PersistenceConflictError) {
+      return NextResponse.json(
+        { error: 'This inbox request changed before it could be sent. Please try again.' },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to send inbox request.' },
-      { status: 400 },
+      { error: 'Inbox requests are temporarily unavailable. Please try again later.' },
+      { status: 503 },
     );
   }
 }
