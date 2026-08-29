@@ -231,9 +231,9 @@ Plans:
 
 - [ ] TBD (run /gsd-plan-phase 7 to break down)
 
-### Phase 8: Multi-Metro and Greater Hempstead Discovery Coverage
+### Phase 8: Seven-Area Discovery Coverage
 
-**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. The Hempstead Union Free School District remains a relevant official local resource, not the sole product boundary. Preserve source verification, privacy, accessible location behavior, validation, deployment readiness, and final verification traceability.
+**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Preserve source verification, privacy, accessible location behavior, validation, deployment readiness, and final verification traceability.
 **Requirements**: PROD-07
 **Depends on:** Phase 7
 **Plans:** 0 plans
@@ -241,7 +241,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. Students can select and browse a source-linked discovery experience for each of the seven named coverage areas without an inferred home location or an admissions recommendation claim.
-  2. Every displayed institution, programme, and official local-resource link has a reviewed first-party source; Greater Hempstead includes the Hempstead Union Free School District as a resource rather than treating it as the geographic boundary.
+  2. Every displayed institution, programme, and official regional-resource link has a reviewed first-party source; all seven areas use the same geographic discovery model without an area-specific workflow or source exception.
   3. Location UI, data validation, automated tests, Preview deployment checks, and final human verification make the seven-area coverage observable and preserve the deferred Phase 1 GitHub/Vercel release-evidence gate.
 
 Plans:

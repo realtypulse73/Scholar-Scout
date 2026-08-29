@@ -1,6 +1,6 @@
 ---
 phase: 08
-name: Multi-Metro and Greater Hempstead Discovery Coverage
+name: Seven-Area Discovery Coverage
 status: locked-with-planning-assumptions
 created: 2026-08-29
 ambiguity:
@@ -11,10 +11,10 @@ ambiguity:
   score: 0.19
 assumptions:
   - "Use the existing source-linked regional-directory model as the minimum viable discovery surface; detailed per-market catalogue breadth is planned from verified first-party sources."
-  - "Greater Hempstead is geographic discovery coverage. The Hempstead Union Free School District is an official local resource, not a school, student, or account-data boundary."
+  - "Each requested area, including Greater Hempstead, uses the same governed geographic discovery model and validation path."
 ---
 
-# Phase 8: Multi-Metro and Greater Hempstead Discovery Coverage
+# Phase 8: Seven-Area Discovery Coverage
 
 ## Goal
 
@@ -24,15 +24,15 @@ Give students a trustworthy, accessible way to browse source-verified postsecond
 
 ### R1. Seven named discovery areas
 
-- **Current state:** The application has one Western New York-specific directory and no canonical registry of named metro or district-area coverage.
+- **Current state:** The application has one Western New York-specific directory and no canonical registry of named metro-area coverage.
 - **Target state:** A governed regional registry represents all seven requested areas with stable IDs, student-facing names, country/state context, and a source-linked discovery entry point.
 - **Acceptance:** A test asserts exactly these seven named entries can be selected and rendered: Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and Greater Hempstead, New York.
 
-### R2. Greater Hempstead geographic boundary
+### R2. Equal geographic-market treatment
 
-- **Current state:** No Greater Hempstead discovery area exists. The official Hempstead Union Free School District exists externally as a local resource.
-- **Target state:** Greater Hempstead is a geographic discovery area. Hempstead Union Free School District is represented only as a reviewed official local transition resource where relevant, not as the area definition or as a source of student records.
-- **Acceptance:** Greater Hempstead renders its geographic label and a reviewed Hempstead Union Free School District resource when applicable; no data model or UI labels the district as the sole coverage boundary or exposes individual school/student data.
+- **Current state:** The application has no shared geographic-market registry for the seven requested areas.
+- **Target state:** Every requested area, including Greater Hempstead, uses the same governed regional discovery model, source requirements, selection behavior, and validation path.
+- **Acceptance:** A test validates that each of the seven registry entries renders through the same geographic discovery surface with no area-specific workflow or source exception.
 
 ### R3. Source-governed discovery data
 
@@ -63,12 +63,12 @@ Give students a trustworthy, accessible way to browse source-verified postsecond
 ### In scope
 
 - Named, source-linked discovery coverage for the seven requested areas.
-- Greater Hempstead geographic coverage, with Hempstead Union Free School District as a relevant official resource.
+- Equal geographic discovery treatment for all seven named areas.
 - Explicit area selection/direct navigation, data validation, accessibility, Preview rollout evidence, and final verification traceability.
 
 ### Out of scope
 
-- Individual K–12 student, school, attendance, or district operational data.
+- Individual K–12 student, school, or attendance data for any area.
 - Browser geolocation, home-address collection, or inferred location.
 - Admissions/eligibility prediction, ranking claims, or location-driven negative recommendations.
 - Public community expansion or moderation-policy changes.
@@ -79,7 +79,7 @@ Give students a trustworthy, accessible way to browse source-verified postsecond
 | Requirement | Edge | Resolution |
 |---|---|---|
 | R1 | Duplicate or missing area IDs; seven-name drift | covered — schema and exact-registry tests |
-| R2 | District mistaken for geographic boundary | covered — dedicated data/UI assertion |
+| R2 | An area is omitted or given a special workflow/source exception | covered — registry, data, and UI parity assertions |
 | R3 | Stale, non-first-party, or missing source | covered — validation and Preview review |
 | R4 | Direct URL has an unknown area ID | backstop — route/component error-state test |
 | R5 | Empty area, long Unicode names, keyboard focus | covered — component and Preview human checks |
@@ -90,7 +90,7 @@ Give students a trustworthy, accessible way to browse source-verified postsecond
 | Must not | Requirement | Verification |
 |---|---|---|
 | Infer a student's location or collect an address/geolocation to select coverage. | R4 | test and review |
-| Treat Hempstead Union Free School District as the entire Greater Hempstead boundary or ingest individual school/student records. | R2 | test and review |
+| Give any area a district-specific workflow, source exception, or individual school/student records. | R2 | test and review |
 | Display unreviewed or non-first-party resources as verified official sources. | R3 | test and Preview review |
 | Make an admissions, eligibility, or ranking claim from area selection. | R4 | domain/component test and review |
 | Mark any inherited human or external gate as passed without its required retained evidence. | R6 | planning/final-verification review |
@@ -98,8 +98,8 @@ Give students a trustworthy, accessible way to browse source-verified postsecond
 ## Final Acceptance Criteria
 
 - [ ] Seven exact requested coverage areas are represented by a governed registry and available through explicit selection/direct navigation.
-- [ ] Greater Hempstead is geographic coverage; Hempstead Union Free School District is a reviewed local resource rather than the product boundary.
+- [ ] All seven areas, including Greater Hempstead, receive identical geographic discovery treatment with no area-specific workflow or source exception.
 - [ ] All visible new-area records are source-validated and carry review metadata.
-- [ ] No geolocation, address collection, individual district/school/student data, or location-derived admissions claim is introduced.
+- [ ] No geolocation, address collection, individual school/student data, or location-derived admissions claim is introduced.
 - [ ] Automated data, domain, UI, and deployment checks cover the seven-area flow; Preview review verifies keyboard, screen-reader, source-link, empty-state, and Unicode behavior.
 - [ ] Final verification retains—not waives—the outstanding Phase 1 and Phase 5 external/human gates.
