@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 04
 current_phase_name: incremental-durable-persistence-boundaries
-status: planning
-stopped_at: Phase 4 roadmap context captured; ready for research and plan generation
-last_updated: "2026-08-29T04:05:00.000Z"
-last_activity: 2026-08-28
-last_activity_desc: Phase 04 roadmap context captured and planning preflight started
+status: executing
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-08-29T00:25:04.214Z"
+last_activity: 2026-08-29
+last_activity_desc: Completed Plan 04-01 conflict-safe programme persistence tracer
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 3
-  total_plans: 25
-  completed_plans: 25
+  total_plans: 30
+  completed_plans: 26
 ---
 
 # Project State
@@ -27,12 +27,12 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 ## Current Position
 
-Phase: 04 (incremental-durable-persistence-boundaries) — PLANNING
-Plan: 0 of TBD
-Status: Roadmap-defined context captured; ready for research and plan generation
-Last activity: 2026-08-28 — Phase 4 planning preflight started from canonical roadmap scope
+Phase: 04 (incremental-durable-persistence-boundaries) — EXECUTING
+Plan: 1 of 5
+Status: Plan 04-01 complete; ready for Plan 04-02
+Last activity: 2026-08-29 — Conflict-safe programme persistence tracer completed
 
-Progress: [██████████] 100%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -83,6 +83,7 @@ Progress: [██████████] 100%
 | Phase 03 P04 | 8min | 2 tasks | 6 files |
 | Phase 03 P05 | 35min | 3 tasks | 2 files |
 | Phase 03 P06 | 20min | 2 tasks | 6 files |
+| Phase 04 P01 | 35min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,8 @@ Progress: [██████████] 100%
 - [Phase ?]: Keep incident-hold release as an authenticated operator-only route and exclude it from advertised UI capabilities.
 - [Phase ?]: Import apply carries the signed envelope inside the staged plan token so it accepts no second raw snapshot field.
 - [Phase ?]: Production recovery signing uses dedicated current material and optional previous material only as a complete pair; NEXTAUTH_SECRET is never a fallback.
+- [Phase ?]: Keep adapter versions opaque and server-only; programme routes expose safe entity revision conflicts only.
+- [Phase ?]: Programme replacement mutations receive one CAS attempt and never retry automatically.
 
 ### Roadmap Evolution
 
@@ -180,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-28T21:28:40.004Z
-Stopped at: Phase 4 roadmap context captured; ready for research and plan generation
+Last session: 2026-08-29T00:25:04.187Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
