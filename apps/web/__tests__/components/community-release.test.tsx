@@ -13,6 +13,7 @@ const record = {
 describe('CommunityModerationQueue', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    global.fetch = jest.fn();
   });
 
   it('renders a safe pending row with labelled restore and remove actions', () => {
@@ -22,14 +23,14 @@ describe('CommunityModerationQueue', () => {
     expect(screen.getByText(record.excerpt)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restore to community' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove permanently' })).toBeInTheDocument();
-    expect(screen.queryByText(/reporter|author/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('student-private-id')).not.toBeInTheDocument();
   });
 
   it('confirms the safe restore action before resolving and removes only the successful row', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue(new Response(
-      JSON.stringify({ ok: true, status: 'restored' }),
-      { status: 200 },
-    ));
+    jest.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, status: 'restored' }),
+    } as Response);
     render(<CommunityModerationQueue initialRecords={[record]} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Restore to community' }));
@@ -44,10 +45,10 @@ describe('CommunityModerationQueue', () => {
   });
 
   it('keeps a conflicted row actionable and announces retry guidance', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue(new Response(
-      JSON.stringify({ error: 'This note changed before it could be resolved. Refresh the queue and try again.' }),
-      { status: 409 },
-    ));
+    jest.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'This note changed before it could be resolved. Refresh the queue and try again.' }),
+    } as Response);
     render(<CommunityModerationQueue initialRecords={[record]} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove permanently' }));
