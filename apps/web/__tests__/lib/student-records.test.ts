@@ -1,5 +1,6 @@
 import {
   saveOnboardingProfile,
+  saveShortlistState,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
   type ScholarScoutDataStore,
@@ -139,5 +140,59 @@ describe('bounded student records', () => {
       ...profile,
       affordabilitySensitivity: 1,
     });
+  });
+
+  it('commits shortlist IDs and plans atomically for one student', async () => {
+    const store = new MemoryDataStore();
+    store.data.shortlists['account:student-two'] = ['existing-programme'];
+    setScholarScoutDataStoreForTests(store);
+
+    await saveShortlistState(
+      'account:student-one',
+      ['north-valley-health'],
+      {
+        'north-valley-health': {
+          status: 'contacted',
+          note: ' Asked about aid. ',
+        },
+      },
+    );
+
+    expect(store.data.shortlists['account:student-one']).toEqual([
+      'north-valley-health',
+    ]);
+    expect(store.data.shortlistPlans?.['account:student-one']).toEqual({
+      'north-valley-health': {
+        status: 'contacted',
+        note: 'Asked about aid.',
+      },
+    });
+    expect(store.data.shortlists['account:student-two']).toEqual([
+      'existing-programme',
+    ]);
+    expect(store.data.auditEvents).toHaveLength(1);
+  });
+
+  it('preserves the winning shortlist state on an interleaved replacement', async () => {
+    const store = new MemoryDataStore();
+    let releaseFirstWrite!: () => void;
+    const firstWriteStarted = new Promise<void>((resolve) => {
+      releaseFirstWrite = resolve;
+    });
+    store.beforeFirstWrite = async () => {
+      releaseFirstWrite();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+    setScholarScoutDataStoreForTests(store);
+
+    const older = saveShortlistState('account:student-one', ['older'], {});
+    await firstWriteStarted;
+    const newer = saveShortlistState('account:student-one', ['newer'], {});
+    const results = await Promise.allSettled([older, newer]);
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(store.data.shortlists['account:student-one']).toEqual(['newer']);
+    expect(store.data.auditEvents).toHaveLength(1);
   });
 });

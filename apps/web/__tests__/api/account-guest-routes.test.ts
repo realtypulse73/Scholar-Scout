@@ -14,12 +14,14 @@ jest.mock('../../lib/server/student-actor', () => ({
 }));
 
 jest.mock('../../lib/server/data-store', () => ({
+  PersistenceConflictError: class PersistenceConflictError extends Error {},
   getOnboardingProfile: jest.fn(),
   saveOnboardingProfile: jest.fn(),
   getShortlist: jest.fn(),
   getShortlistPlans: jest.fn(),
   saveShortlist: jest.fn(),
   saveShortlistPlans: jest.fn(),
+  saveShortlistState: jest.fn(),
 }));
 
 const completeProfile = {
@@ -53,6 +55,9 @@ describe('account guest routes', () => {
   const saveShortlistPlansMock = jest.requireMock(
     '../../lib/server/data-store',
   ).saveShortlistPlans as jest.Mock;
+  const saveShortlistStateMock = jest.requireMock(
+    '../../lib/server/data-store',
+  ).saveShortlistState as jest.Mock;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -285,9 +290,54 @@ describe('account guest routes', () => {
     expect(oversizedNote.status).toBe(400);
     expect(malformed.status).toBe(400);
     expect(oversized.status).toBe(413);
-    expect(saveShortlistMock).toHaveBeenCalledTimes(1);
-    expect(saveShortlistMock).toHaveBeenCalledWith(account.storageKey, validBody.programmeIds);
-    expect(saveShortlistPlansMock).toHaveBeenCalledWith(account.storageKey, validBody.plans);
+    expect(saveShortlistStateMock).toHaveBeenCalledTimes(1);
+    expect(saveShortlistStateMock).toHaveBeenCalledWith(
+      account.storageKey,
+      validBody.programmeIds,
+      validBody.plans,
+    );
+    expect(saveShortlistMock).not.toHaveBeenCalled();
+    expect(saveShortlistPlansMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a safe reload conflict without exposing stored student state', async () => {
+    const account = {
+      kind: 'account' as const,
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    };
+    const { PersistenceConflictError } = jest.requireMock(
+      '../../lib/server/data-store',
+    );
+    resolveStudentActorMock.mockResolvedValue(account);
+    saveOnboardingProfileMock.mockRejectedValueOnce(new PersistenceConflictError());
+    saveShortlistStateMock.mockRejectedValueOnce(new PersistenceConflictError());
+
+    const onboardingResponse = await postOnboarding(
+      new Request('https://scholar-scout.test/api/account/onboarding', {
+        method: 'POST',
+        body: JSON.stringify(completeProfile),
+      }),
+    );
+    const shortlistResponse = await postShortlist(
+      new Request('https://scholar-scout.test/api/account/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({ programmeIds: [], plans: {} }),
+      }),
+    );
+
+    expect(onboardingResponse.status).toBe(409);
+    expect(shortlistResponse.status).toBe(409);
+    await expect(onboardingResponse.json()).resolves.toEqual({
+      error: 'Student data changed. Reload and try again.',
+      category: 'conflict',
+      action: 'reload',
+    });
+    await expect(shortlistResponse.json()).resolves.toEqual({
+      error: 'Student data changed. Reload and try again.',
+      category: 'conflict',
+      action: 'reload',
+    });
   });
 
   it('reads migrated shortlist activity through the account and rejects the invalidated guest', async () => {
