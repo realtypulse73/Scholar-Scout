@@ -17,7 +17,7 @@ describe('OnboardingWizard 4-step flow', () => {
   it('starts with interests and pathway choices', () => {
     render(<OnboardingWizard />);
 
-    expect(screen.getByText('Interests')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Interests' })).toBeInTheDocument();
     expect(screen.getByText(/What are you curious about/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
@@ -37,17 +37,17 @@ describe('OnboardingWizard 4-step flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '4-Year University' }));
     clickNext();
 
-    expect(screen.getByText('Fit basics')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Fit basics' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /3.0/i }));
     fireEvent.click(screen.getByRole('button', { name: 'In-State' }));
     clickNext();
 
-    expect(screen.getByText('Support')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Support' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Very cost-conscious/i }));
     fireEvent.click(screen.getByRole('button', { name: /Financial Aid/i }));
     clickNext();
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Preview' })).toBeInTheDocument();
     expect(screen.getByText(/Your profile is ready to save/i)).toBeInTheDocument();
     expect(screen.getByText(/Your pathway profile helps tailor options; it is not an admissions decision/i)).toBeInTheDocument();
     clickSave();
