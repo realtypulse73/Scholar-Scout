@@ -1,5 +1,5 @@
 ---
-status: resolved
+status: investigating
 trigger: "Preview-only durable student-record persistence fails during authorized non-production account creation."
 created: 2026-08-29
 updated: 2026-08-29
@@ -34,6 +34,16 @@ updated: 2026-08-29
   observation: "The adapter now passes addRandomSuffix: false for canonical CAS document writes. The focused data-store suite passed (30 tests)."
 - timestamp: 2026-08-29
   observation: "An isolated Preview deployment is Ready at https://scholar-scout-abnu21uxg-scholar-scout.vercel.app with only a fresh non-production Blob pathname and generated staff-test allowlist supplied as deployment overrides."
+- timestamp: 2026-08-29
+  observation: "Both generated Preview accounts now persist and the staff allowlist is recognized. A read-only GET /admin/community-moderation instead deterministically reaches requireActiveStaff and exhausts the two permitted CAS attempts while appending its privacy-minimal authorization audit."
+- timestamp: 2026-08-29
+  observation: "The resulting PersistenceConflictError proves BlobPreconditionFailedError is recognized and mapped correctly; it is not an authentication failure or a provider credential/configuration absence. Vercel logs expose only the GET request, not provider details."
+- timestamp: 2026-08-29
+  observation: "The installed SDK documents get(..., { useCache: false }) as an origin read, and conditional writes with a get/head ETag as supported. This leaves concurrent whole-document writes immediately after account sign-in as the leading explanation for the bounded audit-append conflict."
+- timestamp: 2026-08-29
+  observation: "A fresh isolated-browser student sign-in succeeded and rendered the generated student profile, proving the Blob document is readable after session creation. A retry after more than 70 seconds with no Preview writes still exhausted the audit append's two CAS attempts, eliminating post-login contention and missing-record hypotheses."
+- timestamp: 2026-08-29
+  observation: "A fail-closed probe to cross-check get ETags with Blob head metadata passed local tests but caused Preview build-time stored-data unavailability while prerendering protected admin pages. It was reverted and not deployed; head metadata is therefore not compatible with this current Vercel build environment."
 
 ## Resolution
 
