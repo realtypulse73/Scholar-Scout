@@ -1042,15 +1042,8 @@ export async function registerGuestLifecycle(input: {
   quotaWindowId?: string;
   now?: Date;
 }): Promise<GuestLifecycleRecord> {
-  const data = await readScholarScoutData();
   const now = input.now ?? new Date();
   const guestId = input.guestId ?? randomUUID();
-  const existing = data.guestLifecycles?.find((guest) => guest.id === guestId);
-
-  if (existing) {
-    throw new Error('Guest lifecycle already exists.');
-  }
-
   const lifecycle: GuestLifecycleRecord = {
     id: guestId,
     credentialHash: input.credentialHash,
@@ -1059,10 +1052,19 @@ export async function registerGuestLifecycle(input: {
     expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   };
 
-  data.guestLifecycles = [...(data.guestLifecycles ?? []), lifecycle];
-  await writeScholarScoutData(data);
-
-  return lifecycle;
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.guestLifecycleRegistration,
+    (data) => {
+      if (data.guestLifecycles?.some((guest) => guest.id === guestId)) {
+        throw new Error('Guest lifecycle already exists.');
+      }
+      data.guestLifecycles = [...(data.guestLifecycles ?? []), lifecycle];
+      return lifecycle;
+    },
+  );
 }
 
 /** Returns an unmigrated guest lifecycle only when its trusted credential and expiry remain valid. */
@@ -1286,7 +1288,6 @@ export async function createPeerConnectionRequest(
     throw new Error(errors[0]);
   }
 
-  const data = await readScholarScoutData();
   const request: PeerConnectionRequest = {
     id: randomUUID(),
     requester_id: requesterId,
@@ -1297,15 +1298,15 @@ export async function createPeerConnectionRequest(
     status: 'pending',
     created_at: new Date().toISOString(),
   };
-  data.peerConnectionRequests = [
-    request,
-    ...(data.peerConnectionRequests ?? []),
-  ];
-  data.auditEvents.push(
-    createAuditEvent(requesterId, 'request-peer-connection', 'data', request.id),
+  const audit = createAuditEvent(requesterId, 'request-peer-connection', 'data', request.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
   );
-  await writeScholarScoutData(data);
-  return request;
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.peerConnectionRequests = [request, ...(data.peerConnectionRequests ?? [])];
+    data.auditEvents.push(audit);
+    return request;
+  });
 }
 
 export async function getPeerConnectionRequests(requesterId: string) {
@@ -1328,12 +1329,16 @@ export async function createCampusNote(
 ) {
   const errors = validateCampusNote(input);
   if (errors.length) throw new Error(errors[0]);
-  const data = await readScholarScoutData();
   const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString() };
-  data.campusNotes = [note, ...(data.campusNotes ?? [])];
-  data.auditEvents.push(createAuditEvent(authorId, 'post-campus-note', 'data', note.id));
-  await writeScholarScoutData(data);
-  return note;
+  const audit = createAuditEvent(authorId, 'post-campus-note', 'data', note.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.campusNotes = [note, ...(data.campusNotes ?? [])];
+    data.auditEvents.push(audit);
+    return note;
+  });
 }
 
 export async function createUploaderInboxRequest(
@@ -1342,12 +1347,16 @@ export async function createUploaderInboxRequest(
 ) {
   const errors = validateUploaderInboxRequest(input);
   if (errors.length) throw new Error(errors[0]);
-  const data = await readScholarScoutData();
   const inboxRequest: UploaderInboxRequest = { ...input, body: input.body.trim(), id: randomUUID(), sender_id: senderId, status: 'pending', created_at: new Date().toISOString() };
-  data.uploaderInboxRequests = [inboxRequest, ...(data.uploaderInboxRequests ?? [])];
-  data.auditEvents.push(createAuditEvent(senderId, 'request-uploader-inbox', 'data', inboxRequest.id));
-  await writeScholarScoutData(data);
-  return inboxRequest;
+  const audit = createAuditEvent(senderId, 'request-uploader-inbox', 'data', inboxRequest.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.uploaderInboxRequests = [inboxRequest, ...(data.uploaderInboxRequests ?? [])];
+    data.auditEvents.push(audit);
+    return inboxRequest;
+  });
 }
 
 /**
@@ -1367,13 +1376,18 @@ export async function saveOutcomeMetricRecords(
     throw new Error(errors[0]);
   }
 
-  const data = await readScholarScoutData();
-  data.outcomeMetricRecords = records;
-  data.auditEvents.push(
-    createAuditEvent(userId, 'replace-outcome-metrics', 'data', 'outcome-metrics'),
+  const audit = createAuditEvent(userId, 'replace-outcome-metrics', 'data', 'outcome-metrics');
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
   );
-  await writeScholarScoutData(data);
-  return data.outcomeMetricRecords;
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.outcomeMetricsReplacement,
+    (data) => {
+      data.outcomeMetricRecords = records;
+      data.auditEvents.push(audit);
+      return data.outcomeMetricRecords;
+    },
+  );
 }
 
 export async function getProgrammeAuditEvents(): Promise<ProgrammeAuditEvent[]> {
@@ -1395,19 +1409,22 @@ export async function appendPrivilegedOperationAudit(input: {
   route: string;
   outcome: PrivilegedOperationAuditEvent['outcome'];
 }): Promise<void> {
-  const data = await readScholarScoutData();
-  data.privilegedOperationAuditEvents = [
-    ...(data.privilegedOperationAuditEvents ?? []),
-    {
-      id: randomUUID(),
-      actorId: input.actorId,
-      action: input.action,
-      route: input.route,
-      outcome: input.outcome,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-  await writeScholarScoutData(data);
+  const event: PrivilegedOperationAuditEvent = {
+    id: randomUUID(),
+    actorId: input.actorId,
+    action: input.action,
+    route: input.route,
+    outcome: input.outcome,
+    createdAt: new Date().toISOString(),
+  };
+  const { appendOperationalRecord, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.privilegedAuditAppend,
+    collection: 'privilegedOperationAuditEvents',
+    record: event,
+  });
 }
 
 export async function getPrivilegedOperationAuditEvents(): Promise<

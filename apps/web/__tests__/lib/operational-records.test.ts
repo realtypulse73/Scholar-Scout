@@ -87,6 +87,7 @@ describe('bounded operational records', () => {
     });
 
     expect(store.data.privilegedOperationAuditEvents).toHaveLength(1);
+    expect(store.writes).toBe(0);
   });
 
   it('never retries a replacement conflict', async () => {
