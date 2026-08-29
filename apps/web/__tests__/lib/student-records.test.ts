@@ -6,6 +6,7 @@ import {
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
 import { createStudentAccountRecord } from '@/lib/server/student-records';
+import type { OnboardingData } from '@/lib/onboarding-types';
 
 const initialData: ScholarScoutData = {
   users: [],
@@ -51,13 +52,13 @@ function cloneData(data: ScholarScoutData) {
   return JSON.parse(JSON.stringify(data)) as ScholarScoutData;
 }
 
-const profile = {
-  gpaBand: '3.0-3.4' as const,
-  interests: ['technology' as const],
-  locationPreference: 'in-state' as const,
-  pathwayPreference: '4-year-university' as const,
+const profile: OnboardingData = {
+  gpaBand: '3.0-3.4',
+  interests: ['technology'],
+  locationPreference: 'in-state',
+  pathwayPreference: '4-year-university',
   affordabilitySensitivity: 3,
-  supportNeeds: ['financial-aid' as const],
+  supportNeeds: ['financial-aid'],
 };
 
 describe('bounded student records', () => {
@@ -115,7 +116,10 @@ describe('bounded student records', () => {
 
     const older = saveOnboardingProfile('account:student-one', profile);
     await firstWriteStarted;
-    const newerProfile = { ...profile, affordabilitySensitivity: 5 };
+    const newerProfile: OnboardingData = {
+      ...profile,
+      affordabilitySensitivity: 5,
+    };
     const newer = saveOnboardingProfile('account:student-one', newerProfile);
     const results = await Promise.allSettled([older, newer]);
 
