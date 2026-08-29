@@ -3,128 +3,199 @@ phase: 08
 name: Seven-Area Discovery Coverage
 status: needs-privacy-decisions
 created: 2026-08-29
+updated: 2026-08-29
 ambiguity:
-  goal_clarity: 0.90
-  boundary_clarity: 0.82
-  constraint_clarity: 0.68
-  acceptance_clarity: 0.64
-  score: 0.22
+  goal_clarity: 0.94
+  boundary_clarity: 0.90
+  constraint_clarity: 0.82
+  acceptance_clarity: 0.82
+  score: 0.11
 assumptions:
-  - "Use the existing source-linked regional-directory model as the minimum viable discovery surface; detailed per-market catalogue breadth is planned from verified first-party sources."
-  - "Each requested area, including Greater Hempstead, uses the same governed geographic discovery model and validation path."
-  - "Area-aware advisor/simulation guidance is student-centered and choice-preserving; any added advice input is knowingly volunteered, minimized to a disclosed purpose, consented, protected, and deletable."
+  - "Financial-aid information is a dated official-source comparison, never an eligibility calculator or personalized financial recommendation."
+  - "Existing advisor-data collection decisions remain a separately locked privacy gate; this specification does not authorize new collection or persistence."
 ---
 
 # Phase 8: Seven-Area Discovery Coverage
 
+**Created:** 2026-08-29
+**Updated:** 2026-08-29
+**Ambiguity score:** 0.11 (gate: <= 0.20)
+**Requirements:** 11 locked
+
 ## Goal
 
-Give students a trustworthy, accessible way to browse source-verified postsecondary and transition resources for seven named coverage areas: Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and Greater Hempstead, New York.
+Students can explicitly select any of seven peer geographic markets and discover verified degree, trade, certificate, and apprenticeship pathways, including a clearly labeled nearest verified fallback and dated official financial-aid/loan information without location inference, eligibility claims, or personalized financial advice.
+
+## Background
+
+The current programme taxonomy already contains four-year, two-year, trade/vocational, certificate, and apprenticeship pathways, and the programme page can filter them. The public Western New York directory has no first-class pathway coverage rule, nearest-offering fallback, or dated jurisdiction-specific financial-aid record. The advisor says not to guarantee aid and refers complex financial questions to a human, but has no governed, dated aid-source context.
+
+Federal Student Aid treats college, career, and trade school pathways as in scope, while provider and state deadlines/availability differ; an institution makes the final aid offer after admission. Jamaica's Students' Loan Bureau conditions loans on an approved programme at an Approved Tertiary Institution. These are comparison facts, not individual eligibility determinations. Sources checked during specification: [Federal Student Aid deadlines](https://studentaid.gov/articles/3-fafsa-deadlines/), [Federal Student Aid award distinction](https://studentaid.gov/articles/fafsa-submission-summary/), [Federal Work-Study limits](https://studentaid.gov/articles/8-things-federal-work-study/), [Jamaica SLB eligibility](https://www.slbja.com/faq/what-makes-an-individual-eligible-for-a-student-loan/), and [Louisiana TOPS Tech](https://mylosfa.la.gov/tops/tops-tech/).
 
 ## Requirements
 
-### R1. Seven named discovery areas
+### R1. Seven equal geographic discovery areas
 
-- **Current state:** The application has one Western New York-specific directory and no canonical registry of named metro-area coverage.
-- **Target state:** A governed regional registry represents all seven requested areas with stable IDs, student-facing names, country/state context, and a source-linked discovery entry point.
-- **Acceptance:** A test asserts exactly these seven named entries can be selected and rendered: Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and Greater Hempstead, New York.
+- **Current state:** One Western New York-specific directory; no governed seven-market registry.
+- **Target state:** A single registry represents exactly Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and Greater Hempstead, New York, with stable IDs, visible names, country/state context, and a published geographic centre used only for fallback ordering.
+- **Acceptance:** Dataset and UI tests assert exactly those seven entries are selectable/directly navigable and share one discovery workflow, source contract, and validation path.
 
-### R2. Equal geographic-market treatment
+### R2. Four peer pathway classes
 
-- **Current state:** The application has no shared geographic-market registry for the seven requested areas.
-- **Target state:** Every requested area, including Greater Hempstead, uses the same governed regional discovery model, source requirements, selection behavior, and validation path.
-- **Acceptance:** A test validates that each of the seven registry entries renders through the same geographic discovery surface with no area-specific workflow or source exception.
+- **Current state:** Core programme types include trade, certificate, and apprenticeship values, but regional discovery does not require or expose them as peers.
+- **Target state:** Degree, trade/skilled-trades, certificate, and apprenticeship are first-class visible categories in every market's discovery, filters, cards, advisor guidance, and source-curation rules.
+- **Acceptance:** Validation rejects a market release record set that lacks a current first-party offering or governed fallback for any class; component tests expose all four labels without a generic catch-all.
 
-### R3. Source-governed discovery data
+### R3. Nearest verified offering fallback
 
-- **Current state:** Western New York records carry first-party links and review dates; the seven new areas have no governed records.
-- **Target state:** Every displayed new-area institution, programme, and local-resource record carries a reviewed first-party source URL and source-review metadata; an unavailable or invalid source is not displayed as verified.
-- **Acceptance:** Dataset validation rejects records missing a stable area ID, display name, first-party source URL, or review date; automated link/data tests cover every area and the Preview review records the visible-source outcome.
+- **Current state:** An absent local category produces no governed alternative.
+- **Target state:** When the selected market lacks a verified offering for a requested pathway, discovery presents the nearest verified fallback from the governed catalogue, marks it outside the selected market, identifies its market/provider, and links an official current source. A market is never replaced by an empty category alone.
+- **Acceptance:** Tests cover a local match, an out-of-market fallback, and release-data rejection when no verified fallback is available; the fallback visibly says it is outside the selected area and includes its official link and verification notice.
 
-### R4. Explicit, privacy-preserving location behavior
+### R4. Privacy-preserving nearest ordering
 
-- **Current state:** Discovery filters support broad local/in-state/online preferences, with no metro selector or browser geolocation.
-- **Target state:** Students explicitly choose a coverage area or navigate to it directly. The product neither infers home location nor uses a selected area as an admissions, eligibility, or ranking decision.
-- **Acceptance:** Browser and domain tests prove direct links and explicit selection render the requested area; no geolocation API, address collection, or location-derived admissions assertion is introduced.
+- **Current state:** No fallback ordering exists; the product does not use browser geolocation.
+- **Target state:** “Nearest” is approximate straight-line map distance: great-circle (Haversine) metres from the selected market's published WGS-84 centre to a provider's public site coordinate, compared before display rounding. Equal distance sorts by newer source freshness, then provider name. It is never travel time, access assurance, GPS, an address, or inferred residence.
+- **Acceptance:** Domain tests prove distance/tie-break order, invalid/absent coordinate rejection, and that a selected market alone is sufficient; UI calls it approximate map distance, not travel time; tests assert no geolocation API, address field, or inferred-location code.
 
-### R5. Accessible, resilient seven-area presentation
+### R5. Official, current pathway-source records
 
-- **Current state:** The WNY directory has accessible copy and manually verified source-link/Unicode backstops.
-- **Target state:** Every area uses the same visible verification notice, keyboard-accessible selector/navigation, readable empty/error state, and responsive long-label wrapping.
-- **Acceptance:** Component tests cover keyboard roles, empty state, long Unicode labels, and all seven region names; Preview human review checks screen-reader order and visible official links for populated and empty states.
+- **Current state:** WNY records have selected first-party links/review dates; new markets have no governed records.
+- **Target state:** Every displayed provider/programme/fallback record has a stable market ID, pathway class, provider name, public-site coordinate, first-party/official URL, source type, checked date, and verification status. Missing, malformed, stale, or non-official sources never appear as verified.
+- **Acceptance:** Validation rejects incomplete records; link/data tests cover every market-pathway pair; Preview review confirms visible cards expose their official source and source date.
 
-### R6. Release, verification, and rollout traceability
+### R6. Financial-aid and loan source cards, not determinations
 
-- **Current state:** Phase 1 has five unpassed external GitHub/Vercel evidence checks; Phase 5 retains its own live provider and assistive-technology gates.
-- **Target state:** Phase 8 rollout is additive and staged through validated data, automated checks, non-production Preview verification, and final human review. It cannot erase, waive, or mislabel earlier human/external gates.
-- **Acceptance:** The Phase 8 plan maps data validation, UI/domain tests, Preview deployment checks, and human review for every area; final verification lists Phase 1's five external evidence items and Phase 5's remaining human/provider checks as independent, unpassed dependencies where still unresolved.
+- **Current state:** Discovery offers generic “verify aid” language, not dated official aid/loan facts.
+- **Target state:** Relevant pathway/provider surfaces show dated official cards for applicable federal, state/territory, Jamaican, provider, or registered-apprenticeship-sponsor funding sources. A card identifies authority, jurisdiction, provider/programme scope, funding type, published conditions, award cycle/effective period where published, URL, and checked date.
+- **Acceptance:** Tests distinguish `published eligibility conditions`, `reported current availability`, `current confirmation needed`, and `not assessed`; no card renders an individualized eligibility conclusion, loan recommendation, exact aid promise, or unsupported availability claim.
 
-### R7. Student-centered, privacy-first advisor/simulation guidance
+### R7. Freshness, jurisdiction, and availability boundaries
 
-- **Current state:** The advisor already consumes simulation and recommendation context, but its existing guidance is not area-aware and some simulation wording can imply that observed behaviour proves personal fit. It has no Phase 8 consented-data contract, retention rule, or deletion experience.
-- **Target state:** When a student explicitly selects a Phase 8 area, advisor/simulation guidance presents source-linked options to compare, facts to verify, and an appropriate next step from the student's perspective. It may use only data knowingly and voluntarily provided for the disclosed advice purpose; each field explains why it is requested, is minimized, consented, protected, and covered by a retention/deletion policy. It never requires credentials or highly sensitive data, infers a characteristic, or presents an admission, eligibility, success, or potential conclusion.
-- **Acceptance:** Contract and component/API tests prove an area-aware response names the selected area, offers a compare/verify/next-step action, preserves human-referral language for complex cases, and contains no admission/eligibility/potential assertion. Before any collection ships, tests and a human review prove field-level purpose explanation, explicit consent, optionality, minimum data handling, authenticated access controls, retention/deletion behavior, and no requested credentials or highly sensitive data.
+- **Current state:** No revalidation cadence or boundary exists for regional aid information.
+- **Target state:** Availability and loan records are revalidated every 30 days during an active award cycle and immediately after an official change. Overdue records become “Current confirmation needed.” Cards state programme/provider jurisdiction and any source-stated residency qualifier without inferring student residency.
+- **Acceptance:** Time-based tests cover current, exactly-30-day, overdue, and official-change states; UI shows source date and overdue warning; a market selection never becomes a residency or eligibility assertion.
+
+### R8. Student-centered, bounded advisor guidance
+
+- **Current state:** The advisor is student-facing and says not to guarantee aid, but lacks governed pathway/aid-source context.
+- **Target state:** Advisor/simulation guidance treats all four classes as peer options, offers verified source links/questions to compare, distinguishes potential eligibility from present availability, and directs the student to the provider financial-aid office or official authority to verify.
+- **Acceptance:** Contract/API and judgment review prove it names no “best” path, does not promise admission, aid, loan terms, pay, employment, or outcomes, and refers complex financial cases to a qualified human/provider.
+
+### R9. Location and financial-data minimization
+
+- **Current state:** Broad location preferences and advisor context exist, but no Phase 8 aid-data contract.
+- **Target state:** Discovery uses only selected market or explicit optional location. Source cards require no student data. The product neither requests nor accepts SSN/government IDs, tax returns, income/assets, bank/card/loan data, aid credentials, precise address, protected attributes, immigration status, or passive location/behaviour data for aid guidance.
+- **Acceptance:** Route/component tests prove cards/fallbacks work with no financial profile; validation rejects prohibited data/credentials; privacy review confirms cards and prompts do not record those values.
+
+### R10. Accessible and candid presentation
+
+- **Current state:** WNY has accessible verification notice/manual source-link/Unicode backstops, but no category/fallback/aid-card system.
+- **Target state:** Market, pathway, fallback, and aid-card controls are keyboard-accessible, screen-reader understandable, resilient to long Unicode labels, and visibly direct students to verify with provider/authority without hiding outside-market, stale, or unknown status.
+- **Acceptance:** Component tests cover keyboard roles, empty/error/fallback states, long Unicode labels, and source-date labels; Preview human review checks screen-reader order and visible official links for local, fallback, and overdue states.
+
+### R11. Staged rollout and inherited gates
+
+- **Current state:** Phase 1 external release proof and Phase 5 provider/assistive-technology checks remain unpassed.
+- **Target state:** Phase 8 rolls out additively through source validation, automated data/domain/UI checks, non-production Preview review, and qualified human review; it cannot waive or mark earlier gates passed.
+- **Acceptance:** The Phase 8 plan maps every market-pathway pair, freshness, fallback, card, accessibility, and advisor-safety check; final verification retains Phase 1/5 unresolved evidence as dependencies until it passes.
 
 ## Boundaries
 
 ### In scope
 
-- Named, source-linked discovery coverage for the seven requested areas.
-- Equal geographic discovery treatment for all seven named areas.
-- Student-centered, choice-preserving advisor/simulation guidance for an explicitly selected area, with only voluntarily provided, purpose-limited advice inputs after the privacy decision gate is resolved.
-- Explicit area selection/direct navigation, data validation, accessibility, Preview rollout evidence, and final verification traceability.
+- One consistent seven-market registry and explicit market selection/direct navigation.
+- Four first-class pathway categories, source criteria, coverage validation, and nearest verified fallback cards.
+- Dated official financial-aid/loan source cards, freshness policy, jurisdiction/residency-qualifier display, and safe advisor comparison/referral language.
+- Privacy-minimizing location behavior, accessibility, source validation, Preview rollout, automated tests, and inherited-gate traceability.
 
 ### Out of scope
 
-- Individual K–12 student, school, or attendance data for any area.
-- Browser geolocation, home-address collection, or inferred location.
-- Admissions/eligibility prediction, ranking claims, or location-driven negative recommendations.
-- Any collection before the required privacy decisions, consent disclosure, security controls, and retention/deletion policy are locked and tested.
-- Required credentials, highly sensitive data, behavioral/potential inference, or use of advice inputs for ranking, admission, eligibility, or marketing.
-- Public community expansion or moderation-policy changes.
-- Waiving Phase 1, Phase 5, or any later human/external verification gate.
+- Eligibility calculators, individual determinations, loan recommendations, credit advice, payment plans, or financial advice — source comparison cannot determine individual circumstances.
+- Financial/identity/credential/precise-location/protected/immigration/health/passive-behaviour data — unnecessary and barred by the privacy boundary.
+- Browser geolocation, home-address collection, inferred residence, or travel-time claims — approved ordering is public-coordinate map distance only.
+- Guarantees of admission, award, funds, interest rate, loan approval, pay, employment, programme quality, or outcome.
+- Area-specific school-district scope, exceptions, or workflow — all seven are peer geographic markets.
+- Waiving Phase 1, Phase 5, or later human/external verification gates.
+
+## Constraints
+
+- Retain the Next.js/TypeScript/Vercel foundation and source-linked discovery model.
+- Use first-party provider, official government/aid authority, or official registered-apprenticeship-sponsor sources; third-party summaries never become verified facts.
+- No personalized aid logic or new advisor-data persistence may ship until existing Phase 8 consent, permitted-data, retention/deletion, security/access, and handoff choices are resolved/tested.
+- Every availability statement has a source date and direct verification action; dates/cycles are never fabricated.
+
+## Acceptance Criteria
+
+- [ ] Exactly the seven named peer markets use one explicit discovery contract.
+- [ ] Each market exposes degree, trade/skilled-trades, certificate, and apprenticeship peer categories, with a verified local offering or governed nearest fallback for every category.
+- [ ] Fallback ordering uses only selected-market centre and public provider coordinate; an outside-market fallback says so and calls distance approximate map distance, not travel time.
+- [ ] Every visible pathway/fallback has a current official source, source date, and honest verification status.
+- [ ] Every aid/loan card separately displays authority, jurisdiction, scope, funding type, published conditions, source date, and verification link; it never equates conditions with eligibility/current availability.
+- [ ] Records at/before 30 days and after official change follow the stated freshness policy; overdue records show “Current confirmation needed.”
+- [ ] No personal financial or prohibited identity/location data is requested, inferred, stored, logged, or sent to an advisor/provider for cards/fallbacks.
+- [ ] Discovery/advisor copy makes no admission, eligibility, funding, loan, employment, pay, quality, or outcome guarantee and refers complex financial cases to official/human help.
+- [ ] Keyboard, screen-reader, Unicode, empty/error, fallback, stale-source, and official-link behavior pass automated and Preview human checks.
+- [ ] Phase 8 verification retains outstanding Phase 1/5 gates as unpassed until their evidence exists.
 
 ## Edge Coverage
 
-| Requirement | Edge | Resolution |
-|---|---|---|
-| R1 | Duplicate or missing area IDs; seven-name drift | covered — schema and exact-registry tests |
-| R2 | An area is omitted or given a special workflow/source exception | covered — registry, data, and UI parity assertions |
-| R3 | Stale, non-first-party, or missing source | covered — validation and Preview review |
-| R4 | Direct URL has an unknown area ID | backstop — route/component error-state test |
-| R5 | Empty area, long Unicode names, keyboard focus | covered — component and Preview human checks |
-| R6 | Earlier deferred gate silently reported as green | covered — final-verification dependency check |
-| R7 | An optional advice field silently becomes required, unexplained, over-retained, broadly reused, or a proxy for personal assessment | covered — consent/retention/deletion contract tests and human-review backstop |
+**Coverage:** 47/47 applicable edges resolved · 0 unresolved
 
-## Prohibitions
+| Category | Requirement | Status | Resolution / Reason |
+|----------|-------------|--------|---------------------|
+| adjacency / empty / ordering | R1 | ✅ explicit | Duplicate/missing ID or a non-exact registry is rejected; canonical seven-market order is stable. |
+| adjacency / empty / ordering | R2 | ✅ explicit | Duplicate category records are rejected; every market-pathway pair resolves to exactly one local or fallback record in stable category order. |
+| adjacency / empty / ordering / idempotency / concurrency | R3 | ✅ explicit | Local wins; missing local yields one deterministic sorted fallback; missing both rejects release data; repeated/parallel reads of one source snapshot return the same result. |
+| boundary / adjacency / empty / ordering / precision | R4 | ✅ explicit | Coordinates must be valid WGS-84 values; Haversine metres are compared before display rounding; duplicate provider IDs rejected; equal distance uses freshness then name. |
+| adjacency / empty / encoding / ordering | R5 | ✅ explicit | Required source fields are Unicode-safe after trimming; duplicate stable IDs, blank collections, invalid URLs/dates, and ambiguous ordering are rejected. |
+| adjacency / empty / encoding / ordering / idempotency / concurrency | R6 | ✅ explicit | Controlled source-status vocabulary prevents missing data becoming an availability/eligibility claim; duplicate updates and parallel reads resolve to the same reviewed record/version. |
+| boundary / adjacency / empty / ordering / precision / idempotency / concurrency | R7 | ✅ explicit | Exactly 30 days remains current; a later instant is confirmation-needed; official-change event overrides date; duplicate/parallel refreshes leave one newest reviewed status; no residency inference. |
+| empty / encoding / idempotency / concurrency | R8 | 🧪 backstop | Held-out advisor cases cover blank/Unicode prompts, repeated calls, stale facts, ambiguous financial questions, and complex referrals. |
+| empty / encoding / idempotency / concurrency | R9 | ✅ explicit | Cards/fallbacks render without profile; prohibited inputs are rejected before storage/logging/prompt use, including repeated or parallel submissions. |
+| adjacency / empty / encoding / ordering | R10 | ✅ explicit | Accessible labels have deterministic reading/order for empty, fallback, and long-Unicode content; duplicate controls are not rendered. |
+| idempotency / concurrency | R11 | ✅ explicit | Repeated/parallel final-verification runs preserve inherited gates as unpassed unless their own retained evidence changes. |
 
-| Must not | Requirement | Verification |
-|---|---|---|
-| Infer a student's location or collect an address/geolocation to select coverage. | R4 | test and review |
-| Give any area a district-specific workflow, source exception, or individual school/student records. | R2 | test and review |
-| Display unreviewed or non-first-party resources as verified official sources. | R3 | test and Preview review |
-| Make an admissions, eligibility, or ranking claim from area selection. | R4 | domain/component test and review |
-| Mark any inherited human or external gate as passed without its required retained evidence. | R6 | planning/final-verification review |
-| Require credentials or highly sensitive data; collect/use advice data without a stated purpose and consent; retain/reuse it beyond that purpose; infer personal characteristics; or claim admission, eligibility, likelihood of success, or potential. | R7 | contract/API test and human review |
+## Prohibitions (must-NOT)
 
-## Final Acceptance Criteria
+**Coverage:** 8/8 applicable prohibitions resolved · 0 unresolved
 
-- [ ] Seven exact requested coverage areas are represented by a governed registry and available through explicit selection/direct navigation.
-- [ ] All seven areas, including Greater Hempstead, receive identical geographic discovery treatment with no area-specific workflow or source exception.
-- [ ] All visible new-area records are source-validated and carry review metadata.
-- [ ] No geolocation, address collection, individual school/student data, or location-derived admissions claim is introduced.
-- [ ] Automated data, domain, UI, and deployment checks cover the seven-area flow; Preview review verifies keyboard, screen-reader, source-link, empty-state, and Unicode behavior.
-- [ ] Advisor/simulation guidance for an explicitly selected area is student-centered, source-linked, choice-preserving, and uses only knowingly volunteered, purpose-limited data after consent, protection, and retention/deletion controls are verified; it makes no unsupported personal/admission/eligibility claims.
-- [ ] Final verification retains—not waives—the outstanding Phase 1 and Phase 5 external/human gates.
+| Prohibition (must-NOT statement) | Requirement | Status | Verification / Reason |
+|----------------------------------|-------------|--------|------------------------|
+| MUST NOT infer/collect GPS, home address, residency, or travel time to find/order fallback. | R3–R4 | resolved | test and judgment review |
+| MUST NOT display a non-official/stale/missing source as verified availability or individual eligibility. | R5–R7 | resolved | test and judgment review |
+| MUST NOT turn a card/reply into personalized financial advice, loan recommendation, promise, or admission/eligibility/award/outcome claim. | R6–R8 | resolved | test and judgment review |
+| MUST NOT request, accept, retain, log, or prompt with financial credentials, IDs, tax/income/asset data, bank/card/loan data, precise address, protected attributes, immigration status, or passive location/behaviour. | R9 | resolved | test and privacy judgment review |
+| MUST NOT label a pathway unavailable merely because funding/eligibility is unknown; use current-confirmation language and official verification. | R6–R7 | resolved | test and judgment review |
+| MUST NOT hide outside-market status, turn map distance into access assurance, or make any pathway class second-class. | R2–R4 | resolved | component test and accessibility judgment review |
+| MUST NOT add an area-specific school-district workflow or exception. | R1 | resolved | registry/data test |
+| MUST NOT mark inherited Phase 1/5 human/external checks passed without retained evidence. | R11 | resolved | final-verification review |
 
-## Required Privacy Decisions Before Implementation
+## Ambiguity Report
 
-The following choices are material and must be captured in Phase 8 discussion/context before any new advisor-data collection or persistence work begins:
+| Dimension | Score | Min | Status | Notes |
+|-----------|-------|-----|--------|-------|
+| Goal Clarity | 0.94 | 0.75 | ✓ | Seven markets, four pathways, fallback, and dated source cards are specific. |
+| Boundary Clarity | 0.90 | 0.70 | ✓ | Excludes personalization, location inference, financial data, and guarantees. |
+| Constraint Clarity | 0.82 | 0.65 | ✓ | Official-source, 30-day freshness, public-coordinate, privacy, and inherited-gate rules locked. |
+| Acceptance Criteria | 0.82 | 0.70 | ✓ | Dataset, domain, UI, advisor, Preview, and human-review checks are falsifiable. |
+| **Ambiguity** | **0.11** | **<=0.20** | ✓ | Advisor-data collection remains separately gated; no collection is authorized. |
 
-1. **Permitted advice data categories:** which low-sensitivity, student-volunteered categories are useful (for example, stated goal, preferred programme type, schedule/format preference, budget range, or area choice) and which categories are excluded. Credentials, government identifiers, health/disability, immigration, protected attributes, precise address, and passive behavioural data are excluded unless a separate future privacy/governance phase changes the boundary.
-2. **Purpose and consent interaction:** whether consent is per advice session, per saved profile field, or both; the exact field-level explanation and withdrawal behavior; and whether the default is in-session only.
-3. **Retention and deletion:** whether inputs are ephemeral, retained for a bounded period, or saved until student deletion; the deletion/export experience; and the treatment of derived advisor output and audit data.
-4. **Security and access:** authenticated-only versus an intentionally bounded guest mode; encryption/storage boundary, access/audit evidence, and provider-data handling. No secret, password, or credential may enter advice prompts.
-5. **Advice limits and handoff:** exact student-facing caveats, source/recency treatment, and when the advisor must direct the student to a qualified human rather than advise.
+## Interview Log
 
-Until these are decided and tested, Phase 8 may plan the seven-area registry and source-linked discovery surfaces but must not implement a new advisor-data collection, persistence, or reuse path.
+| Round | Perspective | Question summary | Decision locked |
+|-------|-------------|------------------|-----------------|
+| 1 | Researcher | Missing local pathway coverage? | Show nearest verified offering; disclose outside selected market. |
+| 2 | Simplifier | What determines “nearest”? | Approximate straight-line distance from market centre to public provider coordinate; freshness then name ties. |
+| 3 | Boundary Keeper | What aid guidance is safe? | Dated official-source cards/comparison only; no calculator, advice, or loan recommendation. |
+| 4 | Failure Analyst | How do availability/jurisdiction stay honest? | Revalidate every 30 days/on official changes; overdue downgrade; show jurisdiction/qualifier without residency inference. |
+
+## Required Privacy Decisions Before Any New Advisor-Data Collection
+
+The existing Phase 8 privacy gate remains in force for future personalized advisor work. Before it may collect/persist even low-sensitivity advice inputs, Phase 8 discussion must lock permitted/excluded categories; consent timing/withdrawal; retention/deletion/export and derived-output treatment; authenticated versus guest access, storage/audit/provider handling; and exact human-handoff wording. Until then, cards/fallbacks use no financial profile and the advisor uses only its existing approved context.
+
+---
+
+*Phase: 08-multi-metro-discovery-coverage*
+*Specification updated: 2026-08-29*
+*Next step: $gsd-discuss-phase 8 — implementation decisions after the retained advisor-data privacy gate is resolved.*
