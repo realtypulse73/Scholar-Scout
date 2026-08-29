@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 04
 current_phase_name: incremental-durable-persistence-boundaries
-status: verifying
-stopped_at: Completed 04-05-PLAN.md; ready for Phase 4 security audit and UAT
-last_updated: "2026-08-29T07:10:03.076Z"
+status: gaps_found
+stopped_at: Phase 4 canonical verification found an HTTP concurrent-write atomicity gap
+last_updated: "2026-08-29T11:55:00.000Z"
 last_activity: 2026-08-29
-last_activity_desc: Phase 4 implementation and validation complete; security audit and UAT remain
+last_activity_desc: Phase 4 UAT passed; canonical verification found an HTTP CAS critical-section gap
 progress:
   total_phases: 5
   completed_phases: 3
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 Phase: 04 (incremental-durable-persistence-boundaries) — VERIFYING
 Plan: 5 of 5
-Status: Plan 04-05 complete; ready for Phase 4 security audit and UAT
-Last activity: 2026-08-29 — Phase 4 implementation and validation complete; security audit and UAT remain
+Status: Verification gaps found — HTTP ETag check and asynchronous replacement are not one atomic critical section
+Last activity: 2026-08-29 — Phase 4 UAT passed; canonical verification found an HTTP CAS critical-section gap
 
 Progress: [██████████] 100%
 
@@ -196,5 +196,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-29T07:10:03.047Z
-Stopped at: Completed 04-05-PLAN.md; ready for Phase 4 security audit and UAT
+Stopped at: Phase 4 canonical verification found an HTTP concurrent-write atomicity gap
 Resume file: None
