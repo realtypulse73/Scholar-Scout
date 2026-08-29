@@ -233,7 +233,7 @@ Plans:
 
 ### Phase 8: Seven-Area Discovery Coverage
 
-**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Preserve source verification, privacy, accessible location behavior, validation, deployment readiness, and final verification traceability.
+**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Preserve source verification, privacy, accessible location behavior, student-centered advisor/simulation guidance, validation, deployment readiness, and final verification traceability.
 **Requirements**: PROD-07
 **Depends on:** Phase 7
 **Plans:** 0 plans
@@ -242,7 +242,7 @@ Plans:
 
   1. Students can select and browse a source-linked discovery experience for each of the seven named coverage areas without an inferred home location or an admissions recommendation claim.
   2. Every displayed institution, programme, and official regional-resource link has a reviewed first-party source; all seven areas use the same geographic discovery model without an area-specific workflow or source exception.
-  3. Location UI, data validation, automated tests, Preview deployment checks, and final human verification make the seven-area coverage observable and preserve the deferred Phase 1 GitHub/Vercel release-evidence gate.
+  3. Advisor/simulation guidance helps a student compare and verify options in their explicitly selected area using only purpose-limited, knowingly volunteered data with consent and deletion controls; it never requires highly sensitive data or credentials or asserts admission/eligibility. Location UI, data validation, automated tests, Preview deployment checks, and final human verification make the seven-area coverage observable and preserve the deferred Phase 1 GitHub/Vercel release-evidence gate.
 
 Plans:
 

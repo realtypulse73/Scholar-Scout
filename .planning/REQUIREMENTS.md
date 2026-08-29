@@ -33,7 +33,7 @@
 - [ ] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
 - [ ] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
 - [ ] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
-- [ ] **PROD-07**: Students can discover source-verified higher-education and local transition resources for Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area without location inference, identity exposure, or unsupported admissions claims.
+- [ ] **PROD-07**: Students can discover source-verified higher-education and local transition resources for Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Area-aware advisor/simulation guidance is student-centered, choice-preserving, and source-linked; it may use only data the student knowingly and voluntarily provides for that stated advice purpose, with field-level explanation, consent, minimization, protection, retention/deletion controls, clear limits/verification guidance, and no unsupported admissions/eligibility claims.
 
 ## User Stories
 
