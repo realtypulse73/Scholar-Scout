@@ -173,7 +173,7 @@ Plans:
   2. A student can participate in peer and campus-community experiences without unnecessary exposure of author identity or contact details.
   3. Community submissions are server-validated and rate-limited, publish an author-safe representation, and provide a usable report and authorized removal path for harmful or spam content.
 
-**Plans**: 0/5 plans executed
+**Plans**: 1/5 plans executed
 
 **Execution waves**:
 
@@ -184,7 +184,7 @@ Plans:
 
 Plans:
 
-- [ ] 05-01-PLAN.md — Establish safe community persistence, public DTOs, reporting transitions, and the shared submission reservation boundary.
+- [x] 05-01-PLAN.md — Establish safe community persistence, public DTOs, reporting transitions, and the shared submission reservation boundary.
 - [ ] 05-02-PLAN.md — Add the fresh-staff-gated moderation queue and restore/remove actions.
 - [ ] 05-03-PLAN.md — Harden school and Western New York discovery data, decision logic, source links, and accessible empty states.
 - [ ] 05-04-PLAN.md — Deliver peer matching and community UI that consumes the protected APIs and locked interaction states.
@@ -217,7 +217,7 @@ Plans:
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
-| 5. School, Community, and WNY Release Slice | 0/5 | Planned    |  |
+| 5. School, Community, and WNY Release Slice | 1/5 | In Progress|  |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
 
 ### Phase 7: Governed Opportunity and Support Matching
