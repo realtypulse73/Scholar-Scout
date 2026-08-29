@@ -208,6 +208,11 @@ export function reserveRegistration(ip: string): Promise<RateLimitReservation> {
   return getRateLimitService().reserveRegistration(ip);
 }
 
+/** Creates the production Redis-backed reservation limiter. */
+export function createUpstashAtomicReservationLimiter(redis: Redis): AtomicReservationLimiter {
+  return new UpstashAtomicReservationLimiter(redis);
+}
+
 export function createLimiterCacheKey(limit: number, window: RateLimitWindow): string {
   return `${limit}:${window.duration}:${window.algorithm}`;
 }
@@ -235,7 +240,7 @@ function getAtomicReservationLimiter(): AtomicReservationLimiter | null {
     return activeLimiter;
   }
 
-  activeLimiter = new UpstashAtomicReservationLimiter(new Redis({ url, token }));
+  activeLimiter = createUpstashAtomicReservationLimiter(new Redis({ url, token }));
   return activeLimiter;
 }
 

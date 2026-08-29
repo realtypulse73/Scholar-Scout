@@ -3,17 +3,38 @@ jest.mock('@upstash/redis', () => ({
 }));
 
 jest.mock('@upstash/ratelimit', () => ({
-  Ratelimit: class Ratelimit {},
+  Ratelimit: class Ratelimit {
+    static fixedWindow = jest.fn();
+    static slidingWindow = jest.fn();
+    static limit = jest.fn();
+    static options: unknown[] = [];
+
+    constructor(options: unknown) {
+      Ratelimit.options.push(options);
+    }
+
+    limit = Ratelimit.limit;
+  },
 }));
 
+import type { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 import {
   COMMUNITY_SUBMISSION_POLICY,
   createLimiterCacheKey,
   createRateLimitService,
+  createUpstashAtomicReservationLimiter,
   REGISTRATION_POLICY,
   type AtomicReservationLimiter,
   type RateLimitWindow,
 } from '@/lib/server/rate-limit';
+
+const MockedRatelimit = Ratelimit as unknown as {
+  fixedWindow: jest.Mock;
+  slidingWindow: jest.Mock;
+  limit: jest.Mock;
+  options: unknown[];
+};
 
 class InMemoryAtomicReservationLimiter implements AtomicReservationLimiter {
   private readonly reservations = new Map<string, { count: number; resetAt: Date }>();
@@ -51,6 +72,10 @@ describe('rate-limit policies', () => {
   beforeEach(() => {
     now = new Date('2026-07-27T13:00:00.000Z');
     limiter = new InMemoryAtomicReservationLimiter(() => now);
+    MockedRatelimit.fixedWindow.mockReset();
+    MockedRatelimit.slidingWindow.mockReset();
+    MockedRatelimit.limit.mockReset();
+    MockedRatelimit.options.length = 0;
   });
 
   it('allows ten guest advisor reservations per UTC day and denies the eleventh', async () => {
@@ -188,6 +213,26 @@ describe('rate-limit policies', () => {
     ]);
     expect(createLimiterCacheKey(5, COMMUNITY_SUBMISSION_POLICY.window)).toBe('5:1 h:sliding');
     expect(createLimiterCacheKey(5, REGISTRATION_POLICY.window)).toBe('5:1 h:fixed');
+  });
+
+  it('constructs the production community limiter with Upstash slidingWindow', async () => {
+    const slidingWindow = { algorithm: 'sliding-window' };
+    MockedRatelimit.slidingWindow.mockReturnValue(slidingWindow);
+    MockedRatelimit.limit.mockResolvedValue({
+      success: true,
+      reset: new Date('2026-07-27T14:00:00.000Z').getTime(),
+    });
+    const productionLimiter = createUpstashAtomicReservationLimiter({} as Redis);
+
+    await expect(
+      productionLimiter.reserve('student-1', COMMUNITY_SUBMISSION_POLICY.limit, COMMUNITY_SUBMISSION_POLICY.window),
+    ).resolves.toMatchObject({ allowed: true });
+
+    expect(MockedRatelimit.slidingWindow).toHaveBeenCalledWith(5, '1 h');
+    expect(MockedRatelimit.fixedWindow).not.toHaveBeenCalled();
+    expect(MockedRatelimit.options).toEqual([
+      expect.objectContaining({ limiter: slidingWindow, prefix: 'scholar-scout:rate-limit' }),
+    ]);
   });
 
   it('fails closed when the external limiter cannot reserve a key', async () => {
