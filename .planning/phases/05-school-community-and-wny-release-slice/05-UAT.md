@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-29T20:10:00.000Z
+updated: 2026-08-29T20:34:00.000Z
 ---
 
 ## Current Test
@@ -23,15 +23,15 @@ reason: "The deployed Preview now has 40 visible source links, no stale-link 404
 
 expected: As a signed-in student, report a public note, cancel once, then confirm once; as fresh staff, resolve the resulting queue entry. Cancellation restores focus to the initiating control, success hides only that row with a private confirmation, and staff actions remain restore/remove only.
 result: blocked
-blocked_by: authenticated Preview test identities
-reason: "The final Preview exposes only unsigned credential entry. No existing authorized student or fresh staff session, and no documented non-production account provisioning workflow, is available to exercise report creation and staff moderation without creating durable test data."
+blocked_by: Preview Blob conditional-write provider gate
+reason: "The canonical-path repair allowed the two generated isolated Preview accounts to register and authenticate; the staff allowlist is also verified. Before any public test content was submitted, a read-only staff moderation-page load deterministically exhausted its two required privacy-minimal audit CAS attempts, including after more than 70 seconds idle. Fresh student re-sign-in proves the document is readable, but the Preview provider rejects the required ETag conditional write."
 
 ### 3. Live shared quota boundary
 
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: blocked
-blocked_by: authenticated isolated Preview test student
-reason: "Upstash is configured and its deployed reservation boundary was reached by a safe invalid registration probe, but the Phase 5 combined note/inbox quota requires an authenticated isolated student account. No authorized test account or established non-production provisioning path is available."
+blocked_by: Preview Blob conditional-write provider gate
+reason: "Upstash is configured and the generated isolated Preview student now authenticates, but the Preview Blob provider rejects the required ETag conditional write used by the staff audit append. The shared note/inbox test intentionally requires durable writes, so it remains blocked until the provider supports the configured conditional-write contract. No public test content was submitted."
 
 ## Summary
 
