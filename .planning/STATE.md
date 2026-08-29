@@ -160,7 +160,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 7 added: Governed Opportunity and Support Matching
-- Phase 8 added: Multi-Metro Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; and Houston, Texas, with scoped data, location behavior, validation, rollout, and final-release traceability.
+- Phase 8 added: Multi-Metro and Hempstead Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Hempstead Union Free School District in Hempstead, New York, with scoped data, location behavior, validation, rollout, and final-release traceability. Preserve Phase 5's locked WNY slice and mandatory human verification gate.
 
 ### Pending Todos
 
@@ -193,6 +193,7 @@ None yet.
 |----------|------|--------|-------------|
 | Data platform | Separate analytics store and audited background jobs (DATA-04, DATA-05) | v2 | 2026-07-25 |
 | Product expansion | Notifications and moderation analytics (PROD-05, PROD-06) | v2 | 2026-07-25 |
+| Release validation | Phase 1 external GitHub/Vercel evidence: draft PR checks, `main` protection, protected production build, production-success smoke artifact, and controlled smoke-failure incident acknowledgement | Deferred pending authorized external validation; not passed or waived | 2026-08-29 |
 
 ## Session Continuity
 

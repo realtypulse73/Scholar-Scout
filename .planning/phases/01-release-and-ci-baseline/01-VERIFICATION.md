@@ -1,10 +1,12 @@
 ---
 phase: 01-release-and-ci-baseline
 verified: 2026-07-26T04:01:06Z
-status: passed
+status: human_needed
 score: 0/3 must-haves verified
 behavior_unverified: 3
 overrides_applied: 0
+deferred_external_validation: true
+deferred_reason: "The five GitHub/Vercel production controls are external dashboard/runtime evidence. They are intentionally deferred, not passed or waived, while later implementation continues."
 re_verification:
   previous_status: gaps_found
   previous_score: 0/3
@@ -135,6 +137,10 @@ No requirement mapped to Phase 1 is orphaned from its plans.
 | — | — | No `TBD`, `FIXME`, `XXX`, `TODO`, placeholder, or stale package-manager marker in the three gap-closure artifacts. | ℹ️ None | No repository blocker found. |
 
 ## Human Verification Required
+
+## Deferred External Validation Gate
+
+Phase 1's repository work is complete, but its behavioral release gate remains **deferred and unpassed**. Later phases must not treat this report as evidence that GitHub branch protection, hosted CI execution, Vercel production parity, post-deploy dispatch, or the incident-response path has been observed. Before a production release or final roadmap completion, retain the five evidence items below. Deployment risk remains that an unobserved GitHub/Vercel configuration can diverge from the committed workflow, allowing missing checks, a non-frozen hosted build, a missing smoke dispatch, or an unsafe incident response.
 
 ### 1. Draft PR CI execution
 

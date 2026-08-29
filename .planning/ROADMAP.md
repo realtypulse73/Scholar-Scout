@@ -231,13 +231,13 @@ Plans:
 
 - [ ] TBD (run /gsd-plan-phase 7 to break down)
 
-### Phase 8: Multi-Metro Discovery Coverage
+### Phase 8: Multi-Metro and Hempstead Discovery Coverage
 
-**Goal:** [To be planned]
+**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Hempstead Union Free School District plus its surrounding Hempstead, New York area, while preserving source verification, privacy, accessible location behavior, validation, deployment readiness, and final verification traceability.
 **Requirements**: TBD
 **Depends on:** Phase 7
 **Plans:** 0 plans
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 8 to break down)
+- [ ] TBD (run /gsd-spec-phase 8, then /gsd-discuss-phase 8 and /gsd-plan-phase 8 to break down)
