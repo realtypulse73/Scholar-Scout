@@ -24,6 +24,7 @@ import {
 import {
   validateCampusNote,
   validateUploaderInboxRequest,
+  type CampusNoteDraft,
   type CampusNote,
   type UploaderInboxRequest,
 } from '@/lib/campus-community';
@@ -1335,7 +1336,7 @@ export async function getCampusNotes(schoolSlug: string, uploaderUsername?: stri
 
 export async function createCampusNote(
   authorId: string,
-  input: Omit<CampusNote, 'id' | 'author_id' | 'created_at'>,
+  input: CampusNoteDraft,
 ) {
   const errors = validateCampusNote(input);
   if (errors.length) throw new Error(errors[0]);

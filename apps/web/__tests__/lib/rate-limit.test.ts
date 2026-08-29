@@ -146,8 +146,7 @@ describe('rate-limit policies', () => {
 
     expect(COMMUNITY_SUBMISSION_POLICY).toMatchObject({
       limit: 5,
-      window: { seconds: 3_600, duration: '1 h' },
-      algorithm: 'sliding',
+      window: { seconds: 3_600, duration: '1 h', algorithm: 'sliding' },
     });
 
     for (let index = 0; index < 5; index += 1) {
