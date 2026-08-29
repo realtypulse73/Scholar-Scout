@@ -1107,12 +1107,7 @@ export async function createUser(input: {
   password: string;
   role: AccountRole;
 }) {
-  const data = await readScholarScoutData();
   const email = normalizeEmail(input.email);
-
-  if (data.users.some((user) => user.email === email)) {
-    throw new Error('Account already exists.');
-  }
 
   const user: StoredUser = {
     id: randomUUID(),
@@ -1123,23 +1118,17 @@ export async function createUser(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.users.push(user);
-  await writeScholarScoutData(data);
-
-  return user;
+  const { createStudentAccountRecord } = await import(
+    '@/lib/server/student-records'
+  );
+  return createStudentAccountRecord(user);
 }
 
 export async function findOrCreateOAuthUser(input: {
   email: string;
   name?: string | null;
 }) {
-  const data = await readScholarScoutData();
   const email = normalizeEmail(input.email);
-  const existing = data.users.find((user) => user.email === email);
-
-  if (existing) {
-    return existing;
-  }
 
   const user: StoredUser = {
     id: randomUUID(),
@@ -1150,11 +1139,10 @@ export async function findOrCreateOAuthUser(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.users.push(user);
-  data.auditEvents.push(createAuditEvent(user.id, 'create', 'onboarding', user.id));
-  await writeScholarScoutData(data);
-
-  return user;
+  const { findOrCreateOAuthStudentRecord } = await import(
+    '@/lib/server/student-records'
+  );
+  return findOrCreateOAuthStudentRecord(user);
 }
 
 export async function verifyUserCredentials(
@@ -1221,10 +1209,10 @@ export async function saveOnboardingProfile(
   userId: string,
   profile: OnboardingData,
 ) {
-  const data = await readScholarScoutData();
-  data.onboardingProfiles[userId] = profile;
-  data.auditEvents.push(createAuditEvent(userId, 'save', 'onboarding', userId));
-  await writeScholarScoutData(data);
+  const { replaceStudentOnboardingProfile } = await import(
+    '@/lib/server/student-records'
+  );
+  await replaceStudentOnboardingProfile(userId, profile);
 }
 
 export async function getOnboardingProfile(userId: string) {

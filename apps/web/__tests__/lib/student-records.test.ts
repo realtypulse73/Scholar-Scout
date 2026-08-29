@@ -1,10 +1,10 @@
 import {
-  createUser,
   saveOnboardingProfile,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import { createStudentAccountRecord } from '@/lib/server/student-records';
 
 const initialData: ScholarScoutData = {
   users: [],
@@ -76,18 +76,22 @@ describe('bounded student records', () => {
     };
     setScholarScoutDataStoreForTests(store);
 
-    const first = createUser({
+    const first = createStudentAccountRecord({
+      id: 'student-one',
       email: 'one@example.com',
       name: 'One',
-      password: 'password-one',
+      passwordHash: 'hash-one',
       role: 'student',
+      createdAt: '2026-08-29T00:00:00.000Z',
     });
     await secondStarted;
-    const second = createUser({
+    const second = createStudentAccountRecord({
+      id: 'student-two',
       email: 'two@example.com',
       name: 'Two',
-      password: 'password-two',
+      passwordHash: 'hash-two',
       role: 'student',
+      createdAt: '2026-08-29T00:00:00.000Z',
     });
     const results = await Promise.allSettled([first, second]);
 
