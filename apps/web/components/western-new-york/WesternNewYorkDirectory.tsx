@@ -34,12 +34,27 @@ export default function WesternNewYorkDirectory({ institutions }: WesternNewYork
         </div>
       </Card>
 
-      <div className="rounded-card border border-brand-200 bg-brand-50 p-5 text-sm leading-6 text-ink-700">
-        <strong>Campus environment and incident review:</strong> ScholarScout shows official reporting, Title IX, nondiscrimination, and security-report sources for review. It does not convert reports of racial, sex-based, age-based, or other discrimination into an unverified “safe/unsafe” score.
-      </div>
+      <section
+        aria-labelledby="wny-verification-heading"
+        className="rounded-card border border-brand-200 bg-brand-50 p-6 text-sm leading-6 text-ink-700"
+      >
+        <h2 id="wny-verification-heading" className="font-extrabold text-brand-800">
+          Verify before applying
+        </h2>
+        <p className="mt-2">
+          Use the official links on each listing to confirm programme requirements, deadlines, costs, support availability, and current policies directly with the institution.
+        </p>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {ranked.map(({ institution, accessScore, reasons, reviewItems }) => (
+        {ranked.length === 0 ? (
+          <Card className="p-5 lg:col-span-2">
+            <h2 className="text-xl font-extrabold text-ink-900">No pathways match these priorities yet</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-600">
+              Try adjusting your access priorities, then use the official sources to compare options directly.
+            </p>
+          </Card>
+        ) : ranked.map(({ institution, accessScore, reasons, reviewItems }) => (
           <Card key={institution.id} className="flex flex-col p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><h2 className="text-xl font-extrabold text-ink-900">{institution.name}</h2><p className="mt-1 text-sm font-semibold text-ink-600">{institution.city} · {institution.kind.replaceAll('-', ' ')}</p></div>
@@ -48,13 +63,16 @@ export default function WesternNewYorkDirectory({ institutions }: WesternNewYork
             <div className="mt-4 flex flex-wrap gap-2"><Badge tone="brand">{labelTestPolicy(institution.admissions.testPolicy)}</Badge><Badge>{institution.logistics.publicTransit === 'verified-access' ? 'Transit documented' : 'Transit plan needed'}</Badge><Badge>{institution.logistics.childcare === 'support-or-referral-documented' ? 'Support navigation documented' : 'Ask about child care'}</Badge></div>
             <p className="mt-4 text-sm leading-6 text-ink-700">{institution.admissions.gpaGuidance}</p>
             {reasons.length ? <ul className="mt-4 space-y-2 text-sm text-success-700">{reasons.map((reason) => <li key={reason}>✓ {reason}</li>)}</ul> : null}
-            <div className="mt-4 rounded-card bg-ink-50 p-3"><p className="text-xs font-bold uppercase text-ink-500">Verify before applying</p><ul className="mt-2 space-y-1 text-sm leading-5 text-ink-700">{reviewItems.map((item) => <li key={item}>• {item}</li>)}</ul></div>
+            <div className="mt-4 rounded-card bg-ink-50 p-4">
+              <p className="text-xs font-bold uppercase text-ink-500">Check these details with the institution</p>
+              <ul className="mt-2 space-y-1 text-sm leading-5 text-ink-700">{reviewItems.map((item) => <li key={item}>• {item}</li>)}</ul>
+            </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2"><a href={institution.officialUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50">Official site</a><a href={institution.mediaUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center rounded-card border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50">Visit / official media</a></div>
-            <div className="mt-5 border-t border-ink-200 pt-4"><p className="text-xs font-bold uppercase text-ink-500">Campus-environment sources</p><p className="mt-1 text-xs leading-5 text-ink-600">{institution.accountability.notice}</p><div className="mt-3 flex flex-wrap gap-2">{institution.accountability.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline">{source.label} ({source.status === 'verified' ? 'checked' : 'confirm'})</a>)}</div></div>
+            <div className="mt-5 border-t border-ink-200 pt-4"><p className="text-xs font-bold uppercase text-ink-500">Campus-environment sources</p><p className="mt-1 text-xs leading-5 text-ink-600">{institution.accountability.notice}</p><div className="mt-3 flex flex-wrap gap-2">{institution.accountability.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="break-words text-xs font-semibold text-brand-700 underline">{source.label}</a>)}</div></div>
           </Card>
         ))}
       </div>
-      <p className="text-xs leading-5 text-ink-500">Directory sources checked July 25, 2026. Policies, support availability, transit service, and admission requirements can change; use the linked primary sources and confirm directly with each institution.</p>
+      <p className="text-xs leading-5 text-ink-500">Policies, support availability, transit service, and admission requirements can change; use the linked primary sources and confirm directly with each institution.</p>
       <Link href="/onboarding" className="inline-flex text-sm font-bold text-brand-700 hover:text-brand-800">Update core programme preferences →</Link>
     </div>
   );
