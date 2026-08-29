@@ -137,7 +137,7 @@ Plans:
   2. Student, programme, and operational records can be read and changed through bounded domain operations rather than a full shared-document replacement for every event.
   3. A maintainer can migrate one high-risk persistence boundary at a time while existing supported data adapters and recovery workflows remain verifiably safe.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans executed
 
 Plans:
 **Wave 1**
@@ -158,7 +158,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 04-05-PLAN.md — Record DATA-01/DATA-02 coverage and run the complete Phase 4 validation gate
+- [x] 04-05-PLAN.md — Record DATA-01/DATA-02 coverage and run the complete Phase 4 validation gate
 
 **Risk**: `data-store.ts` is the current system of record for several domains and adapters; use compatibility boundaries, transactional/versioned writes, and adapter-level integration tests rather than a wholesale datastore replacement.
 
@@ -200,7 +200,7 @@ Plans:
 | 1. Release and CI Baseline | 6/6 | Complete    | 2026-08-13 |
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
-| 4. Incremental Durable Persistence Boundaries | 4/5 | In Progress|  |
+| 4. Incremental Durable Persistence Boundaries | 5/5 | In Progress|  |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
 
