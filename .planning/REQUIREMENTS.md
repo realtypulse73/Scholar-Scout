@@ -23,8 +23,8 @@
 
 ### Data Foundation
 
-- [ ] **DATA-01**: Concurrent user and staff writes cannot silently overwrite each other; write operations have an atomic transaction or explicit version-conflict outcome.
-- [ ] **DATA-02**: User, programme, and operational records can be accessed and changed through bounded domain operations rather than rewriting an unbounded shared document for every event.
+- [x] **DATA-01**: Concurrent user and staff writes cannot silently overwrite each other; write operations have an atomic transaction or explicit version-conflict outcome.
+- [x] **DATA-02**: User, programme, and operational records can be accessed and changed through bounded domain operations rather than rewriting an unbounded shared document for every event.
 - [x] **DATA-03**: Backup, restore, and import workflows use authenticated operations, validation, retention limits, and recoverable audit evidence.
 
 ### Product Completion and Community Safety
@@ -91,8 +91,8 @@
 | OPS-03 | Phase 3 | Complete |
 | OPS-04 | Phase 6 | Pending |
 | OPS-05 | Phase 1 | Complete |
-| DATA-01 | Phase 4 | Pending |
-| DATA-02 | Phase 4 | Pending |
+| DATA-01 | Phase 4 | Complete |
+| DATA-02 | Phase 4 | Complete |
 | DATA-03 | Phase 3 | Complete |
 | PROD-01 | Phase 5 | Pending |
 | PROD-02 | Phase 5 | Pending |

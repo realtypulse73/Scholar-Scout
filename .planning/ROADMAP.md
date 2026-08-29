@@ -137,7 +137,7 @@ Plans:
   2. Student, programme, and operational records can be read and changed through bounded domain operations rather than a full shared-document replacement for every event.
   3. A maintainer can migrate one high-risk persistence boundary at a time while existing supported data adapters and recovery workflows remain verifiably safe.
 
-**Plans**: 3/5 plans executed
+**Plans**: 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -154,7 +154,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-04-PLAN.md — Bind Phase 3 recovery to conditional apply and close adapter compatibility boundaries
+- [x] 04-04-PLAN.md — Bind Phase 3 recovery to conditional apply and close adapter compatibility boundaries
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -200,7 +200,7 @@ Plans:
 | 1. Release and CI Baseline | 6/6 | Complete    | 2026-08-13 |
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
-| 4. Incremental Durable Persistence Boundaries | 3/5 | In Progress|  |
+| 4. Incremental Durable Persistence Boundaries | 4/5 | In Progress|  |
 | 5. School, Community, and WNY Release Slice | 0/TBD | Not started | - |
 | 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
 
