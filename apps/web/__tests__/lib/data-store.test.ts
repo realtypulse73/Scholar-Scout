@@ -25,6 +25,7 @@ import {
   getRestoreBackupRetentionStatus,
   getShortlistPlans,
   readScholarScoutData,
+  readVersionedScholarScoutData,
   restoreScholarScoutDataFromBackup,
   restoreScholarScoutDataFromImport,
   saveProgrammeRecord,
@@ -87,6 +88,39 @@ function cloneData(data: ScholarScoutData) {
 }
 
 describe('ScholarScout data store adapter', () => {
+  it('normalizes legacy campus notes to public status and preserves moderation fields in versioned snapshots', async () => {
+    const store = new MemoryDataStore();
+    store.data.campusNotes = [{
+      id: 'legacy-note',
+      author_id: 'student-private-id',
+      school_slug: 'buffalo-state',
+      uploader_username: null,
+      program_id: null,
+      body: 'Legacy public note.',
+      created_at: '2026-08-29T00:00:00.000Z',
+    }] as never;
+    setScholarScoutDataStoreForTests(store);
+
+    const snapshot = await readVersionedScholarScoutData();
+    expect(snapshot.data.campusNotes).toEqual([
+      expect.objectContaining({ id: 'legacy-note', status: 'public' }),
+    ]);
+
+    snapshot.data.campusNotes![0].status = 'pending-review';
+    snapshot.data.campusNoteReviews = [{
+      id: 'campus-note-review:legacy-note',
+      note_id: 'legacy-note',
+      reporter_id: 'reporter-private-id',
+      created_at: '2026-08-29T01:00:00.000Z',
+    }];
+    await store.writeVersioned(snapshot.data, snapshot.version);
+
+    await expect(readScholarScoutData()).resolves.toMatchObject({
+      campusNotes: [expect.objectContaining({ status: 'pending-review' })],
+      campusNoteReviews: [expect.objectContaining({ note_id: 'legacy-note' })],
+    });
+  });
+
   it('keeps migrated domain modules off the unconditional whole-document write', async () => {
     const boundedModules = [
       'programme-records.ts',

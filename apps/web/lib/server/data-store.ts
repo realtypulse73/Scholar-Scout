@@ -26,6 +26,7 @@ import {
   validateUploaderInboxRequest,
   type CampusNoteDraft,
   type CampusNote,
+  type CampusNoteReview,
   type UploaderInboxRequest,
 } from '@/lib/campus-community';
 import type { Programme } from '@/lib/programmes';
@@ -113,6 +114,7 @@ export interface ScholarScoutData {
   outcomeMetricRecords?: OutcomeMetricRecord[];
   peerConnectionRequests?: PeerConnectionRequest[];
   campusNotes?: CampusNote[];
+  campusNoteReviews?: CampusNoteReview[];
   uploaderInboxRequests?: UploaderInboxRequest[];
   auditEvents: AuditEvent[];
   restoreBackups?: ScholarScoutDataBackup[];
@@ -257,6 +259,7 @@ const INITIAL_DATA: ScholarScoutData = {
   outcomeMetricRecords: [],
   peerConnectionRequests: [],
   campusNotes: [],
+  campusNoteReviews: [],
   uploaderInboxRequests: [],
   auditEvents: [],
   restoreBackups: [],
@@ -682,6 +685,14 @@ export function validateScholarScoutDataImport(
   } else if (Array.isArray(data.campusNotes)) {
     data.campusNotes.forEach((note, index) => {
       if (!isCampusNote(note)) errors.push(`Campus note ${index + 1} is missing required fields.`);
+    });
+  }
+
+  if ('campusNoteReviews' in data && data.campusNoteReviews !== undefined && !Array.isArray(data.campusNoteReviews)) {
+    errors.push('Campus note reviews must be an array when present.');
+  } else if (Array.isArray(data.campusNoteReviews)) {
+    data.campusNoteReviews.forEach((review, index) => {
+      if (!isCampusNoteReview(review)) errors.push(`Campus note review ${index + 1} is missing required fields.`);
     });
   }
 
@@ -1330,7 +1341,7 @@ export async function getPeerConnectionRequests(requesterId: string) {
 export async function getCampusNotes(schoolSlug: string, uploaderUsername?: string) {
   const data = await readScholarScoutData();
   return (data.campusNotes ?? [])
-    .filter((note) => note.school_slug === schoolSlug && (!uploaderUsername || note.uploader_username === uploaderUsername))
+    .filter((note) => note.status === 'public' && note.school_slug === schoolSlug && (!uploaderUsername || note.uploader_username === uploaderUsername))
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
@@ -1340,7 +1351,7 @@ export async function createCampusNote(
 ) {
   const errors = validateCampusNote(input);
   if (errors.length) throw new Error(errors[0]);
-  const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString() };
+  const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString(), status: 'public' };
   const audit = createAuditEvent(authorId, 'post-campus-note', 'data', note.id);
   const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
     '@/lib/server/operational-records'
@@ -1621,7 +1632,12 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     peerConnectionRequests: Array.isArray(data.peerConnectionRequests)
       ? (data.peerConnectionRequests as PeerConnectionRequest[])
       : [],
-    campusNotes: Array.isArray(data.campusNotes) ? (data.campusNotes as CampusNote[]) : [],
+    campusNotes: Array.isArray(data.campusNotes)
+      ? (data.campusNotes as CampusNote[]).filter(isCampusNote).map((note) => ({ ...note, status: note.status ?? 'public' }))
+      : [],
+    campusNoteReviews: Array.isArray(data.campusNoteReviews)
+      ? (data.campusNoteReviews as CampusNoteReview[]).filter(isCampusNoteReview)
+      : [],
     uploaderInboxRequests: Array.isArray(data.uploaderInboxRequests)
       ? (data.uploaderInboxRequests as UploaderInboxRequest[])
       : [],
@@ -1648,6 +1664,14 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
   return {
     ...INITIAL_DATA,
     ...data,
+    campusNotes: Array.isArray(data.campusNotes)
+      ? data.campusNotes.map((note) => isCampusNote(note)
+        ? { ...note, status: note.status ?? 'public' }
+        : note)
+      : [],
+    campusNoteReviews: Array.isArray(data.campusNoteReviews)
+      ? data.campusNoteReviews.filter(isCampusNoteReview)
+      : [],
     guestLifecycles: Array.isArray(data.guestLifecycles)
       ? data.guestLifecycles.filter(isGuestLifecycleRecord)
       : [],
@@ -1880,8 +1904,16 @@ function isPeerConnectionRequest(value: unknown): value is PeerConnectionRequest
 }
 
 function isCampusNote(value: unknown): value is CampusNote {
-  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.author_id !== 'string' || typeof value.school_slug !== 'string' || (value.uploader_username !== null && typeof value.uploader_username !== 'string') || (value.program_id !== null && typeof value.program_id !== 'string') || typeof value.body !== 'string' || typeof value.created_at !== 'string') return false;
+  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.author_id !== 'string' || typeof value.school_slug !== 'string' || (value.uploader_username !== null && typeof value.uploader_username !== 'string') || (value.program_id !== null && typeof value.program_id !== 'string') || typeof value.body !== 'string' || typeof value.created_at !== 'string' || (value.status !== undefined && value.status !== 'public' && value.status !== 'pending-review' && value.status !== 'removed')) return false;
   return validateCampusNote({ school_slug: value.school_slug, uploader_username: value.uploader_username as string | null, program_id: value.program_id as string | null, body: value.body }).length === 0;
+}
+
+function isCampusNoteReview(value: unknown): value is CampusNoteReview {
+  return isPlainObject(value)
+    && typeof value.id === 'string'
+    && typeof value.note_id === 'string'
+    && typeof value.reporter_id === 'string'
+    && isValidTimestamp(value.created_at);
 }
 
 function isUploaderInboxRequest(value: unknown): value is UploaderInboxRequest {

@@ -6,6 +6,7 @@ export interface CampusNote {
   program_id: string | null;
   body: string;
   created_at: string;
+  status: CampusNoteStatus;
 }
 
 export interface PublicCampusNote {
@@ -17,7 +18,16 @@ export interface PublicCampusNote {
   created_at: string;
 }
 
-export type CampusNoteDraft = Omit<CampusNote, 'id' | 'author_id' | 'created_at'>;
+export type CampusNoteStatus = 'public' | 'pending-review' | 'removed';
+
+export interface CampusNoteReview {
+  id: string;
+  note_id: string;
+  reporter_id: string;
+  created_at: string;
+}
+
+export type CampusNoteDraft = Omit<CampusNote, 'id' | 'author_id' | 'created_at' | 'status'>;
 
 export interface UploaderInboxRequest {
   id: string;

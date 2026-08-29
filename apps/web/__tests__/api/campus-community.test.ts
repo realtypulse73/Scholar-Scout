@@ -2,11 +2,13 @@
 
 import { getServerSession } from 'next-auth';
 import { GET, POST } from '@/app/api/campus-notes/route';
+import { POST as reportNote } from '@/app/api/campus-notes/[id]/report/route';
 import {
   createCampusNote,
   getCampusNotes,
 } from '@/lib/server/data-store';
 import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
+import { reportCampusNoteForReview } from '@/lib/server/operational-records';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }));
@@ -17,6 +19,9 @@ jest.mock('@/lib/server/data-store', () => ({
 }));
 jest.mock('@/lib/server/rate-limit', () => ({
   reserveCommunitySubmission: jest.fn(),
+}));
+jest.mock('@/lib/server/operational-records', () => ({
+  reportCampusNoteForReview: jest.fn(),
 }));
 
 const storedNote = {
@@ -41,6 +46,7 @@ describe('campus community API safety boundary', () => {
       resetAt: new Date('2026-08-29T13:00:00.000Z'),
       retryAfterSeconds: 0,
     });
+    jest.mocked(reportCampusNoteForReview).mockResolvedValue({ status: 'reported' });
   });
 
   it('maps public reads to an author-safe DTO', async () => {
@@ -126,5 +132,39 @@ describe('campus community API safety boundary', () => {
 
     expect(response.status).toBe(expectedStatus);
     expect(createCampusNote).not.toHaveBeenCalled();
+  });
+
+  it('derives a report actor solely from the session and gives duplicate-safe private confirmation', async () => {
+    const response = await reportNote(
+      new Request('http://localhost/api/campus-notes/note-1/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reporterId: 'browser-supplied-id', role: 'staff', decision: 'remove' }),
+      }),
+      { params: Promise.resolve({ id: 'note-1' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(reportCampusNoteForReview).toHaveBeenCalledWith({
+      noteId: 'note-1',
+      reporterId: 'student-session-id',
+    });
+    expect(body).toEqual({
+      ok: true,
+      message: 'Thanks. This note is no longer shown publicly while it is reviewed.',
+    });
+  });
+
+  it('requires a signed-in session before reporting', async () => {
+    jest.mocked(getServerSession).mockResolvedValue(null);
+
+    const response = await reportNote(
+      new Request('http://localhost/api/campus-notes/note-1/report', { method: 'POST' }),
+      { params: Promise.resolve({ id: 'note-1' }) },
+    );
+
+    expect(response.status).toBe(401);
+    expect(reportCampusNoteForReview).not.toHaveBeenCalled();
   });
 });
