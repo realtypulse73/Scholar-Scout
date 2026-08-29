@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CommunityModerationQueue from '@/components/admin/CommunityModerationQueue';
 import WesternNewYorkDirectory from '@/components/western-new-york/WesternNewYorkDirectory';
 import type { WesternNewYorkInstitution } from '@/lib/western-new-york';
+import SchoolLockerPage from '@/app/schools/[slug]/page';
+import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
 jest.mock('@/lib/platform', () => ({
   creatorProfiles: [{ schoolSlug: 'test-school', school: 'Tést School', username: 'student', displayName: 'Student', currentStage: 'Applying' }],
@@ -9,6 +11,8 @@ jest.mock('@/lib/platform', () => ({
 jest.mock('@/lib/server/programme-records', () => ({
   getGovernedProgrammes: jest.fn(),
 }));
+jest.mock('@/components/auth/AuthStatusLink', () => () => <span>Account</span>);
+jest.mock('@/components/campus-community/CampusNoteBoard', () => () => <section aria-label="Campus notes">Campus notes</section>);
 
 const directoryInstitution: WesternNewYorkInstitution = {
   id: 'unicode-school',
@@ -104,5 +108,16 @@ describe('discovery release surfaces', () => {
 
     expect(screen.getByRole('heading', { name: 'No pathways match these priorities yet' })).toBeInTheDocument();
     expect(screen.getByText('Try adjusting your access priorities, then use the official sources to compare options directly.')).toBeInTheDocument();
+  });
+
+  it('renders a known school recovery state with verification guidance when it has no programmes', async () => {
+    jest.mocked(getGovernedProgrammes).mockResolvedValue([]);
+
+    render(await SchoolLockerPage({ params: Promise.resolve({ slug: 'test-school' }) }));
+
+    expect(screen.getByRole('heading', { name: 'Verify programme details before you apply' })).toBeInTheDocument();
+    expect(screen.getByText('Programme details can change. Open the official programme page to confirm requirements, delivery, cost, and deadlines.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No programme details are available for this school yet' })).toBeInTheDocument();
+    expect(screen.getByText('Explore the student perspectives below and check the school’s official website for current programme information.')).toBeInTheDocument();
   });
 });
