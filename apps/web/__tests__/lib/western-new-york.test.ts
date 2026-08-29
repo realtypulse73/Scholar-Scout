@@ -1,5 +1,6 @@
 import {
   rankWesternNewYorkInstitutions,
+  WESTERN_NEW_YORK_INSTITUTIONS,
   type WesternNewYorkInstitution,
 } from '@/lib/western-new-york';
 
@@ -11,6 +12,33 @@ const institution = (overrides: Partial<WesternNewYorkInstitution> = {}): Wester
 });
 
 describe('rankWesternNewYorkInstitutions', () => {
+  it('keeps corrected official visit sources in the production WNY dataset', () => {
+    const expectedSources = {
+      'bryant-stratton': {
+        mediaUrl: 'https://www.bryantstratton.edu/location/buffalo-ny/buffalo/',
+        sourceCheckedOn: '2026-08-29',
+      },
+      canisius: {
+        mediaUrl: 'https://www.canisius.edu/admissions/visit-events',
+        sourceCheckedOn: '2026-08-29',
+      },
+      daemen: {
+        mediaUrl: 'https://www.daemen.edu/admissions/visit-us',
+        sourceCheckedOn: '2026-08-29',
+      },
+      hilbert: {
+        mediaUrl: 'https://www.hilbert.edu/visit/',
+        sourceCheckedOn: '2026-08-29',
+      },
+    };
+
+    for (const [id, source] of Object.entries(expectedSources)) {
+      const institution = WESTERN_NEW_YORK_INSTITUTIONS.find((candidate) => candidate.id === id);
+
+      expect(institution).toMatchObject(source);
+    }
+  });
+
   it('prioritizes documented test, transit, and caregiving access without turning accountability materials into a score', () => {
     const [result] = rankWesternNewYorkInstitutions([institution()], {
       hasChildren: true, transportation: 'public-transit', testStatus: 'not-taken', gpaStatus: 'not-provided',
