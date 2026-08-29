@@ -4,6 +4,7 @@ import WesternNewYorkDirectory from '@/components/western-new-york/WesternNewYor
 import type { WesternNewYorkInstitution } from '@/lib/western-new-york';
 import SchoolLockerPage from '@/app/schools/[slug]/page';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
+import CampusNoteBoard from '@/components/campus-community/CampusNoteBoard';
 
 jest.mock('@/lib/platform', () => ({
   creatorProfiles: [{ schoolSlug: 'test-school', school: 'Tést School', username: 'student', displayName: 'Student', currentStage: 'Applying' }],
@@ -14,9 +15,9 @@ jest.mock('@/lib/server/programme-records', () => ({
 jest.mock('@/components/auth/AuthStatusLink', () => function AuthStatusLinkMock() {
   return <span>Account</span>;
 });
-jest.mock('@/components/campus-community/CampusNoteBoard', () => function CampusNoteBoardMock() {
-  return <section aria-label="Campus notes">Campus notes</section>;
-});
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null }),
+}));
 
 const directoryInstitution: WesternNewYorkInstitution = {
   id: 'unicode-school',
@@ -98,6 +99,13 @@ describe('CommunityModerationQueue', () => {
 });
 
 describe('discovery release surfaces', () => {
+  beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ notes: [] }),
+    } as Response);
+  });
+
   it('renders approved source guidance and labelled official links for WNY results', () => {
     render(<WesternNewYorkDirectory institutions={[directoryInstitution]} />);
 
@@ -123,5 +131,55 @@ describe('discovery release surfaces', () => {
     expect(screen.getByText('Programme details can change. Open the official programme page to confirm requirements, delivery, cost, and deadlines.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'No programme details are available for this school yet' })).toBeInTheDocument();
     expect(screen.getByText('Explore the student perspectives below and check the school’s official website for current programme information.')).toBeInTheDocument();
+  });
+});
+
+describe('community submission and reporting', () => {
+  beforeEach(() => {
+    global.fetch = jest.fn();
+  });
+
+  it('reports a public note only after a successful server response and announces the private confirmation', async () => {
+    jest.mocked(global.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ notes: [{ id: 'note-1', school_slug: 'test-school', uploader_username: null, program_id: null, body: 'Long Unicode note 漢字', created_at: '2026-08-29T12:00:00.000Z' }] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ok: true, message: 'Thanks for reporting this note. It is hidden from the community while staff review it.' }),
+      } as Response);
+
+    render(<CampusNoteBoard schoolSlug="test-school" />);
+
+    await screen.findByText('Long Unicode note 漢字');
+    fireEvent.click(screen.getByRole('button', { name: 'Report this note' }));
+    expect(screen.getByRole('dialog', { name: 'Report this note' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm report' }));
+
+    await waitFor(() => expect(screen.queryByText('Long Unicode note 漢字')).not.toBeInTheDocument());
+    expect(screen.getByRole('status')).toHaveTextContent('Thanks for reporting this note. It is hidden from the community while staff review it.');
+  });
+
+  it('retains a public note and report action when reporting fails', async () => {
+    jest.mocked(global.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ notes: [{ id: 'note-1', school_slug: 'test-school', uploader_username: null, program_id: null, body: 'Keep this note', created_at: '2026-08-29T12:00:00.000Z' }] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'We couldn’t report this note. Please try again.' }),
+      } as Response);
+
+    render(<CampusNoteBoard schoolSlug="test-school" />);
+
+    await screen.findByText('Keep this note');
+    fireEvent.click(screen.getByRole('button', { name: 'Report this note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm report' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('We couldn’t report this note. Please try again.'));
+    expect(screen.getByText('Keep this note')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Report this note' })).toBeEnabled();
   });
 });
