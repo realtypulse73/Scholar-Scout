@@ -40,6 +40,8 @@ describe('ProgrammeAdminManager recovery state contract', () => {
   it('renders only server-advertised operations and held backups', async () => {
     const fetchMock = installFetch();
     render(<ProgrammeAdminManager baseProgrammes={[]} />);
+    expect(screen.getByRole('heading', { name: 'Governed programme stewardship' })).toBeInTheDocument();
+    expect(screen.getByText(/Authorized staff maintain student-facing programme information/)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Checking data operations');
     expect((await screen.findAllByText('Storage verified')).length).toBeGreaterThan(0);
     expect(screen.getByText('vercel-blob')).toBeInTheDocument();

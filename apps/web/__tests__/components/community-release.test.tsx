@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CommunityModerationQueue from '@/components/admin/CommunityModerationQueue';
+import StaffGate from '@/components/auth/StaffGate';
 import WesternNewYorkDirectory from '@/components/western-new-york/WesternNewYorkDirectory';
 import type { WesternNewYorkInstitution } from '@/lib/western-new-york';
 import SchoolLockerPage from '@/app/schools/[slug]/page';
@@ -51,10 +52,22 @@ describe('CommunityModerationQueue', () => {
     render(<CommunityModerationQueue initialRecords={[record]} />);
 
     expect(screen.getByRole('heading', { name: 'Community moderation' })).toBeInTheDocument();
+    expect(screen.getByText('Authorized staff workspace')).toBeInTheDocument();
+    expect(screen.getByText(/keeping reporter, author, and contact details private/)).toBeInTheDocument();
     expect(screen.getByText(record.excerpt)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restore to community' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove permanently' })).toBeInTheDocument();
     expect(screen.queryByText('student-private-id')).not.toBeInTheDocument();
+    expect(screen.queryByText('author@example.edu')).not.toBeInTheDocument();
+    expect(screen.queryByText('reporter@example.edu')).not.toBeInTheDocument();
+  });
+
+  it('keeps an unauthorised staff-gate state non-disclosing', () => {
+    render(<StaffGate><p>Protected programme data</p></StaffGate>);
+
+    expect(screen.getByRole('heading', { name: 'Sign in as authorized staff to use governed tools' })).toBeInTheDocument();
+    expect(screen.queryByText('Protected programme data')).not.toBeInTheDocument();
+    expect(screen.queryByText(/staff member email|authorization policy/i)).not.toBeInTheDocument();
   });
 
   it('confirms the safe restore action before resolving and removes only the successful row', async () => {

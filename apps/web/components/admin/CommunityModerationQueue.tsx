@@ -109,12 +109,12 @@ export default function CommunityModerationQueue({
 
   return (
     <section aria-labelledby="community-moderation-heading">
-      <p className="text-sm font-semibold text-brand-700">Staff workspace</p>
+      <p className="text-sm font-semibold text-brand-700">Authorized staff workspace</p>
       <h1 ref={headingRef} id="community-moderation-heading" tabIndex={-1} className="mt-2 text-3xl font-semibold text-ink-900">
         Community moderation
       </h1>
       <p className="mt-2 text-base leading-6 text-ink-600">
-        Review reported notes without exposing reporter or author identity.
+        Review reported community notes while keeping reporter, author, and contact details private.
       </p>
 
       {status ? (

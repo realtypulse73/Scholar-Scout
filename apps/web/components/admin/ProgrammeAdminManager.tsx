@@ -522,10 +522,10 @@ export default function ProgrammeAdminManager({
               Governed data
             </Badge>
             <h1 className="text-2xl font-extrabold text-ink-900">
-              Programme editor
+              Governed programme stewardship
             </h1>
             <p className="mt-2 text-sm leading-6 text-ink-600">
-              Staff changes save through protected account APIs, with local browser state as a fallback.
+              Authorized staff maintain student-facing programme information through protected account APIs.
             </p>
           </div>
         </div>
