@@ -8,6 +8,7 @@ import {
   writeVersionedScholarScoutData,
   type StoredUser,
 } from '@/lib/server/data-store';
+import type { ShortlistPlanMap } from '@/lib/shortlist';
 
 export async function createStudentAccountRecord(
   user: StoredUser,
@@ -81,4 +82,87 @@ export async function replaceStudentOnboardingProfile(
   if (result.status === 'conflict') {
     throw new PersistenceConflictError();
   }
+}
+
+export async function replaceStudentShortlistState(
+  studentKey: string,
+  programmeIds: string[],
+  plans: ShortlistPlanMap,
+): Promise<void> {
+  const snapshot = await readVersionedScholarScoutData();
+  const normalizedIds = normalizeProgrammeIds(programmeIds);
+  snapshot.data.shortlists[studentKey] = normalizedIds;
+  snapshot.data.shortlistPlans = snapshot.data.shortlistPlans ?? {};
+  snapshot.data.shortlistPlans[studentKey] = prunePlans(plans, normalizedIds);
+  snapshot.data.auditEvents.push(
+    createAuditEvent(studentKey, 'save', 'shortlist', studentKey),
+  );
+
+  await commitSnapshot(snapshot.data, snapshot.version);
+}
+
+export async function replaceStudentShortlistIds(
+  studentKey: string,
+  programmeIds: string[],
+): Promise<void> {
+  const snapshot = await readVersionedScholarScoutData();
+  const normalizedIds = normalizeProgrammeIds(programmeIds);
+  snapshot.data.shortlists[studentKey] = normalizedIds;
+  snapshot.data.shortlistPlans = snapshot.data.shortlistPlans ?? {};
+  snapshot.data.shortlistPlans[studentKey] = prunePlans(
+    snapshot.data.shortlistPlans[studentKey] ?? {},
+    normalizedIds,
+  );
+  snapshot.data.auditEvents.push(
+    createAuditEvent(studentKey, 'save', 'shortlist', studentKey),
+  );
+
+  await commitSnapshot(snapshot.data, snapshot.version);
+}
+
+export async function replaceStudentShortlistPlans(
+  studentKey: string,
+  plans: ShortlistPlanMap,
+): Promise<void> {
+  const snapshot = await readVersionedScholarScoutData();
+  snapshot.data.shortlistPlans = snapshot.data.shortlistPlans ?? {};
+  snapshot.data.shortlistPlans[studentKey] = prunePlans(
+    plans,
+    snapshot.data.shortlists[studentKey] ?? [],
+  );
+  snapshot.data.auditEvents.push(
+    createAuditEvent(studentKey, 'save-plans', 'shortlist', studentKey),
+  );
+
+  await commitSnapshot(snapshot.data, snapshot.version);
+}
+
+async function commitSnapshot(
+  data: Parameters<typeof writeVersionedScholarScoutData>[0],
+  version: string | null,
+): Promise<void> {
+  const result = await writeVersionedScholarScoutData(data, version);
+  if (result.status === 'conflict') {
+    throw new PersistenceConflictError();
+  }
+}
+
+function normalizeProgrammeIds(programmeIds: string[]): string[] {
+  return Array.from(new Set(programmeIds.filter(Boolean))).sort();
+}
+
+function prunePlans(
+  plans: ShortlistPlanMap,
+  programmeIds: string[],
+): ShortlistPlanMap {
+  const allowedIds = new Set(programmeIds);
+  return Object.fromEntries(
+    Object.entries(plans)
+      .filter(([programmeId]) => allowedIds.has(programmeId))
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([programmeId, plan]) => [
+        programmeId,
+        { status: plan.status, note: plan.note.trim() },
+      ]),
+  );
 }

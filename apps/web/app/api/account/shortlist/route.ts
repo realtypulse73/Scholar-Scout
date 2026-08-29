@@ -3,8 +3,8 @@ import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import {
   getShortlist,
   getShortlistPlans,
-  saveShortlist,
-  saveShortlistPlans,
+  PersistenceConflictError,
+  saveShortlistState,
 } from '@/lib/server/data-store';
 import { resolveStudentActor } from '@/lib/server/student-actor';
 import type {
@@ -61,10 +61,31 @@ export async function POST(request: Request) {
     );
   }
 
-  await saveShortlist(actor.storageKey, body.value.programmeIds);
-  await saveShortlistPlans(actor.storageKey, body.value.plans);
+  try {
+    await saveShortlistState(
+      actor.storageKey,
+      body.value.programmeIds,
+      body.value.plans,
+    );
+  } catch (error) {
+    if (error instanceof PersistenceConflictError) {
+      return studentConflictResponse();
+    }
+    throw error;
+  }
 
   return NextResponse.json({ ok: true });
+}
+
+function studentConflictResponse() {
+  return NextResponse.json(
+    {
+      error: 'Student data changed. Reload and try again.',
+      category: 'conflict',
+      action: 'reload',
+    },
+    { status: 409 },
+  );
 }
 
 async function resolveActor() {

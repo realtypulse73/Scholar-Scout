@@ -3,6 +3,7 @@ import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import { validateAll } from '@/lib/onboarding-validation';
 import {
   getOnboardingProfile,
+  PersistenceConflictError,
   saveOnboardingProfile,
 } from '@/lib/server/data-store';
 import { resolveStudentActor } from '@/lib/server/student-actor';
@@ -92,9 +93,27 @@ export async function POST(request: Request) {
     );
   }
 
-  await saveOnboardingProfile(actor.storageKey, body.value);
+  try {
+    await saveOnboardingProfile(actor.storageKey, body.value);
+  } catch (error) {
+    if (error instanceof PersistenceConflictError) {
+      return studentConflictResponse();
+    }
+    throw error;
+  }
 
   return NextResponse.json({ ok: true });
+}
+
+function studentConflictResponse() {
+  return NextResponse.json(
+    {
+      error: 'Student data changed. Reload and try again.',
+      category: 'conflict',
+      action: 'reload',
+    },
+    { status: 409 },
+  );
 }
 
 async function resolveActor() {

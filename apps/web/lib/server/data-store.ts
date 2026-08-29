@@ -1221,18 +1221,10 @@ export async function getOnboardingProfile(userId: string) {
 }
 
 export async function saveShortlist(userId: string, programmeIds: string[]) {
-  const data = await readScholarScoutData();
-  const normalizedIds = Array.from(
-    new Set(programmeIds.filter(Boolean)),
-  ).sort();
-  data.shortlists[userId] = normalizedIds;
-  data.shortlistPlans = data.shortlistPlans ?? {};
-  data.shortlistPlans[userId] = pruneStoredShortlistPlans(
-    data.shortlistPlans[userId] ?? {},
-    normalizedIds,
+  const { replaceStudentShortlistIds } = await import(
+    '@/lib/server/student-records'
   );
-  data.auditEvents.push(createAuditEvent(userId, 'save', 'shortlist', userId));
-  await writeScholarScoutData(data);
+  await replaceStudentShortlistIds(userId, programmeIds);
 }
 
 export async function getShortlist(userId: string) {
@@ -1244,16 +1236,21 @@ export async function saveShortlistPlans(
   userId: string,
   plans: ShortlistPlanMap,
 ) {
-  const data = await readScholarScoutData();
-  data.shortlistPlans = data.shortlistPlans ?? {};
-  data.shortlistPlans[userId] = pruneStoredShortlistPlans(
-    normalizeStoredShortlistPlans(plans),
-    data.shortlists[userId] ?? [],
+  const { replaceStudentShortlistPlans } = await import(
+    '@/lib/server/student-records'
   );
-  data.auditEvents.push(
-    createAuditEvent(userId, 'save-plans', 'shortlist', userId),
+  await replaceStudentShortlistPlans(userId, plans);
+}
+
+export async function saveShortlistState(
+  userId: string,
+  programmeIds: string[],
+  plans: ShortlistPlanMap,
+) {
+  const { replaceStudentShortlistState } = await import(
+    '@/lib/server/student-records'
   );
-  await writeScholarScoutData(data);
+  await replaceStudentShortlistState(userId, programmeIds, plans);
 }
 
 export async function getShortlistPlans(userId: string) {
