@@ -1,6 +1,7 @@
 import {
   BlobPreconditionFailedError,
   get,
+  head,
   put,
   type GetBlobResult,
   type PutBlobResult,
@@ -48,6 +49,7 @@ import { programmes } from '@/lib/programmes';
 jest.mock('@vercel/blob', () => ({
   BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
   get: jest.fn(),
+  head: jest.fn(),
   put: jest.fn(),
 }));
 
@@ -514,6 +516,7 @@ describe('ScholarScout data store adapter', () => {
     process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
     process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'private/scholarscout.json';
     const getMock = jest.mocked(get);
+    const headMock = jest.mocked(head);
     const putMock = jest.mocked(put);
 
     getMock.mockImplementation(async () => ({
@@ -537,6 +540,9 @@ describe('ScholarScout data store adapter', () => {
         size: 10,
       },
     } as unknown as GetBlobResult));
+    headMock.mockResolvedValue({
+      etag: 'authoritative-etag',
+    } as Awaited<ReturnType<typeof head>>);
     putMock.mockResolvedValue({
       url: 'https://blob.example/private/scholarscout.json',
       downloadUrl: 'https://blob.example/private/scholarscout.json',
@@ -555,6 +561,9 @@ describe('ScholarScout data store adapter', () => {
       token: 'blob-token',
       useCache: false,
     });
+    expect(headMock).toHaveBeenCalledWith('private/scholarscout.json', {
+      token: 'blob-token',
+    });
     expect(putMock).toHaveBeenCalledWith(
       'private/scholarscout.json',
       expect.stringContaining('blob-record'),
@@ -562,7 +571,7 @@ describe('ScholarScout data store adapter', () => {
         access: 'private',
         addRandomSuffix: false,
         allowOverwrite: true,
-        ifMatch: 'etag',
+        ifMatch: 'authoritative-etag',
         cacheControlMaxAge: 60,
         contentType: 'application/json',
         token: 'blob-token',

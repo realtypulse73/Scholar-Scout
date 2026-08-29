@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Community moderation | ScholarScout',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function CommunityModerationPage() {
   const authorization = await requireActiveStaff({
     action: 'community-moderation:read',

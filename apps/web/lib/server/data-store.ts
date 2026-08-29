@@ -450,7 +450,7 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
 
   async readVersioned(): Promise<VersionedScholarScoutData> {
     try {
-      const { get } = await import('@vercel/blob');
+      const { get, head } = await import('@vercel/blob');
       const blob = await get(this.pathname, {
         access: 'private',
         token: this.token,
@@ -470,9 +470,10 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       }
 
       const body = await readStreamText(blob.stream);
+      const metadata = await head(this.pathname, { token: this.token });
       return {
         data: parseStoredScholarScoutData(JSON.parse(body)),
-        version: blob.blob.etag,
+        version: metadata.etag,
       };
     } catch (error) {
       if (error instanceof ScholarScoutDataStoreReadError) {

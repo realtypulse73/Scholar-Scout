@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Operations | ScholarScout',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminOpsPage() {
   const authorization = await requireActiveStaff({
     action: 'view-operations-metrics',

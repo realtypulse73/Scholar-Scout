@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Feed Analytics | ScholarScout',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminFeedPage() {
   const authorization = await requireActiveStaff({
     action: 'view-feed-metrics',
