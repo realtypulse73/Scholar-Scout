@@ -137,7 +137,28 @@ Plans:
   2. Student, programme, and operational records can be read and changed through bounded domain operations rather than a full shared-document replacement for every event.
   3. A maintainer can migrate one high-risk persistence boundary at a time while existing supported data adapters and recovery workflows remain verifiably safe.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Prove programme save/delete through provider-level CAS across JSON, HTTP, and Vercel Blob
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Migrate account, onboarding, shortlist, and plan writes to bounded student operations
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Migrate operational lifecycle, audit, and platform writes with explicit retry classification
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-04-PLAN.md — Bind Phase 3 recovery to conditional apply and close adapter compatibility boundaries
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 04-05-PLAN.md — Record DATA-01/DATA-02 coverage and run the complete Phase 4 validation gate
 **Risk**: `data-store.ts` is the current system of record for several domains and adapters; use compatibility boundaries, transactional/versioned writes, and adapter-level integration tests rather than a wholesale datastore replacement.
 
 ### Phase 5: School, Community, and WNY Release Slice
