@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import Button from '@/components/ui/Button';
@@ -21,10 +21,11 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
   const [body, setBody] = useState('');
   const [status, setStatus] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [reportingNote, setReportingNote] = useState<PublicCampusNote | null>(null);
+  const [reportingNote, setReportingNote] = useState<{
+    note: PublicCampusNote;
+    trigger: HTMLButtonElement;
+  } | null>(null);
   const [isReporting, setIsReporting] = useState(false);
-  const reportButtonRef = useRef<HTMLButtonElement | null>(null);
-
   useEffect(() => {
     const search = new URLSearchParams({ school: schoolSlug });
     if (uploaderUsername) search.set('uploader', uploaderUsername);
@@ -58,26 +59,30 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
     }
   }
 
+  function closeReportDialog(trigger = reportingNote?.trigger) {
+    setReportingNote(null);
+    requestAnimationFrame(() => trigger?.focus());
+  }
+
   async function confirmReport() {
     if (!reportingNote) return;
+    const pendingReport = reportingNote;
     setIsReporting(true);
     setStatus('');
     try {
-      const response = await fetch(`/api/campus-notes/${reportingNote.id}/report`, { method: 'POST' });
+      const response = await fetch(`/api/campus-notes/${pendingReport.note.id}/report`, { method: 'POST' });
       const data = (await response.json()) as { message?: string; error?: string };
       if (!response.ok) {
         setStatus(data.error ?? 'We couldn’t report this note. Please try again.');
-        setReportingNote(null);
-        requestAnimationFrame(() => reportButtonRef.current?.focus());
+        closeReportDialog(pendingReport.trigger);
         return;
       }
-      setNotes((current) => current.filter((note) => note.id !== reportingNote.id));
+      setNotes((current) => current.filter((note) => note.id !== pendingReport.note.id));
       setReportingNote(null);
       setStatus(data.message ?? 'Thanks for reporting this note. It is hidden from the community while staff review it.');
     } catch {
       setStatus('We couldn’t report this note. Please try again.');
-      setReportingNote(null);
-      requestAnimationFrame(() => reportButtonRef.current?.focus());
+      closeReportDialog(pendingReport.trigger);
     } finally {
       setIsReporting(false);
     }
@@ -107,20 +112,52 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
           <article key={note.id} className="rounded-card border border-ink-200 bg-ink-50 p-3">
             <p className="break-words text-sm leading-6 text-ink-800">{note.body}</p>
             <p className="mt-2 text-sm font-semibold text-ink-500">ScholarScout community member · {new Date(note.created_at).toLocaleDateString()}</p>
-            <button ref={reportButtonRef} type="button" className="mt-2 min-h-touch rounded-card px-0 text-sm font-semibold text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2" onClick={() => setReportingNote(note)}>Report this note</button>
+            <button type="button" className="mt-2 min-h-touch rounded-card px-0 text-sm font-semibold text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2" onClick={(event) => setReportingNote({ note, trigger: event.currentTarget })}>Report this note</button>
           </article>
         )) : <div className="rounded-card bg-ink-50 p-4"><h3 className="text-xl font-semibold text-ink-900">Start the conversation</h3><p className="mt-2 text-sm leading-6 text-ink-600">Be the first to ask a question or share a helpful campus perspective. Keep personal contact details out of public notes.</p></div>}
       </div>
       {reportingNote ? (
-        <div role="dialog" aria-modal="true" aria-labelledby="report-note-title" className="mt-4 rounded-card border border-ink-300 bg-white p-4 shadow-panel">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="report-note-title"
+          className="mt-4 rounded-card border border-ink-300 bg-white p-4 shadow-panel"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !isReporting) {
+              event.preventDefault();
+              closeReportDialog();
+              return;
+            }
+            trapDialogFocus(event);
+          }}
+        >
           <h3 id="report-note-title" className="text-xl font-semibold text-ink-900">Report this note</h3>
           <p className="mt-2 text-sm leading-6 text-ink-600">This will hide the note from the community while staff review it.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setReportingNote(null)} disabled={isReporting}>Cancel</Button>
+            <Button autoFocus variant="secondary" onClick={() => closeReportDialog()} disabled={isReporting}>Cancel</Button>
             <Button onClick={() => void confirmReport()} disabled={isReporting}>{isReporting ? 'Reporting note...' : 'Confirm report'}</Button>
           </div>
         </div>
       ) : null}
     </section>
   );
+}
+
+function trapDialogFocus(event: React.KeyboardEvent<HTMLDivElement>): void {
+  if (event.key !== 'Tab') return;
+
+  const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+    'button:not([disabled])',
+  ));
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (!first || !last) return;
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }

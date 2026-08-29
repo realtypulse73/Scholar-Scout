@@ -182,4 +182,54 @@ describe('community submission and reporting', () => {
     expect(screen.getByText('Keep this note')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Report this note' })).toBeEnabled();
   });
+
+  it('keeps the report dialog keyboard-contained and returns focus when cancelled', async () => {
+    jest.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ notes: [{ id: 'note-1', school_slug: 'test-school', uploader_username: null, program_id: null, body: 'Keyboard-safe note', created_at: '2026-08-29T12:00:00.000Z' }] }),
+    } as Response);
+
+    render(<CampusNoteBoard schoolSlug="test-school" />);
+
+    const reportButton = await screen.findByRole('button', { name: 'Report this note' });
+    fireEvent.click(reportButton);
+    const dialog = screen.getByRole('dialog', { name: 'Report this note' });
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    const confirm = screen.getByRole('button', { name: 'Confirm report' });
+
+    await waitFor(() => expect(cancel).toHaveFocus());
+    confirm.focus();
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(cancel).toHaveFocus();
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(reportButton).toHaveFocus());
+  });
+
+  it('returns focus to the reported note that failed, not another note', async () => {
+    jest.mocked(global.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ notes: [
+          { id: 'note-1', school_slug: 'test-school', uploader_username: null, program_id: null, body: 'First public note', created_at: '2026-08-29T12:00:00.000Z' },
+          { id: 'note-2', school_slug: 'test-school', uploader_username: null, program_id: null, body: 'Second public note', created_at: '2026-08-29T12:00:00.000Z' },
+        ] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'This note changed before it could be reported. Refresh and try again.' }),
+      } as Response);
+
+    render(<CampusNoteBoard schoolSlug="test-school" />);
+
+    await screen.findByText('First public note');
+    const reportButtons = screen.getAllByRole('button', { name: 'Report this note' });
+    fireEvent.click(reportButtons[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm report' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Refresh and try again.'));
+    await waitFor(() => expect(reportButtons[0]).toHaveFocus());
+    expect(reportButtons[1]).not.toHaveFocus();
+  });
 });
