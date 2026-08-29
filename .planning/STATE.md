@@ -160,6 +160,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 7 added: Governed Opportunity and Support Matching
+- Phase 8 added: Multi-Metro Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; and Houston, Texas, with scoped data, location behavior, validation, rollout, and final-release traceability.
 
 ### Pending Todos
 
