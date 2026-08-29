@@ -1,5 +1,6 @@
 import { createServer as createHttpServer } from 'node:http';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,6 +26,7 @@ export function createScholarScoutDataService({
   dataFile = defaultDataFile,
   token = process.env.SCHOLARSCOUT_DATA_SERVICE_TOKEN,
 } = {}) {
+  let writeQueue = Promise.resolve();
   return createHttpServer(async (request, response) => {
     try {
       if (token && request.headers.authorization !== `Bearer ${token}`) {
@@ -48,7 +50,9 @@ export function createScholarScoutDataService({
       }
 
       if (request.method === 'PUT') {
-        await handleWrite(request, response, dataFile);
+        const write = writeQueue.then(() => handleWrite(request, response, dataFile));
+        writeQueue = write.catch(() => undefined);
+        await write;
         return;
       }
 
@@ -81,7 +85,9 @@ async function handleRead(response, dataFile) {
   }
 
   try {
-    sendJson(response, 200, normalizeData(JSON.parse(file)));
+    sendJson(response, 200, normalizeData(JSON.parse(file)), {
+      ETag: createStrongEtag(file),
+    });
   } catch (error) {
     if (error instanceof SyntaxError) {
       sendJson(response, 500, { error: 'Invalid stored data document' });
@@ -97,9 +103,27 @@ async function handleWrite(request, response, dataFile) {
   const data = normalizeData(JSON.parse(rawBody));
 
   await mkdir(path.dirname(dataFile), { recursive: true });
+  let current = null;
+  try {
+    current = await readFile(dataFile, 'utf8');
+  } catch (error) {
+    if (!error || typeof error !== 'object' || error.code !== 'ENOENT') throw error;
+  }
+  const ifMatch = request.headers['if-match'];
+  const ifNoneMatch = request.headers['if-none-match'];
+  const preconditionMatches = current === null
+    ? ifNoneMatch === '*'
+    : typeof ifMatch === 'string' && ifMatch === createStrongEtag(current);
+  if (!preconditionMatches) {
+    sendJson(response, 412, { error: 'Data document changed' });
+    return;
+  }
   await backupExistingDocument(dataFile);
-  await writeFile(dataFile, JSON.stringify(data, null, 2));
-  sendJson(response, 200, { ok: true });
+  const serialized = JSON.stringify(data, null, 2);
+  const temporaryPath = `${dataFile}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(temporaryPath, serialized);
+  await rename(temporaryPath, dataFile);
+  sendJson(response, 200, { ok: true }, { ETag: createStrongEtag(serialized) });
 }
 
 async function backupExistingDocument(dataFile) {
@@ -149,9 +173,13 @@ function readRequestBody(request) {
   });
 }
 
-function sendJson(response, status, body) {
-  response.writeHead(status, { 'Content-Type': 'application/json' });
+function sendJson(response, status, body, headers = {}) {
+  response.writeHead(status, { 'Content-Type': 'application/json', ...headers });
   response.end(JSON.stringify(body));
+}
+
+function createStrongEtag(value) {
+  return `"${createHash('sha256').update(value).digest('hex')}"`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

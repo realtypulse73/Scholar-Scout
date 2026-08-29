@@ -7,7 +7,7 @@ import {
   scrypt,
   timingSafeEqual,
 } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, open, readFile, rename, unlink } from 'fs/promises';
 import path from 'path';
 import { TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
@@ -188,6 +188,24 @@ export interface ScholarScoutDataRestorePlan {
 export interface ScholarScoutDataStore {
   read(): Promise<ScholarScoutData>;
   write(data: ScholarScoutData): Promise<void>;
+  readVersioned?(): Promise<VersionedScholarScoutData>;
+  writeVersioned?(data: ScholarScoutData, expectedVersion: string | null): Promise<ConditionalWriteResult>;
+}
+
+export interface VersionedScholarScoutData {
+  data: ScholarScoutData;
+  version: string | null;
+}
+
+export type ConditionalWriteResult =
+  | { status: 'applied'; version: string }
+  | { status: 'conflict' };
+
+export class PersistenceConflictError extends Error {
+  constructor() {
+    super('ScholarScout data changed before the operation could be committed.');
+    this.name = 'PersistenceConflictError';
+  }
 }
 
 export interface ScholarScoutDataStoreStatus {
@@ -276,8 +294,50 @@ export class JsonScholarScoutDataStore implements ScholarScoutDataStore {
   }
 
   async write(data: ScholarScoutData) {
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async readVersioned(): Promise<VersionedScholarScoutData> {
+    try {
+      const file = await readFile(this.filePath, 'utf8');
+      return {
+        data: parseStoredScholarScoutData(JSON.parse(file)),
+        version: hashStoredDocument(file),
+      };
+    } catch (error) {
+      if (isFileNotFoundError(error)) return { data: createInitialData(), version: null };
+      throw normalizeStoreReadError(error);
+    }
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
-    await writeFile(this.filePath, JSON.stringify(data, null, 2));
+    const lockPath = `${this.filePath}.lock`;
+    const lock = await acquireJsonStoreLock(lockPath);
+    const temporaryPath = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`;
+    try {
+      const current = await this.readVersioned();
+      if (current.version !== expectedVersion) return { status: 'conflict' };
+      const serialized = JSON.stringify(normalizeScholarScoutData(data), null, 2);
+      const temporary = await open(temporaryPath, 'wx');
+      try {
+        await temporary.writeFile(serialized, 'utf8');
+        await temporary.sync();
+      } finally {
+        await temporary.close();
+      }
+      await rename(temporaryPath, this.filePath);
+      return { status: 'applied', version: hashStoredDocument(serialized) };
+    } finally {
+      await unlink(temporaryPath).catch(() => undefined);
+      await lock.close();
+      await unlink(lockPath).catch(() => undefined);
+    }
   }
 }
 
@@ -288,6 +348,10 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
+    return (await this.readVersioned()).data;
+  }
+
+  async readVersioned(): Promise<VersionedScholarScoutData> {
     let response: Response;
 
     try {
@@ -302,7 +366,7 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
     }
 
     if (response.status === 404) {
-      return createInitialData();
+      return { data: createInitialData(), version: null };
     }
 
     if (!response.ok) {
@@ -310,7 +374,10 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
     }
 
     try {
-      return parseStoredScholarScoutData(await response.json());
+      return {
+        data: parseStoredScholarScoutData(await response.json()),
+        version: response.headers?.get('etag') ?? null,
+      };
     } catch (error) {
       if (error instanceof ScholarScoutDataStoreReadError) {
         throw error;
@@ -323,20 +390,37 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
   }
 
   async write(data: ScholarScoutData) {
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
     const response = await fetch(this.serviceUrl, {
       method: 'PUT',
       headers: {
         ...this.getHeaders(),
         'Content-Type': 'application/json',
+        ...(expectedVersion === null
+          ? { 'If-None-Match': '*' }
+          : { 'If-Match': expectedVersion }),
       },
       body: JSON.stringify(data),
     });
 
+    if (response.status === 412) return { status: 'conflict' };
     if (!response.ok) {
       throw new Error(
         `ScholarScout data service write failed with ${response.status}.`,
       );
     }
+    return {
+      status: 'applied',
+      version: response.headers?.get('etag') ?? hashScholarScoutData(data),
+    };
   }
 
   private getHeaders(): Record<string, string> {
@@ -357,6 +441,10 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
+    return (await this.readVersioned()).data;
+  }
+
+  async readVersioned(): Promise<VersionedScholarScoutData> {
     try {
       const { get } = await import('@vercel/blob');
       const blob = await get(this.pathname, {
@@ -366,7 +454,7 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       });
 
       if (!blob) {
-        return createInitialData();
+        return { data: createInitialData(), version: null };
       }
 
       if (blob.statusCode !== 200) {
@@ -378,7 +466,10 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       }
 
       const body = await readStreamText(blob.stream);
-      return parseStoredScholarScoutData(JSON.parse(body));
+      return {
+        data: parseStoredScholarScoutData(JSON.parse(body)),
+        version: blob.blob.etag,
+      };
     } catch (error) {
       if (error instanceof ScholarScoutDataStoreReadError) {
         throw error;
@@ -395,14 +486,39 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
   }
 
   async write(data: ScholarScoutData) {
-    const { put } = await import('@vercel/blob');
-    await put(this.pathname, JSON.stringify(data, null, 2), {
-      access: 'private',
-      allowOverwrite: true,
-      cacheControlMaxAge: 60,
-      contentType: 'application/json',
-      token: this.token,
-    });
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
+    const blobModule = await import('@vercel/blob');
+    try {
+      const result = await blobModule.put(
+        this.pathname,
+        JSON.stringify(normalizeScholarScoutData(data), null, 2),
+        {
+          access: 'private',
+          allowOverwrite: expectedVersion !== null,
+          ...(expectedVersion === null ? {} : { ifMatch: expectedVersion }),
+          cacheControlMaxAge: 60,
+          contentType: 'application/json',
+          token: this.token,
+        },
+      );
+      return { status: 'applied', version: result.etag };
+    } catch (error) {
+      if (
+        error instanceof blobModule.BlobPreconditionFailedError ||
+        (error instanceof Error && /already exists/i.test(error.message))
+      ) {
+        return { status: 'conflict' };
+      }
+      throw error;
+    }
   }
 }
 
@@ -876,6 +992,28 @@ export async function readScholarScoutData() {
   return normalizeScholarScoutData(await getScholarScoutDataStore().read());
 }
 
+export async function readVersionedScholarScoutData(): Promise<VersionedScholarScoutData> {
+  const store = getScholarScoutDataStore();
+  if (store.readVersioned) {
+    const versioned = await store.readVersioned();
+    return { data: normalizeScholarScoutData(versioned.data), version: versioned.version };
+  }
+  const data = normalizeScholarScoutData(await store.read());
+  return { data, version: hashScholarScoutData(data) };
+}
+
+export async function writeVersionedScholarScoutData(
+  data: ScholarScoutData,
+  expectedVersion: string | null,
+): Promise<ConditionalWriteResult> {
+  const store = getScholarScoutDataStore();
+  if (store.writeVersioned) {
+    return store.writeVersioned(normalizeScholarScoutData(data), expectedVersion);
+  }
+  await store.write(normalizeScholarScoutData(data));
+  return { status: 'applied', version: hashScholarScoutData(data) };
+}
+
 export type ScholarScoutDataStoreReadFailureCategory =
   | 'unavailable'
   | 'timeout'
@@ -1138,66 +1276,11 @@ export async function getShortlistPlans(userId: string) {
   );
 }
 
-export class ProgrammeRevisionConflictError extends Error {
-  constructor(
-    readonly programmeId: string,
-    readonly currentRevision: number,
-    readonly currentRecord: Programme | undefined,
-  ) {
-    super('Programme record has changed since it was loaded.');
-  }
-}
-
-export async function saveProgrammeRecord(userId: string, programme: Programme) {
-  const data = await readScholarScoutData();
-  const existingIndex = data.programmeRecords.findIndex(
-    (record) => record.id === programme.id,
-  );
-  const existingRecord = data.programmeRecords[existingIndex];
-
-  if (existingIndex === -1) {
-    data.programmeRecords.unshift({ ...programme, revision: 1 });
-  } else {
-    const currentRevision = existingRecord.revision ?? 0;
-    const incomingRevision = programme.revision ?? 0;
-
-    if (incomingRevision !== currentRevision) {
-      throw new ProgrammeRevisionConflictError(
-        programme.id,
-        currentRevision,
-        existingRecord,
-      );
-    }
-
-    data.programmeRecords[existingIndex] = {
-      ...programme,
-      revision: currentRevision + 1,
-    };
-  }
-
-  data.auditEvents.push(
-    createAuditEvent(
-      userId,
-      existingIndex === -1 ? 'create' : 'update',
-      'programme',
-      programme.id,
-    ),
-  );
-  await writeScholarScoutData(data);
-
-  return data.programmeRecords.find((record) => record.id === programme.id);
-}
-
-export async function deleteProgrammeRecord(userId: string, programmeId: string) {
-  const data = await readScholarScoutData();
-  data.programmeRecords = data.programmeRecords.filter(
-    (record) => record.id !== programmeId,
-  );
-  data.auditEvents.push(
-    createAuditEvent(userId, 'delete', 'programme', programmeId),
-  );
-  await writeScholarScoutData(data);
-}
+export {
+  deleteProgrammeRecord,
+  ProgrammeRevisionConflictError,
+  saveProgrammeRecord,
+} from '@/lib/server/programme-records';
 
 export async function getProgrammeRecords() {
   const data = await readScholarScoutData();
@@ -1351,7 +1434,7 @@ export async function getPrivilegedOperationAuditEvents(): Promise<
   );
 }
 
-function createAuditEvent(
+export function createAuditEvent(
   userId: string,
   action: string,
   entityType: AuditEvent['entityType'],
@@ -1900,5 +1983,46 @@ async function readStreamText(stream: ReadableStream<Uint8Array>) {
     }
 
     text += decoder.decode(value, { stream: true });
+  }
+}
+
+function hashStoredDocument(value: string): string {
+  return `"${createHash('sha256').update(value).digest('hex')}"`;
+}
+
+function hashScholarScoutData(data: ScholarScoutData): string {
+  return hashStoredDocument(JSON.stringify(normalizeScholarScoutData(data), null, 2));
+}
+
+function normalizeStoreReadError(error: unknown): ScholarScoutDataStoreReadError {
+  if (error instanceof ScholarScoutDataStoreReadError) return error;
+  return new ScholarScoutDataStoreReadError(
+    error instanceof SyntaxError
+      ? 'invalid-data'
+      : isTimeoutError(error)
+        ? 'timeout'
+        : 'unavailable',
+  );
+}
+
+async function acquireJsonStoreLock(lockPath: string) {
+  const deadline = Date.now() + 1_000;
+  while (true) {
+    try {
+      return await open(lockPath, 'wx');
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('code' in error) ||
+        error.code !== 'EEXIST'
+      ) {
+        throw error;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error('ScholarScout JSON data store is unavailable because another writer holds its lock.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
   }
 }

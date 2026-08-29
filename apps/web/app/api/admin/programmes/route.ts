@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import {
-  deleteProgrammeRecord,
   getProgrammeAuditEvents,
   getProgrammeRecords,
+} from '@/lib/server/data-store';
+import {
+  deleteProgrammeRecord,
   ProgrammeRevisionConflictError,
   saveProgrammeRecord,
-} from '@/lib/server/data-store';
+} from '@/lib/server/programme-records';
 import { requireActiveStaff } from '@/lib/server/active-staff';
 import {
   prepareProgrammeDraft,
@@ -85,7 +87,16 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Missing programme id' }, { status: 400 });
   }
 
-  await deleteProgrammeRecord(authorization.actor.id, id);
-
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteProgrammeRecord(authorization.actor.id, id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof ProgrammeRevisionConflictError) {
+      return NextResponse.json(
+        { error: 'This programme changed before it could be deleted.' },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
 }

@@ -39,6 +39,24 @@ describe('ScholarScout HTTP data service fixture', () => {
     assert.equal(response.status, 404);
   });
 
+  it('allows only one first creator for an absent document', async () => {
+    const create = (id) => fetch(baseUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer test-token',
+        'Content-Type': 'application/json',
+        'If-None-Match': '*',
+      },
+      body: JSON.stringify({
+        users: [], onboardingProfiles: {}, shortlists: {},
+        programmeRecords: [{ id }], auditEvents: [],
+      }),
+    });
+    const [first, second] = await Promise.all([create('first'), create('second')]);
+    assert.deepEqual([first.status, second.status].sort(), [200, 412]);
+    await rm(dataFile);
+  });
+
   it('fails closed when the stored document is malformed', async () => {
     await writeFile(dataFile, '{malformed stored json');
 
@@ -108,6 +126,7 @@ describe('ScholarScout HTTP data service fixture', () => {
       headers: {
         Authorization: 'Bearer test-token',
         'Content-Type': 'application/json',
+        'If-None-Match': '*',
       },
       body: JSON.stringify(document),
     });
@@ -131,11 +150,15 @@ describe('ScholarScout HTTP data service fixture', () => {
       auditEvents: [],
     };
 
+    const currentResponse = await fetch(baseUrl, {
+      headers: { Authorization: 'Bearer test-token' },
+    });
     const response = await fetch(baseUrl, {
       method: 'PUT',
       headers: {
         Authorization: 'Bearer test-token',
         'Content-Type': 'application/json',
+        'If-Match': currentResponse.headers.get('etag'),
       },
       body: JSON.stringify(updatedDocument),
     });
@@ -143,5 +166,31 @@ describe('ScholarScout HTTP data service fixture', () => {
 
     assert.equal(response.status, 200);
     assert.equal(backups.length, 1);
+  });
+
+  it('rejects stale replacements and preserves the winning document', async () => {
+    const current = await fetch(baseUrl, {
+      headers: { Authorization: 'Bearer test-token' },
+    });
+    const etag = current.headers.get('etag');
+    const makeRequest = (id) => fetch(baseUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer test-token',
+        'Content-Type': 'application/json',
+        'If-Match': etag,
+      },
+      body: JSON.stringify({
+        users: [], onboardingProfiles: {}, shortlists: {},
+        programmeRecords: [{ id }], auditEvents: [],
+      }),
+    });
+    const [first, second] = await Promise.all([
+      makeRequest('winner-one'),
+      makeRequest('winner-two'),
+    ]);
+    assert.deepEqual([first.status, second.status].sort(), [200, 412]);
+    const stored = JSON.parse(await readFile(dataFile, 'utf8'));
+    assert.ok(['winner-one', 'winner-two'].includes(stored.programmeRecords[0].id));
   });
 });

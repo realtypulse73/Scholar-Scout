@@ -1,12 +1,14 @@
 import {
+  BlobPreconditionFailedError,
   get,
   put,
   type GetBlobResult,
   type PutBlobResult,
 } from '@vercel/blob';
 import { ReadableStream } from 'stream/web';
+import { spawn } from 'node:child_process';
 import { TextEncoder } from 'util';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -42,6 +44,7 @@ import {
 import { programmes } from '@/lib/programmes';
 
 jest.mock('@vercel/blob', () => ({
+  BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
   get: jest.fn(),
   put: jest.fn(),
 }));
@@ -56,6 +59,7 @@ const initialData: ScholarScoutData = {
 
 class MemoryDataStore implements ScholarScoutDataStore {
   data = cloneData(initialData);
+  version = 'memory-0';
 
   async read() {
     return cloneData(this.data);
@@ -63,6 +67,17 @@ class MemoryDataStore implements ScholarScoutDataStore {
 
   async write(data: ScholarScoutData) {
     this.data = cloneData(data);
+    this.version = `memory-${Number(this.version.split('-')[1]) + 1}`;
+  }
+
+  async readVersioned() {
+    return { data: cloneData(this.data), version: this.version };
+  }
+
+  async writeVersioned(data: ScholarScoutData, expectedVersion: string | null) {
+    if (expectedVersion !== this.version) return { status: 'conflict' as const };
+    await this.write(data);
+    return { status: 'applied' as const, version: this.version };
   }
 }
 
@@ -122,6 +137,37 @@ describe('ScholarScout data store adapter', () => {
       currentRevision: 2,
       currentRecord: expect.objectContaining({ id: programmes[0].id }),
     });
+  });
+
+  it('allows only one programme writer to commit one store version', async () => {
+    const store = new MemoryDataStore();
+    let releaseFirstWrite!: () => void;
+    const firstWriteStarted = new Promise<void>((resolve) => {
+      releaseFirstWrite = resolve;
+    });
+    const originalWrite = store.writeVersioned.bind(store);
+    let writes = 0;
+    store.writeVersioned = async (data, expectedVersion) => {
+      writes += 1;
+      if (writes === 1) {
+        releaseFirstWrite();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      return originalWrite(data, expectedVersion);
+    };
+    setScholarScoutDataStoreForTests(store);
+    const first = saveProgrammeRecord('staff-1', {
+      ...programmes[0], id: 'concurrent-programme',
+    });
+    await firstWriteStarted;
+    const second = saveProgrammeRecord('staff-2', {
+      ...programmes[0], id: 'concurrent-programme',
+    });
+    const results = await Promise.allSettled([first, second]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(store.data.programmeRecords).toHaveLength(1);
+    expect(store.data.auditEvents).toHaveLength(1);
   });
 
   it('saves shortlist plans through the active adapter and prunes removed programmes', async () => {
@@ -241,12 +287,14 @@ describe('ScholarScout data store adapter', () => {
         return {
           ok: true,
           status: 200,
+          headers: new Headers({ etag: '"service-next"' }),
         } as Response;
       }
 
       return {
         ok: true,
         status: 200,
+        headers: new Headers({ etag: '"service-current"' }),
         json: async () => ({
           ...initialData,
           programmeRecords: [storedProgramme('service-record')],
@@ -273,6 +321,7 @@ describe('ScholarScout data store adapter', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer test-token',
           'Content-Type': 'application/json',
+          'If-Match': '"service-current"',
         }),
       }),
     );
@@ -324,6 +373,55 @@ describe('ScholarScout data store adapter', () => {
     }
   });
 
+  it('coordinates independent JSON writers with one applied result', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-cas-'));
+    const filePath = path.join(directory, 'data.json');
+    const barrierPath = path.join(directory, 'release');
+    const fixturePath = path.join(__dirname, '..', 'fixtures', 'json-cas-worker.ts');
+    try {
+      await writeFile(filePath, JSON.stringify(initialData), 'utf8');
+      const first = runJsonCasWorker(fixturePath, filePath, barrierPath, 'first');
+      const second = runJsonCasWorker(fixturePath, filePath, barrierPath, 'second');
+      await waitForFiles([
+        `${barrierPath}.first.ready`,
+        `${barrierPath}.second.ready`,
+      ]);
+      await writeFile(barrierPath, 'go');
+      const results = await Promise.all([first, second]);
+      expect(results.map((result) => result.status).sort()).toEqual([
+        'applied',
+        'conflict',
+      ]);
+      const stored = JSON.parse(await readFile(filePath, 'utf8')) as ScholarScoutData;
+      expect(['first', 'second']).toContain(stored.programmeRecords[0].id);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 15_000);
+
+  it('allows only one independent JSON creator for an absent document', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-create-'));
+    const filePath = path.join(directory, 'data.json');
+    const barrierPath = path.join(directory, 'release');
+    const fixturePath = path.join(__dirname, '..', 'fixtures', 'json-cas-worker.ts');
+    try {
+      const first = runJsonCasWorker(fixturePath, filePath, barrierPath, 'first');
+      const second = runJsonCasWorker(fixturePath, filePath, barrierPath, 'second');
+      await waitForFiles([
+        `${barrierPath}.first.ready`,
+        `${barrierPath}.second.ready`,
+      ]);
+      await writeFile(barrierPath, 'go');
+      const results = await Promise.all([first, second]);
+      expect(results.map((result) => result.status).sort()).toEqual([
+        'applied',
+        'conflict',
+      ]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 15_000);
+
   it('requires a read-write token for the Vercel Blob data adapter', () => {
     process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
     delete process.env.BLOB_READ_WRITE_TOKEN;
@@ -365,7 +463,7 @@ describe('ScholarScout data store adapter', () => {
     const getMock = jest.mocked(get);
     const putMock = jest.mocked(put);
 
-    getMock.mockResolvedValue({
+    getMock.mockImplementation(async () => ({
       statusCode: 200,
       stream: createTextStream(
         JSON.stringify({
@@ -385,7 +483,7 @@ describe('ScholarScout data store adapter', () => {
         contentType: 'application/json',
         size: 10,
       },
-    } as unknown as GetBlobResult);
+    } as unknown as GetBlobResult));
     putMock.mockResolvedValue({
       url: 'https://blob.example/private/scholarscout.json',
       downloadUrl: 'https://blob.example/private/scholarscout.json',
@@ -410,10 +508,52 @@ describe('ScholarScout data store adapter', () => {
       expect.objectContaining({
         access: 'private',
         allowOverwrite: true,
+        ifMatch: 'etag',
         cacheControlMaxAge: 60,
         contentType: 'application/json',
         token: 'blob-token',
       }),
+    );
+  });
+
+  it('maps Blob conditional failures to a no-write conflict', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
+    const getMock = jest.mocked(get);
+    const putMock = jest.mocked(put);
+    getMock.mockResolvedValue({
+      statusCode: 200,
+      stream: createTextStream(JSON.stringify(initialData)),
+      blob: { etag: 'stale-etag' },
+    } as unknown as GetBlobResult);
+    putMock.mockRejectedValue(new BlobPreconditionFailedError());
+    const store = getScholarScoutDataStore();
+    const snapshot = await store.readVersioned!();
+    await expect(store.writeVersioned!(snapshot.data, snapshot.version)).resolves.toEqual({
+      status: 'conflict',
+    });
+  });
+
+  it('creates an absent Blob without overwrite or an ifMatch token', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
+    const getMock = jest.mocked(get);
+    const putMock = jest.mocked(put);
+    getMock.mockResolvedValue(null);
+    putMock.mockResolvedValue({ etag: 'created-etag' } as PutBlobResult);
+    const store = getScholarScoutDataStore();
+    const snapshot = await store.readVersioned!();
+    await expect(store.writeVersioned!(snapshot.data, snapshot.version)).resolves.toEqual({
+      status: 'applied',
+      version: 'created-etag',
+    });
+    expect(putMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.not.objectContaining({ ifMatch: expect.anything() }),
+    );
+    expect(putMock).toHaveBeenCalledWith(
+      expect.any(String), expect.any(String), expect.objectContaining({ allowOverwrite: false }),
     );
   });
 
@@ -1229,4 +1369,47 @@ function restoreEnv(key: string, value: string | undefined) {
   }
 
   process.env[key] = value;
+}
+
+function runJsonCasWorker(
+  fixturePath: string,
+  filePath: string,
+  barrierPath: string,
+  workerId: string,
+): Promise<{ status: 'applied' | 'conflict' }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [
+        '-e',
+        "require('ts-node').register({ compiler: require.resolve('./apps/web/node_modules/typescript'), transpileOnly: true, compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' } }); require(process.argv[1]);",
+        fixturePath,
+        filePath,
+        barrierPath,
+        workerId,
+      ],
+      {
+        cwd: path.resolve(__dirname, '..', '..', '..', '..'),
+        env: { ...process.env, TS_NODE_PROJECT: path.resolve(__dirname, '..', '..', 'tsconfig.json') },
+      },
+    );
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code !== 0) reject(new Error(stderr || `CAS worker exited ${code}`));
+      else resolve(JSON.parse(stdout));
+    });
+  });
+}
+
+async function waitForFiles(files: string[]) {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    if ((await Promise.all(files.map((file) => access(file).then(() => true).catch(() => false)))).every(Boolean)) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error('Timed out waiting for JSON CAS workers.');
 }
