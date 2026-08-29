@@ -12,6 +12,27 @@ const institution = (overrides: Partial<WesternNewYorkInstitution> = {}): Wester
 });
 
 describe('rankWesternNewYorkInstitutions', () => {
+  it('keeps the repaired SUNY Erie first-party sources in the production WNY dataset', () => {
+    const sunyErie = WESTERN_NEW_YORK_INSTITUTIONS.find((candidate) => candidate.id === 'suny-erie');
+
+    expect(sunyErie).toMatchObject({
+      officialUrl: 'https://www.ecc.edu/',
+      mediaUrl: 'https://www.ecc.edu/admissions-and-aid/index.html',
+      admissions: {
+        admissionsUrl: 'https://www.ecc.edu/admissions-and-aid/how-to-apply.html',
+      },
+      accountability: {
+        sources: [
+          {
+            label: 'Official admissions hub',
+            url: 'https://www.ecc.edu/admissions-and-aid/index.html',
+          },
+        ],
+      },
+      sourceCheckedOn: '2026-08-29',
+    });
+  });
+
   it('keeps corrected official visit sources in the production WNY dataset', () => {
     const expectedSources = {
       'bryant-stratton': {
