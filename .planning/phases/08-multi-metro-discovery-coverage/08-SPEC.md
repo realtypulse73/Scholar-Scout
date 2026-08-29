@@ -1,7 +1,7 @@
 ---
 phase: 08
 name: Seven-Area Discovery Coverage
-status: needs-privacy-decisions
+status: ready-for-planning
 created: 2026-08-29
 updated: 2026-08-29
 ambiguity:
@@ -12,7 +12,7 @@ ambiguity:
   score: 0.11
 assumptions:
   - "Financial-aid information is a dated official-source comparison, never an eligibility calculator or personalized financial recommendation."
-  - "Existing advisor-data collection decisions remain a separately locked privacy gate; this specification does not authorize new collection or persistence."
+  - "Phase 8 does not collect, persist, export, or reuse personalized advisor data; public guidance is limited to selected market/pathway and vetted source cards."
 ---
 
 # Phase 8: Seven-Area Discovery Coverage
@@ -20,7 +20,7 @@ assumptions:
 **Created:** 2026-08-29
 **Updated:** 2026-08-29
 **Ambiguity score:** 0.11 (gate: <= 0.20)
-**Requirements:** 11 locked
+**Requirements:** 12 locked
 
 ## Goal
 
@@ -76,25 +76,31 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 - **Target state:** Availability and loan records are revalidated every 30 days during an active award cycle and immediately after an official change. Overdue records become “Current confirmation needed.” Cards state programme/provider jurisdiction and any source-stated residency qualifier without inferring student residency.
 - **Acceptance:** Time-based tests cover current, exactly-30-day, overdue, and official-change states; UI shows source date and overdue warning; a market selection never becomes a residency or eligibility assertion.
 
-### R8. Student-centered, bounded advisor guidance
+### R8. Government-imposed loan restriction records
+
+- **Current state:** The application has no governed model for tracking official government loan restrictions by jurisdiction or pathway.
+- **Target state:** Where an official government authority publishes a loan restriction or condition relevant to a displayed pathway/provider, the public registry retains a dated, jurisdiction-specific record with authority, jurisdiction, programme/pathway scope, restriction/condition type, published effective or award-cycle dates when available, official URL, checked date, and change status. It refreshes at least every 30 days during an active cycle and immediately after an official change; overdue records become “Current confirmation needed.”
+- **Acceptance:** Dataset validation rejects a loan-restriction record missing authority, jurisdiction, scope, condition type, official URL, checked date, or change status; time-based tests cover active, overdue, and official-change downgrade states; UI tests show a direct official link and human-referral instruction without an eligibility, availability, funding, or advice assertion.
+
+### R9. Student-centered, bounded advisor guidance
 
 - **Current state:** The advisor is student-facing and says not to guarantee aid, but lacks governed pathway/aid-source context.
 - **Target state:** Advisor/simulation guidance treats all four classes as peer options, offers verified source links/questions to compare, distinguishes potential eligibility from present availability, and directs the student to the provider financial-aid office or official authority to verify.
 - **Acceptance:** Contract/API and judgment review prove it names no “best” path, does not promise admission, aid, loan terms, pay, employment, or outcomes, and refers complex financial cases to a qualified human/provider.
 
-### R9. Location and financial-data minimization
+### R10. Location and financial-data minimization
 
 - **Current state:** Broad location preferences and advisor context exist, but no Phase 8 aid-data contract.
 - **Target state:** Discovery uses only selected market or explicit optional location. Source cards require no student data. The product neither requests nor accepts SSN/government IDs, tax returns, income/assets, bank/card/loan data, aid credentials, precise address, protected attributes, immigration status, or passive location/behaviour data for aid guidance.
 - **Acceptance:** Route/component tests prove cards/fallbacks work with no financial profile; validation rejects prohibited data/credentials; privacy review confirms cards and prompts do not record those values.
 
-### R10. Accessible and candid presentation
+### R11. Accessible and candid presentation
 
 - **Current state:** WNY has accessible verification notice/manual source-link/Unicode backstops, but no category/fallback/aid-card system.
 - **Target state:** Market, pathway, fallback, and aid-card controls are keyboard-accessible, screen-reader understandable, resilient to long Unicode labels, and visibly direct students to verify with provider/authority without hiding outside-market, stale, or unknown status.
 - **Acceptance:** Component tests cover keyboard roles, empty/error/fallback states, long Unicode labels, and source-date labels; Preview human review checks screen-reader order and visible official links for local, fallback, and overdue states.
 
-### R11. Staged rollout and inherited gates
+### R12. Staged rollout and inherited gates
 
 - **Current state:** Phase 1 external release proof and Phase 5 provider/assistive-technology checks remain unpassed.
 - **Target state:** Phase 8 rolls out additively through source validation, automated data/domain/UI checks, non-production Preview review, and qualified human review; it cannot waive or mark earlier gates passed.
@@ -106,7 +112,7 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 
 - One consistent seven-market registry and explicit market selection/direct navigation.
 - Four first-class pathway categories, source criteria, coverage validation, and nearest verified fallback cards.
-- Dated official financial-aid/loan source cards, freshness policy, jurisdiction/residency-qualifier display, and safe advisor comparison/referral language.
+- Dated official financial-aid/loan source cards and government-imposed loan-restriction records, freshness policy, jurisdiction/residency-qualifier display, and safe advisor comparison/referral language.
 - Privacy-minimizing location behavior, accessibility, source validation, Preview rollout, automated tests, and inherited-gate traceability.
 
 ### Out of scope
@@ -122,7 +128,7 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 
 - Retain the Next.js/TypeScript/Vercel foundation and source-linked discovery model.
 - Use first-party provider, official government/aid authority, or official registered-apprenticeship-sponsor sources; third-party summaries never become verified facts.
-- No personalized aid logic or new advisor-data persistence may ship until existing Phase 8 consent, permitted-data, retention/deletion, security/access, and handoff choices are resolved/tested.
+- Phase 8 introduces no personalized advisor inputs, profile creation, persistence, export, or marketing reuse. Public market/pathway guidance behaves the same for authenticated and unauthenticated students.
 - Every availability statement has a source date and direct verification action; dates/cycles are never fabricated.
 
 ## Acceptance Criteria
@@ -132,6 +138,7 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 - [ ] Fallback ordering uses only selected-market centre and public provider coordinate; an outside-market fallback says so and calls distance approximate map distance, not travel time.
 - [ ] Every visible pathway/fallback has a current official source, source date, and honest verification status.
 - [ ] Every aid/loan card separately displays authority, jurisdiction, scope, funding type, published conditions, source date, and verification link; it never equates conditions with eligibility/current availability.
+- [ ] Every displayed government-imposed loan restriction is a dated official record with authority, jurisdiction, pathway/programme scope, restriction/condition type, effective/award-cycle dates when published, official URL, checked date, and change status; overdue data becomes “Current confirmation needed.”
 - [ ] Records at/before 30 days and after official change follow the stated freshness policy; overdue records show “Current confirmation needed.”
 - [ ] No personal financial or prohibited identity/location data is requested, inferred, stored, logged, or sent to an advisor/provider for cards/fallbacks.
 - [ ] Discovery/advisor copy makes no admission, eligibility, funding, loan, employment, pay, quality, or outcome guarantee and refers complex financial cases to official/human help.
@@ -140,7 +147,7 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 
 ## Edge Coverage
 
-**Coverage:** 47/47 applicable edges resolved · 0 unresolved
+**Coverage:** 55/55 applicable edges resolved · 0 unresolved
 
 | Category | Requirement | Status | Resolution / Reason |
 |----------|-------------|--------|---------------------|
@@ -151,10 +158,11 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 | adjacency / empty / encoding / ordering | R5 | ✅ explicit | Required source fields are Unicode-safe after trimming; duplicate stable IDs, blank collections, invalid URLs/dates, and ambiguous ordering are rejected. |
 | adjacency / empty / encoding / ordering / idempotency / concurrency | R6 | ✅ explicit | Controlled source-status vocabulary prevents missing data becoming an availability/eligibility claim; duplicate updates and parallel reads resolve to the same reviewed record/version. |
 | boundary / adjacency / empty / ordering / precision / idempotency / concurrency | R7 | ✅ explicit | Exactly 30 days remains current; a later instant is confirmation-needed; official-change event overrides date; duplicate/parallel refreshes leave one newest reviewed status; no residency inference. |
-| empty / encoding / idempotency / concurrency | R8 | 🧪 backstop | Held-out advisor cases cover blank/Unicode prompts, repeated calls, stale facts, ambiguous financial questions, and complex referrals. |
-| empty / encoding / idempotency / concurrency | R9 | ✅ explicit | Cards/fallbacks render without profile; prohibited inputs are rejected before storage/logging/prompt use, including repeated or parallel submissions. |
-| adjacency / empty / encoding / ordering | R10 | ✅ explicit | Accessible labels have deterministic reading/order for empty, fallback, and long-Unicode content; duplicate controls are not rendered. |
-| idempotency / concurrency | R11 | ✅ explicit | Repeated/parallel final-verification runs preserve inherited gates as unpassed unless their own retained evidence changes. |
+| boundary / adjacency / empty / encoding / ordering / precision / idempotency / concurrency | R8 | ✅ explicit | Required official fields are Unicode-safe; absent/duplicate records are rejected; exactly 30-day/on-change transitions are deterministic, including repeated/parallel refreshes. |
+| empty / encoding / idempotency / concurrency | R9 | 🧪 backstop | Held-out advisor cases cover blank/Unicode prompts, repeated calls, stale facts, ambiguous financial questions, and complex referrals. |
+| empty / encoding / idempotency / concurrency | R10 | ✅ explicit | Cards/fallbacks render without profile; prohibited inputs are rejected before storage/logging/prompt use, including repeated or parallel submissions. |
+| adjacency / empty / encoding / ordering | R11 | ✅ explicit | Accessible labels have deterministic reading/order for empty, fallback, and long-Unicode content; duplicate controls are not rendered. |
+| idempotency / concurrency | R12 | ✅ explicit | Repeated/parallel final-verification runs preserve inherited gates as unpassed unless their own retained evidence changes. |
 
 ## Prohibitions (must-NOT)
 
@@ -179,7 +187,7 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 | Boundary Clarity | 0.90 | 0.70 | ✓ | Excludes personalization, location inference, financial data, and guarantees. |
 | Constraint Clarity | 0.82 | 0.65 | ✓ | Official-source, 30-day freshness, public-coordinate, privacy, and inherited-gate rules locked. |
 | Acceptance Criteria | 0.82 | 0.70 | ✓ | Dataset, domain, UI, advisor, Preview, and human-review checks are falsifiable. |
-| **Ambiguity** | **0.11** | **<=0.20** | ✓ | Advisor-data collection remains separately gated; no collection is authorized. |
+| **Ambiguity** | **0.11** | **<=0.20** | ✓ | No personalized advisor-data collection is in Phase 8; it is an explicit boundary, not an unresolved implementation choice. |
 
 ## Interview Log
 
@@ -190,9 +198,9 @@ Federal Student Aid treats college, career, and trade school pathways as in scop
 | 3 | Boundary Keeper | What aid guidance is safe? | Dated official-source cards/comparison only; no calculator, advice, or loan recommendation. |
 | 4 | Failure Analyst | How do availability/jurisdiction stay honest? | Revalidate every 30 days/on official changes; overdue downgrade; show jurisdiction/qualifier without residency inference. |
 
-## Required Privacy Decisions Before Any New Advisor-Data Collection
+## Locked Privacy Boundary
 
-The existing Phase 8 privacy gate remains in force for future personalized advisor work. Before it may collect/persist even low-sensitivity advice inputs, Phase 8 discussion must lock permitted/excluded categories; consent timing/withdrawal; retention/deletion/export and derived-output treatment; authenticated versus guest access, storage/audit/provider handling; and exact human-handoff wording. Until then, cards/fallbacks use no financial profile and the advisor uses only its existing approved context.
+Phase 8 does not add personalized advisor-data collection. Public guidance uses the selected market/pathway and vetted official source cards only; it does not create a profile or infer more for authenticated students. It has no collection, persistence, export, or marketing reuse path. Personal aid eligibility, residency/immigration, income/tax, debt/default/appeal, and conflicting or stale source questions receive the official authority/provider link plus a clear instruction to speak with that office or a qualified advisor. Any later feature that proposes personalized advisor inputs requires a new consent, minimization, retention/deletion/export, security/access, and handoff decision before implementation.
 
 ---
 
