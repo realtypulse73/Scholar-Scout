@@ -8,7 +8,9 @@ jest.mock('@upstash/ratelimit', () => ({
 
 import {
   COMMUNITY_SUBMISSION_POLICY,
+  createLimiterCacheKey,
   createRateLimitService,
+  REGISTRATION_POLICY,
   type AtomicReservationLimiter,
   type RateLimitWindow,
 } from '@/lib/server/rate-limit';
@@ -159,6 +161,33 @@ describe('rate-limit policies', () => {
       status: 'denied',
       allowed: false,
     });
+  });
+
+  it('keeps the rolling community limiter separate from fixed-window caches at a boundary', async () => {
+    const observedWindows: RateLimitWindow[] = [];
+    const rollingLimiter: AtomicReservationLimiter = {
+      reserve: async (_key, _limit, window) => {
+        observedWindows.push(window);
+        return {
+          allowed: true,
+          resetAt: new Date('2026-07-27T14:00:00.000Z'),
+          retryAfterSeconds: 1,
+        };
+      },
+    };
+    const service = createRateLimitService({ limiter: rollingLimiter, now: () => now });
+
+    now = new Date('2026-07-27T13:59:59.000Z');
+    await service.reserveCommunitySubmission('student-1');
+    now = new Date('2026-07-27T14:00:01.000Z');
+    await service.reserveCommunitySubmission('student-1');
+
+    expect(observedWindows).toEqual([
+      COMMUNITY_SUBMISSION_POLICY.window,
+      COMMUNITY_SUBMISSION_POLICY.window,
+    ]);
+    expect(createLimiterCacheKey(5, COMMUNITY_SUBMISSION_POLICY.window)).toBe('5:1 h:sliding');
+    expect(createLimiterCacheKey(5, REGISTRATION_POLICY.window)).toBe('5:1 h:fixed');
   });
 
   it('fails closed when the external limiter cannot reserve a key', async () => {

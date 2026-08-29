@@ -5,7 +5,12 @@ import { creatorProfiles } from '@/lib/platform';
 import {
   createUploaderInboxRequest,
 } from '@/lib/server/data-store';
-import type { UploaderInboxRequest } from '@/lib/campus-community';
+import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
+import {
+  isUploaderInboxRequestDraft,
+  toPublicUploaderInboxRequest,
+  validateUploaderInboxRequest,
+} from '@/lib/campus-community';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -13,10 +18,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Sign in to request a peer connection.' }, { status: 401 });
   }
 
-  const input = (await request.json()) as Pick<
-    UploaderInboxRequest,
-    'uploader_username' | 'program_id' | 'body'
-  >;
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Send a valid inbox request.' }, { status: 400 });
+  }
+
+  if (!isUploaderInboxRequestDraft(input)) {
+    return NextResponse.json({ error: 'Send a valid inbox request.' }, { status: 400 });
+  }
+
+  const draft = {
+    uploader_username: input.uploader_username,
+    program_id: input.program_id,
+    body: input.body,
+  };
+  const validationErrors = validateUploaderInboxRequest(draft);
+  if (validationErrors.length) {
+    return NextResponse.json({ error: validationErrors[0] }, { status: 400 });
+  }
+
   const uploader = creatorProfiles.find(
     (candidate) =>
       candidate.username === input.uploader_username &&
@@ -30,9 +52,24 @@ export async function POST(request: Request) {
     );
   }
 
+  const reservation = await reserveCommunitySubmission(session.user.id);
+  if (reservation.status === 'unavailable') {
+    return NextResponse.json(
+      { error: 'Inbox requests are temporarily unavailable. Please try again later.' },
+      { status: 503 },
+    );
+  }
+
+  if (reservation.status === 'denied') {
+    return NextResponse.json(
+      { error: 'You have reached the shared community submission limit. Please try again later.' },
+      { status: 429 },
+    );
+  }
+
   try {
-    const inboxRequest = await createUploaderInboxRequest(session.user.id, input);
-    return NextResponse.json({ request: inboxRequest }, { status: 201 });
+    const inboxRequest = await createUploaderInboxRequest(session.user.id, draft);
+    return NextResponse.json({ request: toPublicUploaderInboxRequest(inboxRequest) }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to send inbox request.' },

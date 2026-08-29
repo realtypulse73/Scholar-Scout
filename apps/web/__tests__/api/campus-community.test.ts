@@ -3,8 +3,10 @@
 import { getServerSession } from 'next-auth';
 import { GET, POST } from '@/app/api/campus-notes/route';
 import { POST as reportNote } from '@/app/api/campus-notes/[id]/report/route';
+import { POST as createPeerConnection } from '@/app/api/peer-connections/route';
 import {
   createCampusNote,
+  createUploaderInboxRequest,
   getCampusNotes,
 } from '@/lib/server/data-store';
 import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
@@ -12,9 +14,16 @@ import { reportCampusNoteForReview } from '@/lib/server/operational-records';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }));
-jest.mock('@/lib/platform', () => ({ creatorProfiles: [] }));
+jest.mock('@/lib/platform', () => ({
+  creatorProfiles: [{
+    username: 'maya-health',
+    programmeId: 'north-valley-health',
+    inboxEnabled: true,
+  }],
+}));
 jest.mock('@/lib/server/data-store', () => ({
   createCampusNote: jest.fn(),
+  createUploaderInboxRequest: jest.fn(),
   getCampusNotes: jest.fn(),
 }));
 jest.mock('@/lib/server/rate-limit', () => ({
@@ -31,6 +40,16 @@ const storedNote = {
   uploader_username: null,
   program_id: null,
   body: 'Can anyone share what the first semester feels like?',
+  created_at: '2026-08-29T12:00:00.000Z',
+};
+
+const storedInboxRequest = {
+  id: 'inbox-1',
+  sender_id: 'student-private-id',
+  uploader_username: 'maya-health',
+  program_id: 'north-valley-health',
+  body: 'What helped you choose this programme?',
+  status: 'pending',
   created_at: '2026-08-29T12:00:00.000Z',
 };
 
@@ -106,6 +125,77 @@ describe('campus community API safety boundary', () => {
     expect(response.status).toBe(400);
     expect(reserveCommunitySubmission).not.toHaveBeenCalled();
     expect(createCampusNote).not.toHaveBeenCalled();
+  });
+
+  it('reserves session-keyed shared capacity before creating an inbox request and returns a public DTO', async () => {
+    jest.mocked(createUploaderInboxRequest).mockResolvedValue(storedInboxRequest as never);
+
+    const response = await createPeerConnection(new Request('http://localhost/api/peer-connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...storedInboxRequest,
+        sender_id: 'browser-supplied-id',
+      }),
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(reserveCommunitySubmission).toHaveBeenCalledWith('student-session-id');
+    expect(createUploaderInboxRequest).toHaveBeenCalledWith(
+      'student-session-id',
+      expect.not.objectContaining({ sender_id: expect.anything() }),
+    );
+    expect(body.request).toEqual({
+      id: 'inbox-1',
+      uploader_username: 'maya-health',
+      program_id: 'north-valley-health',
+      body: storedInboxRequest.body,
+      status: 'pending',
+      created_at: storedInboxRequest.created_at,
+    });
+    expect(JSON.stringify(body)).not.toMatch(/sender_id|student-private-id|contact/i);
+  });
+
+  it.each([
+    ['denied', 429],
+    ['unavailable', 503],
+  ] as const)('does not create an inbox request when the shared reservation is %s', async (status, expectedStatus) => {
+    jest.mocked(reserveCommunitySubmission).mockResolvedValue({
+      status,
+      allowed: false,
+      resetAt: status === 'denied' ? new Date('2026-08-29T13:00:00.000Z') : null,
+      retryAfterSeconds: status === 'denied' ? 30 : null,
+    } as never);
+
+    const response = await createPeerConnection(new Request('http://localhost/api/peer-connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uploader_username: 'maya-health',
+        program_id: 'north-valley-health',
+        body: storedInboxRequest.body,
+      }),
+    }));
+
+    expect(response.status).toBe(expectedStatus);
+    expect(createUploaderInboxRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid inbox input before consuming a reservation or creating a request', async () => {
+    const response = await createPeerConnection(new Request('http://localhost/api/peer-connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uploader_username: 'maya-health',
+        program_id: 'north-valley-health',
+        body: 'Email me at student@example.org',
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(reserveCommunitySubmission).not.toHaveBeenCalled();
+    expect(createUploaderInboxRequest).not.toHaveBeenCalled();
   });
 
   it.each([

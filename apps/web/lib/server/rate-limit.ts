@@ -110,7 +110,7 @@ class UpstashAtomicReservationLimiter implements AtomicReservationLimiter {
   }
 
   private getLimiter(limit: number, window: RateLimitWindow): Ratelimit {
-    const limiterKey = `${limit}:${window.duration}:${window.algorithm}`;
+    const limiterKey = createLimiterCacheKey(limit, window);
     const existing = this.limiters.get(limiterKey);
 
     if (existing) {
@@ -206,6 +206,10 @@ export function reserveSignInAttempt(input: {
 
 export function reserveRegistration(ip: string): Promise<RateLimitReservation> {
   return getRateLimitService().reserveRegistration(ip);
+}
+
+export function createLimiterCacheKey(limit: number, window: RateLimitWindow): string {
+  return `${limit}:${window.duration}:${window.algorithm}`;
 }
 
 export function reserveCommunitySubmission(accountId: string): Promise<RateLimitReservation> {

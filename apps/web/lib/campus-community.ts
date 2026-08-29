@@ -39,6 +39,20 @@ export interface UploaderInboxRequest {
   created_at: string;
 }
 
+export interface PublicUploaderInboxRequest {
+  id: string;
+  uploader_username: string;
+  program_id: string;
+  body: string;
+  status: UploaderInboxRequest['status'];
+  created_at: string;
+}
+
+export type UploaderInboxRequestDraft = Pick<
+  UploaderInboxRequest,
+  'uploader_username' | 'program_id' | 'body'
+>;
+
 export function validateCampusNote(input: CampusNoteDraft): string[] {
   const errors: string[] = [];
   if (!input.school_slug.trim()) errors.push('Choose a school locker.');
@@ -67,13 +81,34 @@ export function toPublicCampusNote(note: CampusNote): PublicCampusNote {
   };
 }
 
-export function validateUploaderInboxRequest(input: Pick<UploaderInboxRequest, 'uploader_username' | 'program_id' | 'body'>) {
+export function validateUploaderInboxRequest(input: UploaderInboxRequestDraft): string[] {
   const errors: string[] = [];
   if (!input.uploader_username.trim()) errors.push('Choose an uploader.');
   if (!input.program_id.trim()) errors.push('Choose a program.');
   if (!input.body.trim() || input.body.trim().length > 500) errors.push('Write a message of up to 500 characters.');
   if (containsContactDetails(input.body)) errors.push('Do not include phone numbers, email addresses, or social handles in your first inbox request.');
   return errors;
+}
+
+export function isUploaderInboxRequestDraft(value: unknown): value is UploaderInboxRequestDraft {
+  if (!isRecord(value)) return false;
+
+  return typeof value.uploader_username === 'string'
+    && typeof value.program_id === 'string'
+    && typeof value.body === 'string';
+}
+
+export function toPublicUploaderInboxRequest(
+  request: UploaderInboxRequest,
+): PublicUploaderInboxRequest {
+  return {
+    id: request.id,
+    uploader_username: request.uploader_username,
+    program_id: request.program_id,
+    body: request.body,
+    status: request.status,
+    created_at: request.created_at,
+  };
 }
 
 function containsContactDetails(value: string): boolean {
