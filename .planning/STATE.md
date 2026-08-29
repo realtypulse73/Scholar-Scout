@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 current_phase_name: school-community-and-wny-release-slice
-status: not_started
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-08-29T16:10:24.304Z"
+status: ready_to_execute
+stopped_at: Phase 5 planning complete — 5 plans ready to execute
+last_updated: "2026-08-29T16:58:24.291Z"
 last_activity: 2026-08-29
-last_activity_desc: Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
+last_activity_desc: Phase 5 planning complete — 5 plans ready to execute
 progress:
   total_phases: 6
   completed_phases: 4
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 ## Current Position
 
-Phase: 05 (school-community-and-wny-release-slice) — NOT STARTED
-Plan: 0 of TBD
-Status: Phase 4 verified complete; Phase 5 is next
-Last activity: 2026-08-29 — Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
+Phase: 05 (school-community-and-wny-release-slice) — PLANNED
+Plan: 0 of 5
+Status: Ready to execute
+Last activity: 2026-08-29 — Phase 5 planning complete; five plans ready to execute
 
 Progress: [██████████] 100%
 

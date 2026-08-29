@@ -64,7 +64,7 @@ The essential technical change is to establish a small, shared community domain 
 |---|---:|---|---|
 | Next.js route handlers / `NextResponse` | 15.5.15 | Authenticated community and staff APIs | Existing route convention and test setup. [VERIFIED: repository source — `apps/web/package.json`, admin routes] |
 | NextAuth `getServerSession` | 4.24.14 | Derive signed-in student identity | Existing routes already derive author identity server-side. [VERIFIED: repository source — community routes] |
-| `@upstash/ratelimit` + `@upstash/redis` | 2.0.8 / 1.38.0 | Atomic, fail-closed shared quota reservation | Already installed and wrapped by `rate-limit.ts`; do not create browser or process-local quota state. [VERIFIED: repository source — `apps/web/package.json`, `rate-limit.ts`] |
+| `@upstash/ratelimit` + `@upstash/redis` | 2.0.8 / 1.38.0 | Atomic, fail-closed shared quota reservation | The declared and lockfile-resolved v2.0.8 package exposes `Ratelimit.slidingWindow(tokens, window)`; use it through the existing server wrapper, never browser or process-local quota state. [VERIFIED: npm registry packaged types — `@upstash/ratelimit@2.0.8`; CITED: https://upstash.com/docs/redis/sdks/ratelimit-ts/algorithms] |
 | Jest + Testing Library | 30.3.0 / 16.3.2 | Pure, route, and accessible component regression tests | Existing web test infrastructure. [VERIFIED: repository source — `apps/web/package.json`, `jest.config.ts`] |
 
 **Installation:** none. This phase must not add packages.
@@ -77,7 +77,7 @@ The essential technical change is to establish a small, shared community domain 
 Signed-in student
   -> POST /api/campus-notes or /api/peer-connections
   -> validate bounded JSON + contact prohibition
-  -> reserveCommunitySubmission(accountId) [one shared Upstash key, 5 / 1 h]
+  -> reserveCommunitySubmission(accountId) [one shared Upstash sliding-window key, 5 / 1 h]
   -> bounded server-store write using a stable-ID append/CAS-safe policy
   -> client-safe DTO (never persistence record)
 
@@ -87,7 +87,7 @@ Public reader
   -> public-note DTO (body, context, createdAt; no author ID/contact)
 
 Reporter
-  -> authenticated report endpoint
+  -> signed-in report endpoint derives reporter identity from session
   -> idempotent transition public -> pending-review plus one review item
   -> all future public reads omit target
 
@@ -105,9 +105,9 @@ Freshly authorized staff
 
 ### 2. Give both submissions one account-scoped atomic reservation
 
-**Use:** Add a `COMMUNITY_SUBMISSION_POLICY` (`limit: 5`, `window: 1 h`, unique prefix) and `reserveCommunitySubmission(accountId)` to the existing rate-limit service. Call it after identity and minimal request-shape validation but before server-store writes. Translate `denied` and `unavailable` to safe, stable errors; no remaining-count response. [VERIFIED: repository source — `rate-limit.ts` already exposes policy-specific reservation methods and fails closed]
+**Use:** Add a `COMMUNITY_SUBMISSION_POLICY` with `limit: 5`, `window: { seconds: 3_600, duration: '1 h' }`, a unique prefix, and `algorithm: 'sliding-window'`, then expose `reserveCommunitySubmission(accountId)` from the existing rate-limit service. Extend the private limiter cache key with the algorithm and construct the community limiter as `Ratelimit.slidingWindow(5, '1 h')`; leave the existing advisor/sign-in policies on `Ratelimit.fixedWindow`. Call the shared community reservation after identity and minimal request-shape validation but before a store write. Translate `denied` and `unavailable` to safe, stable errors; do not return an exact remaining count. [VERIFIED: npm registry packaged types — `@upstash/ratelimit@2.0.8` declares `Ratelimit.slidingWindow(tokens: number, window: Duration)` and `Duration` accepts `'1 h'`; VERIFIED: repository source — `rate-limit.ts` already accepts `duration: '1 h'` and fails closed]
 
-**Important:** The current provider uses `Ratelimit.fixedWindow`, not a literal sliding/rolling window. The locked wording requires a rolling hour. The planner must either replace/extend the shared limiter implementation with the installed provider's sliding-window limiter for the community policy, or explicitly confirm the product owner accepts a fixed-window interpretation. This is the only material semantic gap found. [VERIFIED: repository source — `rate-limit.ts:101` constructs `Ratelimit.fixedWindow`; SPEC says “rolling one-hour window”]
+**Execution constraint:** Production must provide `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`. If either is absent or the Upstash call fails, `reserveCommunitySubmission` must return `unavailable`, the route must return a safe non-success response, and it must not write a note or inbox request. This preserves the locked rolling-hour semantics; it is not permissible to fall back to the existing fixed-window, browser, process-local, or persistence-document counter. [VERIFIED: repository source — `getAtomicReservationLimiter` and `reserve` in `rate-limit.ts`; CITED: https://upstash.com/docs/redis/sdks/ratelimit-ts/algorithms]
 
 ### 3. Model moderation as monotonic public visibility and idempotent review creation
 
@@ -118,6 +118,12 @@ Freshly authorized staff
 ### 4. Use the active staff gate for every staff read and resolution
 
 **Use:** Staff page calls `requireActiveStaff({ action, route })`, uses `notFound()` on denial, and staff route calls it before request parsing or storage access. Route actions should be distinct (e.g. `community-moderation:read`, `community-moderation:resolve`) for the existing minimal authorization audit. [VERIFIED: repository source — `active-staff.ts`, `/admin/feed`, `/api/admin/programmes`]
+
+### 5. Keep reporting signed-in and session-derived
+
+**Use:** The report route must call `getServerSession(authOptions)` first and reject an absent `session.user.id` with the existing safe sign-in response pattern. The reporter's account ID is derived only from that session and may be retained only in server-side review/audit data; the request body must contain no reporter identity, role, or moderation decision fields. Return the same private confirmation for an initial or repeated report and disclose no moderation details. [VERIFIED: repository source — both current community write routes derive their actor from `getServerSession(authOptions)`; `auth.ts` populates `session.user.id`; locked D-07 requires private confirmation and idempotent immediate hide]
+
+**Rationale:** Signed-in reporting is the selected smallest anti-abuse contract: it reuses the Phase 2 server-derived identity boundary, allows an accountable non-public audit actor, and avoids expanding this release into anonymous/public reporting, additional reporter data collection, or a separate abuse-control system. It preserves the locked privacy scope because no reporter identity is exposed to public readers or the reported author. [VERIFIED: repository source — `auth.ts`, `campus-notes/route.ts`, `peer-connections/route.ts`; VERIFIED: Phase 5 locked D-07 and SPEC boundaries]
 
 ### Recommended project structure / affected files
 
@@ -154,7 +160,7 @@ apps/web/
 
 1. **Existing public raw-record leak.** `CampusNoteBoard` consumes raw `CampusNote`, whose `author_id` is returned by public GET and POST. A type-only client change does not fix this; map on the server and test serialized responses. [VERIFIED: repository source — `CampusNoteBoard.tsx`, `campus-notes/route.ts`]
 2. **Quota split by route.** Separate prefixes or `reserveCampusNote`/`reserveInbox` counters would allow ten submissions. Both routes must call one account-keyed method. [VERIFIED: SPEC requirement 3]
-3. **Fixed versus rolling semantics.** The existing implementation's fixed window can allow edge bursts across a boundary. Resolve this before implementation; a true rolling requirement needs the provider's suitable limiter mode. [VERIFIED: repository source — `rate-limit.ts`; SPEC]
+3. **Using the existing fixed-window default for community quota.** A fixed window can allow edge bursts across a boundary and violates the locked rolling-hour wording. The community policy must explicitly select `Ratelimit.slidingWindow(5, '1 h')`, with an algorithm-aware limiter cache key, while existing policies retain their current fixed-window behavior. [VERIFIED: repository source — `rate-limit.ts`; VERIFIED: npm registry packaged types — `@upstash/ratelimit@2.0.8`; CITED: https://upstash.com/docs/redis/sdks/ratelimit-ts/algorithms]
 4. **Report after publication race.** The current `communityMutation` never retries, which is correct for generic replacement but insufficient to promise the reported item is hidden after an interleaving write. Make the report operation stable-ID/idempotent and test an injected CAS conflict. [VERIFIED: repository source — `operational-records.ts`, `operational-records.test.ts`]
 5. **Unsafe public language.** Current WNY link text can render `(checked)` and footer says sources were checked on a date. Replace with source-oriented wording; do not state current/independently verified, safety score, or admission prediction. [VERIFIED: repository source — `WesternNewYorkDirectory.tsx`; SPEC]
 6. **School locker 404 prevents required empty state.** Current page calls `notFound()` when no uploader exists, and maps programmes without an empty state. The plan needs an explicit decision point for valid locker context with no programmes, while preserving unknown-slug 404 behavior. [VERIFIED: repository source — `schools/[slug]/page.tsx`; SPEC]
@@ -202,7 +208,7 @@ apps/web/
 
 ## Recommended Plan Structure
 
-1. **Tracer - server safety foundation:** Add/extend community domain types, safe DTO mapping, shared account quota, data normalization, and one end-to-end note create -> public DTO -> report/hide -> staff restore flow with route/store tests. Resolve the rolling-window limiter semantic here before any UI work.
+1. **Tracer - server safety foundation:** Add/extend community domain types, safe DTO mapping, signed-in report guard, data normalization, and one end-to-end note create -> public DTO -> report/hide -> staff restore flow with route/store tests. Implement the explicit community `Ratelimit.slidingWindow(5, '1 h')` policy and its fail-closed unavailable path before any UI work.
 2. **Moderation operational surface:** Add the focused, staff-gated queue and resolution API/component, using the tracer state machine; cover denial, idempotency, removal, and a forced publish/report race.
 3. **Discovery release hardening:** Update WNY source language/notice and contextual panels; add school locker verification and empty states; lock down WNY alphabetical tie-order tests.
 4. **Peer/community presentation release:** Sort matches by public display name, protect no-match card behavior, add shared-limit text to both forms and report controls/feedback; finish component accessibility and Unicode coverage.
@@ -222,25 +228,19 @@ No new external package is required; no package-legitimacy gate applies.
 
 ## Assumptions Log
 
-| # | Claim | Risk if wrong |
-|---|---|---|
-| A1 | Reporting is restricted to signed-in users. | The locked decision requires a private reporter confirmation but does not explicitly name the reporter auth rule; unauthenticated reporting needs an abuse-control design outside the existing account quota. Planner must retain signed-in reporting unless product direction changes. |
-| A2 | The installed Upstash package supports a sliding-window limiter compatible with the required rolling hour. | If unavailable or incompatible, product approval is needed to alter the quota semantics; do not silently use the existing fixed window. |
+No unresolved assumptions. The Upstash v2.0.8 sliding-window API/configuration and the signed-in reporting contract were verified for this phase. [VERIFIED: npm registry packaged types — `@upstash/ratelimit@2.0.8`; VERIFIED: repository source — `auth.ts`, existing community routes]
 
 ## Open Questions
 
-1. **Rolling versus fixed quota behavior**
-   - What we know: the requirement says rolling hour; current wrapper uses fixed windows.
-   - Recommendation: research/verify the installed package API at execution planning, then adopt a sliding-window community policy and add boundary tests. If that is not possible, pause for a user decision rather than weakening the requirement.
-2. **Report authentication**
-   - What we know: existing writes require sign-in and the phase limits submissions per signed-in student; report decision requires private confirmation.
-   - Recommendation: require a signed-in session for report routes and use session identity only for audit/ownership. This is the smallest anti-abuse contract consistent with current seams.
+None. The former rolling-window and report-authentication questions are resolved: use `Ratelimit.slidingWindow(5, '1 h')` through the existing fail-closed server boundary, and require a session-derived signed-in reporter identity.
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
 - [VERIFIED: repository source] `apps/web/lib/server/rate-limit.ts` — atomic Upstash reservation boundary, provider configuration, fixed-window implementation, fail-closed behavior.
+- [VERIFIED: npm registry packaged types] `@upstash/ratelimit@2.0.8` — exact `Ratelimit.slidingWindow(tokens, window)` declaration and accepted `Duration` values, including `'1 h'`.
+- [CITED: https://upstash.com/docs/redis/sdks/ratelimit-ts/algorithms] — the documented sliding-window configuration and boundary behavior.
 - [VERIFIED: repository source] `apps/web/lib/server/operational-records.ts` and tests — bounded CAS and explicit retry rules.
 - [VERIFIED: repository source] `apps/web/lib/server/data-store.ts`, current community routes/components — raw persistence models, current reads/writes, and integration locations.
 - [VERIFIED: repository source] `apps/web/lib/server/active-staff.ts` and admin route/page patterns — fresh allowlist authorization and safe denial behavior.
@@ -251,6 +251,6 @@ No new external package is required; no package-legitimacy gate applies.
 **Confidence breakdown:**
 - Standard stack: HIGH — installed, already-used modules.
 - Architecture: HIGH — direct current-code seams and Phase 4 policy tests.
-- Risks: HIGH except A1/A2, which are explicitly recorded assumptions/open questions.
+- Risks: HIGH — the rolling quota and report-authentication semantics are now explicit; production Redis credential availability remains a fail-closed execution precondition.
 
 **Valid until:** implementation begins or the rate-limit dependency changes.

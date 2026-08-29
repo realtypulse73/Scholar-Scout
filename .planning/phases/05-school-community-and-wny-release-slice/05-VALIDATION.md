@@ -42,6 +42,7 @@ created: 2026-08-29
 | 05-02-* | 02 | 2 | PROD-03 | T-05-02 | A staff moderation queue denies non-staff reads/actions and supports only pending-review restore/remove transitions. | route + component | `pnpm --filter @scholar-scout/web test --runInBand -- community-moderation` | ❌ planned | ⬜ pending |
 | 05-03-* | 03 | 3 | PROD-01 | T-05-03 | WNY and school surfaces show source-linked verification wording, accessible empty states, and equal-score alphabetical ordering. | unit + component/page | `pnpm --filter @scholar-scout/web test --runInBand -- western-new-york` | ✅ partial | ⬜ pending |
 | 05-04-* | 04 | 4 | PROD-02, PROD-03 | T-05-04 | Peer matches use declared preferences only and stable public-name order; both forms explain the shared limit and never expose sender identity. | unit + component + route | `pnpm --filter @scholar-scout/web test --runInBand -- peer-guides` | ✅ partial | ⬜ pending |
+| 05-05-* | 05 | 2 | PROD-02, PROD-03 | T-05-13 | The authenticated inbox path joins the note path's server-authoritative five-per-hour sliding reservation, validates before persistence, and returns only its explicit public DTO. | route + limiter integration | `pnpm --filter @scholar-scout/web test --runInBand -- rate-limit campus-community` | ❌ planned | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
