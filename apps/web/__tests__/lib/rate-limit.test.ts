@@ -7,6 +7,7 @@ jest.mock('@upstash/ratelimit', () => ({
 }));
 
 import {
+  COMMUNITY_SUBMISSION_POLICY,
   createRateLimitService,
   type AtomicReservationLimiter,
   type RateLimitWindow,
@@ -137,6 +138,27 @@ describe('rate-limit policies', () => {
     await expect(service.reserveRegistration('203.0.113.10')).resolves.toMatchObject({
       status: 'denied',
       retryAfterSeconds: 3_600,
+    });
+  });
+
+  it('uses a rolling one-hour community policy and denies the sixth shared reservation', async () => {
+    const service = createRateLimitService({ limiter, now: () => now });
+
+    expect(COMMUNITY_SUBMISSION_POLICY).toMatchObject({
+      limit: 5,
+      window: { seconds: 3_600, duration: '1 h' },
+      algorithm: 'sliding',
+    });
+
+    for (let index = 0; index < 5; index += 1) {
+      await expect(service.reserveCommunitySubmission('student-1')).resolves.toMatchObject({
+        status: 'allowed',
+      });
+    }
+
+    await expect(service.reserveCommunitySubmission('student-1')).resolves.toMatchObject({
+      status: 'denied',
+      allowed: false,
     });
   });
 
