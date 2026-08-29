@@ -110,7 +110,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" aria-describedby="account-recovery-guidance">
         {mode === 'sign-up' ? (
           <label className="block">
             <span className="text-sm font-bold text-ink-800">Name</span>
@@ -123,7 +123,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         ) : null}
 
         <label className="block">
-          <span className="text-sm font-bold text-ink-800">Email</span>
+          <span className="text-sm font-bold text-ink-800">Student email address</span>
           <input
             type="email"
             value={email}
@@ -143,7 +143,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </label>
 
         {error ? (
-          <p role="alert" className="text-sm font-semibold text-danger-700">
+          <p role="alert" aria-live="assertive" className="text-sm font-semibold text-danger-700">
             {error}
           </p>
         ) : null}
@@ -152,9 +152,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
           type="submit"
           className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         >
-          {mode === 'sign-in' ? 'Sign in with email' : 'Create account'}
+          {mode === 'sign-in' ? 'Sign in to your account' : 'Create your student account'}
         </button>
       </form>
+      <p id="account-recovery-guidance" className="text-xs leading-5 text-ink-600">
+        If an account action cannot be completed, review the message above and try again when you are ready.
+      </p>
     </div>
   );
 }

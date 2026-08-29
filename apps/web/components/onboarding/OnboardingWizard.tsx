@@ -198,7 +198,7 @@ export default function OnboardingWizard() {
               Step {step} of {TOTAL_STEPS}
             </p>
             <h1 className="mt-2 text-3xl font-extrabold text-ink-900">
-              {steps[step - 1].title}
+              Build your pathway profile: {steps[step - 1].title}
             </h1>
             <p className="mt-2 text-sm leading-6 text-ink-600">
               {steps[step - 1].helper}
@@ -260,7 +260,7 @@ export default function OnboardingWizard() {
               onClick={handleNext}
               className="min-h-touch flex-1 rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
-              {step === TOTAL_STEPS ? 'Save profile' : 'Next'}
+              {step === TOTAL_STEPS ? 'Save my pathway profile' : 'Continue to next step'}
             </button>
           </div>
         </section>

@@ -59,6 +59,7 @@ describe('AdvisorChat', () => {
     await user.type(input, 'one');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(await screen.findByText('Message must be valid.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Message must be valid.');
 
     await user.type(input, 'two');
     fireEvent.keyDown(input, { key: 'Enter' });

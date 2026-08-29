@@ -205,7 +205,7 @@ export default function AdvisorChat() {
         </div>
 
         {error ? (
-          <p className="mt-3 text-sm font-semibold text-danger-700">{error}</p>
+          <p role="status" aria-live="polite" className="mt-3 text-sm font-semibold text-danger-700">{error}</p>
         ) : null}
 
         <div className="mt-4 flex gap-3">

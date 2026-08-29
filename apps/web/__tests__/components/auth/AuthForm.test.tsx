@@ -53,9 +53,9 @@ describe('AuthForm', () => {
     signInMock.mockResolvedValue({ ok: true, error: undefined } as never);
 
     render(<AuthForm mode="sign-in" />);
-    await user.type(screen.getByLabelText('Email'), 'student@example.com');
+    await user.type(screen.getByLabelText('Student email address'), 'student@example.com');
     await user.type(screen.getByLabelText('Password'), 'secure-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in with email' }));
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/credentials', {
@@ -86,9 +86,9 @@ describe('AuthForm', () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ error }, 401));
 
     render(<AuthForm mode="sign-in" />);
-    await user.type(screen.getByLabelText('Email'), 'student@example.com');
+    await user.type(screen.getByLabelText('Student email address'), 'student@example.com');
     await user.type(screen.getByLabelText('Password'), 'secure-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in with email' }));
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(expectedMessage);
     expect(signInMock).not.toHaveBeenCalled();
@@ -109,15 +109,15 @@ describe('AuthForm', () => {
       }, 503));
 
     render(<AuthForm mode="sign-in" />);
-    await user.type(screen.getByLabelText('Email'), 'student@example.com');
+    await user.type(screen.getByLabelText('Student email address'), 'student@example.com');
     await user.type(screen.getByLabelText('Password'), 'secure-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in with email' }));
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Too many sign-in attempts. Try again after 2026-07-28T12:15:00.000Z.',
     );
     expect(screen.queryByText('raw limiter internals')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Sign in with email' }));
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Sign-in is temporarily unavailable. Please try again.',
     );
@@ -132,9 +132,9 @@ describe('AuthForm', () => {
     signInMock.mockResolvedValue({ ok: true, error: undefined } as never);
 
     render(<AuthForm mode="sign-in" />);
-    await user.type(screen.getByLabelText('Email'), 'student@example.com');
+    await user.type(screen.getByLabelText('Student email address'), 'student@example.com');
     await user.type(screen.getByLabelText('Password'), 'secure-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in with email' }));
+    await user.click(screen.getByRole('button', { name: 'Sign in to your account' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'We signed you in, but could not transfer your guest activity. Please try again.',
@@ -154,9 +154,9 @@ describe('AuthForm', () => {
     render(<AuthForm mode="sign-up" />);
     expect(screen.queryByText('Account type')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Name'), 'Student');
-    await user.type(screen.getByLabelText('Email'), 'student@example.com');
+    await user.type(screen.getByLabelText('Student email address'), 'student@example.com');
     await user.type(screen.getByLabelText('Password'), 'secure-password');
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await user.click(screen.getByRole('button', { name: 'Create your student account' }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/register', {
