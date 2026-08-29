@@ -11,8 +11,12 @@ jest.mock('@/lib/platform', () => ({
 jest.mock('@/lib/server/programme-records', () => ({
   getGovernedProgrammes: jest.fn(),
 }));
-jest.mock('@/components/auth/AuthStatusLink', () => () => <span>Account</span>);
-jest.mock('@/components/campus-community/CampusNoteBoard', () => () => <section aria-label="Campus notes">Campus notes</section>);
+jest.mock('@/components/auth/AuthStatusLink', () => function AuthStatusLinkMock() {
+  return <span>Account</span>;
+});
+jest.mock('@/components/campus-community/CampusNoteBoard', () => function CampusNoteBoardMock() {
+  return <section aria-label="Campus notes">Campus notes</section>;
+});
 
 const directoryInstitution: WesternNewYorkInstitution = {
   id: 'unicode-school',
