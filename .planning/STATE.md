@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: incremental-durable-persistence-boundaries
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-08-29T00:25:04.214Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-08-29T00:35:56.945Z"
 last_activity: 2026-08-29
-last_activity_desc: Completed Plan 04-01 conflict-safe programme persistence tracer
+last_activity_desc: Bounded student account, onboarding, and shortlist persistence completed
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 30
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 04 (incremental-durable-persistence-boundaries) — EXECUTING
-Plan: 1 of 5
-Status: Plan 04-01 complete; ready for Plan 04-02
-Last activity: 2026-08-29 — Conflict-safe programme persistence tracer completed
+Plan: 2 of 5
+Status: Plan 04-02 complete; ready for Plan 04-03
+Last activity: 2026-08-29 — Bounded student account, onboarding, and shortlist persistence completed
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -84,6 +84,7 @@ Progress: [█████████░] 87%
 | Phase 03 P05 | 35min | 3 tasks | 2 files |
 | Phase 03 P06 | 20min | 2 tasks | 6 files |
 | Phase 04 P01 | 35min | 2 tasks | 9 files |
+| Phase 04 P02 | 7min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,9 @@ Progress: [█████████░] 87%
 - [Phase ?]: Production recovery signing uses dedicated current material and optional previous material only as a complete pair; NEXTAUTH_SECRET is never a fallback.
 - [Phase ?]: Keep adapter versions opaque and server-only; programme routes expose safe entity revision conflicts only.
 - [Phase ?]: Programme replacement mutations receive one CAS attempt and never retry automatically.
+- [Phase ?]: Treat student account, profile, and shortlist replacements as non-commutative single-attempt CAS operations.
+- [Phase ?]: Keep browser identity outside mutation contracts; only the server-resolved storage key selects a student slice.
+- [Phase ?]: Return a stable conflict/reload category without current records, foreign data, or provider versions.
 
 ### Roadmap Evolution
 
@@ -183,6 +187,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-29T00:25:04.187Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-08-29T00:35:56.921Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
