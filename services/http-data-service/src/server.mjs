@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
-import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,6 +25,7 @@ const initialData = {
 export function createScholarScoutDataService({
   dataFile = defaultDataFile,
   token = process.env.SCHOLARSCOUT_DATA_SERVICE_TOKEN,
+  writeLifecycle,
 } = {}) {
   let writeQueue = Promise.resolve();
   return createHttpServer(async (request, response) => {
@@ -50,7 +51,12 @@ export function createScholarScoutDataService({
       }
 
       if (request.method === 'PUT') {
-        const write = writeQueue.then(() => handleWrite(request, response, dataFile));
+        const write = writeQueue.then(() => handleWrite(
+          request,
+          response,
+          dataFile,
+          writeLifecycle,
+        ));
         writeQueue = write.catch(() => undefined);
         await write;
         return;
@@ -98,32 +104,55 @@ async function handleRead(response, dataFile) {
   }
 }
 
-async function handleWrite(request, response, dataFile) {
+async function handleWrite(request, response, dataFile, writeLifecycle) {
   const rawBody = await readRequestBody(request);
   const data = normalizeData(JSON.parse(rawBody));
 
   await mkdir(path.dirname(dataFile), { recursive: true });
-  let current = null;
+  const lockPath = `${dataFile}.lock`;
+  const lock = await acquireWriteLock(lockPath, writeLifecycle);
   try {
-    current = await readFile(dataFile, 'utf8');
-  } catch (error) {
-    if (!error || typeof error !== 'object' || error.code !== 'ENOENT') throw error;
+    await writeLifecycle?.({ stage: 'lock-acquired', dataFile });
+    let current = null;
+    try {
+      current = await readFile(dataFile, 'utf8');
+    } catch (error) {
+      if (!error || typeof error !== 'object' || error.code !== 'ENOENT') throw error;
+    }
+    const ifMatch = request.headers['if-match'];
+    const ifNoneMatch = request.headers['if-none-match'];
+    const preconditionMatches = current === null
+      ? ifNoneMatch === '*'
+      : typeof ifMatch === 'string' && ifMatch === createStrongEtag(current);
+    if (!preconditionMatches) {
+      sendJson(response, 412, { error: 'Data document changed' });
+      return;
+    }
+    await backupExistingDocument(dataFile);
+    const serialized = JSON.stringify(data, null, 2);
+    const temporaryPath = `${dataFile}.${process.pid}.${randomUUID()}.tmp`;
+    await writeFile(temporaryPath, serialized);
+    await rename(temporaryPath, dataFile);
+    sendJson(response, 200, { ok: true }, { ETag: createStrongEtag(serialized) });
+  } finally {
+    await lock.close();
+    await unlink(lockPath).catch(() => undefined);
   }
-  const ifMatch = request.headers['if-match'];
-  const ifNoneMatch = request.headers['if-none-match'];
-  const preconditionMatches = current === null
-    ? ifNoneMatch === '*'
-    : typeof ifMatch === 'string' && ifMatch === createStrongEtag(current);
-  if (!preconditionMatches) {
-    sendJson(response, 412, { error: 'Data document changed' });
-    return;
+}
+
+async function acquireWriteLock(lockPath, writeLifecycle) {
+  const attempts = 100;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await open(lockPath, 'wx');
+    } catch (error) {
+      if (!error || typeof error !== 'object' || error.code !== 'EEXIST') throw error;
+      await writeLifecycle?.({ stage: 'lock-contended', lockPath, attempt });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
   }
-  await backupExistingDocument(dataFile);
-  const serialized = JSON.stringify(data, null, 2);
-  const temporaryPath = `${dataFile}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temporaryPath, serialized);
-  await rename(temporaryPath, dataFile);
-  sendJson(response, 200, { ok: true }, { ETag: createStrongEtag(serialized) });
+
+  throw new Error('Timed out waiting for the ScholarScout data write lock');
 }
 
 async function backupExistingDocument(dataFile) {

@@ -193,4 +193,159 @@ describe('ScholarScout HTTP data service fixture', () => {
     const stored = JSON.parse(await readFile(dataFile, 'utf8'));
     assert.ok(['winner-one', 'winner-two'].includes(stored.programmeRecords[0].id));
   });
+
+  it('serializes the conditional critical section across service instances', { timeout: 3000 }, async () => {
+    const current = await fetch(baseUrl, {
+      headers: { Authorization: 'Bearer test-token' },
+    });
+    const etag = current.headers.get('etag');
+    let releaseFirstLock;
+    const firstLockReleased = new Promise((resolve) => {
+      releaseFirstLock = resolve;
+    });
+    let firstLockAcquired;
+    const firstAcquired = new Promise((resolve) => {
+      firstLockAcquired = resolve;
+    });
+    let secondContended;
+    const contentionObserved = new Promise((resolve) => {
+      secondContended = resolve;
+    });
+    let acquiredCriticalSections = 0;
+    const firstServer = createScholarScoutDataService({
+      dataFile,
+      token: 'test-token',
+      writeLifecycle: async ({ stage }) => {
+        if (stage !== 'lock-acquired') return;
+        acquiredCriticalSections += 1;
+        firstLockAcquired();
+        await firstLockReleased;
+      },
+    });
+    const secondServer = createScholarScoutDataService({
+      dataFile,
+      token: 'test-token',
+      writeLifecycle: async ({ stage }) => {
+        if (stage === 'lock-acquired') acquiredCriticalSections += 1;
+        if (stage === 'lock-contended') secondContended();
+      },
+    });
+    await Promise.all([
+      new Promise((resolve) => firstServer.listen(0, resolve)),
+      new Promise((resolve) => secondServer.listen(0, resolve)),
+    ]);
+    const firstAddress = firstServer.address();
+    const secondAddress = secondServer.address();
+    const replace = (port, id) => fetch(`http://127.0.0.1:${port}/scholarscout`, {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer test-token',
+        'Content-Type': 'application/json',
+        'If-Match': etag,
+      },
+      body: JSON.stringify({
+        users: [], onboardingProfiles: {}, shortlists: {},
+        programmeRecords: [{ id }], auditEvents: [],
+      }),
+    });
+
+    try {
+      const firstRequest = replace(firstAddress.port, 'shared-file-winner');
+      await firstAcquired;
+      const secondRequest = replace(secondAddress.port, 'shared-file-loser');
+      await contentionObserved;
+      assert.equal(acquiredCriticalSections, 1);
+      releaseFirstLock();
+      const [firstResponse, secondResponse] = await Promise.all([
+        firstRequest,
+        secondRequest,
+      ]);
+      assert.equal(firstResponse.status, 200);
+      assert.equal(secondResponse.status, 412);
+      const stored = JSON.parse(await readFile(dataFile, 'utf8'));
+      assert.equal(stored.programmeRecords[0].id, 'shared-file-winner');
+    } finally {
+      releaseFirstLock();
+      await Promise.all([
+        new Promise((resolve) => firstServer.close(resolve)),
+        new Promise((resolve) => secondServer.close(resolve)),
+      ]);
+    }
+  });
+
+  it('serializes competing first creation across service instances', { timeout: 3000 }, async () => {
+    const createFile = path.join(tempDir, 'create-race.json');
+    let releaseFirstLock;
+    const firstLockReleased = new Promise((resolve) => {
+      releaseFirstLock = resolve;
+    });
+    let firstLockAcquired;
+    const firstAcquired = new Promise((resolve) => {
+      firstLockAcquired = resolve;
+    });
+    let secondContended;
+    const contentionObserved = new Promise((resolve) => {
+      secondContended = resolve;
+    });
+    let acquiredCriticalSections = 0;
+    const firstServer = createScholarScoutDataService({
+      dataFile: createFile,
+      token: 'test-token',
+      writeLifecycle: async ({ stage }) => {
+        if (stage !== 'lock-acquired') return;
+        acquiredCriticalSections += 1;
+        firstLockAcquired();
+        await firstLockReleased;
+      },
+    });
+    const secondServer = createScholarScoutDataService({
+      dataFile: createFile,
+      token: 'test-token',
+      writeLifecycle: async ({ stage }) => {
+        if (stage === 'lock-acquired') acquiredCriticalSections += 1;
+        if (stage === 'lock-contended') secondContended();
+      },
+    });
+    await Promise.all([
+      new Promise((resolve) => firstServer.listen(0, resolve)),
+      new Promise((resolve) => secondServer.listen(0, resolve)),
+    ]);
+    const firstAddress = firstServer.address();
+    const secondAddress = secondServer.address();
+    const create = (port, id) => fetch(`http://127.0.0.1:${port}/scholarscout`, {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer test-token',
+        'Content-Type': 'application/json',
+        'If-None-Match': '*',
+      },
+      body: JSON.stringify({
+        users: [], onboardingProfiles: {}, shortlists: {},
+        programmeRecords: [{ id }], auditEvents: [],
+      }),
+    });
+
+    try {
+      const firstRequest = create(firstAddress.port, 'first-creator');
+      await firstAcquired;
+      const secondRequest = create(secondAddress.port, 'second-creator');
+      await contentionObserved;
+      assert.equal(acquiredCriticalSections, 1);
+      releaseFirstLock();
+      const [firstResponse, secondResponse] = await Promise.all([
+        firstRequest,
+        secondRequest,
+      ]);
+      assert.equal(firstResponse.status, 200);
+      assert.equal(secondResponse.status, 412);
+      const stored = JSON.parse(await readFile(createFile, 'utf8'));
+      assert.equal(stored.programmeRecords[0].id, 'first-creator');
+    } finally {
+      releaseFirstLock();
+      await Promise.all([
+        new Promise((resolve) => firstServer.close(resolve)),
+        new Promise((resolve) => secondServer.close(resolve)),
+      ]);
+    }
+  });
 });

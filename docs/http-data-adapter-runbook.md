@@ -17,7 +17,7 @@ The configured service URL stores one ScholarScout data document.
 - `PUT SCHOLARSCOUT_DATA_SERVICE_URL` replaces the full JSON document only when its conditional precondition succeeds.
 - Updating an existing document requires `If-Match: <etag-from-GET>`. Creating the first document requires `If-None-Match: *`.
 - A missing, stale, or mismatched precondition returns `412 Precondition Failed` and does not write or create a backup.
-- Successful `PUT` returns the new strong `ETag`. The local fixture serializes competing writes so the precondition is checked immediately before its atomic file replacement.
+- Successful `PUT` returns the new strong `ETag`. The local fixture holds an exclusive sibling-file lock from the precondition read through backup and atomic replacement, so separate local service instances and processes that share the configured data path cannot both accept one version.
 - `PUT` must accept `Content-Type: application/json`.
 - Invalid JSON writes should return `400` with a practical error.
 - If `SCHOLARSCOUT_DATA_SERVICE_TOKEN` is set, the app sends `Authorization: Bearer <token>` on both reads and writes.
@@ -103,7 +103,7 @@ Scholar Scout performs one conditional application-port document write for an ap
 
 An incident hold may be resolved only through the authenticated server route by currently authorized staff, with the exact incident identity and a non-empty reason. The service records a lifecycle audit event. Phase 3 intentionally provides no delete or hold-release control in the browser UI.
 
-The application now has tested optimistic compare-and-set behavior at this provider boundary. This is not a multi-document database transaction: the HTTP fixture remains a one-document compatibility service, and its crash scope is the atomic same-directory replacement provided by the host filesystem.
+The application now has tested optimistic compare-and-set behavior at this provider boundary, including deterministic contention between independent service instances sharing one local file. This is not a multi-document or distributed database transaction: the HTTP fixture remains a local one-document compatibility service, and its coordination and crash scope are the exclusive sibling lock plus atomic same-directory replacement provided by the host filesystem. Do not use the fixture as evidence that unrelated hosts or network filesystems provide the same lock semantics.
 
 ## Monitoring
 

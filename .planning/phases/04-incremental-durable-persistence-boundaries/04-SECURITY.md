@@ -21,10 +21,10 @@ verdict: SECURED
 
 | Threat | Category | Severity | Disposition | Verification evidence |
 |---|---|---:|---|---|
-| T-04-01 | Tampering | high | mitigate | JSON compares under an exclusive sibling lock and atomically renames; HTTP and Blob enforce provider preconditions. |
+| T-04-01 | Tampering | high | mitigate | JSON and the local HTTP fixture compare under exclusive sibling locks and atomically rename; Blob enforces provider preconditions. HTTP tests deterministically hold one instance inside the lock while a second instance contends, then prove one `200` winner and one `412` loser for update and first-create races. |
 | T-04-02 | Information disclosure | high | mitigate | Programme conflicts retain authorized safe fields and never expose opaque provider versions. |
 | T-04-03 | Denial of service | medium | mitigate | Programme replacement performs one conditional attempt and never retries blindly. |
-| T-04-04 | Spoofing | high | mitigate | HTTP adapter preserves bearer authentication and the service validates strong ETag preconditions. |
+| T-04-04 | Spoofing | high | mitigate | HTTP adapter preserves bearer authentication; the service validates strong ETag preconditions only after acquiring the shared-file lock, so a forged or stale condition cannot pass concurrently with another local fixture commit. Provider versions remain server-only. |
 | T-04-05 | Tampering | high | mitigate | Student replacements use one versioned write and preserve the winning state on conflict. |
 | T-04-06 | Elevation of privilege | critical | mitigate | Account routes derive the server-owned actor key before parsing or mutation; cross-owner negatives pass. |
 | T-04-07 | Information disclosure | high | mitigate | Student conflicts expose only stable conflict/reload guidance. |
@@ -43,13 +43,17 @@ verdict: SECURED
 ## Validation
 
 - Phase 4 security regression: 8 web suites / 76 tests passed.
-- HTTP adapter regression: 10/10 tests passed.
+- HTTP adapter regression: 12/12 tests passed, including deterministic cross-instance update and first-create contention.
 - Phase 3 recovery regression remained green.
 - No production or live-provider operation was used; Blob evidence is local and mocked against the pinned SDK contract.
 
 ## Open Threats
 
 None.
+
+## Focused Gap Re-audit
+
+Canonical verification correctly required stronger proof than scheduler-dependent `Promise.all`, but its statement that one service instance had no serialization was inaccurate: commit `36e22b1` already queued the complete `handleWrite` call. The remaining risk was narrower and real—the queue belonged to one server object, while multiple local service instances or processes could share the configured file. The sibling lock now makes the precondition read, backup, temporary write, and atomic rename one shared-file critical section. T-04-01 and T-04-04 remain closed on this corrected evidence and on the documented local-filesystem scope; no distributed or production-provider guarantee is claimed.
 
 ## User Decisions
 
