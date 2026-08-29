@@ -246,6 +246,20 @@ describe('campus community API safety boundary', () => {
     });
   });
 
+  it('does not confirm a report when the moderation transition conflicts', async () => {
+    jest.mocked(reportCampusNoteForReview).mockResolvedValue({ status: 'conflict' });
+
+    const response = await reportNote(
+      new Request('http://localhost/api/campus-notes/note-1/report', { method: 'POST' }),
+      { params: Promise.resolve({ id: 'note-1' }) },
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: 'This note changed before it could be reported. Refresh and try again.',
+    });
+  });
+
   it('requires a signed-in session before reporting', async () => {
     jest.mocked(getServerSession).mockResolvedValue(null);
 

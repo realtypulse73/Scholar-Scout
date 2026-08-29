@@ -19,6 +19,13 @@ export async function POST(
     return NextResponse.json({ error: 'Choose a note to report.' }, { status: 400 });
   }
 
-  await reportCampusNoteForReview({ noteId: id, reporterId: session.user.id });
+  const result = await reportCampusNoteForReview({ noteId: id, reporterId: session.user.id });
+  if (result.status === 'conflict') {
+    return NextResponse.json(
+      { error: 'This note changed before it could be reported. Refresh and try again.' },
+      { status: 409 },
+    );
+  }
+
   return NextResponse.json({ ok: true, message: PRIVATE_CONFIRMATION });
 }
