@@ -477,4 +477,44 @@ describe('signed recovery envelopes and bound plans', () => {
       id: 'audit-release-1', action: 'release-incident-hold', incidentId: 'incident-held-1', outcome: 'succeeded',
     });
   });
+
+  it('leaves an incident hold unresolved when its conditional write conflicts', async () => {
+    const heldData: ScholarScoutData = {
+      ...emptyData,
+      restoreBackups: [{
+        id: 'held-race-1',
+        actorUserId: 'staff-1',
+        reason: 'Investigate',
+        createdAt: now.toISOString(),
+        counts: { users: 0, onboardingProfiles: 0, shortlists: 0, programmeRecords: 0, auditEvents: 0 },
+        data: emptyData,
+        incidentHold: {
+          incidentId: 'incident-held-race-1',
+          status: 'unresolved',
+          createdAt: now.toISOString(),
+        },
+      }],
+    };
+    const writeVersioned = jest.fn(async () => ({ status: 'conflict' as const }));
+
+    await expect(releaseRecoveryIncidentHold({
+      actorId: 'staff-2',
+      authorized: true,
+      backupId: 'held-race-1',
+      incidentId: 'incident-held-race-1',
+      reason: 'Incident reviewed',
+    }, {
+      readVersioned: async () => ({ data: heldData, version: 'provider-hold-1' }),
+      writeVersioned,
+      now: () => now,
+      auditId: () => 'audit-release-race-1',
+    })).rejects.toThrow('recovery-state-changed');
+
+    expect(writeVersioned).toHaveBeenCalledWith(
+      expect.any(Object),
+      'provider-hold-1',
+    );
+    expect(heldData.restoreBackups?.[0].incidentHold?.status).toBe('unresolved');
+    expect(heldData.recoveryLifecycleEvents).toBeUndefined();
+  });
 });

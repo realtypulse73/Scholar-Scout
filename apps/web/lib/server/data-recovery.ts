@@ -12,7 +12,6 @@ import {
   readVersionedScholarScoutData,
   ScholarScoutDataStoreReadError,
   validateScholarScoutDataImport,
-  writeScholarScoutData,
   writeVersionedScholarScoutData,
   type ConditionalWriteResult,
   type RecoveryLifecycleEvent,
@@ -412,19 +411,8 @@ export async function applyRecoveryPlan(
   },
   dependencies: RecoveryMutationDependencies = {},
 ): Promise<RecoveryApplyResult> {
-  const readVersioned = dependencies.readVersioned ?? (
-    dependencies.read
-      ? async () => ({ data: await dependencies.read!(), version: null })
-      : readVersionedScholarScoutData
-  );
-  const writeVersioned = dependencies.writeVersioned ?? (
-    dependencies.write
-      ? async (data: ScholarScoutData) => {
-          await dependencies.write!(data);
-          return { status: 'applied' as const, version: '' };
-        }
-      : writeVersionedScholarScoutData
-  );
+  const readVersioned = getRecoveryVersionedRead(dependencies);
+  const writeVersioned = getRecoveryVersionedWrite(dependencies);
   const now = dependencies.now?.() ?? new Date();
   const signing = requireCurrentSigning(
     dependencies.signing ?? getRecoverySigningConfiguration(),
@@ -584,10 +572,11 @@ export async function releaseRecoveryIncidentHold(
 }> {
   if (!input.authorized) throw new Error('recovery-authorization-required');
   const reason = normalizeRecoveryReason(input.reason);
-  const read = dependencies.read ?? readScholarScoutData;
-  const write = dependencies.write ?? writeScholarScoutData;
+  const readVersioned = getRecoveryVersionedRead(dependencies);
+  const writeVersioned = getRecoveryVersionedWrite(dependencies);
   const now = dependencies.now?.() ?? new Date();
-  const data = await read();
+  const snapshot = await readVersioned();
+  const data = snapshot.data;
   const backup = (data.restoreBackups ?? []).find((item) => item.id === input.backupId);
   if (!backup) {
     throw new Error('recovery-backup-not-found');
@@ -625,17 +614,46 @@ export async function releaseRecoveryIncidentHold(
     timestamp: now.toISOString(),
     outcome: 'succeeded',
   };
-  await write({
+  const writeResult = await writeVersioned({
     ...data,
     restoreBackups: updatedBackups,
     recoveryLifecycleEvents: [...(data.recoveryLifecycleEvents ?? []), event],
-  });
+  }, snapshot.version);
+  if (writeResult.status === 'conflict') {
+    throw new Error('recovery-state-changed');
+  }
   return {
     backupId: input.backupId,
     incidentId: input.incidentId,
     resolvedAt,
     auditId,
   };
+}
+
+function getRecoveryVersionedRead(
+  dependencies: RecoveryMutationDependencies,
+): () => Promise<VersionedScholarScoutData> {
+  if (dependencies.readVersioned) return dependencies.readVersioned;
+  if (dependencies.read) {
+    return async () => ({ data: await dependencies.read!(), version: null });
+  }
+  return readVersionedScholarScoutData;
+}
+
+function getRecoveryVersionedWrite(
+  dependencies: RecoveryMutationDependencies,
+): (
+  data: ScholarScoutData,
+  expectedVersion: string | null,
+) => Promise<ConditionalWriteResult> {
+  if (dependencies.writeVersioned) return dependencies.writeVersioned;
+  if (dependencies.write) {
+    return async (data) => {
+      await dependencies.write!(data);
+      return { status: 'applied', version: '' };
+    };
+  }
+  return writeVersionedScholarScoutData;
 }
 
 function validateRecoveryPlanToken(

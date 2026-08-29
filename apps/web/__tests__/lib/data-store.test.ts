@@ -86,6 +86,24 @@ function cloneData(data: ScholarScoutData) {
 }
 
 describe('ScholarScout data store adapter', () => {
+  it('keeps migrated domain modules off the unconditional whole-document write', async () => {
+    const boundedModules = [
+      'programme-records.ts',
+      'student-records.ts',
+      'operational-records.ts',
+      'platform-store.ts',
+      'data-recovery.ts',
+    ];
+
+    for (const moduleName of boundedModules) {
+      const source = await readFile(
+        path.join(process.cwd(), 'lib', 'server', moduleName),
+        'utf8',
+      );
+      expect(source).not.toMatch(/\bwriteScholarScoutData\b/);
+    }
+  });
+
   const originalAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
   const originalServiceUrl = process.env.SCHOLARSCOUT_DATA_SERVICE_URL;
   const originalServiceToken = process.env.SCHOLARSCOUT_DATA_SERVICE_TOKEN;

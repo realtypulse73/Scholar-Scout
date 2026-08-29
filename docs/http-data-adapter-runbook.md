@@ -10,11 +10,14 @@ The root `packageManager` selects pnpm 10.34.5. Run `corepack enable` once, then
 
 The configured service URL stores one ScholarScout data document.
 
-- `GET SCHOLARSCOUT_DATA_SERVICE_URL` returns the full JSON document.
+- `GET SCHOLARSCOUT_DATA_SERVICE_URL` returns the full JSON document with a strong `ETag` that is opaque to application records.
 - `GET /health` returns a simple service health response for the local fixture and any compatible service that chooses to expose it.
 - `GET` returns `404` only when the document is genuinely absent; ScholarScout may treat that verified absence as an empty data document.
 - Malformed stored JSON and provider/I/O read failures return `500`. They are operational failures, never editable empty data.
-- `PUT SCHOLARSCOUT_DATA_SERVICE_URL` replaces the full JSON document.
+- `PUT SCHOLARSCOUT_DATA_SERVICE_URL` replaces the full JSON document only when its conditional precondition succeeds.
+- Updating an existing document requires `If-Match: <etag-from-GET>`. Creating the first document requires `If-None-Match: *`.
+- A missing, stale, or mismatched precondition returns `412 Precondition Failed` and does not write or create a backup.
+- Successful `PUT` returns the new strong `ETag`. The local fixture serializes competing writes so the precondition is checked immediately before its atomic file replacement.
 - `PUT` must accept `Content-Type: application/json`.
 - Invalid JSON writes should return `400` with a practical error.
 - If `SCHOLARSCOUT_DATA_SERVICE_TOKEN` is set, the app sends `Authorization: Bearer <token>` on both reads and writes.
@@ -88,7 +91,7 @@ After deployment:
 
 ## Backup And Restore
 
-Because the current HTTP adapter writes the full data document, the service should keep versioned backups for every successful write.
+The HTTP compatibility adapter still stores one physical document, but ordinary application writes now enter through named programme, student, operational, or platform operations. Each operation composes its bounded change from one versioned snapshot and commits it conditionally.
 
 - Back up the document before accepting each `PUT`.
 - The local fixture writes timestamped backups beside the active document.
@@ -96,11 +99,11 @@ Because the current HTTP adapter writes the full data document, the service shou
 - Restore by replacing the service document with a known-good backup.
 - After restore, restart or redeploy the app only if the service URL or token changed.
 
-Scholar Scout performs one application-port document write for an approved recovery. Before Apply, it requires a fresh active-staff authorization, a count-only server preview, a non-empty operator reason, and the exact typed confirmation. Failures return a safe category and incident ID without snapshot or student content; retry only after a fresh health/capability read.
+Scholar Scout performs one conditional application-port document write for an approved recovery. Before Apply, it requires a fresh active-staff authorization, a count-only server preview, a non-empty operator reason, and the exact typed confirmation. Apply reads the current document and opaque ETag together, verifies the signed actor/source/application digest bindings, and supplies that ETag only to the final write. A `412` race returns `recovery-state-changed`; current data is preserved and no success outcome is persisted. Provider ETags never enter recovery envelopes, previews, backups, or audit records. Retry only by refreshing and creating a new plan.
 
 An incident hold may be resolved only through the authenticated server route by currently authorized staff, with the exact incident identity and a non-empty reason. The service records a lifecycle audit event. Phase 3 intentionally provides no delete or hold-release control in the browser UI.
 
-This is not a transaction or compare-and-set guarantee at the provider boundary. Provider crash safety, concurrent-write protection, and CAS/versioned persistence belong to Phase 4.
+The application now has tested optimistic compare-and-set behavior at this provider boundary. This is not a multi-document database transaction: the HTTP fixture remains a one-document compatibility service, and its crash scope is the atomic same-directory replacement provided by the host filesystem.
 
 ## Monitoring
 
@@ -123,8 +126,8 @@ SCHOLARSCOUT_DATA_FILE=data/scholarscout-data.json
 
 This restores the local JSON adapter. Before switching back to `http`, export or migrate any JSON changes that should remain in the service-backed document.
 
-## Future Service Improvements
+## Compatibility And Migration Scope
 
-The current app adapter intentionally avoids heavy deployment dependencies. A production service should eventually add narrower endpoints for account profiles, shortlists, programme records, revisions, and audit events so staff edits do not require full-document writes.
+Existing `GET` compatibility reads remain supported. Raw unconditional replacement is not used by migrated ordinary domain modules; the signed recovery/import boundary is the intentional whole-document composition seam and it uses the same conditional write contract. A future service may expose narrower physical endpoints without changing these application-level operation contracts.
 
-Until Phase 4 adds bounded persistence primitives, do not describe the HTTP adapter as transactional, conflict-safe, or crash-atomic.
+No production migration, provider write, or deployment was performed as part of this change.
