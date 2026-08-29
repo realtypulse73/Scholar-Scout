@@ -1,6 +1,6 @@
 ---
 phase: 04-incremental-durable-persistence-boundaries
-status: pending
+status: complete
 nyquist: enabled
 created: 2026-08-28
 requirements: [DATA-01, DATA-02]
@@ -76,3 +76,116 @@ The JSON worker fixture must create independent operating-system processes, not 
 ## Completion Rule
 
 Status may change from `pending` only when every matrix row has concrete green evidence and no critical/high threat remains open. After implementation, Phase 4 still requires `$gsd-secure-phase 4`, `$gsd-verify-work 4`, and goal verification before requirements are marked complete.
+
+## Execution Evidence — 2026-08-29
+
+All commands below ran from the repository root with the provisioned Node.js 20.20.2 and Corepack pnpm 10.34.5 toolchain. No install command was run.
+
+### Focused Phase 4 concurrency gate
+
+Command:
+
+```text
+corepack pnpm --filter @scholar-scout/web run test -- --runInBand __tests__/lib/data-store.test.ts __tests__/lib/student-records.test.ts __tests__/lib/operational-records.test.ts __tests__/lib/platform-store.test.ts __tests__/lib/data-recovery.test.ts __tests__/api/admin-programmes.test.ts __tests__/api/account-guest-routes.test.ts __tests__/api/admin-data-routes.test.ts
+```
+
+Result: **PASS** — 8 suites, 76 tests, 0 failures.
+
+Command:
+
+```text
+corepack pnpm --filter @scholar-scout/http-data-service run test
+```
+
+Result: **PASS** — 1 suite, 10 tests, 0 failures. This includes authenticated access, absent-document behavior, first-create contention, malformed/unavailable reads, previous-document backup, and stale replacement preservation.
+
+### Full repository test gate
+
+The plan-specified `corepack pnpm test --runInBand` was attempted and could not be a valid cross-workspace invocation on this Windows host:
+
+1. The root script's nested bare `pnpm` resolved the host fallback runtime (Node 24 / pnpm 11), which the repository engine gate correctly rejected.
+2. Running its recursive expansion directly with `--runInBand` forwarded the Jest-only flag to Node's service test runners as a filename, so those runners correctly rejected it.
+
+The semantically complete cross-workspace command was therefore run directly with the pinned toolchain and no framework-specific extra argument:
+
+```text
+corepack pnpm --recursive --if-present run test
+```
+
+The first run exposed that Jest was discovering the Plan 04-01 child-process worker fixture as a test suite. `apps/web/jest.config.ts` now excludes `__tests__/fixtures/` from test discovery; the worker remains compiled and exercised by `data-store.test.ts`.
+
+Final result: **PASS** — web 43 suites / 272 tests, HTTP service 1 suite / 10 tests, webhook service 1 suite / 8 tests; **45 suites / 290 tests total**, 0 failures, 0 skipped, 0 snapshots.
+
+### Typecheck
+
+Command:
+
+```text
+corepack pnpm --recursive --if-present run typecheck
+```
+
+Result: **PASS** — strict web TypeScript and HTTP fixture validation completed with no errors.
+
+### Zero-warning lint
+
+Command:
+
+```text
+corepack pnpm --recursive --if-present run lint
+```
+
+Result: **PASS** — web ESLint completed with `--max-warnings=0`; HTTP fixture validation completed; no warnings or errors.
+
+### Vercel-equivalent build
+
+Command (direct expansion of root `build:vercel` to avoid the same nested bare-pnpm host shim):
+
+```text
+corepack pnpm --filter @scholar-scout/web run build
+```
+
+Result: **PASS** — Next.js 15.5.22 compiled, checked types, generated 57 static pages, and completed route/build trace output. No deploy command was run.
+
+### Phase 3 recovery predecessor regression
+
+Command:
+
+```text
+corepack pnpm --filter @scholar-scout/web run test -- --runInBand __tests__/lib/data-recovery.test.ts __tests__/lib/data-store.test.ts __tests__/api/admin-data-routes.test.ts __tests__/components/ProgrammeAdminManager.test.tsx
+```
+
+Result: **PASS** — 4 suites, 62 tests, 0 failures. This selection covers signed plans/envelopes, exact confirmation, bounded validation, one-write apply, pre-change backup, idempotent outcomes, retention, incident holds, privacy-minimal audit/lifecycle evidence, authorized recovery routes, safe conflict/retry behavior, and the capability-driven recovery UI. The HTTP service regression also passed separately at 10/10 tests.
+
+## Source and Boundary Audit
+
+| Audit | Result | Evidence |
+|---|---|---|
+| Ordinary migrated writes avoid the unconditional primitive | PASS | `rg -n "writeScholarScoutData" apps/web/lib/server apps/web/app -g "*.ts"` returns only the compatibility export declaration in `data-store.ts`; the executable source guard also passed. |
+| Programme operations are bounded | PASS | `programme-records.ts` composes programme plus audit and uses the versioned conditional seam once. |
+| Student operations are bounded | PASS | `student-records.ts` owns account, onboarding, and atomic shortlist intent replacement. |
+| Operational/platform operations are bounded | PASS | `operational-records.ts` owns the exact retry policy; `platform-store.ts` delegates appends/replacements through it. |
+| Recovery remains conditional and compatible | PASS | `data-recovery.ts` binds the final one-write apply to its versioned snapshot; legacy recovery helpers and incident-hold release are one-attempt conditional writes. |
+| Dependency and lock state | PASS | No diff exists for `package.json`, `apps/web/package.json`, `pnpm-lock.yaml`, or `vercel.json`; no package install occurred. |
+| Secret/environment state | PASS | No secret or environment file was read, written, staged, or committed. Provider tokens were not requested or used. |
+| Production boundary | PASS | No production environment, data, migration, Vercel command, provider write, or deployment was accessed or changed. The build was local only. |
+| Unrelated work | PASS | Existing `.planning/config.json`, training output, research cache, PDF output, and `tmp/` changes remain unmodified and unstaged. |
+
+## Requirement and Threat Gate
+
+- `04-COVERAGE.md` maps DATA-01 and DATA-02 across JSON, HTTP, mocked Blob, programme, student, operational/platform, and recovery boundaries.
+- T-04-15 is mitigated by exact command/count/limitation records above.
+- T-04-16 is mitigated by the source matrix and executable source guard.
+- T-04-17 is mitigated by the explicit no-production audit.
+- T-04-SC is mitigated because no install or dependency change occurred.
+- No critical/high implementation evidence gap was found. Formal threat closure remains the responsibility of `$gsd-secure-phase 4`.
+
+## Residual Limitations
+
+- Blob concurrency evidence uses the pinned SDK's mocked contract; no live Blob or production provider operation was authorized or performed.
+- JSON locking is a same-filesystem cooperating-writer guarantee, not a distributed lock across independent hosts.
+- The raw compatibility write export remains for intentionally unmigrated compatibility use, but migrated domain/recovery modules are guarded from importing it.
+- The plan's root `--runInBand` command is not portable across mixed Jest and Node-test workspaces; the complete recursive gate above is the truthful equivalent and all 290 tests passed.
+
+## Final Readiness
+
+Phase 4 Plan 04-05 validation is green. The implementation is ready for `$gsd-secure-phase 4` and `$gsd-verify-work 4`; DATA-01 and DATA-02 must not be marked complete until those remaining phase gates and goal verification pass.
