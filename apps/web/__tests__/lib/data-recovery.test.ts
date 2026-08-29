@@ -328,6 +328,73 @@ describe('signed recovery envelopes and bound plans', () => {
     expect(write).toHaveBeenCalledTimes(1);
   });
 
+  it('rejects an adapter-version race without writing recovery success evidence', async () => {
+    const currentData: ScholarScoutData = {
+      ...emptyData,
+      shortlists: { 'student-current': ['programme-current'] },
+    };
+    const concurrentData: ScholarScoutData = {
+      ...currentData,
+      shortlists: { 'student-current': ['programme-concurrent'] },
+    };
+    const envelope = createSignedRecoveryEnvelope({
+      data: {
+        ...emptyData,
+        shortlists: { 'student-restored': ['programme-restored'] },
+      },
+      sourceId: 'import-race-1',
+      now,
+      signing,
+    });
+    const { token } = issueRecoveryPlan({
+      actorId: 'staff-1',
+      envelope,
+      currentData,
+      now,
+      signing,
+      planId: () => 'plan-race-1',
+    });
+    let stored = currentData;
+    const write = jest.fn();
+    const writeVersioned = jest.fn(async (
+      _data: ScholarScoutData,
+      expectedVersion: string | null,
+    ) => {
+      expect(expectedVersion).toBe('provider-version-1');
+      stored = concurrentData;
+      return { status: 'conflict' as const };
+    });
+
+    await expect(applyRecoveryPlan({
+      actorId: 'staff-1',
+      envelope,
+      token,
+      reason: 'Recover from verified incident',
+      confirmation: 'RESTORE SCHOLARSCOUT DATA',
+    }, {
+      readVersioned: async () => ({
+        data: currentData,
+        version: 'provider-version-1',
+      }),
+      write,
+      writeVersioned,
+      now: () => new Date('2026-08-28T14:05:00.000Z'),
+      signing,
+      backupId: () => 'backup-race-1',
+      auditId: () => 'audit-race-1',
+      incidentId: () => 'incident-race-1',
+    })).rejects.toThrow('recovery-state-changed');
+
+    expect(writeVersioned).toHaveBeenCalledTimes(1);
+    expect(write).not.toHaveBeenCalled();
+    expect(stored).toEqual(concurrentData);
+    expect(stored.restoreBackups).toBeUndefined();
+    expect(stored.recoveryLifecycleEvents).toBeUndefined();
+    expect(stored.recoveryPlanOutcomes).toBeUndefined();
+    expect(JSON.stringify(envelope)).not.toContain('provider-version-1');
+    expect(JSON.stringify(token)).not.toContain('provider-version-1');
+  });
+
   it('rejects invalid confirmation, stale state, expiry equality, and actor changes without writes', async () => {
     const envelope = createSignedRecoveryEnvelope({
       data: emptyData,
