@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-30T13:10:40.000Z
+updated: 2026-08-30T22:18:27.000Z
 ---
 
 ## Current Test
@@ -17,7 +17,7 @@ updated: 2026-08-30T13:10:40.000Z
 expected: Keyboard- and screen-reader-check populated and empty Western New York and school-locker screens, opening every visible official source link. Guidance remains clear, focus order is usable, intended official sources open, and long Unicode labels wrap without horizontal overflow.
 result: blocked
 blocked_by: assistive-technology review
-reason: "The deployed Preview now has 43 visible source links, a visible verification notice, four labeled controls, no stale-link 404/certificate failure, ordered focusable controls, and no horizontal overflow at the tested viewport. Focused Western New York data tests (5) and community component tests (12, including keyboard/Unicode coverage) pass, as do typecheck and lint. A real screen-reader and long-Unicode-label review still requires an assistive-technology session."
+reason: "The deployed Preview has 43 visible source links, a visible verification notice, four labeled controls, no stale-link 404/certificate failure, ordered focusable controls, and no horizontal overflow at the tested viewport. The new local Preview-only accessibility fixture exposes the formerly unobservable zero-result directory, zero-programme locker, and long-Unicode states; an automated browser check confirmed its noindex/nofollow metadata, zero links/buttons/inputs, required headings, and no horizontal overflow. Focused Phase 5 regressions pass 42/42, including rate-limit, campus-community, release accessibility, and fixture suites. A real screen-reader and long-Unicode-label review still requires an assistive-technology session."
 
 ### 2. Authenticated report and staff-resolution journey
 
