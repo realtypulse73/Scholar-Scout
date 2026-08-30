@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-30T07:31:00.000Z
+updated: 2026-08-30T08:35:00.000Z
 ---
 
 ## Current Test
@@ -30,7 +30,7 @@ reason: "On the corrected isolated Preview, generated student content posted suc
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: blocked
 blocked_by: external-time boundary
-reason: "On the exact configured Upstash Preview, a fresh generated non-personal student account made five alternating marked note/inbox submissions successfully. At 2026-08-30T07:30:27Z, its sixth marked note returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires one marked authenticated submission after 2026-08-30T08:31:00Z; the signed-in Preview tab is retained for that single follow-up. The authenticated provider-outage/no-write check passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
+reason: "On the exact configured Upstash Preview, a fresh generated non-personal student account made five alternating marked note/inbox submissions successfully. At 2026-08-30T07:30:27Z, its sixth marked note returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires one marked authenticated submission after 2026-08-30T08:31:00Z. The previous generated credentials were intentionally not retained, and the marked handoff browser tab was unavailable when the elapsed-window follow-up resumed; therefore no post-expiry submission was attempted or inferred. The authenticated provider-outage/no-write check passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
 
 ## Summary
 
