@@ -38,16 +38,31 @@ Production ignores the flag even if it is accidentally present.
 **Environment:** the approved isolated Preview, never production. Use NVDA with
 Firefox or VoiceOver with Safari. Do not enter real student data.
 
-1. Open `/western-new-york`; then open a populated school locker and an empty
-   school-locker state.
-2. Navigate with Tab/Shift+Tab and the screen reader's heading, landmark, form,
-   and link commands. Check the verification notice, filters, result cards,
-   empty-state recovery, and every visible official-source link.
-3. Confirm each control has a clear spoken name/state, focus order matches the
-   visible order, dialogs return focus to their initiating control, and long
-   Unicode labels wrap without clipped or horizontally overflowing content.
-4. Open each source link and verify it reaches the intended official institution
-   or resource. Do not assess admissions, eligibility, aid, or outcome claims.
+1. Open `/phase-5-accessibility-uat` on the approved Preview. This is a
+   non-indexed, Preview-only, static fixture. Confirm the three headings are
+   announced in a logical heading/reading order: `No pathways match these
+   priorities yet`, `No programme details are available for this school yet`,
+   and the long-Unicode `École supérieure… 漢字かなカナ العربية` sample. At 200%
+   browser zoom, confirm the Unicode heading and its source-label sample wrap
+   without clipping, overlap, or horizontal page scrolling. The fixture must
+   contain no links, textboxes, or buttons.
+2. Open `/western-new-york`. Navigate with Tab/Shift+Tab and the screen
+   reader's landmark, heading, form, and link commands. Check the verification
+   notice, four filters, populated result cards, and every visible official
+   source link.
+3. Open `/schools/north-valley-college` for the populated locker and
+   `/schools/metro-technical-institute` for the empty community-board recovery
+   state. Confirm their verification guidance and headings. Open one `Report
+   this note` dialog on the populated locker and cancel it only; focus must
+   return to that same report control. Do not confirm a report or submit data.
+4. Confirm each control has a clear spoken name/state and focus order matches
+   visible order. Open each source link and verify it reaches the intended
+   official institution or resource. Do not assess admissions, eligibility,
+   aid, or outcome claims.
+
+The fixture is not a replacement for a real screen-reader observation. Record
+Test 1 as `pass` only after a human reports every applicable observation above;
+record a route/control-specific defect instead when any observation fails.
 
 ### Capture template
 
