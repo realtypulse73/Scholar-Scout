@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-30T22:18:27.000Z
+updated: 2026-08-30T22:33:00.000Z
 ---
 
 ## Current Test
@@ -29,7 +29,7 @@ reason: "On the corrected isolated Preview, generated student content posted suc
 
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: pass
-reason: "On the exact configured Upstash Preview, a generated non-personal student account made five alternating marked note/inbox submissions successfully. At 2026-08-30T07:30:27Z, its sixth marked note returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The authenticated Preview tab and that same retained draft survived through the elapsed window; at 2026-08-30T13:10:40Z, submitting it once returned 'Your note is live on this school locker.' and displayed exactly that marked note at the top of the note board. This completes the observed rolling-expiry proof without a second submission sequence. The authenticated provider-outage/no-write check passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
+reason: "On the exact configured Upstash Preview, a generated non-personal student account made five alternating marked note/inbox submissions successfully. At 2026-08-30T07:30:27Z, its sixth marked note returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The authenticated Preview tab and that same retained draft survived through the elapsed window; at 2026-08-30T13:10:40Z, submitting it once returned 'Your note is live on this school locker.' and displayed exactly that marked note at the top of the note board. This completes the observed rolling-expiry proof without a second submission sequence. A later fresh generated Preview account also submitted exactly one marked inbox request, which returned 'Inbox request sent. The uploader decides whether to continue the conversation.' This supplementary inbox-path check is not treated as a second per-actor expiry proof because that account was fresh. The authenticated provider-outage/no-write check passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
 
 ## Summary
 
