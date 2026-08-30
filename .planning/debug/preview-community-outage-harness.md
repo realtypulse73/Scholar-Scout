@@ -1,5 +1,5 @@
 ---
-status: fixing
+status: awaiting_confirmation
 trigger: "Phase 5 requires a Preview-only authenticated community-provider outage/no-write UAT, but invalidating the shared Upstash configuration also blocks sign-in before a student session exists."
 created: 2026-08-30
 updated: 2026-08-30
@@ -17,7 +17,7 @@ updated: 2026-08-30
 
 hypothesis: "A Preview-only, community-scoped outage switch can return the existing fail-closed reservation result before the community provider call while leaving credentials reservations untouched."
 falsification_test: "Focused rate-limit and route tests prove the switch is ignored outside Vercel Preview and that both community routes return 503 before their store write."
-next_action: "Commit the narrow Preview-only switch and regression coverage, then create an isolated Preview deployment with a per-deployment runtime override."
+next_action: "With immediate user approval, create and sign in with a generated non-personal account on the isolated Preview, then submit one marked note and one marked inbox request to observe unavailable/no-write behavior."
 
 ## Evidence
 
@@ -29,6 +29,8 @@ next_action: "Commit the narrow Preview-only switch and regression coverage, the
   observation: "The existing invalid-provider Preview cannot prove authenticated community no-write behavior because the shared provider is consulted before credential verification."
 - timestamp: 2026-08-30
   observation: "Focused tests confirm the new switch returns unavailable without calling the community limiter, while the sign-in reservation remains allowed; community-route tests confirm unavailable results return 503 before either store write."
+- timestamp: 2026-08-30
+  observation: "Isolated Vercel Preview deployment dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt is Ready at https://scholar-scout-blyr7m7yb-scholar-scout.vercel.app with the per-deployment outage flag and fresh non-secret Blob data path. Its public student surface loaded successfully."
 
 ## Eliminated
 
