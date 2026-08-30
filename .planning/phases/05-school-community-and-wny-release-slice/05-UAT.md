@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-29T23:35:00.000Z
+updated: 2026-08-30T03:45:00.000Z
 ---
 
 ## Current Test
@@ -29,8 +29,8 @@ reason: "On the corrected isolated Preview, generated student content posted suc
 
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: blocked
-blocked_by: external-time-and-provider boundary
-reason: "On the exact configured Upstash Preview, a newly generated non-personal student account made five alternating marked inbox/note submissions successfully; the sixth note attempt returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires elapsed provider time. A separate Preview with intentionally invalid non-secret Upstash values correctly failed closed at sign-in, but the shared provider guard prevents reaching an authenticated community write; its no-write result is technically covered by route tests, while a post-auth live outage check needs a session-preserving provider-failure mechanism."
+blocked_by: external-time boundary
+reason: "On the exact configured Upstash Preview, a newly generated non-personal student account made five alternating marked inbox/note submissions successfully; the sixth note attempt returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires elapsed provider time. The authenticated provider-outage/no-write check now passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
 
 ## Summary
 
