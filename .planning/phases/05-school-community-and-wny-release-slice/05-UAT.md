@@ -3,7 +3,7 @@ status: partial
 phase: 05-school-community-and-wny-release-slice
 source: [05-VERIFICATION.md]
 started: 2026-08-29T14:54:07.492Z
-updated: 2026-08-30T03:45:00.000Z
+updated: 2026-08-30T04:15:00.000Z
 ---
 
 ## Current Test
@@ -17,7 +17,7 @@ updated: 2026-08-30T03:45:00.000Z
 expected: Keyboard- and screen-reader-check populated and empty Western New York and school-locker screens, opening every visible official source link. Guidance remains clear, focus order is usable, intended official sources open, and long Unicode labels wrap without horizontal overflow.
 result: blocked
 blocked_by: assistive-technology review
-reason: "The deployed Preview now has 40 visible source links, no stale-link 404/certificate failure, ordered focusable controls, and no horizontal overflow; a real screen-reader and long-Unicode-label review still requires an assistive-technology session."
+reason: "The deployed Preview now has 43 visible source links, a visible verification notice, four labeled controls, no stale-link 404/certificate failure, ordered focusable controls, and no horizontal overflow at the tested viewport. Focused Western New York data tests (5) and community component tests (12, including keyboard/Unicode coverage) pass, as do typecheck and lint. A real screen-reader and long-Unicode-label review still requires an assistive-technology session."
 
 ### 2. Authenticated report and staff-resolution journey
 
@@ -30,7 +30,7 @@ reason: "On the corrected isolated Preview, generated student content posted suc
 expected: Against configured Upstash, make alternating valid note and inbox submissions across a clock boundary. Five combined submissions are accepted, the sixth is denied before a write, expired reservations later permit a new write, and an unavailable provider writes nothing without showing a remaining count.
 result: blocked
 blocked_by: external-time boundary
-reason: "On the exact configured Upstash Preview, a newly generated non-personal student account made five alternating marked inbox/note submissions successfully; the sixth note attempt returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires elapsed provider time. The authenticated provider-outage/no-write check now passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
+reason: "On the exact configured Upstash Preview, a newly generated non-personal student account made five alternating marked inbox/note submissions successfully; the sixth note attempt returned only 'Please wait before sending another community submission,' kept its draft in the form, and created no sixth public note. No remaining count was disclosed. The real sliding-window expiry still requires elapsed provider time and one marked authenticated submission after that window; the prior generated account's browser session and credentials are no longer available, so this run did not recreate it. The authenticated provider-outage/no-write check passed on isolated Preview dpl_8GPxTpWo3eF7y6F6hYfDQCJVvDqt: one marked note returned 'Community submissions are temporarily unavailable.' and one marked inbox request returned 'Inbox requests are temporarily unavailable. Please try again later.' Both drafts visibly remained in their fields, neither success state appeared, and focused route tests prove each 503 occurs before its store write."
 
 ## Summary
 
