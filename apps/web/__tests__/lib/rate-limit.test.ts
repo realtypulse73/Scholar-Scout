@@ -24,7 +24,11 @@ import {
   createLimiterCacheKey,
   createRateLimitService,
   createUpstashAtomicReservationLimiter,
+  isPreviewCommunityOutageEnabled,
   REGISTRATION_POLICY,
+  reserveCommunitySubmission,
+  reserveSignInAttempt,
+  setAtomicReservationLimiterForTests,
   type AtomicReservationLimiter,
   type RateLimitWindow,
 } from '@/lib/server/rate-limit';
@@ -261,4 +265,67 @@ describe('rate-limit policies', () => {
       retryAfterSeconds: null,
     });
   });
+
+  it('enables the outage harness only for an explicit Vercel Preview deployment', () => {
+    expect(isPreviewCommunityOutageEnabled({
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE: '1',
+    })).toBe(true);
+    expect(isPreviewCommunityOutageEnabled({
+      VERCEL_ENV: 'production',
+      SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE: '1',
+    })).toBe(false);
+    expect(isPreviewCommunityOutageEnabled({
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE: '0',
+    })).toBe(false);
+  });
+
+  it('fails only community submissions closed in Preview without consuming the provider or blocking sign-in', async () => {
+    const originalVercelEnv = process.env.VERCEL_ENV;
+    const originalOutageFlag = process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
+    const limiter: AtomicReservationLimiter = {
+      reserve: jest.fn(async () => ({
+        allowed: true,
+        resetAt: new Date('2026-07-27T14:00:00.000Z'),
+        retryAfterSeconds: 1,
+      })),
+    };
+
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
+    setAtomicReservationLimiterForTests(limiter);
+
+    try {
+      await expect(reserveCommunitySubmission('student-1')).resolves.toEqual({
+        status: 'unavailable',
+        allowed: false,
+        resetAt: null,
+        retryAfterSeconds: null,
+      });
+      expect(limiter.reserve).not.toHaveBeenCalled();
+
+      await expect(reserveSignInAttempt({
+        email: 'student@example.org',
+        ip: '203.0.113.10',
+      })).resolves.toMatchObject({ status: 'allowed' });
+      expect(limiter.reserve).toHaveBeenCalledTimes(1);
+    } finally {
+      setAtomicReservationLimiterForTests(null);
+      restoreEnvironmentVariable('VERCEL_ENV', originalVercelEnv);
+      restoreEnvironmentVariable(
+        'SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE',
+        originalOutageFlag,
+      );
+    }
+  });
 });
+
+function restoreEnvironmentVariable(key: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+
+  process.env[key] = value;
+}

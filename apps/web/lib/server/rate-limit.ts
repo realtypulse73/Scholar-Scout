@@ -218,7 +218,23 @@ export function createLimiterCacheKey(limit: number, window: RateLimitWindow): s
 }
 
 export function reserveCommunitySubmission(accountId: string): Promise<RateLimitReservation> {
+  if (isPreviewCommunityOutageEnabled()) {
+    return Promise.resolve(unavailableReservation());
+  }
+
   return getRateLimitService().reserveCommunitySubmission(accountId);
+}
+
+/**
+ * Allows an isolated Vercel Preview to exercise the community provider-outage
+ * path after sign-in. The switch is deliberately ignored outside Preview so it
+ * cannot disable production community submissions.
+ */
+export function isPreviewCommunityOutageEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env.VERCEL_ENV === 'preview' &&
+    env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE === '1';
 }
 
 export function setAtomicReservationLimiterForTests(

@@ -52,6 +52,7 @@
 | [docs/vercel-deployment.md](docs/vercel-deployment.md) | Vercel build and deployment configuration. | Deploying or diagnosing Vercel builds. |
 | [docs/vercel-permissions-handoff.md](docs/vercel-permissions-handoff.md) | Maintainer-owned Vercel access actions. | A deployment is blocked by permissions. |
 | [docs/vercel-docker-workaround.md](docs/vercel-docker-workaround.md) | Historical Vercel/Docker workaround. | Docker-related deployment issues only. |
+| [docs/phase-5-preview-outage-uat.md](docs/phase-5-preview-outage-uat.md) | Preview-only community provider-outage and human screen-reader UAT procedure. | Closing the Phase 5 live UAT gates. |
 | [docs/http-data-adapter-runbook.md](docs/http-data-adapter-runbook.md) | HTTP persistence adapter contract and operations. | Using or operating the HTTP data adapter. |
 | [docs/vercel-blob-data-adapter.md](docs/vercel-blob-data-adapter.md) | Vercel Blob persistence adapter configuration. | Using or operating Blob-backed persistence. |
 
