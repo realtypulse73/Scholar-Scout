@@ -33,6 +33,9 @@ const contextModule = jest.requireMock('../../lib/server/advisor-context') as {
 const dataStoreModule = jest.requireMock('../../lib/server/data-store') as {
   getGuestQuotaBindingForAccount: jest.Mock;
 };
+const platformStoreModule = jest.requireMock('../../lib/server/platform-store') as {
+  appendAnalyticsEvent: jest.Mock;
+};
 
 function advisorRequest(value: unknown): Request {
   const body = JSON.stringify(value);
@@ -170,19 +173,29 @@ describe('advisor chat route', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('fails closed when the limiter is unavailable and handles acute crisis before actor access', async () => {
+  it('fails closed before provider access or telemetry writes when the limiter is unavailable', async () => {
     rateLimitModule.reserveAdvisorAccount.mockResolvedValue({
       status: 'unavailable',
       allowed: false,
       resetAt: null,
       retryAfterSeconds: null,
     });
-    const unavailable = await POST(advisorRequest({ message: 'Compare options.' }));
+    const response = await POST(advisorRequest({ message: 'Compare options.' }));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: 'The advisor is not available right now. Please try again shortly.',
+    });
+    expect(actorModule.resolveStudentActor).toHaveBeenCalledTimes(1);
+    expect(contextModule.buildAdvisorContext).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(platformStoreModule.appendAnalyticsEvent).not.toHaveBeenCalled();
+  });
+
+  it('handles acute crisis before actor access', async () => {
     const crisis = await POST(advisorRequest({ message: 'I want to hurt myself tonight.' }));
 
-    expect(unavailable.status).toBe(503);
     expect(crisis.status).toBe(200);
-    expect(actorModule.resolveStudentActor).toHaveBeenCalledTimes(1);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(actorModule.resolveStudentActor).not.toHaveBeenCalled();
   });
 });
