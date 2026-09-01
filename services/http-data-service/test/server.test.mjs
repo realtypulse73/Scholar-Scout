@@ -101,7 +101,13 @@ describe('ScholarScout HTTP data service fixture', () => {
     assert.equal((await response.json()).service, 'scholarscout-data');
   });
 
-  it('returns a practical error for invalid JSON writes', async () => {
+  it('returns a practical error for invalid JSON writes without changing the winning document', async () => {
+    const winningDocument = {
+      users: [], onboardingProfiles: {}, shortlists: {},
+      programmeRecords: [{ id: 'write-failure-winner' }], auditEvents: [],
+    };
+    await writeFile(dataFile, JSON.stringify(winningDocument));
+
     const response = await fetch(baseUrl, {
       method: 'PUT',
       headers: { Authorization: 'Bearer test-token' },
@@ -109,7 +115,9 @@ describe('ScholarScout HTTP data service fixture', () => {
     });
 
     assert.equal(response.status, 400);
-    assert.equal((await response.json()).error, 'Invalid JSON document');
+    assert.deepEqual(await response.json(), { error: 'Invalid JSON document' });
+    assert.deepEqual(JSON.parse(await readFile(dataFile, 'utf8')), winningDocument);
+    await rm(dataFile);
   });
 
   it('stores and returns the ScholarScout data document', async () => {

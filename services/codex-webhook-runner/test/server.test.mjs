@@ -59,6 +59,34 @@ describe('Codex webhook runner', () => {
     assert.equal(fetchCalls.length, 0);
   });
 
+  it('rejects a signed malformed payload without dispatching or disclosing parser detail', async () => {
+    const fetchCalls = [];
+    const server = createCodexWebhookRunner({
+      webhookSecret: WEBHOOK_SECRET,
+      repository: CONFIGURED_REPOSITORY,
+      githubToken: 'github-token',
+      codexAgentEndpoint: 'https://agent.example/jobs',
+      codexAgentBearerToken: 'agent-token',
+      fetchImpl: createFetchRecorder(fetchCalls),
+    });
+    const baseUrl = await listen(server, servers);
+    const body = Buffer.from('{malformed webhook payload');
+
+    const response = await fetch(`${baseUrl}/github/webhook`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-github-event': 'issues',
+        'x-hub-signature-256': createSignature(body),
+      },
+      body,
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'Invalid webhook payload' });
+    assert.equal(fetchCalls.length, 0);
+  });
+
   it('ignores a valid webhook for another repository without external side effects', async () => {
     const fetchCalls = [];
     const server = createCodexWebhookRunner({
