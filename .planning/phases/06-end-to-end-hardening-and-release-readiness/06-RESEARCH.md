@@ -342,22 +342,13 @@ await expect(page.getByText(/ranked recommendations/i)).toBeVisible();
 | A2 | A generated fixture can be exposed through a server-only helper or non-production token-gated control without requiring a new public API. | Architecture Patterns | Implementation may need a different internal execution seam. |
 | A3 | One CI worker is sufficient for the initial tracer's time budget. | Common Pitfalls | CI duration could require controlled optimization after stable baseline evidence. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **What non-production authentication seam should the student release journey use?**
-   - What we know: The journey needs server-derived student identity, and the app's account routes enforce it. [VERIFIED: `apps/web/app/api/account/onboarding/route.ts`; VERIFIED: `apps/web/app/api/account/shortlist/route.ts`]
-   - What's unclear: Whether the fixture can use a safe test-only credentials flow, an existing guest actor, or a Preview-only generated account without leaking a browser credential into evidence.
-   - Recommendation: Planner must inspect `auth.ts`, `AuthForm.tsx`, and route tests, then choose one server-owned non-production path. It must reject production and redact credentials/artifacts. [ASSUMED]
+1. **Guest context-cookie bootstrap — resolved:** Use the existing guest actor, not a generated account or test identity header. The single Playwright browser context calls `page.request.get('/api/account/onboarding')`; the route resolves/creates the guest actor and its HttpOnly `scholarscout_guest` cookie. Because `page.request` shares the context cookie jar, subsequent normal browser and context requests use the server-issued guest identity without the test reading, setting, or recording the credential. Run the local owned server with `next dev --experimental-https` and `ignoreHTTPSErrors: true`; do not change the production-strength `secure: true` cookie. [VERIFIED: `apps/web/lib/server/student-actor.ts`; VERIFIED: `apps/web/app/api/account/onboarding/route.ts`; CITED: https://playwright.dev/docs/api-testing; CITED: https://nextjs.org/docs/app/api-reference/cli/next]
 
-2. **Which existing simulation has the smallest stable interactive surface?**
-   - What we know: There are two simulation component namespaces; D-04 requires only one browser path. [VERIFIED: `apps/web/components/simulation/SimulationPlayer.tsx`; VERIFIED: `apps/web/components/simulations/SimulationPlayer.tsx`; VERIFIED: `06-CONTEXT.md`]
-   - What's unclear: Which page mounts the most deterministic representative entry point.
-   - Recommendation: Select the route backed by `apps/web/components/simulation/SimulationPlayer.tsx`, because it saves then links to recommendations, unless route inspection finds the other namespace is the actual current student entry point. [ASSUMED]
+2. **Representative simulation entry point — resolved:** Use `/simulate`, which mounts `apps/web/components/simulation/SimulationPlayer.tsx` with `simulations[0]`. It is the connected representative path because completing it renders `Simulation complete`, then its existing `Save and see recommendations` action returns to `/recommendations`. Do not add the `/explore` career-simulation namespace to the Phase 6 browser tracer; retain its existing lower-level coverage. [VERIFIED: `apps/web/app/simulate/page.tsx`; VERIFIED: `apps/web/components/simulation/SimulationPlayer.tsx`; VERIFIED: `06-CONTEXT.md`]
 
-3. **How will the protected Preview browser runner receive its Vercel bypass secret?**
-   - What we know: Vercel supports an `x-vercel-protection-bypass` header and optional bypass cookie for automated protected deployment tests. [CITED: https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation]
-   - What's unclear: Whether project administrators will configure that secret for the CI environment.
-   - Recommendation: Make this a maintainer-owned external checkpoint; do not hard-code a bypass, make Preview public, or block local/CI fixture work on it. [ASSUMED]
+3. **Preview protection and maintainer checkpoint — resolved:** The repository does not assume, store, or expose a Vercel automation-bypass secret. The Preview outage rehearsal is a maintainer-owned `checkpoint:human-verify`: deploy a one-off protected Preview with `SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1` and a fresh non-secret `SCHOLARSCOUT_BLOB_DATA_PATH`, verify the safe `503`/no-write behavior, record only safe identifiers/outcomes, then do not promote or alias the deployment. If the project has Deployment Protection, the maintainer may provide Vercel’s `x-vercel-protection-bypass` header through external CI secret configuration; it must never enter repository files or release evidence. [VERIFIED: `docs/phase-5-preview-outage-uat.md`; CITED: https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation; VERIFIED: `06-CONTEXT.md`]
 
 ## Environment Availability
 
