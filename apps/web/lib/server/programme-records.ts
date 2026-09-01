@@ -89,6 +89,11 @@ export async function deleteProgrammeRecord(userId: string, programmeId: string)
 
 export async function getGovernedProgrammes() {
   const governedRecords = await getProgrammeRecords();
+  if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED === 'true') {
+    return getPublishedProgrammeRecords(governedRecords).filter((record) =>
+      record.id.startsWith(`e2e-${process.env.SCHOLARSCOUT_E2E_FIXTURE_ID}-`),
+    );
+  }
   return mergeProgrammes(programmes, getPublishedProgrammeRecords(governedRecords));
 }
 
