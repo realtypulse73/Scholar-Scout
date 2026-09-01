@@ -59,6 +59,51 @@ Preview rehearsal is a release-evidence lane, not a production smoke replacement
 
 **Primary recommendation:** Add `@playwright/test` as a root development dependency, run one serialized Chromium journey against generated resettable data, and keep Preview configuration/failure injection isolated, restored, and separately evidenced.
 
+## Follow-up Execution Resolutions
+
+### 1. Safe guest-session bootstrap
+
+Use the application’s existing guest-actor path; do not invent an E2E identity header, add a test cookie manually, or seed a browser-readable credential. At the start of the one journey, call `await page.request.get('/api/account/onboarding')` through Playwright’s context-associated request client. The route calls `resolveStudentActor({ allowGuest: true })`; when there is no NextAuth session or existing guest cookie, `student-actor.ts` creates a random credential, stores only its hash in the guest lifecycle, and sends the `scholarscout_guest` HttpOnly/secure/lax cookie. Playwright documents that `page.request`/`context.request` shares the browser context cookie jar and receives `Set-Cookie`. [VERIFIED: `apps/web/app/api/account/onboarding/route.ts`; VERIFIED: `apps/web/lib/server/student-actor.ts`; CITED: https://playwright.dev/docs/api-testing]
+
+Run the local test server over HTTPS: `next dev --experimental-https --port <isolated-port>`. The guest cookie is explicitly `secure: true`; Next.js documents that secure cookies are sent only over HTTPS and that this `next dev` option generates a self-signed certificate. Set Playwright `ignoreHTTPSErrors: true` only for the local self-signed server. Do not weaken the cookie in code for E2E. [VERIFIED: `apps/web/lib/server/student-actor.ts`; CITED: https://nextjs.org/docs/app/api-reference/cli/next; CITED: https://nextjs.org/docs/app/api-reference/functions/cookies; CITED: https://playwright.dev/docs/next/test-use-options]
+
+The test proves cookie continuity without reading its value: after the bootstrap response, visit `/onboarding`, complete the normal UI, then use the same context to call `GET /api/account/onboarding` and assert the generated profile is returned. The cookie name/value must never appear in assertion output, trace annotations, or release evidence. `ShortlistButton` and `RecommendationDashboard` currently use account-session presence before reading/writing server shortlist/profile state, so the guest release tracer must prove shortlist persistence by the existing local-storage/reload user behavior, not falsely claim a guest server-shortlist write. [VERIFIED: `apps/web/components/onboarding/OnboardingWizard.tsx`; VERIFIED: `apps/web/components/shortlist/ShortlistButton.tsx`; VERIFIED: `apps/web/components/recommendations/RecommendationDashboard.tsx`]
+
+### 2. Fixture isolation despite process-global adapter state
+
+The smallest executable option is one owned, single Next.js dev process per E2E invocation, using the JSON adapter and a fresh OS-temporary data file. This is required because `dataFilePath` is evaluated from `SCHOLARSCOUT_DATA_FILE` at module initialization and `getScholarScoutDataStore()` caches one `activeDataStore` per process; changing environment variables or attempting `setScholarScoutDataStoreForTests()` from a separate browser process cannot retarget the already-running server. [VERIFIED: `apps/web/lib/server/data-store.ts`]
+
+Implement a Node E2E launcher (for example `scripts/run-e2e-fixture.mjs`) rather than a route-level reset API:
+
+1. Fail before spawning if `VERCEL_ENV === 'production'`, if `SCHOLARSCOUT_E2E_BASE_URL` is set, or if an externally supplied data-adapter/file selection is present. [ASSUMED]
+2. Create a unique directory with `mkdtemp(path.join(tmpdir(), 'scholarscout-e2e-'))`; choose `<dir>/scholarscout-data.json` as the sole fixture file. Node operational tests already use `mkdtemp` for isolated test directories. [VERIFIED: `.planning/codebase/TESTING.md`; VERIFIED: `scripts/test-production-tooling.mjs`]
+3. Spawn exactly one child process with `SCHOLARSCOUT_DATA_ADAPTER=json`, `SCHOLARSCOUT_DATA_FILE=<dir>/scholarscout-data.json`, `PORT=<allocated-port>`, and no Preview/production credentials; run `pnpm --filter @scholar-scout/web exec next dev --experimental-https --port <allocated-port>`. The first request creates the normalized empty document; programme discovery still uses the governed catalogue’s seed fallback rather than a parallel browser fixture. [VERIFIED: `apps/web/lib/server/data-store.ts`; VERIFIED: `apps/web/app/programmes/page.tsx`; CITED: https://nextjs.org/docs/app/api-reference/cli/next]
+4. Run one Chromium worker and one test file; do not reuse an externally running server in CI. Playwright’s `webServer` supports owned server startup, and one worker prevents the single document fixture from receiving concurrent writes. [CITED: https://playwright.dev/docs/test-configuration; CITED: https://playwright.dev/docs/ci]
+5. In `finally`, terminate the owned Next process, wait for exit, and recursively remove only the exact directory returned by `mkdtemp`. Do not clean a configured/shared path. [ASSUMED]
+
+This local/CI fixture must never target Vercel Blob, HTTP storage, a Preview URL, or a user-provided file. Preview rehearsal is deliberately a second profile: it obtains its own immutable Preview deployment and Vercel deployment-level Blob path; it does not reuse the local launcher. [VERIFIED: `docs/phase-5-preview-outage-uat.md`; VERIFIED: `06-CONTEXT.md`]
+
+### 3. Preview-only provider-outage proof
+
+There is already a concrete, production-ignored injection control: `reserveCommunitySubmission()` returns an unavailable reservation only when `VERCEL_ENV === 'preview'` and `SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE === '1'`. Campus-note and peer-inbox routes return their established safe `503` unavailable responses before their create calls. [VERIFIED: `apps/web/lib/server/rate-limit.ts`; VERIFIED: `apps/web/app/api/campus-notes/route.ts`; VERIFIED: `apps/web/app/api/peer-connections/route.ts`]
+
+Use the existing Phase 5 procedure unchanged as the external maintainer checkpoint: from the committed candidate, create a new Preview deployment only with `vercel deploy --env SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1 --env SCHOLARSCOUT_BLOB_DATA_PATH=<fresh-non-secret-path>`. Do not add the outage flag to project settings or invoke `--prod`. The one-off deployment override expires with that deployment, so restoration is evidenced by its non-promotion/non-aliasing rather than a mutable project-setting rollback. The maintainer records Preview URL/deployment ID or commit, UTC time, safe visible `503` message, and no-created-record result; never records credentials, cookie values, environment values, or raw logs. [VERIFIED: `docs/phase-5-preview-outage-uat.md`; CITED: https://vercel.com/docs/projects/deploy-from-cli]
+
+This proof cannot be automated in repository CI without a maintainer-supplied Vercel project connection, authorized Preview Blob token/path, and (if protected) automation-bypass secret. Treat it as `checkpoint:human-verify`, not an assumed CI secret or production-access requirement. [CITED: https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation; VERIFIED: `06-CONTEXT.md`]
+
+### 4. Validation artifact contract for later `06-VALIDATION.md`
+
+The future validation artifact must use the exact task-to-proof matrix below. It distinguishes local fixture evidence, CI browser evidence, and maintainer Preview evidence, and therefore cannot conflate a green local run with a production or Preview release proof. [VERIFIED: `06-CONTEXT.md`; VERIFIED: `docs/prelaunch-evidence-template.md`]
+
+| Planned task/capability | Automated proof | Human/external proof | Required safe artifact |
+|---|---|---|---|
+| E2E launcher + process isolation | Node test for reject-production/external-target guards; launcher creates/removes only its own `mkdtemp` directory | None | command, commit, pass/fail, safe error category |
+| HTTPS guest bootstrap | Playwright test calls `/api/account/onboarding`, completes onboarding, then observes profile on same context request | None | HTML report/trace retained in CI; summary omits cookie values |
+| Student transition tracer | Playwright: discovery visible; onboarding changes recommendation surface; shortlist survives reload; `/simulate` renders `Simulation complete` and returns to recommendations | None | HTML report and retry trace |
+| High-risk API/webhook/data-service failure matrix | Existing Jest route suites + Node HTTP service suite; add only missing no-write/fail-closed cases | None | command/result only |
+| Preview outage deployment | Repository test verifies Preview-only guard and `503` pre-write branch | Maintainer creates isolated Preview override, checks unavailable message/no record, and lets one-off deployment expire without promotion | Preview URL or ID, commit, UTC, command, pass/fail, safe category |
+| Release evidence aggregation | Node test verifies resulting summary rejects missing/failed required lane and redacts secret/cookie/data keys | Maintainer attaches identifiers to existing prelaunch evidence record | safe release record links/identifiers only |
+
 ## Architectural Responsibility Map
 
 | Capability | Primary Tier | Secondary Tier | Rationale |
@@ -348,6 +393,21 @@ await expect(page.getByText(/ranked recommendations/i)).toBeVisible();
 | OPS-04 | Minimal student browser release tracer with artifact output | Playwright E2E | `pnpm exec playwright test` | ❌ Wave 0 |
 | OPS-04 | Preview-only failure injection restores config and reports safe result | Node operational/integration + maintainer Preview check | `pnpm test:production-tooling` | ✅ operational harness; Preview procedure extension needed |
 | PROD-04 | Discovery → onboarding → shortlist → recommendations → one simulation stays connected | Playwright E2E | `pnpm exec playwright test apps/web/e2e/student-release-journey.spec.ts` | ❌ Wave 0 |
+
+### 06-VALIDATION.md Inputs
+
+When Phase 6 is planned, the validation artifact should record these executable contracts rather than vague “E2E passes” claims:
+
+| Validation ID | Owning implementation seam | Exact command | Pass condition |
+|---|---|---|---|
+| VAL-06-01 | `scripts/run-e2e-fixture.mjs` | `pnpm run test:e2e` | Launcher rejects production/external targets, owns one temporary JSON data path and one HTTPS Next process, then removes only that path after the test. [ASSUMED command name; VERIFIED: `apps/web/lib/server/data-store.ts`] |
+| VAL-06-02 | `apps/web/e2e/student-release-journey.spec.ts` | `pnpm exec playwright test apps/web/e2e/student-release-journey.spec.ts` | Context-associated request obtains the server-issued HttpOnly guest cookie; normal onboarding is readable by the same guest actor; discovery, local shortlist reload, recommendations, and `/simulate` each show their stable visible transition. [VERIFIED: `apps/web/lib/server/student-actor.ts`; VERIFIED: `apps/web/app/api/account/onboarding/route.ts`; VERIFIED: `apps/web/app/simulate/page.tsx`] |
+| VAL-06-03 | Existing API route suites | `pnpm --filter @scholar-scout/web test --runInBand -- __tests__/api` | High-risk route failure cases return their safe status/category and make no write. Extend only missing assertions. [VERIFIED: `.planning/codebase/TESTING.md`] |
+| VAL-06-04 | HTTP service suite | `pnpm --filter @scholar-scout/http-data-service test` | Data-service malformed/unavailable/conditional-write behavior remains integration-tested over HTTP. [VERIFIED: `.planning/codebase/TESTING.md`] |
+| VAL-06-05 | Production tooling suite | `pnpm test:production-tooling` | Release aggregation rejects a missing/failed E2E or Preview lane and does not emit secret/cookie/data values. [ASSUMED extension; VERIFIED: `scripts/test-production-tooling.mjs`] |
+| VAL-06-06 | Maintainer Preview UAT | `vercel deploy --env SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1 --env SCHOLARSCOUT_BLOB_DATA_PATH=<fresh-non-secret-path>` | Preview only: a signed-in generated account sees the existing unavailable state; no note/inbox write appears; deployment is neither promoted nor aliased. [VERIFIED: `docs/phase-5-preview-outage-uat.md`] |
+
+The planner must mark VAL-06-06 as `checkpoint:human-verify`. It requires external Vercel authorization and must not be simulated by inserting credentials or a bypass secret into repository configuration. [VERIFIED: `06-CONTEXT.md`]
 
 ### Sampling Rate
 
