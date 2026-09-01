@@ -247,3 +247,17 @@ Plans:
 Plans:
 
 - [ ] TBD (run /gsd-spec-phase 8, then /gsd-discuss-phase 8 and /gsd-plan-phase 8 to break down)
+
+## Backlog
+
+### Phase 999.1: Direct school search and opening (BACKLOG)
+
+**Goal:** Let a student directly find and open a school without manually navigating the feed.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Captured rationale:** During Phase 5 UAT, the current feed did not provide school search, so the tester could not efficiently locate Metro Technical Institute. Evaluate an accessible search entry point and result-to-school navigation in Phase 6-or-later planning; preserve current discovery, privacy, source-validation, and accessibility safeguards.
+
+Plans:
+
+- [ ] TBD (promote with $gsd-review-backlog when ready)
