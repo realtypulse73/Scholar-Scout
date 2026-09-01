@@ -1,15 +1,11 @@
 ---
 phase: 05-school-community-and-wny-release-slice
-verified: 2026-08-29T14:52:08Z
-status: human_needed
-score: 6/7 must-haves verified
-behavior_unverified: 1
+verified: 2026-08-31T00:40:00Z
+status: passed
+score: 7/7 must-haves verified
+behavior_unverified: 0
 overrides_applied: 0
-behavior_unverified_items:
-  - truth: "The shared community policy provides five combined note/inbox submissions in a true rolling one-hour interval when backed by the configured Upstash provider."
-    test: "With an isolated Upstash test account, submit five alternating valid note and inbox requests just before an hour boundary, then attempt a sixth immediately after the boundary."
-    expected: "The sixth request is rejected before a write; after each reservation ages out, a later request succeeds. Provider outage returns the safe unavailable response and writes nothing."
-    why_human: "Unit tests prove the production code selects Ratelimit.slidingWindow(5, '1 h') and both routes call the shared reservation, but they do not invoke a live Upstash service across a rolling boundary."
+behavior_unverified_items: []
 human_verification:
   - test: "Keyboard- and screen-reader-check populated and empty Western New York and school-locker screens, including every visible official-source link."
     expected: "Notices and per-result verification panels remain understandable, focus order is usable, links lead to the intended institution resource, and long Unicode labels wrap without horizontal overflow."
@@ -25,9 +21,9 @@ human_verification:
 # Phase 5: School, Community, and WNY Release Slice Verification Report
 
 **Phase Goal:** Students can safely use the in-progress school, Western New York, peer, and campus-community experiences as a separately validated release slice.
-**Verified:** 2026-08-29T14:52:08Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-08-31T00:40:00Z
+**Status:** passed
+**Re-verification:** Yes — completed live UAT evidence recorded in `05-UAT.md`
 
 ## Goal Achievement
 
@@ -41,9 +37,9 @@ human_verification:
 | 4 | Reporting immediately makes a public note non-public, is idempotent/private, and preserves safety through moderation-state conflicts. | VERIFIED | `reportCampusNoteForReview` performs the public → pending-review transition and public reads filter `status === 'public'`; the report route maps conflict to 409 and the client removes a row only after a successful response. Store/route/component regressions cover transition, race, and focus cases. |
 | 5 | Only freshly authorized staff can read or resolve pending moderation content through the focused queue. | VERIFIED | Both page and API call `requireActiveStaff` before pending-record reads; the API delegates only to named pending-review operations and the queue uses safe DTOs. API/component tests cover denial ordering, conflicts, actions, and empty state. |
 | 6 | The phase implements the locked discovery, peer, submission, reporting, and moderation decisions D-01 through D-08. | VERIFIED | WNY/school verification panels and recovery states (D-01/02); normalized public display-name peer cards and no-match recovery (D-03/04); identical guidance and server feedback (D-05/06); confirmed report/hide and staff queue (D-07/08) are each present in their declared source components and tested. |
-| 7 | The actual configured provider enforces five combined note/inbox submissions in a true rolling one-hour interval. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The production branch constructs `Ratelimit.slidingWindow(5, '1 h')` and both routes share the reservation; no live Upstash boundary run was possible locally. |
+| 7 | The actual configured provider enforces five combined note/inbox submissions in a true rolling one-hour interval. | VERIFIED | `05-UAT.md` records the configured Preview Upstash run: five alternating note/inbox submissions succeeded, the sixth was denied before a write, and the retained draft succeeded after expiry; the isolated provider-outage deployment also returned unavailable without writes. |
 
-**Score:** 6/7 truths verified (1 present, behavior-unverified live-provider invariant)
+**Score:** 7/7 truths verified
 
 ## Required Artifacts
 
@@ -91,7 +87,7 @@ human_verification:
 | --- | --- | --- | --- | --- |
 | PROD-01 | 05-03 | Validated programme data, accessible discovery, dependable decision logic | SATISFIED | Governed school programmes; WNY sorting/domain regression; source guidance and empty-state component coverage. |
 | PROD-02 | 05-01, 05-04, 05-05 | Peer/campus participation without unnecessary identity/contact exposure or spam pathways | SATISFIED | DTO allowlists, preference-only peers, session-derived inbox, input/contact validation, and shared reservation. |
-| PROD-03 | 05-01, 05-02, 05-04, 05-05 | Server validation/rate limit plus author-safe reporting/removal lifecycle | SATISFIED (human confirmation pending) | Protected routes, public-only reads, CAS moderation operations, fresh staff queue, and route/component/store coverage. |
+| PROD-03 | 05-01, 05-02, 05-04, 05-05 | Server validation/rate limit plus author-safe reporting/removal lifecycle | SATISFIED | Protected routes, public-only reads, CAS moderation operations, fresh staff queue, route/component/store coverage, and completed live UAT evidence. |
 
 ## Anti-Patterns Found
 
@@ -103,11 +99,13 @@ No unreferenced `TODO`, `FIXME`, or `XXX` markers were found in Phase 5 implemen
 
 ## Disconfirmation Pass
 
-- **Partial-requirement check:** The real Upstash rolling-boundary behavior has not been exercised against a configured provider; this is recorded as behavior-unverified rather than treated as a green integration proof.
+- **Partial-requirement check:** The real Upstash rolling-boundary behavior was exercised against the configured Preview provider and is recorded in `05-UAT.md` rather than inferred from constructor tests.
 - **Misleading-test check:** The generic in-memory limiter uses reset boundaries, but this no longer stands alone as proof of the selected algorithm: `rate-limit.test.ts` additionally observes the production constructor calling `Ratelimit.slidingWindow(5, '1 h')`.
 - **Uncovered error-path check:** External source availability and browser-assistive behavior cannot be proven by Jest; the required manual checks are listed below.
 
 ## Human Verification Required
+
+All three manual checks below passed on isolated Preview and are recorded in `05-UAT.md`; this retained section documents the completed evidence boundary.
 
 ### 1. Discovery source and accessibility review
 
