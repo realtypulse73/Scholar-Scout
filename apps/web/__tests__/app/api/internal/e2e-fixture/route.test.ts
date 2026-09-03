@@ -3,6 +3,7 @@
 import { DELETE, GET, POST, PUT } from '@/app/api/internal/e2e-fixture/route';
 import {
   cleanupE2eProgrammeFixture,
+  cleanupE2eReleaseDataScope,
   createE2eProgrammeFixture,
   verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
@@ -10,6 +11,7 @@ import {
 
 jest.mock('@/lib/server/e2e-programme-fixture', () => ({
   cleanupE2eProgrammeFixture: jest.fn(),
+  cleanupE2eReleaseDataScope: jest.fn(),
   createE2eProgrammeFixture: jest.fn(),
   verifyE2eProgrammeFixture: jest.fn(),
   verifyE2eCommunityOutageNoWrite: jest.fn(),
@@ -142,6 +144,7 @@ describe('e2e fixture route', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, phase: 'cleaned' });
     expect(cleanupE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+    expect(cleanupE2eReleaseDataScope).toHaveBeenCalledTimes(1);
   });
 
   it('verifies the fixed generated outage bodies were not written', async () => {

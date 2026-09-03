@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import {
   cleanupE2eProgrammeFixture,
+  cleanupE2eReleaseDataScope,
   createE2eProgrammeFixture,
   verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
@@ -84,6 +85,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   const rejected = await guard(request);
   if (rejected) return rejected;
   await cleanupE2eProgrammeFixture();
+  await cleanupE2eReleaseDataScope();
   return NextResponse.json({ ok: true, phase: 'cleaned' });
 }
 

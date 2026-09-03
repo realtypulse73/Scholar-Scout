@@ -86,6 +86,24 @@ export async function cleanupE2eProgrammeFixture(): Promise<void> {
   }
 }
 
+/** Deletes only the generated Plan 06 rehearsal document after exact cleanup. */
+export async function cleanupE2eReleaseDataScope(): Promise<void> {
+  if (process.env.SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP !== 'true') return;
+  const dataPath = process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
+  const token = process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN ??
+    process.env.BLOB_READ_WRITE_TOKEN;
+  if (
+    process.env.VERCEL_ENV !== 'preview' ||
+    process.env.SCHOLARSCOUT_DATA_ADAPTER !== 'vercel-blob' ||
+    !dataPath?.startsWith('scholarscout/e2e/') ||
+    !token
+  ) {
+    throw new Error('Generated release data cleanup is unavailable.');
+  }
+  const { del } = await import('@vercel/blob');
+  await del(dataPath, { token });
+}
+
 /** Proves the fixed generated outage bodies were not persisted. */
 export async function verifyE2eCommunityOutageNoWrite(): Promise<void> {
   const data = await readScholarScoutData();
