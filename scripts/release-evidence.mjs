@@ -22,6 +22,7 @@ export const HIGH_RISK_COMMANDS = [
 
 export const LOCAL_BROWSER_COMMAND =
   'node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium';
+export const LOCAL_BROWSER_SETUP_COMMAND = 'pnpm exec playwright install chromium';
 
 const REQUIRED_KINDS = [
   'candidate-quality',
@@ -86,6 +87,11 @@ export async function runLocalReleaseEvidence({
   });
   await writeRecord(outputDir, highRisk);
   assertPassed(highRisk);
+
+  const browserSetup = await runCommand(LOCAL_BROWSER_SETUP_COMMAND);
+  if (browserSetup.code !== 0) {
+    throw new Error('Local browser setup failed.');
+  }
 
   const localBrowser = await runLane({
     kind: 'local-browser',
@@ -253,13 +259,14 @@ async function writeRecord(outputDir, record) {
 }
 
 function runShellCommand(command) {
-  const [program, ...args] = command.split(' ');
   return new Promise((resolve) => {
-    const child = spawn(program, args, {
+    const child = spawn(command, [], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
-      shell: false,
+      // Every command comes from an immutable constant above; no user input is
+      // interpolated into the shell command.
+      shell: true,
     });
     child.once('close', (code) => resolve({ code: code ?? 1 }));
     child.once('error', () => resolve({ code: 1 }));

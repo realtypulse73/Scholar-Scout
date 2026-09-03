@@ -9,12 +9,15 @@ function isExactCandidateCommit(value, candidateCommit) {
     && value === candidateCommit;
 }
 
-function isProtectedPreviewUrl(value) {
+function isProtectedPreviewUrl(value, allowUnaliasedDeployment) {
   try {
     const url = new URL(value);
+    const isCandidateAlias = url.hostname.includes('-git-');
+    const isScopedUnaliasedDeployment = allowUnaliasedDeployment &&
+      /^scholar-scout-[a-z0-9]+-scholar-scout\.vercel\.app$/.test(url.hostname);
     return url.protocol === 'https:'
       && url.hostname.endsWith(PREVIEW_HOST_SUFFIX)
-      && url.hostname.includes('-git-')
+      && (isCandidateAlias || isScopedUnaliasedDeployment)
       && !url.username
       && !url.password
       && !url.search
@@ -38,7 +41,10 @@ export function getVerifiedPreviewMetadata(environment, candidateCommit) {
   };
 
   if (metadata.environment !== 'preview'
-    || !isProtectedPreviewUrl(metadata.url)
+    || !isProtectedPreviewUrl(
+      metadata.url,
+      environment.SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT === 'true',
+    )
     || typeof metadata.deploymentId !== 'string'
     || !metadata.deploymentId
     || !isExactCandidateCommit(metadata.commitSha, candidateCommit)) {

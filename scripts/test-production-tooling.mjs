@@ -11,6 +11,7 @@ import {
   CANDIDATE_QUALITY_COMMANDS,
   HIGH_RISK_COMMANDS,
   LOCAL_BROWSER_COMMAND,
+  LOCAL_BROWSER_SETUP_COMMAND,
   runLocalReleaseEvidence,
   validateReleaseEvidence,
 } from './release-evidence.mjs';
@@ -481,6 +482,7 @@ test('release evidence runs immutable quality, high-risk, and local browser lane
   assert.deepEqual(commands, [
     ...CANDIDATE_QUALITY_COMMANDS,
     ...HIGH_RISK_COMMANDS,
+    LOCAL_BROWSER_SETUP_COMMAND,
     LOCAL_BROWSER_COMMAND,
   ]);
   assert.deepEqual(records.map(({ kind }) => kind), [
@@ -609,6 +611,31 @@ test('release evidence docs keep candidate, Preview, and Production proof distin
   assert.match(runbook, /one\s+record cannot satisfy another lane/i);
   assert.match(runbook, /never replace.*Production/is);
   assert.match(runbook, /Neither lane may target\s+Production, promote a deployment, create an alias/is);
+});
+
+test('prelaunch workflow orders local proof before isolated Preview outage and cleanup', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /candidate_commit:/);
+  assert.match(workflow, /refs\/heads\/worktree-agent-/);
+  assert.match(workflow, /candidate-evidence:[\s\S]*preview-evidence:/);
+  assert.match(workflow, /rehearse:release-evidence[\s\S]*--local-only/);
+  assert.match(workflow, /run-preview-release-tracer\.mjs/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1/);
+  assert.match(workflow, /run-preview-outage-tracer\.mjs/);
+  assert.match(workflow, /Prove base Preview remained restored/);
+  assert.match(workflow, /import \{ del \} from '@vercel\/blob'/);
+  assert.match(workflow, /vercel remove/);
+  assert.match(workflow, /--skip-domain/);
+  assert.match(workflow, /--aggregate/);
+  assert.doesNotMatch(workflow, /--prod\b|vercel promote/);
+  assert.doesNotMatch(
+    workflow,
+    /--env "?SCHOLARSCOUT_(?:VERCEL_PROTECTION_BYPASS|E2E_FIXTURE_CAPABILITY)=/,
+  );
 });
 
 test('environment provisioning writes local env and external checklist', async () => {

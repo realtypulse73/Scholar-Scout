@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { Programme } from '@/lib/programmes';
+import { readScholarScoutData } from '@/lib/server/data-store';
 import {
   deleteProgrammeRecord,
   getGovernedProgrammes,
@@ -8,6 +9,17 @@ import {
 } from '@/lib/server/programme-records';
 
 const FIXTURE_ACTOR_ID = 'e2e-fixture';
+
+export function getE2eCommunityOutageBodies(): {
+  note: string;
+  inbox: string;
+} {
+  const fixtureId = getFixtureId();
+  return {
+    note: `Generated outage note ${fixtureId}`,
+    inbox: `Generated outage inbox ${fixtureId}`,
+  };
+}
 
 function getFixtureId(): string {
   if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED !== 'true') {
@@ -71,5 +83,17 @@ export async function verifyE2eProgrammeFixture(): Promise<string[]> {
 export async function cleanupE2eProgrammeFixture(): Promise<void> {
   for (const { id } of getE2eProgrammeFixtureRecords()) {
     await deleteProgrammeRecord(FIXTURE_ACTOR_ID, id);
+  }
+}
+
+/** Proves the fixed generated outage bodies were not persisted. */
+export async function verifyE2eCommunityOutageNoWrite(): Promise<void> {
+  const data = await readScholarScoutData();
+  const bodies = getE2eCommunityOutageBodies();
+  if (
+    (data.campusNotes ?? []).some(({ body }) => body === bodies.note) ||
+    (data.uploaderInboxRequests ?? []).some(({ body }) => body === bodies.inbox)
+  ) {
+    throw new Error('Generated outage submission was persisted.');
   }
 }
