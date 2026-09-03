@@ -8,7 +8,19 @@ import {
 
 const PROTOCOL = 'lifecycle-v1';
 
-function deny(): NextResponse {
+type DenialReason =
+  | 'browser-shaped'
+  | 'capability-mismatch'
+  | 'fixture-disabled'
+  | 'non-empty-transport'
+  | 'production'
+  | 'protocol-mismatch'
+  | 'query-present';
+
+function deny(reason: DenialReason): NextResponse {
+  if (process.env.VERCEL_ENV !== 'production') {
+    console.warn('E2E fixture lifecycle denied.', { reason });
+  }
   return NextResponse.json({ error: 'Fixture lifecycle unavailable.' }, { status: 403 });
 }
 
@@ -29,18 +41,25 @@ function hasNoBodyTransport(request: Request): boolean {
   return contentLength === '0';
 }
 
-function isAuthorized(request: Request): boolean {
+function getDenialReason(request: Request): DenialReason | null {
   const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
-  return process.env.VERCEL_ENV !== 'production' &&
-    process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED === 'true' &&
-    Boolean(capability) &&
-    request.headers.get('x-scholarscout-e2e-fixture-capability') === capability &&
-    request.headers.get('x-scholarscout-e2e-fixture-protocol') === PROTOCOL &&
-    new URL(request.url).search === '' && hasNoBodyTransport(request) && !hasBrowserShape(request);
+  if (process.env.VERCEL_ENV === 'production') return 'production';
+  if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED !== 'true') return 'fixture-disabled';
+  if (!capability || request.headers.get('x-scholarscout-e2e-fixture-capability') !== capability) {
+    return 'capability-mismatch';
+  }
+  if (request.headers.get('x-scholarscout-e2e-fixture-protocol') !== PROTOCOL) {
+    return 'protocol-mismatch';
+  }
+  if (new URL(request.url).search !== '') return 'query-present';
+  if (!hasNoBodyTransport(request)) return 'non-empty-transport';
+  if (hasBrowserShape(request)) return 'browser-shaped';
+  return null;
 }
 
 async function guard(request: Request): Promise<NextResponse | null> {
-  return isAuthorized(request) ? null : deny();
+  const reason = getDenialReason(request);
+  return reason ? deny(reason) : null;
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
