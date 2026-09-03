@@ -14,9 +14,10 @@ function deny(): NextResponse {
 
 function hasBrowserShape(request: Request): boolean {
   return Boolean(
-    request.headers.get('origin') || request.headers.get('cookie') ||
+    request.headers.get('origin') || request.headers.get('referer') || request.headers.get('cookie') ||
     request.headers.get('sec-fetch-site') || request.headers.get('sec-fetch-mode') ||
-    request.headers.get('sec-fetch-dest'),
+    request.headers.get('sec-fetch-dest') || request.headers.get('sec-fetch-user') ||
+    request.headers.get('sec-ch-ua'),
   );
 }
 

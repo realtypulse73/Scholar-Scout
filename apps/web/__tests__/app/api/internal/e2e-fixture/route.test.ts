@@ -66,9 +66,13 @@ describe('e2e fixture route', () => {
     expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
   });
 
-  it('rejects browser navigation metadata before lifecycle access', async () => {
+  it.each([
+    ['referer', 'https://localhost/programmes'],
+    ['sec-fetch-user', '?1'],
+    ['sec-ch-ua', '"Chromium"'],
+  ])('rejects browser navigation metadata (%s) before lifecycle access', async (name, value) => {
     const response = await GET(new Request(url, {
-      headers: { ...headers, referer: 'https://localhost/programmes' },
+      headers: { ...headers, [name]: value },
     }));
 
     expect(response.status).toBe(403);

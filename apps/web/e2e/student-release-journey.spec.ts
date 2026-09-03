@@ -10,6 +10,9 @@ test('a guest student completes the release journey', async ({ page }) => {
     page.getByRole('heading', { name: 'Programmes worth exploring' }),
   ).toBeVisible();
   await expect(page.getByRole('region', { name: 'Programme results' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Generated Technology Pathway' }).first(),
+  ).toBeVisible();
 
   const shortlistButton = page.getByRole('button', { name: 'Save to shortlist' }).first();
   await shortlistButton.click();
@@ -41,6 +44,9 @@ test('a guest student completes the release journey', async ({ page }) => {
   await page.goto('/recommendations');
   await expect(
     page.getByRole('heading', { name: 'Your best next move' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Generated Technology Pathway' }).first(),
   ).toBeVisible();
 
   await page.goto('/simulate');

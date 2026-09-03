@@ -37,3 +37,30 @@ test('cleans once when the browser command rejects', async () => {
   }));
   assert.deepEqual(methods, ['POST', 'GET', 'DELETE']);
 });
+
+test('cleans once when a terminal handler invokes the registered cleanup', async () => {
+  const methods = [];
+  let cleanup;
+  let finishRun;
+  const lifecycle = runFixtureLifecycle({
+    baseUrl: 'https://127.0.0.1:4311',
+    capability: 'capability',
+    request: async (method) => {
+      methods.push(method);
+      return { ok: true, phase: method === 'DELETE' ? 'cleaned' : 'verified' };
+    },
+    onCleanup: (registeredCleanup) => {
+      cleanup = registeredCleanup;
+    },
+    run: async () => new Promise((resolve) => {
+      finishRun = resolve;
+    }),
+  });
+
+  await new Promise((resolve) => setImmediate(resolve));
+  await cleanup();
+  finishRun({ category: 'interrupted' });
+  await lifecycle;
+
+  assert.deepEqual(methods, ['POST', 'GET', 'DELETE']);
+});
