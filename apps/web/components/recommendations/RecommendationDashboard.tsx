@@ -90,27 +90,25 @@ export default function RecommendationDashboard({
       const { localProfile, localShortlistIds, localPlans } =
         loadLocalRecommendationContext();
 
-      if (session) {
-        const [profileResponse, shortlistResponse] = await Promise.all([
-          fetch('/api/account/onboarding'),
-          fetch('/api/account/shortlist'),
-        ]);
+      const [profileResponse, shortlistResponse] = await Promise.all([
+        fetch('/api/account/onboarding'),
+        fetch('/api/account/shortlist'),
+      ]);
 
-        if (profileResponse.ok) {
-          const body = (await profileResponse.json()) as {
-            profile?: OnboardingData;
-          };
-          setProfile(body.profile ?? localProfile);
-        }
+      if (profileResponse.ok) {
+        const body = (await profileResponse.json()) as {
+          profile?: OnboardingData;
+        };
+        setProfile(body.profile ?? localProfile);
+      }
 
-        if (shortlistResponse.ok) {
-          const body = (await shortlistResponse.json()) as {
-            programmeIds?: string[];
-            plans?: ShortlistPlanMap;
-          };
-          setShortlistIds(body.programmeIds ?? localShortlistIds);
-          setShortlistPlans(body.plans ?? localPlans);
-        }
+      if (shortlistResponse.ok) {
+        const body = (await shortlistResponse.json()) as {
+          programmeIds?: string[];
+          plans?: ShortlistPlanMap;
+        };
+        setShortlistIds(body.programmeIds ?? localShortlistIds);
+        setShortlistPlans(body.plans ?? localPlans);
       }
 
       setLoaded(true);
