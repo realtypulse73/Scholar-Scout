@@ -7,6 +7,13 @@ import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import {
+  CANDIDATE_QUALITY_COMMANDS,
+  HIGH_RISK_COMMANDS,
+  LOCAL_BROWSER_COMMAND,
+  runLocalReleaseEvidence,
+  validateReleaseEvidence,
+} from './release-evidence.mjs';
 
 const nodeBin = process.execPath;
 const isWindows = process.platform === 'win32';
@@ -454,6 +461,154 @@ test('prelaunch rehearsal can load readiness values from an env file', async () 
   );
 
   assert.equal(envReport.summary.failures, 0);
+});
+
+test('release evidence runs immutable quality, high-risk, and local browser lanes in order', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-evidence-'));
+  const commands = [];
+  const candidateCommit = 'a'.repeat(40);
+
+  const records = await runLocalReleaseEvidence({
+    candidateCommit,
+    outputDir: tempDir,
+    now: () => '2026-09-03T00:00:00.000Z',
+    runCommand: async (command) => {
+      commands.push(command);
+      return { code: 0 };
+    },
+  });
+
+  assert.deepEqual(commands, [
+    ...CANDIDATE_QUALITY_COMMANDS,
+    ...HIGH_RISK_COMMANDS,
+    LOCAL_BROWSER_COMMAND,
+  ]);
+  assert.deepEqual(records.map(({ kind }) => kind), [
+    'candidate-quality',
+    'high-risk',
+    'local-browser',
+  ]);
+  assert.equal(records.every(({ result }) => result === 'passed'), true);
+});
+
+test('release evidence stops before later lanes after the first failed command', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-failure-'));
+  const commands = [];
+
+  await assert.rejects(
+    runLocalReleaseEvidence({
+      candidateCommit: 'b'.repeat(40),
+      outputDir: tempDir,
+      runCommand: async (command) => {
+        commands.push(command);
+        return { code: command === CANDIDATE_QUALITY_COMMANDS[1] ? 1 : 0 };
+      },
+    }),
+    /candidate-quality evidence failed/i,
+  );
+
+  assert.deepEqual(commands, CANDIDATE_QUALITY_COMMANDS.slice(0, 2));
+});
+
+test('release gate requires five distinct candidate-bound scrubbed passing records', () => {
+  const candidateCommit = 'c'.repeat(40);
+  const utc = '2026-09-03T00:00:00.000Z';
+  const records = [
+    {
+      kind: 'candidate-quality',
+      candidateCommit,
+      utc,
+      commands: [...CANDIDATE_QUALITY_COMMANDS],
+      result: 'passed',
+    },
+    {
+      kind: 'high-risk',
+      candidateCommit,
+      utc,
+      commands: [...HIGH_RISK_COMMANDS],
+      result: 'passed',
+    },
+    {
+      kind: 'local-browser',
+      candidateCommit,
+      utc,
+      command: LOCAL_BROWSER_COMMAND,
+      result: 'passed',
+    },
+    {
+      kind: 'preview-browser',
+      candidateCommit,
+      utc,
+      result: 'passed',
+      safeCategory: 'passed',
+      deploymentId: 'dpl_preview',
+      artifactUrl: 'https://github.com/example/repo/actions/runs/1',
+    },
+    {
+      kind: 'preview-outage',
+      candidateCommit,
+      utc,
+      result: 'passed',
+      safeCategory: 'passed',
+      deploymentId: 'dpl_outage',
+      baseDeploymentId: 'dpl_preview',
+      artifactUrl: 'https://vercel.com/example/deployments/outage',
+      cleanup: 'passed',
+      restored: true,
+    },
+  ];
+
+  assert.deepEqual(validateReleaseEvidence(candidateCommit, records), {
+    category: 'passed',
+    candidateCommit,
+    lanes: [
+      'candidate-quality',
+      'high-risk',
+      'local-browser',
+      'preview-browser',
+      'preview-outage',
+    ],
+  });
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.slice(0, 4)),
+    /incomplete/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.map((record) => (
+      record.kind === 'preview-browser' ? { ...record, result: 'failed' } : record
+    ))),
+    /did not pass/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.map((record) => (
+      record.kind === 'preview-browser' ? { ...record, cookie: 'forbidden' } : record
+    ))),
+    /unapproved fields/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence('d'.repeat(40), records),
+    /mismatch/i,
+  );
+});
+
+test('release evidence docs keep candidate, Preview, and Production proof distinct', async () => {
+  const [template, runbook] = await Promise.all([
+    readFile(path.join(process.cwd(), 'docs/prelaunch-evidence-template.md'), 'utf8'),
+    readFile(path.join(process.cwd(), 'docs/production-release-runbook.md'), 'utf8'),
+  ]);
+
+  for (const value of [
+    'Candidate Quality',
+    'Local browser journey',
+    'Protected Preview browser journey',
+    'Preview outage and restoration',
+  ]) {
+    assert.match(template, new RegExp(value, 'i'));
+  }
+  assert.match(runbook, /pnpm install --frozen-lockfile --ignore-scripts/);
+  assert.match(runbook, /one\s+record cannot satisfy another lane/i);
+  assert.match(runbook, /never replace.*Production/is);
+  assert.match(runbook, /Neither lane may target\s+Production, promote a deployment, create an alias/is);
 });
 
 test('environment provisioning writes local env and external checklist', async () => {
