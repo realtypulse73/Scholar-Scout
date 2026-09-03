@@ -204,7 +204,16 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: TBD
+**Plans**: 4/7 plans executed
+
+- [x] 06-01-PLAN.md
+- [x] 06-02-PLAN.md
+- [x] 06-03-PLAN.md
+- [x] 06-04-PLAN.md
+- [ ] 06-05-PLAN.md
+- [ ] 06-06-PLAN.md
+- [ ] 06-07-PLAN.md
+
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
 ## Progress
@@ -218,7 +227,7 @@ Plans:
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete    | 2026-08-31 |
-| 6. End-to-End Hardening and Release Readiness | 0/TBD | Not started | - |
+| 6. End-to-End Hardening and Release Readiness | 4/7 | In Progress|  |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
