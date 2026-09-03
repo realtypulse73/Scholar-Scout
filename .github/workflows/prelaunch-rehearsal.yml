@@ -79,15 +79,9 @@ jobs:
     environment:
       name: Preview
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
-      SCHOLARSCOUT_E2E_STUDENT_EMAIL: ${{ secrets.SCHOLARSCOUT_E2E_STUDENT_EMAIL }}
-      SCHOLARSCOUT_E2E_STUDENT_PASSWORD: ${{ secrets.SCHOLARSCOUT_E2E_STUDENT_PASSWORD }}
-      SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
       SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'true'
     steps:
       - name: Checkout exact candidate
@@ -111,7 +105,7 @@ jobs:
         run: pnpm exec playwright install chromium
       - name: Pull Preview configuration and build once
         run: |
-          pnpm exec vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          pnpm exec vercel pull --yes --environment=preview --scope=scholar-scout --project=scholar-scout-web --token="$VERCEL_TOKEN"
           pnpm exec vercel build --token="$VERCEL_TOKEN"
       - name: Create distinct Preview-only deployment scopes
         shell: bash
@@ -122,6 +116,10 @@ jobs:
           echo "OUTAGE_FIXTURE_ID=phase6-${GITHUB_RUN_ID}-outage" >> "$GITHUB_ENV"
           echo "BASE_DATA_PATH=scholarscout/e2e/${CANDIDATE_COMMIT}/${GITHUB_RUN_ID}/base.json" >> "$GITHUB_ENV"
           echo "OUTAGE_DATA_PATH=scholarscout/e2e/${CANDIDATE_COMMIT}/${GITHUB_RUN_ID}/outage.json" >> "$GITHUB_ENV"
+          echo "SCHOLARSCOUT_E2E_STUDENT_EMAIL=phase6-${GITHUB_RUN_ID}@example.test" >> "$GITHUB_ENV"
+          STUDENT_PASSWORD=$(node --input-type=module -e "import {randomBytes} from 'node:crypto'; process.stdout.write(randomBytes(24).toString('base64url'))")
+          echo "::add-mask::$STUDENT_PASSWORD"
+          echo "SCHOLARSCOUT_E2E_STUDENT_PASSWORD=$STUDENT_PASSWORD" >> "$GITHUB_ENV"
       - name: Deploy unaliased base Preview
         shell: bash
         env:
@@ -131,7 +129,8 @@ jobs:
             --meta "githubCommitSha=$CANDIDATE_COMMIT" \
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$BASE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
-            --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$BASE_FIXTURE_ID" > base-deploy.json
+            --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$BASE_FIXTURE_ID" \
+            --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true > base-deploy.json
           BASE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('base-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
           pnpm exec vercel inspect "$BASE_URL" --json --token="$VERCEL_TOKEN" > base-inspect.json
           BASE_DEPLOYMENT_ID=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; process.stdout.write(JSON.parse(readFileSync('base-inspect.json','utf8')).id)")
@@ -157,6 +156,7 @@ jobs:
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$OUTAGE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
             --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$OUTAGE_FIXTURE_ID" \
+            --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true \
             --env SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1 > outage-deploy.json
           OUTAGE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('outage-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
           pnpm exec vercel inspect "$OUTAGE_URL" --json --token="$VERCEL_TOKEN" > outage-inspect.json
@@ -184,14 +184,11 @@ jobs:
           SCHOLARSCOUT_PREVIEW_URL="$BASE_URL"
           SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID="$BASE_DEPLOYMENT_ID"
           node scripts/run-preview-release-tracer.mjs > preview-restoration-raw.json
-      - name: Remove generated fixture blobs and both unaliased deployments
+      - name: Remove both unaliased deployments
         if: always()
         shell: bash
         run: |
           cleanup_status=0
-          if [[ -n "${BASE_DATA_PATH:-}" || -n "${OUTAGE_DATA_PATH:-}" ]]; then
-            pnpm --filter @scholar-scout/web exec node --input-type=module -e "import { del } from '@vercel/blob'; const paths=[process.env.BASE_DATA_PATH,process.env.OUTAGE_DATA_PATH].filter(Boolean); if(paths.some((value)=>!value.startsWith('scholarscout/e2e/'))) process.exit(1); if(paths.length) await del(paths);" || cleanup_status=$?
-          fi
           if [[ -n "${OUTAGE_URL:-}" ]]; then pnpm exec vercel remove "$OUTAGE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
           if [[ -n "${BASE_URL:-}" ]]; then pnpm exec vercel remove "$BASE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
           exit "$cleanup_status"

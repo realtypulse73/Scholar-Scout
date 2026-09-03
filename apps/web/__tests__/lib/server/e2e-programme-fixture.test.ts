@@ -1,5 +1,6 @@
 import {
   cleanupE2eProgrammeFixture,
+  cleanupE2eReleaseDataScope,
   createE2eProgrammeFixture,
   getE2eCommunityOutageBodies,
   getE2eProgrammeFixtureRecords,
@@ -13,6 +14,7 @@ import {
   saveProgrammeRecord,
 } from '@/lib/server/programme-records';
 import { readScholarScoutData } from '@/lib/server/data-store';
+import { del } from '@vercel/blob';
 
 jest.mock('@/lib/server/programme-records', () => ({
   deleteProgrammeRecord: jest.fn(),
@@ -21,6 +23,9 @@ jest.mock('@/lib/server/programme-records', () => ({
 }));
 jest.mock('@/lib/server/data-store', () => ({
   readScholarScoutData: jest.fn(),
+}));
+jest.mock('@vercel/blob', () => ({
+  del: jest.fn(),
 }));
 
 const fixtureId = 'fixture-a';
@@ -46,6 +51,11 @@ describe('e2e programme fixture', () => {
   afterEach(() => {
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED;
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
+    delete process.env.SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP;
+    delete process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
+    delete process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN;
+    delete process.env.SCHOLARSCOUT_DATA_ADAPTER;
+    delete process.env.VERCEL_ENV;
     jest.resetAllMocks();
   });
 
@@ -87,6 +97,25 @@ describe('e2e programme fixture', () => {
 
     await expect(verifyE2eCommunityOutageNoWrite()).rejects.toThrow(
       'Generated outage submission was persisted.',
+    );
+  });
+
+  it('purges only an explicit isolated Preview Blob data path', async () => {
+    process.env.SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP = 'true';
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'scholarscout/e2e/candidate/run/base.json';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'preview-token';
+
+    await cleanupE2eReleaseDataScope();
+    expect(del).toHaveBeenCalledWith(
+      'scholarscout/e2e/candidate/run/base.json',
+      { token: 'preview-token' },
+    );
+
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'scholarscout/data.json';
+    await expect(cleanupE2eReleaseDataScope()).rejects.toThrow(
+      'Generated release data cleanup is unavailable.',
     );
   });
 });
