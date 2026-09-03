@@ -29,6 +29,7 @@ describe('e2e fixture route', () => {
   afterEach(() => {
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED;
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    delete process.env.VERCEL_ENV;
     jest.resetAllMocks();
   });
 
@@ -63,6 +64,25 @@ describe('e2e fixture route', () => {
     }));
     expect(response.status).toBe(403);
     expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
+  });
+
+  it('rejects browser navigation metadata before lifecycle access', async () => {
+    const response = await GET(new Request(url, {
+      headers: { ...headers, referer: 'https://localhost/programmes' },
+    }));
+
+    expect(response.status).toBe(403);
+    expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
+  });
+
+  it('denies the lifecycle in production before lifecycle access', async () => {
+    process.env.VERCEL_ENV = 'production';
+
+    const response = await GET(new Request(url, { headers }));
+
+    expect(response.status).toBe(403);
+    expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
+    delete process.env.VERCEL_ENV;
   });
 
   it('rejects a non-empty lifecycle request even with the server capability', async () => {
