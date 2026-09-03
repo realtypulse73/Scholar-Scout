@@ -18,9 +18,11 @@ const headers = {
   'x-scholarscout-e2e-fixture-capability': 'capability',
   'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
 };
+let warn: jest.SpyInstance;
 
 describe('e2e fixture route', () => {
   beforeEach(() => {
+    warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED = 'true';
     process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'capability';
     jest.mocked(verifyE2eProgrammeFixture).mockResolvedValue(['generated-a']);
@@ -30,7 +32,24 @@ describe('e2e fixture route', () => {
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED;
     delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
     delete process.env.VERCEL_ENV;
+    warn.mockRestore();
     jest.resetAllMocks();
+  });
+
+  it('logs only a fixed denial category while preserving the generic client response', async () => {
+    const response = await GET(new Request(url, {
+      headers: {
+        ...headers,
+        'x-scholarscout-e2e-fixture-capability': 'wrong-capability',
+      },
+    }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Fixture lifecycle unavailable.' });
+    expect(warn).toHaveBeenCalledWith('E2E fixture lifecycle denied.', {
+      reason: 'capability-mismatch',
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('wrong-capability');
   });
 
   it('creates then verifies only with its server capability', async () => {
