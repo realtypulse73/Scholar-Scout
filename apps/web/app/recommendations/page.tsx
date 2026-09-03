@@ -9,6 +9,10 @@ export const metadata = {
     'A decision dashboard that turns ScholarScout matches into ranked options, pathways, and practical next steps.',
 };
 
+// Recommendations must reflect the current governed catalogue. In particular,
+// protected release fixtures are created after the Preview build completes.
+export const dynamic = 'force-dynamic';
+
 export default async function RecommendationsPage() {
   const programmes = await getGovernedProgrammes();
 
