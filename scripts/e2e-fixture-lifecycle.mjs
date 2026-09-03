@@ -1,5 +1,6 @@
 const LIFECYCLE_PATH = '/api/internal/e2e-fixture';
 const LIFECYCLE_PROTOCOL = 'lifecycle-v1';
+const LIFECYCLE_CAPABILITY_HEADER = 'x-scholarscout-e2e-fixture-capability';
 
 /**
  * Runs the fixed server-owned fixture lifecycle. The browser command receives
@@ -10,8 +11,8 @@ export async function runFixtureLifecycle({ baseUrl, capability, request, run, o
   const lifecycleRequest = (method) => request(method, LIFECYCLE_PATH, {
     body: undefined,
     headers: {
-      authorization: `Bearer ${capability}`,
       'content-length': '0',
+      [LIFECYCLE_CAPABILITY_HEADER]: capability,
       'x-scholarscout-e2e-fixture-protocol': LIFECYCLE_PROTOCOL,
     },
   });
@@ -41,4 +42,4 @@ export async function runFixtureLifecycle({ baseUrl, capability, request, run, o
   }
 }
 
-export { LIFECYCLE_PATH, LIFECYCLE_PROTOCOL };
+export { LIFECYCLE_CAPABILITY_HEADER, LIFECYCLE_PATH, LIFECYCLE_PROTOCOL };

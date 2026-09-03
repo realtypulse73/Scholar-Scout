@@ -15,7 +15,7 @@ jest.mock('@/lib/server/e2e-programme-fixture', () => ({
 
 const url = 'https://localhost/api/internal/e2e-fixture';
 const headers = {
-  authorization: 'Bearer capability',
+  'x-scholarscout-e2e-fixture-capability': 'capability',
   'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
 };
 
