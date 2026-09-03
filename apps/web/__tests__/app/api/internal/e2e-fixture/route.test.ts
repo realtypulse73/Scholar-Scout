@@ -77,6 +77,22 @@ describe('e2e fixture route', () => {
     expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
   });
 
+  it('accepts a proxy-exposed zero-byte stream when content-length is omitted', async () => {
+    const response = await POST(new Request(url, {
+      method: 'POST',
+      headers,
+      body: new ReadableStream({
+        start(controller) {
+          controller.close();
+        },
+      }),
+      duplex: 'half',
+    } as RequestInit));
+
+    expect(response.status).toBe(200);
+    expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects browser-shaped and caller-selected input before lifecycle access', async () => {
     const response = await GET(new Request(`${url}?fixtureId=attacker`, {
       headers: { ...headers, origin: 'https://localhost' },
