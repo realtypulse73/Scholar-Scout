@@ -1,8 +1,9 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { request as requestHttps } from 'node:https';
 
 import { runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 
@@ -35,16 +36,130 @@ export async function createFixtureDirectory() {
   };
 }
 
+export function createOwnedServerEnvironment({
+  dataFile,
+  fixtureId,
+  capability,
+}, environment = process.env) {
+  const childEnvironment = {
+    PATH: environment.PATH,
+    NODE_ENV: 'development',
+    SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    SCHOLARSCOUT_DATA_FILE: dataFile,
+    SCHOLARSCOUT_E2E_FIXTURE_ENABLED: 'true',
+    SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
+    SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
+  };
+
+  for (const name of [
+    'SYSTEMROOT',
+    'ComSpec',
+    'PATHEXT',
+    'TEMP',
+    'TMP',
+    'USERPROFILE',
+    'APPDATA',
+    'LOCALAPPDATA',
+  ]) {
+    if (environment[name]) {
+      childEnvironment[name] = environment[name];
+    }
+  }
+
+  return childEnvironment;
+}
+
+export function getPnpmInvocation(args, {
+  platform = process.platform,
+  execPath = process.execPath,
+} = {}) {
+  if (platform !== 'win32') {
+    return { command: 'pnpm', args };
+  }
+
+  return {
+    command: execPath,
+    args: [join(dirname(execPath), 'node_modules', 'corepack', 'dist', 'pnpm.js'), ...args],
+  };
+}
+
+export function getChildStopInvocation(pid, { platform = process.platform } = {}) {
+  if (platform === 'win32') {
+    return { command: 'taskkill', args: ['/pid', String(pid), '/t', '/f'] };
+  }
+  return null;
+}
+
+/**
+ * Keep the wrapper's stable --spec contract while passing a positional test file
+ * to Playwright, which does not expose a --spec CLI option.
+ */
+export function normalizePlaywrightArgs(args) {
+  const normalized = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== '--spec') {
+      normalized.push(args[index]);
+      continue;
+    }
+    const spec = args[index + 1];
+    if (!spec || spec.startsWith('-')) {
+      throw new Error('The owned E2E runner requires a test path after --spec.');
+    }
+    normalized.push(spec);
+    index += 1;
+  }
+  return normalized;
+}
+
 function createRequest(baseUrl) {
   return async (method, path, options) => {
-    const response = await fetch(new URL(path, baseUrl), {
+    const response = await requestOwnedHttps(baseUrl, path, {
       method,
       headers: options.headers,
       body: options.body,
     });
-    if (!response.ok) return { ok: false, phase: 'denied' };
-    return response.json();
+    return response.ok ? response.body : { ok: false, phase: 'denied' };
   };
+}
+
+function requestOwnedHttps(baseUrl, path, {
+  method = 'GET',
+  headers,
+  body,
+  parseJson = true,
+  timeoutMs = 30_000,
+} = {}) {
+  return new Promise((resolve, reject) => {
+    const request = requestHttps(new URL(path, baseUrl), {
+      method,
+      headers,
+      rejectUnauthorized: false,
+    }, (response) => {
+      let payload = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => { payload += chunk; });
+      response.once('error', reject);
+      response.once('end', () => {
+        if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
+          if (!parseJson) {
+            resolve({ ok: true, body: null });
+            return;
+          }
+          try {
+            resolve({ ok: true, body: JSON.parse(payload) });
+          } catch {
+            reject(new Error('Owned E2E server returned an invalid response.'));
+          }
+          return;
+        }
+        resolve({ ok: false, body: null });
+      });
+    });
+    request.once('error', reject);
+    request.setTimeout(timeoutMs, () => request.destroy(new Error('Owned E2E server request timed out.')));
+    if (body) request.write(body);
+    request.end();
+  });
 }
 
 async function getFreePort() {
@@ -64,7 +179,10 @@ async function waitForReady(baseUrl, child) {
   while (Date.now() < deadline) {
     if (child.exitCode !== null) throw new Error('Owned E2E server exited before readiness.');
     try {
-      const response = await fetch(baseUrl, { signal: AbortSignal.timeout(1_000) });
+      const response = await requestOwnedHttps(baseUrl, '/', {
+        parseJson: false,
+        timeoutMs: 1_000,
+      });
       if (response.ok) return;
     } catch {
       // The owned process is still starting.
@@ -76,6 +194,18 @@ async function waitForReady(baseUrl, child) {
 
 async function stopChild(child) {
   if (!child || child.exitCode !== null) return;
+  const termination = getChildStopInvocation(child.pid);
+  if (termination) {
+    await new Promise((resolve) => {
+      const taskkill = spawn(termination.command, termination.args, { stdio: 'ignore' });
+      taskkill.once('error', () => {
+        child.kill('SIGTERM');
+        resolve();
+      });
+      taskkill.once('exit', resolve);
+    });
+    return;
+  }
   child.kill('SIGTERM');
   await new Promise((resolve) => child.once('exit', resolve));
 }
@@ -99,20 +229,17 @@ export async function runOwnedE2eFixture({ args = process.argv.slice(2), spawnCh
   };
 
   try {
-    child = spawnChild('pnpm', [
+    const serverInvocation = getPnpmInvocation([
       '--filter', '@scholar-scout/web', 'exec', 'next', 'dev',
       '--experimental-https', '--port', String(port),
-    ], {
+    ]);
+    child = spawnChild(serverInvocation.command, serverInvocation.args, {
       stdio: 'inherit',
-      env: {
-        PATH: process.env.PATH,
-        NODE_ENV: 'development',
-        SCHOLARSCOUT_DATA_ADAPTER: 'json',
-        SCHOLARSCOUT_DATA_FILE: fixture.dataFile,
-        SCHOLARSCOUT_E2E_FIXTURE_ENABLED: 'true',
-        SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
-        SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
-      },
+      env: createOwnedServerEnvironment({
+        dataFile: fixture.dataFile,
+        fixtureId,
+        capability,
+      }),
     });
     const childFailure = new Promise((_, reject) => {
       child.once('error', () => reject(new Error('Owned E2E server failed to start.')));
@@ -144,9 +271,12 @@ export async function runOwnedE2eFixture({ args = process.argv.slice(2), spawnCh
       request: createRequest(baseUrl),
       onCleanup: (cleanup) => { cleanupFixture = cleanup; },
       run: async () => new Promise((resolve, reject) => {
-        const playwright = spawnChild('pnpm', [
-          '--filter', '@scholar-scout/web', 'exec', 'playwright', 'test', ...args,
-        ], {
+        const playwrightInvocation = getPnpmInvocation([
+          '--filter', '@scholar-scout/web', 'exec', 'playwright', 'test',
+          '--config', '../../playwright.config.ts',
+          ...normalizePlaywrightArgs(args),
+        ]);
+        const playwright = spawnChild(playwrightInvocation.command, playwrightInvocation.args, {
           stdio: 'inherit',
           env: { PATH: process.env.PATH, PLAYWRIGHT_BASE_URL: baseUrl },
         });

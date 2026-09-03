@@ -32,7 +32,9 @@ export function getE2eProgrammeFixtureRecords(): Programme[] {
       highlights: ['Generated support'], nextSteps: ['Confirm fixture details'],
       publicationStatus: 'published', sourceName: 'E2E fixture',
       sourceUrl: 'https://example.invalid/e2e-fixture', sourceConfidence: 'verified',
-      sourceChecks: ['credential', 'support'], lastVerifiedAt: '2026-01-01T00:00:00.000Z',
+      sourceNotes: 'Generated local-only record used to validate the owned E2E fixture.',
+      sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
+      lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
     {
       id: `e2e-${fixtureId}-health`, name: 'Generated Health Transfer Pathway',
@@ -44,7 +46,9 @@ export function getE2eProgrammeFixtureRecords(): Programme[] {
       highlights: ['Generated transfer support'], nextSteps: ['Confirm fixture details'],
       publicationStatus: 'published', sourceName: 'E2E fixture',
       sourceUrl: 'https://example.invalid/e2e-fixture', sourceConfidence: 'verified',
-      sourceChecks: ['credential', 'support'], lastVerifiedAt: '2026-01-01T00:00:00.000Z',
+      sourceNotes: 'Generated local-only record used to validate the owned E2E fixture.',
+      sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
+      lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
   ];
 }

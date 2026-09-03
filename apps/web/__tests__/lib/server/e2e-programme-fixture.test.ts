@@ -1,8 +1,10 @@
 import {
   cleanupE2eProgrammeFixture,
   createE2eProgrammeFixture,
+  getE2eProgrammeFixtureRecords,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
+import { validateProgrammeDraft } from '@/lib/admin-programmes';
 import {
   deleteProgrammeRecord,
   getGovernedProgrammes,
@@ -49,5 +51,9 @@ describe('e2e programme fixture', () => {
     );
 
     await expect(verifyE2eProgrammeFixture()).resolves.toEqual(ids);
+  });
+
+  it('uses generated published records that satisfy the governed source contract', () => {
+    expect(getE2eProgrammeFixtureRecords().map(validateProgrammeDraft)).toEqual([[], []]);
   });
 });

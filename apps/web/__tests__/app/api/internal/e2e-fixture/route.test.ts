@@ -40,12 +40,40 @@ describe('e2e fixture route', () => {
     expect(verifyE2eProgrammeFixture).toHaveBeenCalledTimes(1);
   });
 
+  it('accepts a transport-level empty POST stream from the owned Node launcher', async () => {
+    const response = await POST(new Request(url, {
+      method: 'POST',
+      headers: { ...headers, 'content-length': '0' },
+      body: new ReadableStream({
+        start(controller) {
+          controller.close();
+        },
+      }),
+      // The Fetch standard requires this when supplying a request stream in Node.
+      duplex: 'half',
+    } as RequestInit));
+
+    expect(response.status).toBe(200);
+    expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects browser-shaped and caller-selected input before lifecycle access', async () => {
     const response = await GET(new Request(`${url}?fixtureId=attacker`, {
       headers: { ...headers, origin: 'https://localhost' },
     }));
     expect(response.status).toBe(403);
     expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-empty lifecycle request even with the server capability', async () => {
+    const response = await POST(new Request(url, {
+      method: 'POST',
+      headers,
+      body: 'caller-selected-input',
+    }));
+
+    expect(response.status).toBe(403);
+    expect(createE2eProgrammeFixture).not.toHaveBeenCalled();
   });
 
   it('cleans through the bounded server lifecycle', async () => {

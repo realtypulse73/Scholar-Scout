@@ -19,6 +19,7 @@ test('runs fixed create, verify, and cleanup lifecycle requests', async () => {
   assert.deepEqual(requests.map(({ method }) => method), ['POST', 'GET', 'DELETE']);
   assert.ok(requests.every(({ path }) => path === '/api/internal/e2e-fixture'));
   assert.ok(requests.every(({ options }) => options.body === undefined));
+  assert.ok(requests.every(({ options }) => options.headers['content-length'] === '0'));
 });
 
 test('cleans once when the browser command rejects', async () => {

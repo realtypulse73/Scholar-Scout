@@ -11,6 +11,7 @@ export async function runFixtureLifecycle({ baseUrl, capability, request, run, o
     body: undefined,
     headers: {
       authorization: `Bearer ${capability}`,
+      'content-length': '0',
       'x-scholarscout-e2e-fixture-protocol': LIFECYCLE_PROTOCOL,
     },
   });

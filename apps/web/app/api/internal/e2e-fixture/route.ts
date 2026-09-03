@@ -20,6 +20,14 @@ function hasBrowserShape(request: Request): boolean {
   );
 }
 
+function hasNoBodyTransport(request: Request): boolean {
+  const contentLength = request.headers.get('content-length');
+  if (request.headers.has('transfer-encoding')) return false;
+  if (request.body === null) return contentLength === null || contentLength === '0';
+  // Next's Node adapter can expose a zero-byte POST as an empty stream.
+  return contentLength === '0';
+}
+
 function isAuthorized(request: Request): boolean {
   const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
   return process.env.VERCEL_ENV !== 'production' &&
@@ -27,7 +35,7 @@ function isAuthorized(request: Request): boolean {
     Boolean(capability) &&
     request.headers.get('authorization') === `Bearer ${capability}` &&
     request.headers.get('x-scholarscout-e2e-fixture-protocol') === PROTOCOL &&
-    new URL(request.url).search === '' && request.body === null && !hasBrowserShape(request);
+    new URL(request.url).search === '' && hasNoBodyTransport(request) && !hasBrowserShape(request);
 }
 
 async function guard(request: Request): Promise<NextResponse | null> {
