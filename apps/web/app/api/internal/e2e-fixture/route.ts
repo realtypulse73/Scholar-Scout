@@ -34,7 +34,7 @@ function isAuthorized(request: Request): boolean {
   return process.env.VERCEL_ENV !== 'production' &&
     process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED === 'true' &&
     Boolean(capability) &&
-    request.headers.get('authorization') === `Bearer ${capability}` &&
+    request.headers.get('x-scholarscout-e2e-fixture-capability') === capability &&
     request.headers.get('x-scholarscout-e2e-fixture-protocol') === PROTOCOL &&
     new URL(request.url).search === '' && hasNoBodyTransport(request) && !hasBrowserShape(request);
 }
