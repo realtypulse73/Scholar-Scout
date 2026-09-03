@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   cleanupE2eProgrammeFixture,
   createE2eProgrammeFixture,
+  verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
@@ -84,4 +85,11 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   if (rejected) return rejected;
   await cleanupE2eProgrammeFixture();
   return NextResponse.json({ ok: true, phase: 'cleaned' });
+}
+
+export async function PUT(request: Request): Promise<NextResponse> {
+  const rejected = await guard(request);
+  if (rejected) return rejected;
+  await verifyE2eCommunityOutageNoWrite();
+  return NextResponse.json({ ok: true, phase: 'no-write' });
 }

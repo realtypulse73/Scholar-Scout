@@ -1,7 +1,9 @@
 import {
   cleanupE2eProgrammeFixture,
   createE2eProgrammeFixture,
+  getE2eCommunityOutageBodies,
   getE2eProgrammeFixtureRecords,
+  verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
@@ -10,11 +12,15 @@ import {
   getGovernedProgrammes,
   saveProgrammeRecord,
 } from '@/lib/server/programme-records';
+import { readScholarScoutData } from '@/lib/server/data-store';
 
 jest.mock('@/lib/server/programme-records', () => ({
   deleteProgrammeRecord: jest.fn(),
   getGovernedProgrammes: jest.fn(),
   saveProgrammeRecord: jest.fn(),
+}));
+jest.mock('@/lib/server/data-store', () => ({
+  readScholarScoutData: jest.fn(),
 }));
 
 const fixtureId = 'fixture-a';
@@ -26,6 +32,15 @@ describe('e2e programme fixture', () => {
     jest.mocked(saveProgrammeRecord).mockResolvedValue(undefined);
     jest.mocked(deleteProgrammeRecord).mockResolvedValue(undefined);
     jest.mocked(getGovernedProgrammes).mockResolvedValue([]);
+    jest.mocked(readScholarScoutData).mockResolvedValue({
+      users: [],
+      onboardingProfiles: {},
+      shortlists: {},
+      programmeRecords: [],
+      auditEvents: [],
+      campusNotes: [],
+      uploaderInboxRequests: [],
+    });
   });
 
   afterEach(() => {
@@ -55,5 +70,23 @@ describe('e2e programme fixture', () => {
 
   it('uses generated published records that satisfy the governed source contract', () => {
     expect(getE2eProgrammeFixtureRecords().map(validateProgrammeDraft)).toEqual([[], []]);
+  });
+
+  it('proves neither fixed generated outage body was persisted', async () => {
+    await expect(verifyE2eCommunityOutageNoWrite()).resolves.toBeUndefined();
+
+    const bodies = getE2eCommunityOutageBodies();
+    jest.mocked(readScholarScoutData).mockResolvedValue({
+      users: [],
+      onboardingProfiles: {},
+      shortlists: {},
+      programmeRecords: [],
+      auditEvents: [],
+      campusNotes: [{ body: bodies.note }],
+    } as never);
+
+    await expect(verifyE2eCommunityOutageNoWrite()).rejects.toThrow(
+      'Generated outage submission was persisted.',
+    );
   });
 });

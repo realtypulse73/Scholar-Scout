@@ -1,9 +1,10 @@
 /** @jest-environment node */
 
-import { DELETE, GET, POST } from '@/app/api/internal/e2e-fixture/route';
+import { DELETE, GET, POST, PUT } from '@/app/api/internal/e2e-fixture/route';
 import {
   cleanupE2eProgrammeFixture,
   createE2eProgrammeFixture,
+  verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
@@ -11,6 +12,7 @@ jest.mock('@/lib/server/e2e-programme-fixture', () => ({
   cleanupE2eProgrammeFixture: jest.fn(),
   createE2eProgrammeFixture: jest.fn(),
   verifyE2eProgrammeFixture: jest.fn(),
+  verifyE2eCommunityOutageNoWrite: jest.fn(),
 }));
 
 const url = 'https://localhost/api/internal/e2e-fixture';
@@ -140,5 +142,12 @@ describe('e2e fixture route', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, phase: 'cleaned' });
     expect(cleanupE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+  });
+
+  it('verifies the fixed generated outage bodies were not written', async () => {
+    const response = await PUT(new Request(url, { method: 'PUT', headers }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, phase: 'no-write' });
+    expect(verifyE2eCommunityOutageNoWrite).toHaveBeenCalledTimes(1);
   });
 });

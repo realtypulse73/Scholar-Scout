@@ -44,6 +44,35 @@ test('accepts only the exact candidate Preview metadata', () => {
   }, candidateCommit), /candidate Preview/i);
 });
 
+test('accepts only the project-scoped raw deployment host when explicitly unaliased', () => {
+  const environment = {
+    VERCEL_ENV: 'preview',
+    SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: previewMetadata.deploymentId,
+    SCHOLARSCOUT_PREVIEW_COMMIT_SHA: candidateCommit,
+    SCHOLARSCOUT_PREVIEW_URL: 'https://scholar-scout-abc123-scholar-scout.vercel.app',
+    SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'true',
+  };
+
+  assert.equal(
+    getVerifiedPreviewMetadata(environment, candidateCommit).url,
+    environment.SCHOLARSCOUT_PREVIEW_URL,
+  );
+  assert.throws(
+    () => getVerifiedPreviewMetadata({
+      ...environment,
+      SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'false',
+    }, candidateCommit),
+    /verified candidate Preview/i,
+  );
+  assert.throws(
+    () => getVerifiedPreviewMetadata({
+      ...environment,
+      SCHOLARSCOUT_PREVIEW_URL: 'https://unrelated-abc123.vercel.app',
+    }, candidateCommit),
+    /verified candidate Preview/i,
+  );
+});
+
 test('keeps the Vercel bypass only in in-memory context headers', () => {
   const bypass = 'preview-bypass-secret';
   const options = createPreviewContextOptions(previewMetadata, {
