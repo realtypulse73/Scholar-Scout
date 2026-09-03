@@ -52,6 +52,39 @@ pnpm run rehearse:prelaunch
 The rehearsal writes readiness, tooling, optional smoke, and summary artifacts under `reports/prelaunch-rehearsal`.
 Use [`prelaunch-evidence-template.md`](prelaunch-evidence-template.md) for the launch-readiness note.
 
+For a candidate-bound release rehearsal, use the manually dispatched
+**ScholarScout Prelaunch Rehearsal** workflow with an exact 40-character
+candidate commit and `refs/heads/worktree-agent-*` candidate ref. The workflow
+must stop in this order on the first failure:
+
+1. `pnpm install --frozen-lockfile --ignore-scripts`
+2. `pnpm test`
+3. `pnpm run lint`
+4. `pnpm run typecheck`
+5. `pnpm run build`
+6. the two focused web failure suites, webhook-runner suite, and HTTP data-service suite recorded by Phase 6 Plan 04
+7. `node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium`
+8. the protected candidate Preview browser lane
+9. the distinct one-off Preview outage/no-write/restoration lane
+
+Each lane writes a separate candidate-bound record. Missing, failed,
+out-of-order, mismatched-candidate, or extra-field evidence fails closed; one
+record cannot satisfy another lane.
+
+The protected browser lane uses the server-owned fixture lifecycle and
+in-memory deployment-protection transport. The outage lane must use a separate
+Preview deployment with a fresh lifecycle scope, confirm safe 503 responses
+before writes or disclosure, perform exact fixture cleanup, and confirm the
+base Preview configuration remains restored. Neither lane may target
+Production, promote a deployment, create an alias, or make a persistent
+project-level outage change.
+
+Releasable records may contain only the candidate commit, UTC, approved command
+or command list, pass/fail result, safe category, and approved GitHub/Vercel
+artifact or deployment identifiers/links. Keep raw diagnostics restricted and
+never record a bypass, cookie, lifecycle capability, environment value, fixture
+identifier, storage detail, or student content.
+
 If real provider secrets are not available yet, use the local workaround only for rehearsal plumbing:
 
 ```bash
@@ -137,5 +170,11 @@ Production releases reach Vercel only from a protected `main` merge. Before cons
 The post-deploy workflow runs only for successful production deployment events. A smoke failure alerts maintainers and preserves evidence; it never triggers an automatic rollback. Follow the human, data-safe rollback decision process in the incident runbook.
 
 Record the deployment date, adapter, enabled OAuth providers, readiness report result, smoke result, secret rotation owner, and the evidence above in the project operations notes.
+
+Candidate-quality, high-risk, local-browser, protected Preview-browser, and
+Preview-outage/restoration records are prelaunch evidence only. They supplement
+but never replace the protected-main checks, real Vercel Production deployment
+and build log, Production post-deploy smoke, and incident evidence listed
+above.
 
 If the monitor fails after release, use [`production-incident-response.md`](production-incident-response.md).
