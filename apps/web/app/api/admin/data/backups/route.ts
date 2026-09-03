@@ -1,14 +1,44 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
-import { getScholarScoutRestoreBackups } from '@/lib/server/data-store';
+import { randomUUID } from 'node:crypto';
+import { requireActiveStaff } from '@/lib/server/active-staff';
+import { readScholarScoutData } from '@/lib/server/data-store';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'list-data-backups',
+    route: '/api/admin/data/backups',
+  });
 
-  if (session?.user?.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
-  return NextResponse.json({ backups: await getScholarScoutRestoreBackups() });
+  try {
+    const data = await readScholarScoutData();
+    const backups = [...(data.restoreBackups ?? [])]
+      .sort((left, right) => {
+        const timeOrder = Date.parse(right.createdAt) - Date.parse(left.createdAt);
+        return timeOrder || right.id.localeCompare(left.id);
+      })
+      .map((backup) => ({
+        id: backup.id,
+        createdAt: backup.createdAt,
+        actorUserId: backup.actorUserId,
+        reason: backup.reason,
+        counts: backup.counts,
+        incidentHold: backup.incidentHold,
+      }));
+
+    return NextResponse.json({ backups, empty: backups.length === 0 });
+  } catch {
+    return NextResponse.json(
+      {
+        error: 'data-service-unavailable',
+        category: 'storage-unavailable',
+        incidentId: randomUUID(),
+        retryable: true,
+      },
+      { status: 503 },
+    );
+  }
 }

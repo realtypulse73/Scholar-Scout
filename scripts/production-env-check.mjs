@@ -25,10 +25,43 @@ const checks = [
     16,
     'Scheduled monitoring needs the bearer-token data health endpoint.',
   ),
+  ...recoverySigningChecks(),
   ...oauthProviderChecks(),
   ...dataAdapterChecks(),
   ...monitoringChecks(),
 ];
+
+function recoverySigningChecks() {
+  const results = [
+    requireValue(
+      'SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID',
+      'Recovery signing needs a dedicated current key ID.',
+      'Recovery signing key ID',
+    ),
+    requireSecret(
+      'SCHOLARSCOUT_RECOVERY_SIGNING_SECRET',
+      32,
+      'Recovery signing needs a dedicated current secret.',
+    ),
+  ];
+  const hasPreviousId = hasValue('SCHOLARSCOUT_RECOVERY_PREVIOUS_KEY_ID');
+  const hasPreviousSecret = hasValue('SCHOLARSCOUT_RECOVERY_PREVIOUS_SECRET');
+
+  if (hasPreviousId !== hasPreviousSecret) {
+    results.push(fail(
+      'Previous recovery signing material',
+      'Previous recovery signing key ID and secret must be configured together.',
+    ));
+  } else if (hasPreviousId) {
+    results.push(
+      process.env.SCHOLARSCOUT_RECOVERY_PREVIOUS_SECRET.trim().length >= 32
+        ? pass('Previous recovery signing material', 'Complete previous verification pair is configured.')
+        : fail('Previous recovery signing material', 'Previous recovery signing secret should be at least 32 characters.'),
+    );
+  }
+
+  return results;
+}
 
 const failures = checks.filter((check) => check.status === 'fail');
 const warnings = checks.filter((check) => check.status === 'warn');
@@ -207,6 +240,10 @@ function requireUrl(name, detail) {
   return isHttpUrl(process.env[name])
     ? pass(name, 'Set to an HTTP(S) URL.')
     : fail(name, 'Must be an HTTP(S) URL.');
+}
+
+function requireValue(name, detail, displayName = name) {
+  return hasValue(name) ? pass(displayName, 'Set.') : fail(displayName, detail);
 }
 
 function requireProductionUrl(name, detail) {

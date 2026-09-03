@@ -15,6 +15,8 @@ SCHOLARSCOUT_DATA_ADAPTER=vercel-blob
 BLOB_READ_WRITE_TOKEN=replace-with-vercel-blob-token
 NEXTAUTH_SECRET=replace-with-nextauth-secret
 NEXTAUTH_URL=https://your-scholar-scout-domain.example
+SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID=current-recovery-key-id
+SCHOLARSCOUT_RECOVERY_SIGNING_SECRET=replace-with-dedicated-recovery-secret
 ```
 
 Optional overrides:
@@ -25,6 +27,8 @@ SCHOLARSCOUT_BLOB_DATA_PATH=scholarscout/data.json
 ```
 
 `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` takes priority over `BLOB_READ_WRITE_TOKEN` when both are present. The default blob path is `scholarscout/data.json`.
+
+Use dedicated recovery signing material. The current key signs new packages and plans; one explicitly configured previous key pair may verify packages during the bounded retention or incident-hold grace period. Configure both previous-key variables together, remove them after the grace period, and never use `NEXTAUTH_SECRET` as a recovery fallback.
 
 ## Data Shape
 
@@ -40,7 +44,17 @@ The adapter stores the same full ScholarScout document used by the JSON and HTTP
 }
 ```
 
-Reads use private Blob access with cache bypass. Writes overwrite the same JSON blob with `contentType: application/json` and a short cache window so staff changes can be read back quickly.
+Reads use private Blob access with cache bypass and retain the returned ETag as opaque server-only concurrency metadata. Updating an existing blob uses `allowOverwrite: true` plus that ETag as `ifMatch`. First creation uses `allowOverwrite: false` with no `ifMatch`. `BlobPreconditionFailedError` and an already-existing first-create pathname both become a no-write conflict. Successful writes retain the new ETag for the next operation.
+
+A missing blob is the only empty-store condition. Authentication errors, malformed stored JSON, timeouts, and provider failures are operational failures: the admin surface retains any last verified values read-only, disables mutations, and displays a safe category and incident ID until a fresh read succeeds.
+
+Approved restore/import applies through one conditional application-port document write after fresh active-staff authorization, count-only preview, non-empty reason, and exact typed confirmation. Apply verifies the signed actor/source/application digest bindings against one versioned read, then uses its ETag only as the final `ifMatch`. A provider race returns `recovery-state-changed`, preserves the winning blob, and persists no recovery success. Preview, signed packages, backups, and audit output never include provider ETags, snapshots, or student content. Incident-hold release remains an authenticated server-only operator route with exact incident identity, reason, lifecycle audit, and one conditional attempt; Phase 3 has no delete or hold-release UI.
+
+## Concurrency And Compatibility
+
+The Blob adapter still stores one physical ScholarScout document for compatibility. Ordinary programme, student, operational, and platform mutations enter through named bounded operations; stable-ID duplicate-safe appends alone may retry once, while replacements and recovery never replay automatically. Existing reads and adapter selection remain supported.
+
+This is optimistic single-document compare-and-set, not a multi-document transaction. If an ETag changes, the operation returns conflict and the caller must reload or create a fresh recovery plan. No production migration, Blob write, or deployment was performed as part of this change.
 
 ## Smoke Checks
 
@@ -81,4 +95,4 @@ Before switching adapters permanently, copy any records that should remain in th
 
 ## Follow-Up Work
 
-The Blob adapter is durable and Vercel-native, but it still writes the full data document. A future database or CMS adapter should expose narrower record-level writes for staff programme updates, account profiles, shortlists, and audit history.
+The Blob adapter is durable and Vercel-native, but it still writes one physical data document. A future database or CMS adapter can map the established bounded operation contracts to narrower record-level writes without exposing provider versions to application data.

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Badge, Card } from '@/components/ui';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Badge, Button, Card, Input } from '@/components/ui';
 import {
   INTEREST_LABELS,
   SUPPORT_NEED_LABELS,
@@ -58,53 +58,83 @@ interface ProgrammeConflictState {
   currentRevision: number;
 }
 
-interface DataStoreStatus {
-  adapter: string;
-  backingStore: string;
-  isDurable: boolean;
-  isConfigured: boolean;
-  issues: string[];
-  backupRetention: {
-    retainedBackups: number;
-    maxRetainedBackups: number;
-    isWithinPolicy: boolean;
-    issues: string[];
-  };
-  counts: {
-    users: number;
-    onboardingProfiles: number;
-    shortlists: number;
-    programmeRecords: number;
-    auditEvents: number;
-  };
+interface DataCounts {
+  users: number;
+  onboardingProfiles: number;
+  shortlists: number;
+  programmeRecords: number;
+  auditEvents: number;
 }
 
-interface DataImportValidation {
-  isValid: boolean;
-  errors: string[];
-  counts?: DataStoreStatus['counts'];
+interface DataOperationCapability {
+  id: 'status' | 'backup-list' | 'import-validate';
+  available: true;
+  allowedAction: 'view' | 'validate';
+  reason: 'available';
+  retryable: false;
+}
+
+interface DataCapabilities {
+  health: 'healthy';
+  adapter: string;
+  lastVerifiedAt: string;
+  counts: DataCounts;
+  operations: DataOperationCapability[];
+}
+
+interface DataFailure {
+  category: string;
+  incidentId: string;
+  retryable: boolean;
+}
+
+type CapabilityState =
+  | { state: 'loading' }
+  | { state: 'ready'; value: DataCapabilities }
+  | { state: 'refreshing'; value: DataCapabilities }
+  | { state: 'last-known'; value: DataCapabilities; failure: DataFailure }
+  | { state: 'unavailable'; failure: DataFailure };
+
+interface RecoveryPlanToken {
+  claims: {
+    planId: string;
+    sourceId: string;
+    sourceDigest: string;
+    currentDataDigest: string;
+    issuedAt: string;
+    expiresAt: string;
+  };
+  signature: string;
 }
 
 interface DataRestoreResult {
   ok: boolean;
   backupId?: string;
-  restoredAt?: string;
-  counts?: DataStoreStatus['counts'];
+  appliedAt?: string;
+  incidentId?: string;
+  planId?: string;
+  counts?: DataCounts;
   error?: string;
-  validation?: DataImportValidation;
+  retryable?: boolean;
 }
 
 interface DataRestoreBackup {
   id: string;
   createdAt: string;
   actorUserId: string;
-  actorLabel: string;
   reason: string;
-  counts: DataStoreStatus['counts'];
+  counts: DataCounts;
+  incidentHold?: {
+    incidentId: string;
+    status: 'unresolved' | 'resolved';
+    createdAt: string;
+    resolvedAt?: string;
+    reason?: string;
+  };
 }
 
 interface DataRestorePlanRow {
-  key: keyof DataStoreStatus['counts'];
+  key: keyof DataCounts;
   label: string;
   currentCount: number;
   restoredCount: number;
@@ -112,8 +142,16 @@ interface DataRestorePlanRow {
 }
 
 interface DataRestorePlan {
-  backup: DataRestoreBackup;
+  planId: string;
+  sourceId: string;
+  expiresAt: string;
   rows: DataRestorePlanRow[];
+}
+
+interface PlannedRecovery {
+  kind: 'backup' | 'import';
+  plan: DataRestorePlan;
+  planToken: RecoveryPlanToken | { recoveryToken: RecoveryPlanToken; encodedEnvelope: string };
 }
 
 const RESTORE_CONFIRMATION = 'RESTORE SCHOLARSCOUT DATA';
@@ -126,23 +164,20 @@ export default function ProgrammeAdminManager({
     createProgrammeDraft(),
   );
   const [auditEvents, setAuditEvents] = useState<ProgrammeAuditSummary[]>([]);
-  const [dataStatus, setDataStatus] = useState<DataStoreStatus | null>(null);
+  const [capabilityState, setCapabilityState] = useState<CapabilityState>({ state: 'loading' });
   const [restoreBackups, setRestoreBackups] = useState<DataRestoreBackup[]>([]);
-  const [restorePlan, setRestorePlan] = useState<DataRestorePlan | null>(null);
-  const [restorePlanError, setRestorePlanError] = useState('');
-  const [backupRestoreReason, setBackupRestoreReason] = useState('');
-  const [backupRestoreConfirmation, setBackupRestoreConfirmation] =
-    useState('');
-  const [backupRestoreResult, setBackupRestoreResult] =
-    useState<DataRestoreResult | null>(null);
+  const [recoveryPlan, setRecoveryPlan] = useState<PlannedRecovery | null>(null);
+  const [recoveryError, setRecoveryError] = useState<DataFailure | null>(null);
+  const [recoveryReason, setRecoveryReason] = useState('');
+  const [recoveryConfirmation, setRecoveryConfirmation] = useState('');
+  const [recoveryResult, setRecoveryResult] = useState<DataRestoreResult | null>(null);
+  const [pendingAction, setPendingAction] = useState<'refresh' | 'preview' | 'validate' | 'apply' | null>(null);
+  const [needsRepreview, setNeedsRepreview] = useState(false);
+  const [retryOperationId, setRetryOperationId] = useState('validate-import-package');
   const [importSnapshot, setImportSnapshot] = useState('');
-  const [importValidation, setImportValidation] =
-    useState<DataImportValidation | null>(null);
-  const [restoreReason, setRestoreReason] = useState('');
-  const [restoreConfirmation, setRestoreConfirmation] = useState('');
-  const [restoreResult, setRestoreResult] = useState<DataRestoreResult | null>(
-    null,
-  );
+  const alertRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLHeadingElement>(null);
+  const resultRef = useRef<HTMLHeadingElement>(null);
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState<ProgrammeConflictState | null>(null);
   const mergedProgrammes = useMemo(
@@ -151,6 +186,17 @@ export default function ProgrammeAdminManager({
   );
   const exportJson = serializeProgrammeDrafts(drafts);
   const recentAuditEvents = getRecentProgrammeAuditEvents(auditEvents);
+  const verifiedCapabilities = capabilityState.state === 'ready' ||
+    capabilityState.state === 'refreshing' || capabilityState.state === 'last-known'
+    ? capabilityState.value
+    : null;
+  const mutationsAllowed = capabilityState.state === 'ready';
+  const hasBackupList = verifiedCapabilities?.operations.some(
+    (operation) => operation.id === 'backup-list' && operation.allowedAction === 'view',
+  ) ?? false;
+  const hasImportValidation = verifiedCapabilities?.operations.some(
+    (operation) => operation.id === 'import-validate' && operation.allowedAction === 'validate',
+  ) ?? false;
 
   useEffect(() => {
     async function loadDrafts() {
@@ -179,26 +225,32 @@ export default function ProgrammeAdminManager({
   }, []);
 
   useEffect(() => {
-    async function loadDataStatus() {
-      const [statusResponse, backupsResponse] = await Promise.all([
-        fetch('/api/admin/data/status'),
-        fetch('/api/admin/data/backups'),
-      ]);
-
-      if (statusResponse.ok) {
-        setDataStatus((await statusResponse.json()) as DataStoreStatus);
-      }
-
-      if (backupsResponse.ok) {
-        const body = (await backupsResponse.json()) as {
-          backups?: DataRestoreBackup[];
-        };
-        setRestoreBackups(body.backups ?? []);
-      }
-    }
-
-    void loadDataStatus();
+    void refreshDataStatus();
+    // The initial capability read is intentionally one-shot; refreshes are staff-triggered.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (capabilityState.state === 'unavailable' || capabilityState.state === 'last-known') {
+      alertRef.current?.focus();
+    }
+  }, [capabilityState]);
+
+  useEffect(() => {
+    if (recoveryError) alertRef.current?.focus();
+  }, [recoveryError]);
+
+  useEffect(() => {
+    if (recoveryPlan) previewRef.current?.focus();
+  }, [recoveryPlan]);
+
+  useEffect(() => {
+    if (recoveryResult) resultRef.current?.focus();
+  }, [recoveryResult]);
+
+  useEffect(() => {
+    if (needsRepreview) document.getElementById(retryOperationId)?.focus();
+  }, [needsRepreview, retryOperationId]);
 
   function persist(nextDrafts: ProgrammeDraft[], nextMessage: string) {
     setDrafts(nextDrafts);
@@ -318,20 +370,47 @@ export default function ProgrammeAdminManager({
   }
 
   async function refreshDataStatus() {
-    const response = await fetch('/api/admin/data/status');
+    const previous = capabilityState.state === 'ready' || capabilityState.state === 'last-known'
+      ? capabilityState.value
+      : null;
+    setPendingAction('refresh');
+    setRecoveryError(null);
+    setCapabilityState(previous ? { state: 'refreshing', value: previous } : { state: 'loading' });
+    const response = await fetch('/api/admin/data/capabilities');
+    const body = (await response.json().catch(() => null)) as (DataCapabilities & Partial<DataFailure>) | null;
 
-    if (!response.ok) {
+    if (!response.ok || !body || body.health !== 'healthy') {
+      const failure = {
+        category: body?.category ?? 'storage-unavailable',
+        incidentId: body?.incidentId ?? 'unavailable',
+        retryable: body?.retryable ?? true,
+      };
+      setCapabilityState(previous
+        ? { state: 'last-known', value: previous, failure }
+        : { state: 'unavailable', failure });
+      setPendingAction(null);
       return;
     }
 
-    setDataStatus((await response.json()) as DataStoreStatus);
-    await refreshRestoreBackups();
+    setCapabilityState({ state: 'ready', value: body });
+    if (body.operations.some((operation) => operation.id === 'backup-list')) {
+      await refreshRestoreBackups();
+    } else {
+      setRestoreBackups([]);
+    }
+    setPendingAction(null);
   }
 
   async function refreshRestoreBackups() {
     const response = await fetch('/api/admin/data/backups');
 
     if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as Partial<DataFailure> | null;
+      setRecoveryError({
+        category: body?.category ?? 'storage-unavailable',
+        incidentId: body?.incidentId ?? 'unavailable',
+        retryable: body?.retryable ?? true,
+      });
       return;
     }
 
@@ -340,156 +419,98 @@ export default function ProgrammeAdminManager({
   }
 
   async function handlePlanBackupRestore(backupId: string) {
-    setRestorePlan(null);
-    setRestorePlanError('');
-    setBackupRestoreResult(null);
-    setBackupRestoreReason('');
-    setBackupRestoreConfirmation('');
+    if (pendingAction) return;
+    setPendingAction('preview');
+    setNeedsRepreview(false);
+    setRecoveryPlan(null);
+    setRecoveryError(null);
+    setRecoveryResult(null);
+    setRecoveryConfirmation('');
+    setNeedsRepreview(false);
 
     const response = await fetch(
       `/api/admin/data/backups/${encodeURIComponent(backupId)}/plan`,
     );
     const body = (await response.json().catch(() => null)) as
-      | { plan?: DataRestorePlan; error?: string }
+      | { plan?: DataRestorePlan; planToken?: RecoveryPlanToken; error?: string; category?: string; incidentId?: string; retryable?: boolean }
       | null;
 
-    if (!response.ok || !body?.plan) {
-      setRestorePlanError(
-        body?.error ?? 'Restore planning could not be completed.',
-      );
-      return;
-    }
-
-    setRestorePlan(body.plan);
-  }
-
-  async function handleRestoreBackup() {
-    if (!restorePlan) {
-      setBackupRestoreResult({
-        ok: false,
-        error: 'Preview a backup restore before running it.',
+    if (!response.ok || !body?.plan || !body.planToken) {
+      setRecoveryError({
+        category: body?.category ?? body?.error ?? 'restore-preview-failed',
+        incidentId: body?.incidentId ?? 'unavailable',
+        retryable: body?.retryable ?? true,
       });
+      setPendingAction(null);
       return;
     }
 
-    setBackupRestoreResult(null);
-
-    const response = await fetch(
-      `/api/admin/data/backups/${encodeURIComponent(restorePlan.backup.id)}/restore`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          confirmation: backupRestoreConfirmation,
-          reason: backupRestoreReason,
-        }),
-      },
-    );
-    const body = (await response.json().catch(() => null)) as
-      | DataRestoreResult
-      | null;
-
-    setBackupRestoreResult(
-      body ?? {
-        ok: false,
-        error: 'Backup restore could not be completed.',
-      },
-    );
-
-    if (response.ok && body?.ok) {
-      setRestorePlan(null);
-      setRestorePlanError('');
-      setBackupRestoreReason('');
-      setBackupRestoreConfirmation('');
-      setMessage('ScholarScout backup restored with a new backup recorded.');
-      await refreshAuditEvents();
-    }
+    setRecoveryPlan({ kind: 'backup', plan: body.plan, planToken: body.planToken });
+    setPendingAction(null);
   }
 
   async function handleValidateImport() {
-    setImportValidation(null);
-    setRestoreResult(null);
+    if (pendingAction) return;
+    setRecoveryPlan(null);
+    setRecoveryResult(null);
+    setRecoveryError(null);
+    setRecoveryConfirmation('');
 
     if (!importSnapshot.trim()) {
-      setImportValidation({
-        isValid: false,
-        errors: ['Paste a ScholarScout data snapshot before validating.'],
-      });
+      setRecoveryError({ category: 'Paste a recovery package before validating.', incidentId: 'input-required', retryable: true });
       return;
     }
-
-    let parsed: unknown;
-
-    try {
-      parsed = JSON.parse(importSnapshot);
-    } catch {
-      setImportValidation({
-        isValid: false,
-        errors: ['Snapshot must be valid JSON.'],
-      });
-      return;
-    }
-
+    setPendingAction('validate');
     const response = await fetch('/api/admin/data/import/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parsed),
+      body: importSnapshot,
     });
     const body = (await response.json().catch(() => null)) as
-      | DataImportValidation
+      | { plan?: DataRestorePlan; planToken?: { recoveryToken: RecoveryPlanToken; encodedEnvelope: string }; error?: string; category?: string; incidentId?: string; retryable?: boolean }
       | null;
 
-    setImportValidation(
-      body ?? {
-        isValid: false,
-        errors: ['Snapshot validation could not be completed.'],
-      },
-    );
-  }
-
-  async function handleRestoreImport() {
-    setRestoreResult(null);
-
-    let parsed: unknown;
-
-    try {
-      parsed = JSON.parse(importSnapshot);
-    } catch {
-      setRestoreResult({
-        ok: false,
-        error: 'Snapshot must be valid JSON.',
-      });
+    if (!response.ok || !body?.plan || !body.planToken) {
+      setRecoveryError({ category: body?.category ?? body?.error ?? 'invalid-recovery-package', incidentId: body?.incidentId ?? 'validation-failed', retryable: body?.retryable ?? true });
+      setPendingAction(null);
       return;
     }
+    setRecoveryPlan({ kind: 'import', plan: body.plan, planToken: body.planToken });
+    setPendingAction(null);
+  }
 
-    const response = await fetch('/api/admin/data/import/restore', {
+  async function handleApplyRecovery() {
+    if (!recoveryPlan || pendingAction) return;
+    setPendingAction('apply');
+    setRecoveryResult(null);
+    setRecoveryError(null);
+    const endpoint = recoveryPlan.kind === 'backup'
+      ? `/api/admin/data/backups/${encodeURIComponent(recoveryPlan.plan.sourceId)}/restore`
+      : '/api/admin/data/import/restore';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        snapshot: parsed,
-        confirmation: restoreConfirmation,
-        reason: restoreReason,
+        planToken: recoveryPlan.planToken,
+        confirmation: recoveryConfirmation,
+        reason: recoveryReason,
       }),
     });
-    const body = (await response.json().catch(() => null)) as
-      | DataRestoreResult
-      | null;
-
-    setRestoreResult(
-      body ?? {
-        ok: false,
-        error: 'Restore could not be completed.',
-      },
-    );
-
+    const body = (await response.json().catch(() => null)) as DataRestoreResult | null;
+    const result = body ?? { ok: false, error: 'data-service-unavailable' };
+    setRecoveryResult(result);
     if (response.ok && body?.ok) {
-      setImportSnapshot('');
-      setImportValidation(null);
-      setRestoreConfirmation('');
-      setRestoreReason('');
-      setMessage('ScholarScout data snapshot restored with a backup recorded.');
+      setRecoveryPlan(null);
+      setRecoveryConfirmation('');
+      setRecoveryReason('');
+      if (recoveryPlan.kind === 'import') setImportSnapshot('');
       await refreshAuditEvents();
+    } else if (response.status === 409 || response.status === 410) {
+      setRecoveryPlan(null);
+      setRecoveryConfirmation('');
+      setNeedsRepreview(true);
     }
+    setPendingAction(null);
   }
 
   return (
@@ -501,10 +522,10 @@ export default function ProgrammeAdminManager({
               Governed data
             </Badge>
             <h1 className="text-2xl font-extrabold text-ink-900">
-              Programme editor
+              Governed programme stewardship
             </h1>
             <p className="mt-2 text-sm leading-6 text-ink-600">
-              Staff changes save through protected account APIs, with local browser state as a fallback.
+              Authorized staff maintain student-facing programme information through protected account APIs.
             </p>
           </div>
         </div>
@@ -794,398 +815,313 @@ export default function ProgrammeAdminManager({
       </Card>
 
       <div className="space-y-6">
-        <Card className="p-5">
+        <Card className="p-5" aria-labelledby="data-operations-heading">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <h2 className="text-xl font-extrabold text-ink-900">
+              <h2 id="data-operations-heading" className="text-xl font-semibold text-ink-900">
                 Data operations
               </h2>
               <p className="mt-2 text-sm leading-6 text-ink-600">
-                Staff account data, programme records, and audit history are
-                currently backed by {dataStatus?.adapter ?? 'the configured'} adapter.
+                Recovery actions come from a fresh, staff-authorized storage check.
               </p>
             </div>
-            {dataStatus ? (
-              <Badge tone={dataStatus.isDurable ? 'success' : 'warning'}>
-                {dataStatus.isDurable ? 'Durable backing' : 'Local backing'}
+            {verifiedCapabilities ? (
+              <Badge tone={mutationsAllowed ? 'success' : 'warning'}>
+                {mutationsAllowed ? 'Storage verified' : 'Refreshing'}
               </Badge>
             ) : (
               <Badge tone="neutral">Checking</Badge>
             )}
           </div>
-          {dataStatus ? (
-            <div className="mt-4 space-y-4">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                <DataMetric label="Users" value={dataStatus.counts.users} />
-                <DataMetric
-                  label="Profiles"
-                  value={dataStatus.counts.onboardingProfiles}
-                />
-                <DataMetric
-                  label="Shortlists"
-                  value={dataStatus.counts.shortlists}
-                />
-                <DataMetric
-                  label="Programmes"
-                  value={dataStatus.counts.programmeRecords}
-                />
-                <DataMetric label="Audit" value={dataStatus.counts.auditEvents} />
-              </div>
-              <div className="rounded-card border border-ink-200 bg-ink-50 p-3">
-                <p className="text-xs font-bold uppercase text-ink-600">
-                  Backing store
-                </p>
-                <p className="mt-1 break-words text-sm font-semibold text-ink-800">
-                  {dataStatus.backingStore}
-                </p>
-              </div>
-              {dataStatus.issues.length > 0 ? (
-                <div className="rounded-card border border-warning-600 bg-warning-50 p-3">
-                  <p className="text-sm font-extrabold text-ink-900">
-                    Operations note
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-ink-700">
-                    {dataStatus.issues[0]}
-                  </p>
-                </div>
+
+          <div aria-live="polite" className="mt-4">
+            {capabilityState.state === 'loading' ? (
+              <p role="status" className="rounded-card border border-ink-200 bg-ink-50 p-3 text-sm text-ink-700">
+                Checking data operations…
+              </p>
+            ) : null}
+            {capabilityState.state === 'refreshing' ? (
+              <p role="status" className="text-sm font-semibold text-ink-600">
+                Refreshing data operations…
+              </p>
+            ) : null}
+          </div>
+
+          {capabilityState.state === 'unavailable' || capabilityState.state === 'last-known' ? (
+            <div
+              ref={alertRef}
+              role="alert"
+              tabIndex={-1}
+              className="mt-4 rounded-card border border-danger-600 bg-danger-50 p-4 outline-none focus:ring-2 focus:ring-danger-600 focus:ring-offset-2"
+            >
+              <p className="text-sm font-semibold text-ink-900">
+                Data operations are unavailable. No data was changed. Retry a fresh storage check.
+              </p>
+              <p className="mt-2 text-sm text-ink-700">
+                Category: {capabilityState.failure.category}
+              </p>
+              <p className="mt-1 break-all font-mono text-xs text-ink-700">
+                Incident ID: {capabilityState.failure.incidentId}
+              </p>
+              {capabilityState.failure.retryable ? (
+                <Button
+                  className="mt-3"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void refreshDataStatus()}
+                  disabled={pendingAction === 'refresh'}
+                >
+                  Retry data operations
+                </Button>
               ) : null}
-              <div
-                className={`rounded-card border p-3 ${
-                  dataStatus.backupRetention.isWithinPolicy
-                    ? 'border-success-600 bg-success-50'
-                    : 'border-warning-600 bg-warning-50'
-                }`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-extrabold text-ink-900">
-                      Backup retention
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-ink-700">
-                      {dataStatus.backupRetention.retainedBackups} of{' '}
-                      {dataStatus.backupRetention.maxRetainedBackups} restore
-                      backups retained.
-                    </p>
-                  </div>
-                  <Badge
-                    tone={
-                      dataStatus.backupRetention.isWithinPolicy
-                        ? 'success'
-                        : 'warning'
-                    }
-                  >
-                    {dataStatus.backupRetention.isWithinPolicy
-                      ? 'Within policy'
-                      : 'Needs review'}
-                  </Badge>
-                </div>
-                {dataStatus.backupRetention.issues.length > 0 ? (
-                  <p className="mt-2 text-sm leading-6 text-ink-700">
-                    {dataStatus.backupRetention.issues[0]}
+            </div>
+          ) : null}
+
+          {verifiedCapabilities ? (
+            <div className="mt-4 space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3 rounded-card border border-ink-200 bg-ink-50 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-ink-900">Storage verified</p>
+                  <p className="mt-1 text-xs text-ink-600">
+                    {capabilityState.state === 'last-known' ? 'Last verified' : 'Verified'}{' '}
+                    {formatAuditDate(verifiedCapabilities.lastVerifiedAt)}
                   </p>
-                ) : null}
-              </div>
-              <a
-                href="/api/admin/data/export"
-                className="inline-flex min-h-10 w-full items-center justify-center rounded-card border border-ink-300 bg-white px-3 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700 sm:w-auto"
-              >
-                Export data snapshot
-              </a>
-              <div className="rounded-card border border-ink-200 bg-white p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-extrabold text-ink-900">
-                      Restore backup history
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-ink-600">
-                      Recent backups created before staff restores, shown without exposing snapshot contents.
-                    </p>
-                  </div>
-                  <Badge tone="neutral">{restoreBackups.length} saved</Badge>
+                  <p className="mt-1 break-all font-mono text-xs text-ink-700">
+                    {verifiedCapabilities.adapter}
+                  </p>
                 </div>
-                <div className="mt-3 space-y-3">
-                  {restoreBackups.length > 0 ? (
-                    restoreBackups.map((backup) => (
-                      <article
-                        key={backup.id}
-                        className="rounded-card border border-ink-200 bg-ink-50 p-3"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-extrabold text-ink-900">
-                              {formatAuditDate(backup.createdAt)}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-ink-600">
-                              {backup.actorLabel} - {backup.reason}
-                            </p>
-                          </div>
-                          <Badge tone="warning">Backup</Badge>
-                        </div>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-5">
-                          <DataMetric label="Users" value={backup.counts.users} />
-                          <DataMetric
-                            label="Profiles"
-                            value={backup.counts.onboardingProfiles}
-                          />
-                          <DataMetric
-                            label="Shortlists"
-                            value={backup.counts.shortlists}
-                          />
-                          <DataMetric
-                            label="Programmes"
-                            value={backup.counts.programmeRecords}
-                          />
-                          <DataMetric
-                            label="Audit"
-                            value={backup.counts.auditEvents}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void handlePlanBackupRestore(backup.id);
-                          }}
-                          className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-card border border-brand-600 bg-white px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 sm:w-auto"
-                        >
-                          Preview restore impact
-                        </button>
-                      </article>
-                    ))
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void refreshDataStatus()}
+                  disabled={pendingAction === 'refresh'}
+                >
+                  Refresh data operations
+                </Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                <DataMetric label="Users" value={verifiedCapabilities.counts.users} />
+                <DataMetric label="Profiles" value={verifiedCapabilities.counts.onboardingProfiles} />
+                <DataMetric label="Shortlists" value={verifiedCapabilities.counts.shortlists} />
+                <DataMetric label="Programmes" value={verifiedCapabilities.counts.programmeRecords} />
+                <DataMetric label="Audit" value={verifiedCapabilities.counts.auditEvents} />
+              </div>
+
+              {hasBackupList ? (
+                <section aria-labelledby="backup-history-heading" className="rounded-card border border-ink-200 bg-white p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 id="backup-history-heading" className="text-base font-semibold text-ink-900">
+                        Recovery backup history
+                      </h3>
+                      <p className="mt-1 text-sm text-ink-600">Newest retained backups, without snapshot contents.</p>
+                    </div>
+                    <Badge tone="neutral">{restoreBackups.length} saved</Badge>
+                  </div>
+                  {restoreBackups.length === 0 ? (
+                    <div className="mt-3 rounded-card border border-ink-200 bg-ink-50 p-4">
+                      <p className="font-semibold text-ink-900">No recovery backups yet</p>
+                      <p className="mt-1 text-sm text-ink-600">
+                        Recovery backups appear here after a confirmed restore or import. No action is needed.
+                      </p>
+                    </div>
                   ) : (
-                    <p className="rounded-card border border-ink-200 p-3 text-sm text-ink-600">
-                      Backup history will appear after the first confirmed restore.
-                    </p>
+                    <div className="mt-3 space-y-3">
+                      {restoreBackups.map((backup) => (
+                        <article key={backup.id} className="rounded-card border border-ink-200 bg-ink-50 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-ink-900">{formatAuditDate(backup.createdAt)}</p>
+                              <p className="mt-1 break-all font-mono text-xs text-ink-700">{backup.id}</p>
+                              <p className="mt-1 break-words text-sm text-ink-600">
+                                {backup.actorUserId} · {backup.reason}
+                              </p>
+                            </div>
+                            {backup.incidentHold?.status === 'unresolved' ? (
+                              <Badge tone="warning">Retention hold</Badge>
+                            ) : <Badge tone="neutral">Retained</Badge>}
+                          </div>
+                          {backup.incidentHold ? (
+                            <p className="mt-2 break-all font-mono text-xs text-ink-600">
+                              Incident {backup.incidentHold.incidentId}
+                            </p>
+                          ) : null}
+                          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+                            <DataMetric label="Users" value={backup.counts.users} />
+                            <DataMetric label="Profiles" value={backup.counts.onboardingProfiles} />
+                            <DataMetric label="Shortlists" value={backup.counts.shortlists} />
+                            <DataMetric label="Programmes" value={backup.counts.programmeRecords} />
+                            <DataMetric label="Audit" value={backup.counts.auditEvents} />
+                          </div>
+                          <Button
+                            id={`recovery-preview-${backup.id}`}
+                            className="mt-3"
+                            variant="secondary"
+                            size="sm"
+                            disabled={!mutationsAllowed || pendingAction !== null}
+                            onClick={() => {
+                              setRetryOperationId(`recovery-preview-${backup.id}`);
+                              void handlePlanBackupRestore(backup.id);
+                            }}
+                          >
+                            {pendingAction === 'preview' ? 'Preparing restore preview…' : 'Preview restore impact'}
+                          </Button>
+                          {!mutationsAllowed ? (
+                            <p className="mt-2 text-xs text-ink-600">A fresh storage check is required before previewing a restore.</p>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
                   )}
-                </div>
-                {restorePlan ? (
-                  <div className="mt-4 rounded-card border border-brand-200 bg-brand-50 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-extrabold text-ink-900">
-                          Restore impact preview
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-ink-700">
-                          Restoring this backup would replace the current data counts with the saved backup counts.
-                        </p>
-                      </div>
-                      <Badge tone="brand">Read-only plan</Badge>
-                    </div>
-                    <div className="mt-3 overflow-x-auto">
-                      <table className="min-w-full text-left text-sm">
-                        <thead className="text-xs uppercase text-ink-600">
-                          <tr>
-                            <th className="py-2 pr-3 font-bold">Data</th>
-                            <th className="py-2 pr-3 font-bold">Current</th>
-                            <th className="py-2 pr-3 font-bold">After restore</th>
-                            <th className="py-2 font-bold">Change</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-100">
-                          {restorePlan.rows.map((row) => (
-                            <tr key={row.key}>
-                              <td className="py-2 pr-3 font-semibold text-ink-800">
-                                {row.label}
-                              </td>
-                              <td className="py-2 pr-3 text-ink-700">
-                                {row.currentCount}
-                              </td>
-                              <td className="py-2 pr-3 text-ink-700">
-                                {row.restoredCount}
-                              </td>
-                              <td className="py-2 font-semibold text-ink-800">
-                                {formatCountDelta(row.delta)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="mt-4 rounded-card border border-warning-600 bg-warning-50 p-3">
-                      <p className="text-sm font-extrabold text-ink-900">
-                        Restore this backup
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-ink-700">
-                        ScholarScout will back up the current data document before restoring this saved backup.
-                      </p>
-                      <TextField
-                        label="Backup restore reason"
-                        value={backupRestoreReason}
-                        onChange={setBackupRestoreReason}
-                      />
-                      <label className="mt-3 block">
-                        <span className="text-sm font-bold text-ink-800">
-                          Type {RESTORE_CONFIRMATION}
-                        </span>
-                        <input
-                          value={backupRestoreConfirmation}
-                          onChange={(event) =>
-                            setBackupRestoreConfirmation(event.target.value)
-                          }
-                          className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void handleRestoreBackup();
-                        }}
-                        disabled={
-                          backupRestoreConfirmation !== RESTORE_CONFIRMATION
-                        }
-                        className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-card border border-danger-600 bg-danger-600 px-3 text-sm font-semibold text-white hover:bg-danger-700 disabled:border-ink-200 disabled:bg-white disabled:text-ink-300 sm:w-auto"
-                      >
-                        Restore previewed backup
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                {restorePlanError ? (
-                  <p className="mt-3 rounded-card border border-warning-600 bg-warning-50 p-3 text-sm font-semibold text-ink-700">
-                    {restorePlanError}
+                </section>
+              ) : null}
+
+              {hasImportValidation ? (
+                <section aria-labelledby="import-heading" className="rounded-card border border-ink-200 bg-white p-4">
+                  <h3 id="import-heading" className="text-base font-semibold text-ink-900">Import recovery package</h3>
+                  <p id="import-help" className="mt-1 text-sm text-ink-600">
+                    Server validation is authoritative and does not modify data. Paste a signed package up to 5 MiB.
                   </p>
-                ) : null}
-                {backupRestoreResult ? (
-                  <div
-                    className={`mt-3 rounded-card border p-3 ${
-                      backupRestoreResult.ok
-                        ? 'border-success-600 bg-success-50'
-                        : 'border-warning-600 bg-warning-50'
-                    }`}
-                  >
-                    <p className="text-sm font-extrabold text-ink-900">
-                      {backupRestoreResult.ok
-                        ? 'Backup restored'
-                        : 'Backup restore needs review'}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-ink-700">
-                      {backupRestoreResult.ok
-                        ? `Backup ${backupRestoreResult.backupId} was created before restore.`
-                        : backupRestoreResult.error ??
-                          'Backup restore could not be completed.'}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-              <div className="rounded-card border border-ink-200 bg-white p-3">
-                <label className="block">
-                  <span className="text-sm font-extrabold text-ink-900">
-                    Validate restore snapshot
-                  </span>
-                  <span className="mt-1 block text-sm leading-6 text-ink-600">
-                    Paste an exported ScholarScout JSON snapshot to check its
-                    structure before any restore work.
-                  </span>
+                  <label htmlFor="recovery-package" className="mt-3 block text-sm font-semibold text-ink-800">
+                    Signed recovery package
+                  </label>
                   <textarea
+                    id="recovery-package"
                     value={importSnapshot}
                     onChange={(event) => {
                       setImportSnapshot(event.target.value);
-                      setImportValidation(null);
-                      setRestoreResult(null);
+                      setRecoveryPlan(null);
+                      setRecoveryConfirmation('');
+                      setRecoveryResult(null);
                     }}
-                    className="mt-3 min-h-32 w-full rounded-card border border-ink-200 bg-ink-50 px-3 py-2 font-mono text-xs text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                    aria-describedby="import-help"
+                    className="mt-2 min-h-32 w-full rounded-card border border-ink-200 bg-ink-50 px-3 py-2 font-mono text-xs text-ink-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                   />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleValidateImport();
-                  }}
-                  className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700 sm:w-auto"
-                >
-                  Validate snapshot
-                </button>
-                {importValidation ? (
-                  <div
-                    className={`mt-3 rounded-card border p-3 ${
-                      importValidation.isValid
-                        ? 'border-success-600 bg-success-50'
-                        : 'border-warning-600 bg-warning-50'
-                    }`}
+                  <Button
+                    id="validate-import-package"
+                    className="mt-3"
+                    disabled={!mutationsAllowed || pendingAction !== null}
+                    onClick={() => {
+                      setRetryOperationId('validate-import-package');
+                      void handleValidateImport();
+                    }}
                   >
-                    <p className="text-sm font-extrabold text-ink-900">
-                      {importValidation.isValid
-                        ? 'Snapshot is ready for restore planning'
-                        : 'Snapshot needs review'}
-                    </p>
-                    {importValidation.counts ? (
-                      <p className="mt-1 text-sm leading-6 text-ink-700">
-                        {importValidation.counts.users} users,{' '}
-                        {importValidation.counts.programmeRecords} programmes,{' '}
-                        {importValidation.counts.auditEvents} audit events.
-                      </p>
-                    ) : null}
-                    {importValidation.errors.length > 0 ? (
-                      <p className="mt-1 text-sm leading-6 text-ink-700">
-                        {importValidation.errors[0]}
-                      </p>
-                    ) : null}
+                    {pendingAction === 'validate' ? 'Validating import package…' : 'Validate import package'}
+                  </Button>
+                  {!mutationsAllowed ? (
+                    <p className="mt-2 text-xs text-ink-600">A fresh storage check is required before validation.</p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {recoveryPlan ? (
+                <section className="rounded-card border border-brand-200 bg-brand-50 p-4" aria-labelledby="impact-preview-heading">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3
+                        ref={previewRef}
+                        id="impact-preview-heading"
+                        tabIndex={-1}
+                        className="text-base font-semibold text-ink-900 outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        Impact preview
+                      </h3>
+                      {recoveryPlan.kind === 'import' ? (
+                        <p className="mt-1 text-sm text-success-700">
+                          Import package validated. Review the impact before applying it.
+                        </p>
+                      ) : null}
+                    </div>
+                    <Badge tone="brand">Read-only plan</Badge>
                   </div>
-                ) : null}
-                {importValidation?.isValid ? (
-                  <div className="mt-4 rounded-card border border-warning-600 bg-warning-50 p-3">
-                    <p className="text-sm font-extrabold text-ink-900">
-                      Restore this snapshot
+                  <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                    <div><dt className="font-semibold text-ink-600">Source ID</dt><dd className="break-all font-mono text-ink-800">{recoveryPlan.plan.sourceId}</dd></div>
+                    <div><dt className="font-semibold text-ink-600">Plan ID</dt><dd className="break-all font-mono text-ink-800">{recoveryPlan.plan.planId}</dd></div>
+                    <div><dt className="font-semibold text-ink-600">Source digest</dt><dd className="break-all font-mono text-ink-800">{getRecoveryClaims(recoveryPlan.planToken).sourceDigest}</dd></div>
+                    <div><dt className="font-semibold text-ink-600">Current-data version</dt><dd className="break-all font-mono text-ink-800">{getRecoveryClaims(recoveryPlan.planToken).currentDataDigest}</dd></div>
+                  </dl>
+                  <p className="mt-3 text-sm text-warning-700">
+                    This plan expires at {formatAuditDate(recoveryPlan.plan.expiresAt)}. Preview again if it expires.
+                  </p>
+                  <div className="mt-3 max-w-full overflow-x-auto rounded-card border border-brand-200 bg-white">
+                    <table className="min-w-[560px] w-full text-left text-sm">
+                      <thead><tr className="text-xs text-ink-600">
+                        <th className="p-3 font-semibold">Data</th><th className="p-3 font-semibold">Current</th>
+                        <th className="p-3 font-semibold">After restore</th><th className="p-3 font-semibold">Change</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-ink-100">
+                        {recoveryPlan.plan.rows.map((row) => (
+                          <tr key={row.key}><th scope="row" className="p-3 font-semibold text-ink-800">{row.label}</th>
+                            <td className="p-3">{row.currentCount}</td><td className="p-3">{row.restoredCount}</td>
+                            <td className="p-3">{formatCountDelta(row.delta)}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-4 rounded-card border border-warning-600 bg-warning-50 p-4">
+                    <p className="font-semibold text-ink-900">
+                      This replaces the current Scholar Scout data as one operation. A recovery backup will be created first.
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink-700">
-                      ScholarScout will back up the current data document before
-                      replacing it with this validated snapshot.
-                    </p>
-                    <TextField
-                      label="Restore reason"
-                      value={restoreReason}
-                      onChange={setRestoreReason}
+                    <label htmlFor="recovery-reason" className="mt-3 block text-sm font-semibold text-ink-800">Operator reason</label>
+                    <Input
+                      id="recovery-reason"
+                      value={recoveryReason}
+                      maxLength={500}
+                      aria-describedby="recovery-reason-help"
+                      onChange={(event) => setRecoveryReason(event.target.value)}
                     />
-                    <label className="mt-3 block">
-                      <span className="text-sm font-bold text-ink-800">
-                        Type {RESTORE_CONFIRMATION}
-                      </span>
-                      <input
-                        value={restoreConfirmation}
-                        onChange={(event) =>
-                          setRestoreConfirmation(event.target.value)
-                        }
-                        className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                      />
+                    <p id="recovery-reason-help" className="mt-1 text-xs text-ink-600">Required, up to 500 characters.</p>
+                    <label htmlFor="recovery-confirmation" className="mt-3 block text-sm font-semibold text-ink-800">
+                      Type <span className="font-mono">{RESTORE_CONFIRMATION}</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleRestoreImport();
-                      }}
-                      disabled={restoreConfirmation !== RESTORE_CONFIRMATION}
-                      className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-card border border-danger-600 bg-danger-600 px-3 text-sm font-semibold text-white hover:bg-danger-700 disabled:border-ink-200 disabled:bg-white disabled:text-ink-300 sm:w-auto"
+                    <Input
+                      id="recovery-confirmation"
+                      className="font-mono"
+                      value={recoveryConfirmation}
+                      aria-describedby="recovery-confirmation-help"
+                      onChange={(event) => setRecoveryConfirmation(event.target.value)}
+                    />
+                    <p id="recovery-confirmation-help" className="mt-1 text-xs text-ink-600">Exact phrase required.</p>
+                    <Button
+                      className="mt-3"
+                      variant="danger"
+                      disabled={!mutationsAllowed || pendingAction !== null || !recoveryReason.trim() || recoveryConfirmation !== RESTORE_CONFIRMATION}
+                      onClick={() => void handleApplyRecovery()}
                     >
-                      Restore validated snapshot
-                    </button>
+                      {pendingAction === 'apply' ? 'Applying restore…' : recoveryPlan.kind === 'backup' ? 'Apply restore' : 'Apply import'}
+                    </Button>
                   </div>
-                ) : null}
-                {restoreResult ? (
-                  <div
-                    className={`mt-3 rounded-card border p-3 ${
-                      restoreResult.ok
-                        ? 'border-success-600 bg-success-50'
-                        : 'border-warning-600 bg-warning-50'
-                    }`}
-                  >
-                    <p className="text-sm font-extrabold text-ink-900">
-                      {restoreResult.ok
-                        ? 'Snapshot restored'
-                        : 'Restore needs review'}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-ink-700">
-                      {restoreResult.ok
-                        ? `Backup ${restoreResult.backupId} was created before restore.`
-                        : restoreResult.error ?? 'Restore could not be completed.'}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
+                </section>
+              ) : null}
+
+              {recoveryError ? (
+                <div ref={alertRef} role="alert" tabIndex={-1} className="rounded-card border border-danger-600 bg-danger-50 p-4 outline-none focus:ring-2 focus:ring-danger-600">
+                  <p className="font-semibold text-ink-900">Recovery operation could not be completed. No data was changed.</p>
+                  <p className="mt-1 text-sm text-ink-700">{recoveryError.category}</p>
+                  <p className="mt-1 break-all font-mono text-xs text-ink-700">Incident ID: {recoveryError.incidentId}</p>
+                </div>
+              ) : null}
+
+              {recoveryResult ? (
+                <div
+                  role={recoveryResult.ok ? 'status' : 'alert'}
+                  aria-live={recoveryResult.ok ? 'polite' : undefined}
+                  className={`rounded-card border p-4 ${recoveryResult.ok ? 'border-success-600 bg-success-50' : 'border-danger-600 bg-danger-50'}`}
+                >
+                  <h3 ref={resultRef} tabIndex={-1} className="font-semibold text-ink-900 outline-none focus:ring-2 focus:ring-brand-500">
+                    {recoveryResult.ok ? 'Recovery completed' : 'Recovery unchanged'}
+                  </h3>
+                  <p className="mt-1 text-sm text-ink-700">
+                    {recoveryResult.ok
+                      ? `Restore completed. Recovery backup ${recoveryResult.backupId} was created.`
+                      : `Recovery could not be completed. No partial changes were applied. ${recoveryResult.error ?? ''}`}
+                  </p>
+                  {recoveryResult.incidentId ? <p className="mt-1 break-all font-mono text-xs">Incident ID: {recoveryResult.incidentId}</p> : null}
+                  {recoveryResult.appliedAt ? <p className="mt-1 text-xs">Completed {formatAuditDate(recoveryResult.appliedAt)}</p> : null}
+                </div>
+              ) : null}
             </div>
-          ) : (
-            <p className="mt-4 rounded-card border border-ink-200 p-3 text-sm text-ink-600">
-              Data status appears here for signed-in staff accounts.
-            </p>
-          )}
+          ) : null}
         </Card>
 
         <Card className="p-5">
@@ -1703,6 +1639,10 @@ function formatCountDelta(value: number) {
   }
 
   return String(value);
+}
+
+function getRecoveryClaims(token: PlannedRecovery['planToken']) {
+  return 'recoveryToken' in token ? token.recoveryToken.claims : token.claims;
 }
 
 function DataMetric({

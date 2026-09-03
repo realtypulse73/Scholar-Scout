@@ -98,6 +98,42 @@ jobs:
       - name: Build web app
         run: pnpm --filter @scholar-scout/web build
 
+  browser-release-tracer:
+    name: ScholarScout / Chromium release tracer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Chromium
+        run: pnpm --filter @scholar-scout/web exec playwright install --with-deps chromium
+
+      - name: Run owned browser release tracer
+        run: node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
+
+      - name: Upload browser trace artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scholarscout-browser-release-tracer
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: error
+          retention-days: 7
+
   http-data-service-tests:
     name: ScholarScout / HTTP data-service tests
     runs-on: ubuntu-latest

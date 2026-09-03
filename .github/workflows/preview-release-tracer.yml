@@ -1,0 +1,106 @@
+name: ScholarScout Preview Release Tracer
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Exact 40-character candidate commit SHA
+        required: true
+        type: string
+      preview_url:
+        description: Fresh protected Preview URL for that candidate
+        required: true
+        type: string
+      preview_deployment_id:
+        description: Vercel Preview deployment identifier for that candidate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scholarscout-preview-release-tracer-${{ inputs.preview_deployment_id }}
+  cancel-in-progress: false
+
+jobs:
+  validate-inputs:
+    name: Validate Preview tracer inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.preview_url }}
+      SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: ${{ inputs.preview_deployment_id }}
+    steps:
+      - name: Reject malformed candidate metadata
+        shell: bash
+        run: |
+          [[ "$SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]] || {
+            echo '::error::candidate_commit must be a 40-character SHA.'
+            exit 1
+          }
+          [[ "$SCHOLARSCOUT_PREVIEW_URL" =~ ^https://[^[:space:]]+$ ]] || {
+            echo '::error::preview_url must be an HTTPS URL.'
+            exit 1
+          }
+          [[ "$SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID" =~ ^dpl_[A-Za-z0-9_-]+$ ]] || {
+            echo '::error::preview_deployment_id must be a Vercel deployment identifier.'
+            exit 1
+          }
+
+  tracer:
+    name: Protected Preview student tracer
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: Preview
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_commit }}
+
+      - name: Confirm candidate checkout
+        shell: bash
+        env:
+          SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: test "$(git rev-parse HEAD)" = "$SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Run protected Preview tracer
+        shell: bash
+        env:
+          VERCEL_ENV: preview
+          SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          SCHOLARSCOUT_PREVIEW_COMMIT_SHA: ${{ inputs.candidate_commit }}
+          SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.preview_url }}
+          SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: ${{ inputs.preview_deployment_id }}
+          SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS }}
+          SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
+        run: |
+          node scripts/run-preview-release-tracer.mjs > preview-release-tracer.json
+          node --input-type=module -e "import { readFile } from 'node:fs/promises'; const record = JSON.parse(await readFile('preview-release-tracer.json', 'utf8')); if (record.category !== 'passed' || record.candidateCommit !== process.env.SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT || typeof record.deploymentId !== 'string' || Object.keys(record).sort().join(',') !== 'candidateCommit,category,deploymentId') process.exit(1);"
+
+      - name: Upload scrubbed Preview tracer result
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-release-tracer-${{ inputs.preview_deployment_id }}
+          path: preview-release-tracer.json
+          if-no-files-found: error
+          retention-days: 7

@@ -17,8 +17,7 @@ export default function SignInPage() {
         <Card className="p-6">
           <h1 className="text-2xl font-extrabold">Sign in</h1>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Sign in with your ScholarScout account. This build uses Auth.js
-            credentials while OAuth provider credentials are pending.
+            Access your student account to continue exploring, saving, and comparing pathways.
           </p>
           <div className="mt-6">
             <AuthForm mode="sign-in" />

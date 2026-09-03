@@ -3,9 +3,13 @@ import 'server-only';
 import { randomUUID } from 'crypto';
 import {
   readScholarScoutData,
-  writeScholarScoutData,
   type ScholarScoutData,
 } from '@/lib/server/data-store';
+import {
+  appendOperationalRecord,
+  applyOperationalReplacement,
+  OPERATIONAL_MUTATION_POLICIES,
+} from '@/lib/server/operational-records';
 import {
   feedItems,
   getStudentStage,
@@ -84,19 +88,196 @@ export interface PlatformData extends ScholarScoutData {
   decisionLogs?: DecisionLogEntry[];
 }
 
-export async function readPlatformData(): Promise<PlatformData> {
-  const data = (await readScholarScoutData()) as PlatformData;
+export interface GuestMigrationResult {
+  migrated: boolean;
+  alreadyMigrated: boolean;
+  guestWindowId: string | null;
+}
 
-  return {
-    ...data,
-    feedInteractions: data.feedInteractions ?? [],
-    simulationResults: data.simulationResults ?? [],
-    memoryRecords: data.memoryRecords ?? [],
-    referralRecords: data.referralRecords ?? [],
-    shareRecords: data.shareRecords ?? [],
-    analyticsEvents: data.analyticsEvents ?? [],
-    decisionLogs: data.decisionLogs ?? [],
+export async function readPlatformData(): Promise<PlatformData> {
+  return normalizePlatformData(await readScholarScoutData());
+}
+
+function normalizePlatformData(data: ScholarScoutData): PlatformData {
+  const platform = data as PlatformData;
+  platform.feedInteractions = platform.feedInteractions ?? [];
+  platform.simulationResults = platform.simulationResults ?? [];
+  platform.memoryRecords = platform.memoryRecords ?? [];
+  platform.referralRecords = platform.referralRecords ?? [];
+  platform.shareRecords = platform.shareRecords ?? [];
+  platform.analyticsEvents = platform.analyticsEvents ?? [];
+  platform.decisionLogs = platform.decisionLogs ?? [];
+  return platform;
+}
+
+/**
+ * Moves the explicit private-activity allowlist from a server-resolved guest key
+ * to a signed-in account. Community and operational collections stay untouched.
+ */
+export async function migrateGuestOwnedRecords(input: {
+  guestId: string;
+  accountId: string;
+  now?: Date;
+}): Promise<GuestMigrationResult> {
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.guestMigration,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
+  const lifecycle = data.guestLifecycles?.find((guest) => guest.id === input.guestId);
+
+  if (!lifecycle) {
+    return { migrated: false, alreadyMigrated: false, guestWindowId: null };
+  }
+
+  if (lifecycle.migratedAt) {
+    return {
+      migrated: false,
+      alreadyMigrated: true,
+      guestWindowId: lifecycle.quotaWindowId,
+    };
+  }
+
+  const now = input.now ?? new Date();
+  if (new Date(lifecycle.expiresAt).getTime() <= now.getTime()) {
+    return { migrated: false, alreadyMigrated: false, guestWindowId: null };
+  }
+
+  const guestKey = `guest:${input.guestId}`;
+  const accountId = input.accountId;
+  const transferredCollections: string[] = [];
+
+  if (data.onboardingProfiles[guestKey]) {
+    data.onboardingProfiles[accountId] =
+      data.onboardingProfiles[accountId] ?? data.onboardingProfiles[guestKey];
+    delete data.onboardingProfiles[guestKey];
+    transferredCollections.push('onboardingProfiles');
+  }
+
+  if (data.shortlists[guestKey]) {
+    data.shortlists[accountId] = Array.from(
+      new Set([
+        ...(data.shortlists[accountId] ?? []),
+        ...data.shortlists[guestKey],
+      ]),
+    ).sort();
+    delete data.shortlists[guestKey];
+    transferredCollections.push('shortlists');
+  }
+
+  if (data.shortlistPlans?.[guestKey]) {
+    data.shortlistPlans[accountId] = {
+      ...data.shortlistPlans[guestKey],
+      ...(data.shortlistPlans[accountId] ?? {}),
+    };
+    delete data.shortlistPlans[guestKey];
+    transferredCollections.push('shortlistPlans');
+  }
+
+  data.feedInteractions = migrateUserKeyRecords(
+    data.feedInteractions ?? [],
+    guestKey,
+    accountId,
+    'feedInteractions',
+    transferredCollections,
+  );
+  data.simulationResults = migrateUserKeyRecords(
+    data.simulationResults ?? [],
+    guestKey,
+    accountId,
+    'simulationResults',
+    transferredCollections,
+  );
+  data.memoryRecords = migrateUserKeyRecords(
+    data.memoryRecords ?? [],
+    guestKey,
+    accountId,
+    'memoryRecords',
+    transferredCollections,
+  );
+  data.shareRecords = migrateUserKeyRecords(
+    data.shareRecords ?? [],
+    guestKey,
+    accountId,
+    'shareRecords',
+    transferredCollections,
+  );
+  data.analyticsEvents = migrateUserKeyRecords(
+    data.analyticsEvents ?? [],
+    guestKey,
+    accountId,
+    'analyticsEvents',
+    transferredCollections,
+  );
+  data.referralRecords = migrateReferralRecords(
+    data.referralRecords ?? [],
+    guestKey,
+    accountId,
+    transferredCollections,
+  );
+
+  lifecycle.migratedAt = now.toISOString();
+  lifecycle.migratedToAccountId = accountId;
+  data.guestQuotaBindings = {
+    ...(data.guestQuotaBindings ?? {}),
+    [accountId]: {
+      guestId: lifecycle.id,
+      guestWindowId: lifecycle.quotaWindowId,
+      createdAt: now.toISOString(),
+      expiresAt: lifecycle.expiresAt,
+    },
   };
+  data.guestMigrationAuditRecords = [
+    ...(data.guestMigrationAuditRecords ?? []),
+    {
+      id: randomUUID(),
+      guestId: lifecycle.id,
+      accountId,
+      migratedAt: now.toISOString(),
+      transferredCollections,
+    },
+  ];
+  return {
+    migrated: true,
+    alreadyMigrated: false,
+    guestWindowId: lifecycle.quotaWindowId,
+  };
+    },
+  );
+}
+
+function migrateUserKeyRecords<T extends { userKey: string }>(
+  records: T[],
+  guestKey: string,
+  accountId: string,
+  collection: string,
+  transferredCollections: string[],
+): T[] {
+  const matchingRecords = records.filter((record) => record.userKey === guestKey);
+
+  if (matchingRecords.length > 0) {
+    transferredCollections.push(collection);
+  }
+
+  return records.map((record) =>
+    record.userKey === guestKey ? { ...record, userKey: accountId } : record,
+  );
+}
+
+function migrateReferralRecords(
+  records: ReferralRecord[],
+  guestKey: string,
+  accountId: string,
+  transferredCollections: string[],
+): ReferralRecord[] {
+  const matchingRecords = records.filter((record) => record.referrer === guestKey);
+
+  if (matchingRecords.length > 0) {
+    transferredCollections.push('referralRecords');
+  }
+
+  return records.map((record) =>
+    record.referrer === guestKey ? { ...record, referrer: accountId } : record,
+  );
 }
 
 export async function appendFeedInteraction(input: {
@@ -105,7 +286,6 @@ export async function appendFeedInteraction(input: {
   watchSeconds: number;
   skipped: boolean;
 }) {
-  const data = await readPlatformData();
   const record: FeedInteractionRecord = {
     id: randomUUID(),
     userKey: input.userKey,
@@ -115,8 +295,11 @@ export async function appendFeedInteraction(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.feedInteractions = [...(data.feedInteractions ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.feedInteractionAppend,
+    collection: 'feedInteractions',
+    record,
+  });
   await updateMemory(input.userKey);
 
   return record;
@@ -134,7 +317,6 @@ export async function saveSimulationResult(input: {
   }
 
   const result = scoreSimulation(simulation, input.answers);
-  const data = await readPlatformData();
   const record: SimulationResultRecord = {
     id: randomUUID(),
     userKey: input.userKey,
@@ -147,8 +329,13 @@ export async function saveSimulationResult(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.simulationResults = [...(data.simulationResults ?? []), record];
-  await writeScholarScoutData(data);
+  await applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.simulationReplacement,
+    (data) => {
+      const platform = normalizePlatformData(data);
+      platform.simulationResults = [...(platform.simulationResults ?? []), record];
+    },
+  );
   await updateMemory(input.userKey);
 
   return record;
@@ -179,7 +366,6 @@ export async function appendAnalyticsEvent(input: {
   userKey: string;
   metadata?: Record<string, string | number | boolean>;
 }) {
-  const data = await readPlatformData();
   const event: AnalyticsEventRecord = {
     id: randomUUID(),
     area: input.area,
@@ -189,14 +375,16 @@ export async function appendAnalyticsEvent(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.analyticsEvents = [...(data.analyticsEvents ?? []), event];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.analyticsAppend,
+    collection: 'analyticsEvents',
+    record: event,
+  });
 
   return event;
 }
 
 export async function createReferral(referrer: string) {
-  const data = await readPlatformData();
   const code = `${referrer.replace(/[^a-z0-9]/gi, '').slice(0, 10) || 'scout'}-${randomUUID().slice(0, 8)}`.toLowerCase();
   const record: ReferralRecord = {
     id: randomUUID(),
@@ -206,8 +394,11 @@ export async function createReferral(referrer: string) {
     createdAt: new Date().toISOString(),
   };
 
-  data.referralRecords = [...(data.referralRecords ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.referralAppend,
+    collection: 'referralRecords',
+    record,
+  });
 
   return record;
 }
@@ -217,7 +408,6 @@ export async function trackShare(input: {
   targetType: ShareRecord['targetType'];
   targetId: string;
 }) {
-  const data = await readPlatformData();
   const deepLink = `https://scholarscout.app/share/${input.targetType}/${input.targetId}`;
   const record: ShareRecord = {
     id: randomUUID(),
@@ -228,14 +418,20 @@ export async function trackShare(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.shareRecords = [...(data.shareRecords ?? []), record];
-  await writeScholarScoutData(data);
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.shareAppend,
+    collection: 'shareRecords',
+    record,
+  });
 
   return record;
 }
 
 export async function updateMemory(userKey: string) {
-  const data = await readPlatformData();
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.memoryReplacement,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
   const eventCount = (data.feedInteractions ?? []).filter(
     (record) => record.userKey === userKey,
   ).length;
@@ -256,9 +452,9 @@ export async function updateMemory(userKey: string) {
     ...(data.memoryRecords ?? []).filter((record) => record.userKey !== userKey),
     memory,
   ];
-  await writeScholarScoutData(data);
-
   return memory;
+    },
+  );
 }
 
 export async function getMemory(userKey: string) {
@@ -272,7 +468,10 @@ export async function getMemory(userKey: string) {
 }
 
 export async function runAndStoreDecisions() {
-  const data = await readPlatformData();
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.decisionReplacement,
+    (rawData) => {
+  const data = normalizePlatformData(rawData);
   const watchSecondsByFeedId: Record<string, number> = {};
   const skipsByFeedId: Record<string, number> = {};
 
@@ -293,9 +492,9 @@ export async function runAndStoreDecisions() {
   });
 
   data.decisionLogs = decisions;
-  await writeScholarScoutData(data);
-
   return decisions;
+    },
+  );
 }
 
 export async function getPlatformMetrics() {

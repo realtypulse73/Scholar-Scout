@@ -32,6 +32,7 @@
     "typecheck": "pnpm --recursive --if-present run typecheck"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "ts-node": "^10.9.2"
   }
 }

@@ -1,64 +1,98 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/auth';
+import { requireActiveStaff } from '@/lib/server/active-staff';
+import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import {
-  restoreScholarScoutDataFromImport,
-  SCHOLARSCOUT_RESTORE_CONFIRMATION,
-  ScholarScoutDataRestoreError,
-} from '@/lib/server/data-store';
+  applyRecoveryPlan,
+  RECOVERY_CONFIRMATION_PHRASE,
+  RECOVERY_ENVELOPE_MAX_BYTES,
+} from '@/lib/server/data-recovery';
+
+const IMPORT_APPLY_MAX_BYTES = Math.ceil(RECOVERY_ENVELOPE_MAX_BYTES * 4 / 3) + 64 * 1024;
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authorization = await requireActiveStaff({
+    action: 'restore-data-import',
+    route: '/api/admin/data/import/restore',
+  });
 
-  if (!session?.user?.id || session.user.role !== 'staff') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
-  let input: { snapshot?: unknown; confirmation?: unknown; reason?: unknown };
+  const parsed = await parseJsonRequest(request, {
+    maxBytes: IMPORT_APPLY_MAX_BYTES,
+    validate(value) {
+      if (
+        !isExactObject(value, ['planToken', 'reason', 'confirmation']) ||
+        !isExactObject(value.planToken, ['recoveryToken', 'encodedEnvelope']) ||
+        !('recoveryToken' in value.planToken) ||
+        typeof value.planToken.encodedEnvelope !== 'string' ||
+        typeof value.reason !== 'string' ||
+        typeof value.confirmation !== 'string'
+      ) {
+        return null;
+      }
+      return {
+        recoveryToken: value.planToken.recoveryToken,
+        encodedEnvelope: value.planToken.encodedEnvelope,
+        reason: value.reason,
+        confirmation: value.confirmation,
+      };
+    },
+  });
 
-  try {
-    input = (await request.json()) as {
-      snapshot?: unknown;
-      confirmation?: unknown;
-      reason?: unknown;
-    };
-  } catch {
+  if (!parsed.ok) {
     return NextResponse.json(
-      { ok: false, error: 'Restore request must be valid JSON.' },
+      { ok: false, error: parsed.error },
+      { status: parsed.error === 'body-too-large' ? 413 : 400 },
+    );
+  }
+
+  if (parsed.value.confirmation !== RECOVERY_CONFIRMATION_PHRASE) {
+    return NextResponse.json(
+      { ok: false, error: 'invalid-recovery-confirmation' },
       { status: 400 },
     );
   }
 
-  if (input.confirmation !== SCHOLARSCOUT_RESTORE_CONFIRMATION) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: `Type ${SCHOLARSCOUT_RESTORE_CONFIRMATION} to confirm this restore.`,
-      },
-      { status: 400 },
-    );
-  }
-
   try {
-    const result = await restoreScholarScoutDataFromImport({
-      actorUserId: session.user.id,
-      snapshot: input.snapshot,
-      reason: typeof input.reason === 'string' ? input.reason : undefined,
+    const envelopeBytes = Buffer.from(parsed.value.encodedEnvelope, 'base64url');
+    if (envelopeBytes.byteLength > RECOVERY_ENVELOPE_MAX_BYTES) {
+      return NextResponse.json({ ok: false, error: 'recovery-envelope-too-large' }, { status: 413 });
+    }
+    const envelope = JSON.parse(envelopeBytes.toString('utf8')) as unknown;
+    const result = await applyRecoveryPlan({
+      actorId: authorization.actor.id,
+      envelope,
+      token: parsed.value.recoveryToken,
+      reason: parsed.value.reason,
+      confirmation: parsed.value.confirmation,
     });
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    if (error instanceof ScholarScoutDataRestoreError) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: error.message,
-          validation: error.validation,
-        },
-        { status: 400 },
-      );
+    const category = error instanceof Error ? error.message : 'recovery-failed';
+    if (category === 'recovery-state-changed') {
+      return NextResponse.json({ ok: false, error: category }, { status: 409 });
+    }
+    if (category === 'recovery-plan-expired' || category === 'recovery-plan-replayed') {
+      return NextResponse.json({ ok: false, error: category }, { status: 410 });
+    }
+    if (category === 'recovery-envelope-too-large') {
+      return NextResponse.json({ ok: false, error: category }, { status: 413 });
+    }
+    if (
+      category === 'Unexpected end of JSON input' ||
+      category.startsWith('invalid-') ||
+      category.startsWith('recovery-plan-mismatch') ||
+      category.startsWith('unknown-recovery-key')
+    ) {
+      return NextResponse.json({ ok: false, error: 'invalid-recovery-plan' }, { status: 400 });
     }
 
-    throw error;
+    return NextResponse.json(
+      { ok: false, error: 'data-service-unavailable', retryable: true },
+      { status: 503 },
+    );
   }
 }

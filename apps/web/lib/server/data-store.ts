@@ -1,7 +1,13 @@
 import 'server-only';
 
-import { randomUUID, scryptSync, timingSafeEqual } from 'crypto';
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  scrypt,
+  timingSafeEqual,
+} from 'node:crypto';
+import { mkdir, open, readFile, rename, unlink } from 'fs/promises';
 import path from 'path';
 import { TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
@@ -18,7 +24,9 @@ import {
 import {
   validateCampusNote,
   validateUploaderInboxRequest,
+  type CampusNoteDraft,
   type CampusNote,
+  type CampusNoteReview,
   type UploaderInboxRequest,
 } from '@/lib/campus-community';
 import type { Programme } from '@/lib/programmes';
@@ -48,6 +56,55 @@ export interface ProgrammeAuditEvent extends AuditEvent {
   actorLabel: string;
 }
 
+export type CredentialVerificationResult =
+  | { status: 'verified'; user: StoredUser }
+  | { status: 'unknown-account' | 'incorrect-password'; user: null };
+
+const CREDENTIAL_GRANT_TTL_MS = 2 * 60 * 1_000;
+const credentialGrants = new Map<
+  string,
+  {
+    email: string;
+    ip: string;
+    expiresAt: number;
+    user: StoredUser;
+  }
+>();
+
+export interface GuestLifecycleRecord {
+  id: string;
+  credentialHash: string;
+  quotaWindowId: string;
+  createdAt: string;
+  expiresAt: string;
+  migratedAt?: string;
+  migratedToAccountId?: string;
+}
+
+export interface GuestQuotaBinding {
+  guestId: string;
+  guestWindowId: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface GuestMigrationAuditRecord {
+  id: string;
+  guestId: string;
+  accountId: string;
+  migratedAt: string;
+  transferredCollections: string[];
+}
+
+export interface PrivilegedOperationAuditEvent {
+  id: string;
+  actorId: string;
+  action: string;
+  route: string;
+  outcome: 'allowed' | 'denied';
+  createdAt: string;
+}
+
 export interface ScholarScoutData {
   users: StoredUser[];
   onboardingProfiles: Record<string, OnboardingData>;
@@ -57,9 +114,39 @@ export interface ScholarScoutData {
   outcomeMetricRecords?: OutcomeMetricRecord[];
   peerConnectionRequests?: PeerConnectionRequest[];
   campusNotes?: CampusNote[];
+  campusNoteReviews?: CampusNoteReview[];
   uploaderInboxRequests?: UploaderInboxRequest[];
   auditEvents: AuditEvent[];
   restoreBackups?: ScholarScoutDataBackup[];
+  guestLifecycles?: GuestLifecycleRecord[];
+  guestQuotaBindings?: Record<string, GuestQuotaBinding>;
+  guestMigrationAuditRecords?: GuestMigrationAuditRecord[];
+  privilegedOperationAuditEvents?: PrivilegedOperationAuditEvent[];
+  recoveryLifecycleEvents?: RecoveryLifecycleEvent[];
+  recoveryPlanOutcomes?: RecoveryPlanOutcome[];
+}
+
+export interface RecoveryLifecycleEvent {
+  id: string;
+  actorId: string;
+  action: 'apply-recovery-plan' | 'release-incident-hold' | 'prune-recovery-backup';
+  category: 'recovery';
+  timestamp: string;
+  outcome: 'succeeded' | 'failed-no-write';
+  planId?: string;
+  sourceId?: string;
+  incidentId?: string;
+  backupId?: string;
+}
+
+export interface RecoveryPlanOutcome {
+  planId: string;
+  actorId: string;
+  sourceId: string;
+  backupId: string;
+  incidentId: string;
+  appliedAt: string;
+  outcome: 'succeeded';
 }
 
 export interface ScholarScoutDataBackup {
@@ -69,6 +156,14 @@ export interface ScholarScoutDataBackup {
   reason: string;
   counts: ScholarScoutDataStoreStatus['counts'];
   data: ScholarScoutData;
+  incidentHold?: {
+    incidentId: string;
+    status: 'unresolved' | 'resolved';
+    createdAt: string;
+    resolvedAt?: string;
+    resolvedBy?: string;
+    reason?: string;
+  };
 }
 
 export interface ScholarScoutDataBackupSummary {
@@ -96,6 +191,24 @@ export interface ScholarScoutDataRestorePlan {
 export interface ScholarScoutDataStore {
   read(): Promise<ScholarScoutData>;
   write(data: ScholarScoutData): Promise<void>;
+  readVersioned?(): Promise<VersionedScholarScoutData>;
+  writeVersioned?(data: ScholarScoutData, expectedVersion: string | null): Promise<ConditionalWriteResult>;
+}
+
+export interface VersionedScholarScoutData {
+  data: ScholarScoutData;
+  version: string | null;
+}
+
+export type ConditionalWriteResult =
+  | { status: 'applied'; version: string }
+  | { status: 'conflict' };
+
+export class PersistenceConflictError extends Error {
+  constructor() {
+    super('ScholarScout data changed before the operation could be committed.');
+    this.name = 'PersistenceConflictError';
+  }
 }
 
 export interface ScholarScoutDataStoreStatus {
@@ -146,30 +259,89 @@ const INITIAL_DATA: ScholarScoutData = {
   outcomeMetricRecords: [],
   peerConnectionRequests: [],
   campusNotes: [],
+  campusNoteReviews: [],
   uploaderInboxRequests: [],
   auditEvents: [],
   restoreBackups: [],
+  guestLifecycles: [],
+  guestQuotaBindings: {},
+  guestMigrationAuditRecords: [],
+  privilegedOperationAuditEvents: [],
+  recoveryLifecycleEvents: [],
+  recoveryPlanOutcomes: [],
 };
 
 const dataFilePath =
   process.env.SCHOLARSCOUT_DATA_FILE ??
   path.join(process.cwd(), 'data', 'scholarscout-data.json');
 
-class JsonScholarScoutDataStore implements ScholarScoutDataStore {
+export class JsonScholarScoutDataStore implements ScholarScoutDataStore {
   constructor(private readonly filePath: string) {}
 
   async read() {
     try {
       const file = await readFile(this.filePath, 'utf8');
-      return { ...INITIAL_DATA, ...JSON.parse(file) } as ScholarScoutData;
-    } catch {
-      return INITIAL_DATA;
+      return parseStoredScholarScoutData(JSON.parse(file));
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return createInitialData();
+      }
+
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError ? 'invalid-data' : 'unavailable',
+      );
     }
   }
 
   async write(data: ScholarScoutData) {
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async readVersioned(): Promise<VersionedScholarScoutData> {
+    try {
+      const file = await readFile(this.filePath, 'utf8');
+      return {
+        data: parseStoredScholarScoutData(JSON.parse(file)),
+        version: hashStoredDocument(file),
+      };
+    } catch (error) {
+      if (isFileNotFoundError(error)) return { data: createInitialData(), version: null };
+      throw normalizeStoreReadError(error);
+    }
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
-    await writeFile(this.filePath, JSON.stringify(data, null, 2));
+    const lockPath = `${this.filePath}.lock`;
+    const lock = await acquireJsonStoreLock(lockPath);
+    const temporaryPath = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`;
+    try {
+      const current = await this.readVersioned();
+      if (current.version !== expectedVersion) return { status: 'conflict' };
+      const serialized = JSON.stringify(normalizeScholarScoutData(data), null, 2);
+      const temporary = await open(temporaryPath, 'wx');
+      try {
+        await temporary.writeFile(serialized, 'utf8');
+        await temporary.sync();
+      } finally {
+        await temporary.close();
+      }
+      await rename(temporaryPath, this.filePath);
+      return { status: 'applied', version: hashStoredDocument(serialized) };
+    } finally {
+      await unlink(temporaryPath).catch(() => undefined);
+      await lock.close();
+      await unlink(lockPath).catch(() => undefined);
+    }
   }
 }
 
@@ -180,39 +352,79 @@ class HttpScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
-    const response = await fetch(this.serviceUrl, {
-      headers: this.getHeaders(),
-      cache: 'no-store',
-    });
+    return (await this.readVersioned()).data;
+  }
 
-    if (response.status === 404) {
-      return INITIAL_DATA;
-    }
+  async readVersioned(): Promise<VersionedScholarScoutData> {
+    let response: Response;
 
-    if (!response.ok) {
-      throw new Error(
-        `ScholarScout data service read failed with ${response.status}.`,
+    try {
+      response = await fetch(this.serviceUrl, {
+        headers: this.getHeaders(),
+        cache: 'no-store',
+      });
+    } catch (error) {
+      throw new ScholarScoutDataStoreReadError(
+        isTimeoutError(error) ? 'timeout' : 'unavailable',
       );
     }
 
-    return { ...INITIAL_DATA, ...(await response.json()) } as ScholarScoutData;
+    if (response.status === 404) {
+      return { data: createInitialData(), version: null };
+    }
+
+    if (!response.ok) {
+      throw new ScholarScoutDataStoreReadError('unavailable');
+    }
+
+    try {
+      return {
+        data: parseStoredScholarScoutData(await response.json()),
+        version: response.headers?.get('etag') ?? null,
+      };
+    } catch (error) {
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError ? 'invalid-data' : 'unavailable',
+      );
+    }
   }
 
   async write(data: ScholarScoutData) {
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
     const response = await fetch(this.serviceUrl, {
       method: 'PUT',
       headers: {
         ...this.getHeaders(),
         'Content-Type': 'application/json',
+        ...(expectedVersion === null
+          ? { 'If-None-Match': '*' }
+          : { 'If-Match': expectedVersion }),
       },
       body: JSON.stringify(data),
     });
 
+    if (response.status === 412) return { status: 'conflict' };
     if (!response.ok) {
       throw new Error(
         `ScholarScout data service write failed with ${response.status}.`,
       );
     }
+    return {
+      status: 'applied',
+      version: response.headers?.get('etag') ?? hashScholarScoutData(data),
+    };
   }
 
   private getHeaders(): Record<string, string> {
@@ -233,30 +445,88 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
   ) {}
 
   async read() {
-    const { get } = await import('@vercel/blob');
-    const blob = await get(this.pathname, {
-      access: 'private',
-      token: this.token,
-      useCache: false,
-    });
+    return (await this.readVersioned()).data;
+  }
 
-    if (!blob?.stream) {
-      return INITIAL_DATA;
+  async readVersioned(): Promise<VersionedScholarScoutData> {
+    try {
+      const { get, head } = await import('@vercel/blob');
+      const blob = await get(this.pathname, {
+        access: 'private',
+        token: this.token,
+        useCache: false,
+      });
+
+      if (!blob) {
+        return { data: createInitialData(), version: null };
+      }
+
+      if (blob.statusCode !== 200) {
+        throw new ScholarScoutDataStoreReadError('unavailable');
+      }
+
+      if (!blob.stream) {
+        throw new ScholarScoutDataStoreReadError('invalid-data');
+      }
+
+      const body = await readStreamText(blob.stream);
+      const metadata = await head(this.pathname, { token: this.token });
+      return {
+        data: parseStoredScholarScoutData(JSON.parse(body)),
+        version: metadata.etag,
+      };
+    } catch (error) {
+      if (error instanceof ScholarScoutDataStoreReadError) {
+        throw error;
+      }
+
+      throw new ScholarScoutDataStoreReadError(
+        error instanceof SyntaxError
+          ? 'invalid-data'
+          : isTimeoutError(error)
+            ? 'timeout'
+            : 'unavailable',
+      );
     }
-
-    const body = await readStreamText(blob.stream);
-    return { ...INITIAL_DATA, ...JSON.parse(body) } as ScholarScoutData;
   }
 
   async write(data: ScholarScoutData) {
-    const { put } = await import('@vercel/blob');
-    await put(this.pathname, JSON.stringify(data, null, 2), {
-      access: 'private',
-      allowOverwrite: true,
-      cacheControlMaxAge: 60,
-      contentType: 'application/json',
-      token: this.token,
-    });
+    const current = await this.readVersioned();
+    const result = await this.writeVersioned(data, current.version);
+    if (result.status === 'conflict') throw new PersistenceConflictError();
+  }
+
+  async writeVersioned(
+    data: ScholarScoutData,
+    expectedVersion: string | null,
+  ): Promise<ConditionalWriteResult> {
+    const blobModule = await import('@vercel/blob');
+    try {
+      const result = await blobModule.put(
+        this.pathname,
+        JSON.stringify(normalizeScholarScoutData(data), null, 2),
+          {
+            access: 'private',
+            // The document is always read by this exact pathname; Blob otherwise
+            // adds a suffix by default and a successful write becomes unreadable.
+            addRandomSuffix: false,
+            allowOverwrite: expectedVersion !== null,
+          ...(expectedVersion === null ? {} : { ifMatch: expectedVersion }),
+          cacheControlMaxAge: 60,
+          contentType: 'application/json',
+          token: this.token,
+        },
+      );
+      return { status: 'applied', version: result.etag };
+    } catch (error) {
+      if (
+        error instanceof blobModule.BlobPreconditionFailedError ||
+        (error instanceof Error && /already exists/i.test(error.message))
+      ) {
+        return { status: 'conflict' };
+      }
+      throw error;
+    }
   }
 }
 
@@ -422,6 +692,14 @@ export function validateScholarScoutDataImport(
     });
   }
 
+  if ('campusNoteReviews' in data && data.campusNoteReviews !== undefined && !Array.isArray(data.campusNoteReviews)) {
+    errors.push('Campus note reviews must be an array when present.');
+  } else if (Array.isArray(data.campusNoteReviews)) {
+    data.campusNoteReviews.forEach((review, index) => {
+      if (!isCampusNoteReview(review)) errors.push(`Campus note review ${index + 1} is missing required fields.`);
+    });
+  }
+
   if ('uploaderInboxRequests' in data && data.uploaderInboxRequests !== undefined && !Array.isArray(data.uploaderInboxRequests)) {
     errors.push('Uploader inbox requests must be an array when present.');
   } else if (Array.isArray(data.uploaderInboxRequests)) {
@@ -528,7 +806,8 @@ export async function restoreScholarScoutDataFromImport(input: {
     });
   }
 
-  const currentData = await readScholarScoutData();
+  const currentSnapshot = await readVersionedScholarScoutData();
+  const currentData = currentSnapshot.data;
   const restoredAt = new Date().toISOString();
   const backup: ScholarScoutDataBackup = {
     id: randomUUID(),
@@ -559,7 +838,11 @@ export async function restoreScholarScoutDataFromImport(input: {
     ],
   };
 
-  await writeScholarScoutData(restoredData);
+  const writeResult = await writeVersionedScholarScoutData(
+    restoredData,
+    currentSnapshot.version,
+  );
+  if (writeResult.status === 'conflict') throw new PersistenceConflictError();
 
   return {
     backupId: backup.id,
@@ -573,7 +856,8 @@ export async function restoreScholarScoutDataFromBackup(input: {
   backupId: string;
   reason?: string;
 }): Promise<ScholarScoutDataRestoreResult | null> {
-  const currentData = await readScholarScoutData();
+  const currentSnapshot = await readVersionedScholarScoutData();
+  const currentData = currentSnapshot.data;
   const sourceBackup = (currentData.restoreBackups ?? []).find(
     (candidate) => candidate.id === input.backupId,
   );
@@ -622,7 +906,11 @@ export async function restoreScholarScoutDataFromBackup(input: {
     ],
   };
 
-  await writeScholarScoutData(restoredData);
+  const writeResult = await writeVersionedScholarScoutData(
+    restoredData,
+    currentSnapshot.version,
+  );
+  if (writeResult.status === 'conflict') throw new PersistenceConflictError();
 
   return {
     backupId: backup.id,
@@ -727,11 +1015,118 @@ export function setScholarScoutDataStoreForTests(
 }
 
 export async function readScholarScoutData() {
-  return getScholarScoutDataStore().read();
+  return normalizeScholarScoutData(await getScholarScoutDataStore().read());
+}
+
+export async function readVersionedScholarScoutData(): Promise<VersionedScholarScoutData> {
+  const store = getScholarScoutDataStore();
+  if (store.readVersioned) {
+    const versioned = await store.readVersioned();
+    return { data: normalizeScholarScoutData(versioned.data), version: versioned.version };
+  }
+  const data = normalizeScholarScoutData(await store.read());
+  return { data, version: hashScholarScoutData(data) };
+}
+
+export async function writeVersionedScholarScoutData(
+  data: ScholarScoutData,
+  expectedVersion: string | null,
+): Promise<ConditionalWriteResult> {
+  const store = getScholarScoutDataStore();
+  if (store.writeVersioned) {
+    return store.writeVersioned(normalizeScholarScoutData(data), expectedVersion);
+  }
+  await store.write(normalizeScholarScoutData(data));
+  return { status: 'applied', version: hashScholarScoutData(data) };
+}
+
+export type ScholarScoutDataStoreReadFailureCategory =
+  | 'unavailable'
+  | 'timeout'
+  | 'invalid-data';
+
+export class ScholarScoutDataStoreReadError extends Error {
+  constructor(readonly category: ScholarScoutDataStoreReadFailureCategory) {
+    super('ScholarScout stored data could not be read safely.');
+    this.name = 'ScholarScoutDataStoreReadError';
+  }
 }
 
 export async function writeScholarScoutData(data: ScholarScoutData) {
-  await getScholarScoutDataStore().write(data);
+  await getScholarScoutDataStore().write(normalizeScholarScoutData(data));
+}
+
+/** Hashes an opaque, high-entropy guest credential before it is used as a storage lookup. */
+export function hashGuestCredential(credential: string): string {
+  return createHash('sha256').update(credential).digest('hex');
+}
+
+/** Registers a server-issued guest lifecycle without retaining its raw browser credential. */
+export async function registerGuestLifecycle(input: {
+  guestId?: string;
+  credentialHash: string;
+  quotaWindowId?: string;
+  now?: Date;
+}): Promise<GuestLifecycleRecord> {
+  const now = input.now ?? new Date();
+  const guestId = input.guestId ?? randomUUID();
+  const lifecycle: GuestLifecycleRecord = {
+    id: guestId,
+    credentialHash: input.credentialHash,
+    quotaWindowId: input.quotaWindowId ?? guestId,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  };
+
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.guestLifecycleRegistration,
+    (data) => {
+      if (data.guestLifecycles?.some((guest) => guest.id === guestId)) {
+        throw new Error('Guest lifecycle already exists.');
+      }
+      data.guestLifecycles = [...(data.guestLifecycles ?? []), lifecycle];
+      return lifecycle;
+    },
+  );
+}
+
+/** Returns an unmigrated guest lifecycle only when its trusted credential and expiry remain valid. */
+export async function getActiveGuestLifecycleByCredentialHash(
+  credentialHash: string,
+  now = new Date(),
+): Promise<GuestLifecycleRecord | null> {
+  const data = await readScholarScoutData();
+  const lifecycle = data.guestLifecycles?.find(
+    (guest) => guest.credentialHash === credentialHash,
+  );
+
+  if (
+    !lifecycle ||
+    lifecycle.migratedAt ||
+    new Date(lifecycle.expiresAt).getTime() <= now.getTime()
+  ) {
+    return null;
+  }
+
+  return lifecycle;
+}
+
+/** Returns the active migrated guest quota window for an account, if one still applies. */
+export async function getGuestQuotaBindingForAccount(
+  accountId: string,
+  now = new Date(),
+): Promise<string | null> {
+  const data = await readScholarScoutData();
+  const binding = data.guestQuotaBindings?.[accountId];
+
+  if (!binding || new Date(binding.expiresAt).getTime() <= now.getTime()) {
+    return null;
+  }
+
+  return binding.guestWindowId;
 }
 
 export async function createUser(input: {
@@ -740,39 +1135,28 @@ export async function createUser(input: {
   password: string;
   role: AccountRole;
 }) {
-  const data = await readScholarScoutData();
   const email = normalizeEmail(input.email);
-
-  if (data.users.some((user) => user.email === email)) {
-    throw new Error('Account already exists.');
-  }
 
   const user: StoredUser = {
     id: randomUUID(),
     email,
     name: input.name.trim() || email.split('@')[0],
     role: input.role,
-    passwordHash: hashPassword(input.password),
+    passwordHash: await hashPassword(input.password),
     createdAt: new Date().toISOString(),
   };
 
-  data.users.push(user);
-  await writeScholarScoutData(data);
-
-  return user;
+  const { createStudentAccountRecord } = await import(
+    '@/lib/server/student-records'
+  );
+  return createStudentAccountRecord(user);
 }
 
 export async function findOrCreateOAuthUser(input: {
   email: string;
   name?: string | null;
 }) {
-  const data = await readScholarScoutData();
   const email = normalizeEmail(input.email);
-  const existing = data.users.find((user) => user.email === email);
-
-  if (existing) {
-    return existing;
-  }
 
   const user: StoredUser = {
     id: randomUUID(),
@@ -783,24 +1167,65 @@ export async function findOrCreateOAuthUser(input: {
     createdAt: new Date().toISOString(),
   };
 
-  data.users.push(user);
-  data.auditEvents.push(createAuditEvent(user.id, 'create', 'onboarding', user.id));
-  await writeScholarScoutData(data);
-
-  return user;
+  const { findOrCreateOAuthStudentRecord } = await import(
+    '@/lib/server/student-records'
+  );
+  return findOrCreateOAuthStudentRecord(user);
 }
 
-export async function verifyUserCredentials(email: string, password: string) {
+export async function verifyUserCredentials(
+  email: string,
+  password: string,
+): Promise<CredentialVerificationResult> {
   const data = await readScholarScoutData();
   const user = data.users.find(
     (candidate) => candidate.email === normalizeEmail(email),
   );
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (!user) {
+    return { status: 'unknown-account', user: null };
+  }
+
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    return { status: 'incorrect-password', user: null };
+  }
+
+  return { status: 'verified', user };
+}
+
+/** Issues an opaque credential-only handoff that NextAuth may consume exactly once. */
+export function issueCredentialGrant(input: {
+  email: string;
+  ip: string;
+  user: StoredUser;
+  now?: Date;
+}): string {
+  const now = input.now?.getTime() ?? Date.now();
+  const grant = randomBytes(32).toString('base64url');
+
+  pruneExpiredCredentialGrants(now);
+  credentialGrants.set(grant, {
+    email: normalizeEmail(input.email),
+    ip: input.ip,
+    expiresAt: now + CREDENTIAL_GRANT_TTL_MS,
+    user: input.user,
+  });
+
+  return grant;
+}
+
+/** Atomically consumes a short-lived server grant without accepting raw credentials. */
+export function consumeCredentialGrant(grant: string): StoredUser | null {
+  const now = Date.now();
+  pruneExpiredCredentialGrants(now);
+  const storedGrant = credentialGrants.get(grant);
+  credentialGrants.delete(grant);
+
+  if (!storedGrant || storedGrant.expiresAt <= now) {
     return null;
   }
 
-  return user;
+  return storedGrant.user;
 }
 
 export async function getUserById(userId: string) {
@@ -812,10 +1237,10 @@ export async function saveOnboardingProfile(
   userId: string,
   profile: OnboardingData,
 ) {
-  const data = await readScholarScoutData();
-  data.onboardingProfiles[userId] = profile;
-  data.auditEvents.push(createAuditEvent(userId, 'save', 'onboarding', userId));
-  await writeScholarScoutData(data);
+  const { replaceStudentOnboardingProfile } = await import(
+    '@/lib/server/student-records'
+  );
+  await replaceStudentOnboardingProfile(userId, profile);
 }
 
 export async function getOnboardingProfile(userId: string) {
@@ -824,18 +1249,10 @@ export async function getOnboardingProfile(userId: string) {
 }
 
 export async function saveShortlist(userId: string, programmeIds: string[]) {
-  const data = await readScholarScoutData();
-  const normalizedIds = Array.from(
-    new Set(programmeIds.filter(Boolean)),
-  ).sort();
-  data.shortlists[userId] = normalizedIds;
-  data.shortlistPlans = data.shortlistPlans ?? {};
-  data.shortlistPlans[userId] = pruneStoredShortlistPlans(
-    data.shortlistPlans[userId] ?? {},
-    normalizedIds,
+  const { replaceStudentShortlistIds } = await import(
+    '@/lib/server/student-records'
   );
-  data.auditEvents.push(createAuditEvent(userId, 'save', 'shortlist', userId));
-  await writeScholarScoutData(data);
+  await replaceStudentShortlistIds(userId, programmeIds);
 }
 
 export async function getShortlist(userId: string) {
@@ -847,16 +1264,21 @@ export async function saveShortlistPlans(
   userId: string,
   plans: ShortlistPlanMap,
 ) {
-  const data = await readScholarScoutData();
-  data.shortlistPlans = data.shortlistPlans ?? {};
-  data.shortlistPlans[userId] = pruneStoredShortlistPlans(
-    normalizeStoredShortlistPlans(plans),
-    data.shortlists[userId] ?? [],
+  const { replaceStudentShortlistPlans } = await import(
+    '@/lib/server/student-records'
   );
-  data.auditEvents.push(
-    createAuditEvent(userId, 'save-plans', 'shortlist', userId),
+  await replaceStudentShortlistPlans(userId, plans);
+}
+
+export async function saveShortlistState(
+  userId: string,
+  programmeIds: string[],
+  plans: ShortlistPlanMap,
+) {
+  const { replaceStudentShortlistState } = await import(
+    '@/lib/server/student-records'
   );
-  await writeScholarScoutData(data);
+  await replaceStudentShortlistState(userId, programmeIds, plans);
 }
 
 export async function getShortlistPlans(userId: string) {
@@ -867,66 +1289,11 @@ export async function getShortlistPlans(userId: string) {
   );
 }
 
-export class ProgrammeRevisionConflictError extends Error {
-  constructor(
-    readonly programmeId: string,
-    readonly currentRevision: number,
-    readonly currentRecord: Programme | undefined,
-  ) {
-    super('Programme record has changed since it was loaded.');
-  }
-}
-
-export async function saveProgrammeRecord(userId: string, programme: Programme) {
-  const data = await readScholarScoutData();
-  const existingIndex = data.programmeRecords.findIndex(
-    (record) => record.id === programme.id,
-  );
-  const existingRecord = data.programmeRecords[existingIndex];
-
-  if (existingIndex === -1) {
-    data.programmeRecords.unshift({ ...programme, revision: 1 });
-  } else {
-    const currentRevision = existingRecord.revision ?? 0;
-    const incomingRevision = programme.revision ?? 0;
-
-    if (incomingRevision !== currentRevision) {
-      throw new ProgrammeRevisionConflictError(
-        programme.id,
-        currentRevision,
-        existingRecord,
-      );
-    }
-
-    data.programmeRecords[existingIndex] = {
-      ...programme,
-      revision: currentRevision + 1,
-    };
-  }
-
-  data.auditEvents.push(
-    createAuditEvent(
-      userId,
-      existingIndex === -1 ? 'create' : 'update',
-      'programme',
-      programme.id,
-    ),
-  );
-  await writeScholarScoutData(data);
-
-  return data.programmeRecords.find((record) => record.id === programme.id);
-}
-
-export async function deleteProgrammeRecord(userId: string, programmeId: string) {
-  const data = await readScholarScoutData();
-  data.programmeRecords = data.programmeRecords.filter(
-    (record) => record.id !== programmeId,
-  );
-  data.auditEvents.push(
-    createAuditEvent(userId, 'delete', 'programme', programmeId),
-  );
-  await writeScholarScoutData(data);
-}
+export {
+  deleteProgrammeRecord,
+  ProgrammeRevisionConflictError,
+  saveProgrammeRecord,
+} from '@/lib/server/programme-records';
 
 export async function getProgrammeRecords() {
   const data = await readScholarScoutData();
@@ -947,7 +1314,6 @@ export async function createPeerConnectionRequest(
     throw new Error(errors[0]);
   }
 
-  const data = await readScholarScoutData();
   const request: PeerConnectionRequest = {
     id: randomUUID(),
     requester_id: requesterId,
@@ -958,15 +1324,15 @@ export async function createPeerConnectionRequest(
     status: 'pending',
     created_at: new Date().toISOString(),
   };
-  data.peerConnectionRequests = [
-    request,
-    ...(data.peerConnectionRequests ?? []),
-  ];
-  data.auditEvents.push(
-    createAuditEvent(requesterId, 'request-peer-connection', 'data', request.id),
+  const audit = createAuditEvent(requesterId, 'request-peer-connection', 'data', request.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
   );
-  await writeScholarScoutData(data);
-  return request;
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.peerConnectionRequests = [request, ...(data.peerConnectionRequests ?? [])];
+    data.auditEvents.push(audit);
+    return request;
+  });
 }
 
 export async function getPeerConnectionRequests(requesterId: string) {
@@ -979,22 +1345,26 @@ export async function getPeerConnectionRequests(requesterId: string) {
 export async function getCampusNotes(schoolSlug: string, uploaderUsername?: string) {
   const data = await readScholarScoutData();
   return (data.campusNotes ?? [])
-    .filter((note) => note.school_slug === schoolSlug && (!uploaderUsername || note.uploader_username === uploaderUsername))
+    .filter((note) => note.status === 'public' && note.school_slug === schoolSlug && (!uploaderUsername || note.uploader_username === uploaderUsername))
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
 export async function createCampusNote(
   authorId: string,
-  input: Omit<CampusNote, 'id' | 'author_id' | 'created_at'>,
+  input: CampusNoteDraft,
 ) {
   const errors = validateCampusNote(input);
   if (errors.length) throw new Error(errors[0]);
-  const data = await readScholarScoutData();
-  const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString() };
-  data.campusNotes = [note, ...(data.campusNotes ?? [])];
-  data.auditEvents.push(createAuditEvent(authorId, 'post-campus-note', 'data', note.id));
-  await writeScholarScoutData(data);
-  return note;
+  const note: CampusNote = { ...input, body: input.body.trim(), id: randomUUID(), author_id: authorId, created_at: new Date().toISOString(), status: 'public' };
+  const audit = createAuditEvent(authorId, 'post-campus-note', 'data', note.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.campusNotes = [note, ...(data.campusNotes ?? [])];
+    data.auditEvents.push(audit);
+    return note;
+  });
 }
 
 export async function createUploaderInboxRequest(
@@ -1003,12 +1373,16 @@ export async function createUploaderInboxRequest(
 ) {
   const errors = validateUploaderInboxRequest(input);
   if (errors.length) throw new Error(errors[0]);
-  const data = await readScholarScoutData();
   const inboxRequest: UploaderInboxRequest = { ...input, body: input.body.trim(), id: randomUUID(), sender_id: senderId, status: 'pending', created_at: new Date().toISOString() };
-  data.uploaderInboxRequests = [inboxRequest, ...(data.uploaderInboxRequests ?? [])];
-  data.auditEvents.push(createAuditEvent(senderId, 'request-uploader-inbox', 'data', inboxRequest.id));
-  await writeScholarScoutData(data);
-  return inboxRequest;
+  const audit = createAuditEvent(senderId, 'request-uploader-inbox', 'data', inboxRequest.id);
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  return applyOperationalReplacement(OPERATIONAL_MUTATION_POLICIES.communityMutation, (data) => {
+    data.uploaderInboxRequests = [inboxRequest, ...(data.uploaderInboxRequests ?? [])];
+    data.auditEvents.push(audit);
+    return inboxRequest;
+  });
 }
 
 /**
@@ -1028,13 +1402,18 @@ export async function saveOutcomeMetricRecords(
     throw new Error(errors[0]);
   }
 
-  const data = await readScholarScoutData();
-  data.outcomeMetricRecords = records;
-  data.auditEvents.push(
-    createAuditEvent(userId, 'replace-outcome-metrics', 'data', 'outcome-metrics'),
+  const audit = createAuditEvent(userId, 'replace-outcome-metrics', 'data', 'outcome-metrics');
+  const { applyOperationalReplacement, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
   );
-  await writeScholarScoutData(data);
-  return data.outcomeMetricRecords;
+  return applyOperationalReplacement(
+    OPERATIONAL_MUTATION_POLICIES.outcomeMetricsReplacement,
+    (data) => {
+      data.outcomeMetricRecords = records;
+      data.auditEvents.push(audit);
+      return data.outcomeMetricRecords;
+    },
+  );
 }
 
 export async function getProgrammeAuditEvents(): Promise<ProgrammeAuditEvent[]> {
@@ -1050,7 +1429,40 @@ export async function getProgrammeAuditEvents(): Promise<ProgrammeAuditEvent[]> 
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-function createAuditEvent(
+export async function appendPrivilegedOperationAudit(input: {
+  actorId: string;
+  action: string;
+  route: string;
+  outcome: PrivilegedOperationAuditEvent['outcome'];
+}): Promise<void> {
+  const event: PrivilegedOperationAuditEvent = {
+    id: randomUUID(),
+    actorId: input.actorId,
+    action: input.action,
+    route: input.route,
+    outcome: input.outcome,
+    createdAt: new Date().toISOString(),
+  };
+  const { appendOperationalRecord, OPERATIONAL_MUTATION_POLICIES } = await import(
+    '@/lib/server/operational-records'
+  );
+  await appendOperationalRecord({
+    policy: OPERATIONAL_MUTATION_POLICIES.privilegedAuditAppend,
+    collection: 'privilegedOperationAuditEvents',
+    record: event,
+  });
+}
+
+export async function getPrivilegedOperationAuditEvents(): Promise<
+  PrivilegedOperationAuditEvent[]
+> {
+  const data = await readScholarScoutData();
+  return [...(data.privilegedOperationAuditEvents ?? [])].sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt),
+  );
+}
+
+export function createAuditEvent(
   userId: string,
   action: string,
   entityType: AuditEvent['entityType'],
@@ -1224,7 +1636,12 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     peerConnectionRequests: Array.isArray(data.peerConnectionRequests)
       ? (data.peerConnectionRequests as PeerConnectionRequest[])
       : [],
-    campusNotes: Array.isArray(data.campusNotes) ? (data.campusNotes as CampusNote[]) : [],
+    campusNotes: Array.isArray(data.campusNotes)
+      ? (data.campusNotes as CampusNote[]).filter(isCampusNote).map((note) => ({ ...note, status: note.status ?? 'public' }))
+      : [],
+    campusNoteReviews: Array.isArray(data.campusNoteReviews)
+      ? (data.campusNoteReviews as CampusNoteReview[]).filter(isCampusNoteReview)
+      : [],
     uploaderInboxRequests: Array.isArray(data.uploaderInboxRequests)
       ? (data.uploaderInboxRequests as UploaderInboxRequest[])
       : [],
@@ -1232,7 +1649,175 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     restoreBackups: Array.isArray(data.restoreBackups)
       ? (data.restoreBackups as ScholarScoutDataBackup[])
       : [],
+    guestLifecycles: Array.isArray(data.guestLifecycles)
+      ? (data.guestLifecycles as GuestLifecycleRecord[])
+      : [],
+    guestQuotaBindings: isRecord(data.guestQuotaBindings)
+      ? (data.guestQuotaBindings as Record<string, GuestQuotaBinding>)
+      : {},
+    guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
+      ? (data.guestMigrationAuditRecords as GuestMigrationAuditRecord[])
+      : [],
+    privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
+      ? (data.privilegedOperationAuditEvents as PrivilegedOperationAuditEvent[])
+      : [],
   };
+}
+
+function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
+  return {
+    ...INITIAL_DATA,
+    ...data,
+    campusNotes: Array.isArray(data.campusNotes)
+      ? data.campusNotes.map((note) => isCampusNote(note)
+        ? { ...note, status: note.status ?? 'public' }
+        : note)
+      : [],
+    campusNoteReviews: Array.isArray(data.campusNoteReviews)
+      ? data.campusNoteReviews.filter(isCampusNoteReview)
+      : [],
+    guestLifecycles: Array.isArray(data.guestLifecycles)
+      ? data.guestLifecycles.filter(isGuestLifecycleRecord)
+      : [],
+    guestQuotaBindings: normalizeGuestQuotaBindings(data.guestQuotaBindings),
+    guestMigrationAuditRecords: Array.isArray(data.guestMigrationAuditRecords)
+      ? data.guestMigrationAuditRecords.filter(isGuestMigrationAuditRecord)
+      : [],
+    privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
+      ? data.privilegedOperationAuditEvents.filter(isPrivilegedOperationAuditEvent)
+      : [],
+    recoveryLifecycleEvents: Array.isArray(data.recoveryLifecycleEvents)
+      ? data.recoveryLifecycleEvents.filter(isRecoveryLifecycleEvent)
+      : [],
+    recoveryPlanOutcomes: Array.isArray(data.recoveryPlanOutcomes)
+      ? data.recoveryPlanOutcomes.filter(isRecoveryPlanOutcome)
+      : [],
+  };
+}
+
+function isRecoveryLifecycleEvent(value: unknown): value is RecoveryLifecycleEvent {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.actorId === 'string' &&
+    (value.action === 'apply-recovery-plan' ||
+      value.action === 'release-incident-hold' ||
+      value.action === 'prune-recovery-backup') &&
+    value.category === 'recovery' &&
+    isValidTimestamp(value.timestamp) &&
+    (value.outcome === 'succeeded' || value.outcome === 'failed-no-write')
+  );
+}
+
+function isRecoveryPlanOutcome(value: unknown): value is RecoveryPlanOutcome {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.planId === 'string' &&
+    typeof value.actorId === 'string' &&
+    typeof value.sourceId === 'string' &&
+    typeof value.backupId === 'string' &&
+    typeof value.incidentId === 'string' &&
+    isValidTimestamp(value.appliedAt) &&
+    value.outcome === 'succeeded'
+  );
+}
+
+function parseStoredScholarScoutData(input: unknown): ScholarScoutData {
+  const validation = validateScholarScoutDataImport(input);
+
+  if (!validation.isValid || !isPlainObject(input)) {
+    throw new ScholarScoutDataStoreReadError('invalid-data');
+  }
+
+  return normalizeScholarScoutData(input as unknown as ScholarScoutData);
+}
+
+function createInitialData(): ScholarScoutData {
+  return JSON.parse(JSON.stringify(INITIAL_DATA)) as ScholarScoutData;
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+  return (
+    isPlainObject(error) &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'AbortError' || error.name === 'TimeoutError')
+  );
+}
+
+function normalizeGuestQuotaBindings(
+  bindings: Record<string, GuestQuotaBinding> | undefined,
+): Record<string, GuestQuotaBinding> {
+  return Object.fromEntries(
+    Object.entries(bindings ?? {}).filter(([, binding]) =>
+      isGuestQuotaBinding(binding),
+    ),
+  );
+}
+
+function isGuestLifecycleRecord(value: unknown): value is GuestLifecycleRecord {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.credentialHash === 'string' &&
+    typeof value.quotaWindowId === 'string' &&
+    isValidTimestamp(value.createdAt) &&
+    isValidTimestamp(value.expiresAt) &&
+    (value.migratedAt === undefined || isValidTimestamp(value.migratedAt)) &&
+    (value.migratedToAccountId === undefined || typeof value.migratedToAccountId === 'string')
+  );
+}
+
+function isGuestQuotaBinding(value: unknown): value is GuestQuotaBinding {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.guestId === 'string' &&
+    typeof value.guestWindowId === 'string' &&
+    isValidTimestamp(value.createdAt) &&
+    isValidTimestamp(value.expiresAt)
+  );
+}
+
+function isGuestMigrationAuditRecord(
+  value: unknown,
+): value is GuestMigrationAuditRecord {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.guestId === 'string' &&
+    typeof value.accountId === 'string' &&
+    isValidTimestamp(value.migratedAt) &&
+    Array.isArray(value.transferredCollections) &&
+    value.transferredCollections.every((collection) => typeof collection === 'string')
+  );
+}
+
+function isPrivilegedOperationAuditEvent(
+  value: unknown,
+): value is PrivilegedOperationAuditEvent {
+  if (!isPlainObject(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.actorId === 'string' &&
+    typeof value.action === 'string' &&
+    typeof value.route === 'string' &&
+    (value.outcome === 'allowed' || value.outcome === 'denied') &&
+    isValidTimestamp(value.createdAt)
+  );
+}
+
+function isValidTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -1323,8 +1908,16 @@ function isPeerConnectionRequest(value: unknown): value is PeerConnectionRequest
 }
 
 function isCampusNote(value: unknown): value is CampusNote {
-  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.author_id !== 'string' || typeof value.school_slug !== 'string' || (value.uploader_username !== null && typeof value.uploader_username !== 'string') || (value.program_id !== null && typeof value.program_id !== 'string') || typeof value.body !== 'string' || typeof value.created_at !== 'string') return false;
+  if (!isPlainObject(value) || typeof value.id !== 'string' || typeof value.author_id !== 'string' || typeof value.school_slug !== 'string' || (value.uploader_username !== null && typeof value.uploader_username !== 'string') || (value.program_id !== null && typeof value.program_id !== 'string') || typeof value.body !== 'string' || typeof value.created_at !== 'string' || (value.status !== undefined && value.status !== 'public' && value.status !== 'pending-review' && value.status !== 'removed')) return false;
   return validateCampusNote({ school_slug: value.school_slug, uploader_username: value.uploader_username as string | null, program_id: value.program_id as string | null, body: value.body }).length === 0;
+}
+
+function isCampusNoteReview(value: unknown): value is CampusNoteReview {
+  return isPlainObject(value)
+    && typeof value.id === 'string'
+    && typeof value.note_id === 'string'
+    && typeof value.reporter_id === 'string'
+    && isValidTimestamp(value.created_at);
 }
 
 function isUploaderInboxRequest(value: unknown): value is UploaderInboxRequest {
@@ -1382,25 +1975,48 @@ function isShortlistProgrammePlan(
   );
 }
 
-function hashPassword(password: string) {
+async function hashPassword(password: string): Promise<string> {
   const salt = randomUUID();
-  const hash = scryptSync(password, salt, 64).toString('hex');
+  const hash = (await derivePasswordKey(password, salt)).toString('hex');
   return `${salt}:${hash}`;
 }
 
-function verifyPassword(password: string, storedHash: string) {
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   const [salt, hash] = storedHash.split(':');
 
   if (!salt || !hash) {
     return false;
   }
 
-  const candidate = Buffer.from(scryptSync(password, salt, 64).toString('hex'));
+  const candidate = Buffer.from(
+    (await derivePasswordKey(password, salt)).toString('hex'),
+  );
   const expected = Buffer.from(hash);
 
   return (
     candidate.length === expected.length && timingSafeEqual(candidate, expected)
   );
+}
+
+function derivePasswordKey(password: string, salt: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, 64, (error, key) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(key);
+    });
+  });
+}
+
+function pruneExpiredCredentialGrants(now: number): void {
+  credentialGrants.forEach((value, grant) => {
+    if (value.expiresAt <= now) {
+      credentialGrants.delete(grant);
+    }
+  });
 }
 
 async function readStreamText(stream: ReadableStream<Uint8Array>) {
@@ -1416,5 +2032,46 @@ async function readStreamText(stream: ReadableStream<Uint8Array>) {
     }
 
     text += decoder.decode(value, { stream: true });
+  }
+}
+
+function hashStoredDocument(value: string): string {
+  return `"${createHash('sha256').update(value).digest('hex')}"`;
+}
+
+function hashScholarScoutData(data: ScholarScoutData): string {
+  return hashStoredDocument(JSON.stringify(normalizeScholarScoutData(data), null, 2));
+}
+
+function normalizeStoreReadError(error: unknown): ScholarScoutDataStoreReadError {
+  if (error instanceof ScholarScoutDataStoreReadError) return error;
+  return new ScholarScoutDataStoreReadError(
+    error instanceof SyntaxError
+      ? 'invalid-data'
+      : isTimeoutError(error)
+        ? 'timeout'
+        : 'unavailable',
+  );
+}
+
+async function acquireJsonStoreLock(lockPath: string) {
+  const deadline = Date.now() + 1_000;
+  while (true) {
+    try {
+      return await open(lockPath, 'wx');
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('code' in error) ||
+        error.code !== 'EEXIST'
+      ) {
+        throw error;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error('ScholarScout JSON data store is unavailable because another writer holds its lock.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
   }
 }

@@ -5,40 +5,51 @@ status: human_needed
 score: 0/3 must-haves verified
 behavior_unverified: 3
 overrides_applied: 0
+deferred_external_validation: true
+deferred_reason: "The five GitHub/Vercel production controls are external dashboard/runtime evidence. They are intentionally deferred, not passed or waived, while later implementation continues."
 re_verification:
   previous_status: gaps_found
   previous_score: 0/3
   gaps_closed:
+
     - "A maintainer has one active Corepack-selected pnpm 10.34.5 / root-lockfile / frozen-install contract."
     - "The Node 20 compatibility baseline is tied to an accountable Node 24 LTS target, owner, timing, and validation path."
   gaps_remaining: []
   regressions: []
 behavior_unverified_items:
+
   - truth: "A maintainer can install dependencies with one documented immutable package-manager and lockfile path, and use it for local development, CI, and Vercel builds."
     test: "Merge a reviewed change through protected main and retain the Vercel production build log."
     expected: "Vercel selects Corepack pnpm 10.34.5, runs the frozen root install, and runs pnpm build:vercel."
     why_human: "Repository files and local portable-pnpm tests prove the contract exists and works locally, but cannot prove Vercel's environment setting or hosted execution."
+
   - truth: "Every pull request reports Scholar Scout build, typecheck, lint, and test results without an unrelated CrimClock job failing the pipeline."
     test: "Open a draft PR against main and inspect the completed check list."
     expected: "Exactly the six ScholarScout quality checks run independently; no CrimClock or Python check appears."
     why_human: "The committed workflow has the six jobs and local mapped checks pass, but GitHub Actions scheduling is external runtime behavior."
+
   - truth: "A maintainer can distinguish a failed Scholar Scout quality check from a clean, releasable pull request."
     test: "Inspect the main ruleset or branch-protection configuration after a successful draft PR."
     expected: "Pull requests and up-to-date branches are required, direct pushes are blocked, and exactly the six ScholarScout checks are required."
     why_human: "Required-check and direct-push controls live in GitHub configuration, not committed source."
 human_verification:
+
   - test: "Open a draft PR against main and retain its completed checks."
     expected: "The six exact ScholarScout checks run independently with no unrelated CrimClock/Python job."
     why_human: "GitHub Actions scheduling and check reporting are external runtime behavior."
+
   - test: "Export or screenshot the main ruleset/branch-protection configuration."
     expected: "Pull requests, up-to-date branches, restricted direct pushes, and only the six exact ScholarScout checks are enforced."
     why_human: "GitHub rulesets are dashboard state."
+
   - test: "Merge through protected main and retain the Vercel production build log."
     expected: "The log shows Corepack pnpm 10.34.5, pnpm install --frozen-lockfile --ignore-scripts, and pnpm build:vercel."
     why_human: "Vercel production environment variables, Git integration, and hosted build execution are external state."
+
   - test: "Retain a production-success post-deploy smoke workflow run and its production-smoke-report artifact."
     expected: "The run uses the event deployment URL and the report is uploaded for that production event."
     why_human: "Vercel-to-GitHub repository-dispatch delivery cannot be proven by static YAML."
+
   - test: "Run one safe controlled production-smoke failure and retain the workflow run, artifact, incident issue, and maintainer acknowledgement."
     expected: "The alert issue contains no secrets, links the human incident runbook, and records that no automatic rollback occurred."
     why_human: "This is an external failure/alert/response sequence; repository code only proves the static path."
@@ -126,6 +137,10 @@ No requirement mapped to Phase 1 is orphaned from its plans.
 | — | — | No `TBD`, `FIXME`, `XXX`, `TODO`, placeholder, or stale package-manager marker in the three gap-closure artifacts. | ℹ️ None | No repository blocker found. |
 
 ## Human Verification Required
+
+## Deferred External Validation Gate
+
+Phase 1's repository work is complete, but its behavioral release gate remains **deferred and unpassed**. Later phases must not treat this report as evidence that GitHub branch protection, hosted CI execution, Vercel production parity, post-deploy dispatch, or the incident-response path has been observed. Before a production release or final roadmap completion, retain the five evidence items below. Deployment risk remains that an unobserved GitHub/Vercel configuration can diverge from the committed workflow, allowing missing checks, a non-frozen hosted build, a missing smoke dispatch, or an unsafe incident response.
 
 ### 1. Draft PR CI execution
 

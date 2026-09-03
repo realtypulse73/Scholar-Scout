@@ -11,6 +11,41 @@ import test from 'node:test';
 const nodeBin = process.execPath;
 const isWindows = process.platform === 'win32';
 
+const validRecoverySigning = {
+  SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID: 'current-key',
+  SCHOLARSCOUT_RECOVERY_SIGNING_SECRET: 'dedicated-recovery-secret-at-least-32-bytes',
+};
+
+test('production env checker requires dedicated recovery signing material', async () => {
+  const base = productionEnv();
+  const missing = await runNode(['scripts/production-env-check.mjs', '--json'], {
+    ...base,
+    SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID: '',
+    SCHOLARSCOUT_RECOVERY_SIGNING_SECRET: '',
+  });
+  assert.equal(missing.code, 1);
+  assert.match(missing.stdout, /Recovery signing/);
+
+  const nextAuthOnly = await runNode(['scripts/production-env-check.mjs', '--json'], {
+    ...base,
+    NEXTAUTH_SECRET: 'this-auth-secret-must-never-be-used-for-recovery',
+    SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID: '',
+    SCHOLARSCOUT_RECOVERY_SIGNING_SECRET: '',
+  });
+  assert.equal(nextAuthOnly.code, 1);
+
+  const valid = await runNode(['scripts/production-env-check.mjs', '--json'], base);
+  assert.equal(valid.code, 0, valid.stderr);
+
+  const halfPrevious = await runNode(['scripts/production-env-check.mjs', '--json'], {
+    ...base,
+    SCHOLARSCOUT_RECOVERY_PREVIOUS_KEY_ID: 'previous-key',
+    SCHOLARSCOUT_RECOVERY_PREVIOUS_SECRET: '',
+  });
+  assert.equal(halfPrevious.code, 1);
+  assert.match(halfPrevious.stdout, /Previous recovery signing/);
+});
+
 test('production env checker returns JSON without secret values', async () => {
   const result = await runNode(['scripts/production-env-check.mjs', '--json'], {
     NEXTAUTH_URL: 'https://scholarscout.example.org',
@@ -504,7 +539,23 @@ test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !is
 });
 
 function runNode(args, env = {}) {
-  return runCommand(nodeBin, args, env);
+  return runCommand(nodeBin, args, { ...validRecoverySigning, ...env });
+}
+
+function productionEnv() {
+  return {
+    NEXTAUTH_URL: 'https://scholarscout.example.org',
+    NEXTAUTH_SECRET: 'abcdefghijklmnopqrstuvwxyz1234567890',
+    SCHOLARSCOUT_STAFF_EMAILS: 'staff@example.org',
+    SCHOLARSCOUT_HEALTH_TOKEN: 'health-token-1234567890',
+    GITHUB_CLIENT_ID: 'github-client-id',
+    GITHUB_CLIENT_SECRET: 'github-client-secret',
+    SCHOLARSCOUT_DATA_ADAPTER: 'vercel-blob',
+    SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: 'blob-token-1234567890',
+    SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
+    SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: 'github',
+    ...validRecoverySigning,
+  };
 }
 
 function runCommand(command, args, env = {}) {

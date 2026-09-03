@@ -22,12 +22,12 @@ Students can confidently discover and act on the education pathways that fit the
 - ✓ Account onboarding and saved shortlist capabilities — existing
 - ✓ Interactive simulations, engagement signals, and recommendation support — existing
 - ✓ Staff-managed programme catalogue foundation — existing
+- ✓ Complete and validate the in-progress school, peer-community, campus-community, and Western New York product work — Phase 5
 
 ### Active
 
 - [ ] Protect user data and cost-bearing integrations with consistent authentication, authorization, validation, and abuse controls.
 - [ ] Restore reliable administration, CI, and test signals so changes can be released safely.
-- [ ] Complete and validate the in-progress school, peer-community, campus-community, and Western New York product work.
 - [ ] Establish an incremental path from whole-document persistence to durable, safe multi-user data operations.
 
 ### Out of Scope
@@ -39,7 +39,7 @@ Students can confidently discover and act on the education pathways that fit the
 
 The application is a Next.js monolith deployed to Vercel, with NextAuth, a programme catalogue, personalised discovery, simulations, and optional OpenAI advisor guidance. Its server state currently uses a pluggable JSON/HTTP/Vercel Blob whole-document store; this makes concurrent writes, targeted data operations, and growth fragile. The codebase map at `.planning/codebase/` identifies exposed unauthenticated routes, a webhook runner that fails open without a signature secret, missing admin data-operation routes, an unrelated failing CI job, and weak route/E2E coverage.
 
-There is a substantial uncommitted feature cluster in the working tree, including school, peer-community, campus-community, and Western New York work. It must remain isolated from stabilization work until it has an explicit validation and release path.
+The school, peer-community, campus-community, and Western New York release slice now has an explicit validation path: focused automated coverage, isolated Preview quota/outage evidence, and completed human accessibility UAT. Follow-on release-readiness work remains in Phase 6.
 
 ## Constraints
 
@@ -53,8 +53,9 @@ There is a substantial uncommitted feature cluster in the working tree, includin
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Prioritize security and reliability before broader feature expansion | Public data exposure, anonymous AI spend, broken administrative paths, and failing CI are release blockers | — Pending |
-| Treat the current uncommitted feature cluster as a separately validated release slice | It has broad scope and should not be obscured by stabilization work | — Pending |
+| Treat the school/community/WNY feature cluster as a separately validated release slice | It has broad scope and should not be obscured by stabilization work | Phase 5 passed |
 | Modernize persistence incrementally | A wholesale rewrite would create unacceptable delivery and data-migration risk | — Pending |
+| Validate the school/community/WNY release slice through isolated Preview UAT | Preserve privacy and source safety while proving browser, provider, moderation, and assistive-technology behavior | Phase 5 passed |
 
 ## Evolution
 
@@ -74,4 +75,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-25 after initialization*
+*Last updated: 2026-08-31 after Phase 5*
