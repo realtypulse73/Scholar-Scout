@@ -5,6 +5,7 @@ import {
   createPreviewContextOptions,
   getVerifiedPreviewMetadata,
   scrubPreviewTracerOutcome,
+  VERCEL_BYPASS_COOKIE_HEADER,
 } from './preview-deployment-protection.mjs';
 
 const FIXTURE_CAPABILITY_NAME = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
@@ -55,10 +56,13 @@ function requestPreview(baseUrl, method, path, headers) {
 }
 
 function createLifecycleRequest({ metadata, contextOptions, request }) {
+  const lifecycleHeaders = { ...contextOptions.extraHTTPHeaders };
+  delete lifecycleHeaders[VERCEL_BYPASS_COOKIE_HEADER];
+
   return async (method, path, options) => request(method, path, {
     ...options,
     headers: {
-      ...contextOptions.extraHTTPHeaders,
+      ...lifecycleHeaders,
       ...options.headers,
     },
   });
