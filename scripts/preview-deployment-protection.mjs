@@ -72,6 +72,17 @@ export function createPreviewContextOptions(metadata, environment) {
 }
 
 /**
+ * Keeps ordinary page and API traffic authenticated after the context has
+ * received its bypass cookie, without repeating Vercel's redirecting cookie
+ * bootstrap instruction.
+ */
+export function createPreviewSteadyStateHeaders(contextOptions) {
+  const headers = { ...contextOptions.extraHTTPHeaders };
+  delete headers[VERCEL_BYPASS_COOKIE_HEADER];
+  return headers;
+}
+
+/**
  * Candidate-bound evidence intentionally excludes URLs, raw errors, cookies,
  * request headers, capabilities, fixture data, and browser diagnostics.
  */

@@ -3,6 +3,7 @@ import { request as requestHttps } from 'node:https';
 import { runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 import {
   createPreviewContextOptions,
+  createPreviewSteadyStateHeaders,
   getVerifiedPreviewMetadata,
   scrubPreviewTracerOutcome,
   VERCEL_BYPASS_COOKIE_HEADER,
@@ -171,6 +172,10 @@ export async function runPreviewReleaseTracer({
           ignoreHTTPSErrors: contextOptions.ignoreHTTPSErrors,
         });
         const page = await context.newPage();
+        await page.goto('/');
+        await context.setExtraHTTPHeaders(
+          createPreviewSteadyStateHeaders(contextOptions),
+        );
         try {
           await runStudentJourney({ page, context, metadata });
         } catch {
