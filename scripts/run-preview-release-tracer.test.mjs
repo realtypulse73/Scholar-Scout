@@ -70,7 +70,8 @@ test('orders protected lifecycle, context traffic, student journey, and exact cl
 
   assert.deepEqual(events, ['POST', 'GET', 'new-context', 'new-page', 'journey', 'DELETE', 'close-context']);
   assert.equal(requests.length, 3);
-  assert.ok(requests.every(({ options }) => options.headers.authorization === 'Bearer fixture-capability-secret'));
+  assert.ok(requests.every(({ options }) => options.headers['x-scholarscout-e2e-fixture-capability'] === 'fixture-capability-secret'));
+  assert.ok(requests.every(({ options }) => !('authorization' in options.headers)));
   assert.ok(requests.every(({ options }) => options.headers['x-vercel-protection-bypass'] === 'preview-bypass-secret'));
   assert.ok(requests.every(({ options }) => !('x-vercel-set-bypass-cookie' in options.headers)));
   assert.deepEqual(result, {

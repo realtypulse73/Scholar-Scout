@@ -20,6 +20,8 @@ test('runs fixed create, verify, and cleanup lifecycle requests', async () => {
   assert.ok(requests.every(({ path }) => path === '/api/internal/e2e-fixture'));
   assert.ok(requests.every(({ options }) => options.body === undefined));
   assert.ok(requests.every(({ options }) => options.headers['content-length'] === '0'));
+  assert.ok(requests.every(({ options }) => options.headers['x-scholarscout-e2e-fixture-capability'] === 'capability'));
+  assert.ok(requests.every(({ options }) => !('authorization' in options.headers)));
 });
 
 test('cleans once when the browser command rejects', async () => {
