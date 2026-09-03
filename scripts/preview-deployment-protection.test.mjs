@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   createPreviewContextOptions,
+  createPreviewSteadyStateHeaders,
   getVerifiedPreviewMetadata,
   scrubPreviewTracerOutcome,
 } from './preview-deployment-protection.mjs';
@@ -64,6 +65,9 @@ test('keeps the Vercel bypass only in in-memory context headers', () => {
     () => createPreviewContextOptions(previewMetadata, {}),
     /protection material/i,
   );
+  assert.deepEqual(createPreviewSteadyStateHeaders(options), {
+    'x-vercel-protection-bypass': bypass,
+  });
 });
 
 test('scrubs secrets, cookies, URLs, fixture values, and error details from outcomes', () => {
