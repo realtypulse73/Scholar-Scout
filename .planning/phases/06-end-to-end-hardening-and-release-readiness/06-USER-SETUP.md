@@ -13,19 +13,32 @@ paste any value into issues, artifacts, chat, or committed files.
 | Status | Variable | Source | Add to |
 |---|---|---|---|
 | [ ] | `VERCEL_TOKEN` | Vercel account token authorized only for the Scholar Scout project | GitHub repository → Environments → Preview → Secrets |
-| [ ] | `SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS` | Existing Vercel deployment-protection automation secret | GitHub Preview environment secret |
-| [ ] | `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY` | Generated runner/server lifecycle capability, also configured only for Vercel Preview | GitHub Preview environment secret |
+| [x] | `SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS` | Existing Vercel deployment-protection automation secret | GitHub Preview environment secret |
+| [x] | `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY` | Generated runner/server lifecycle capability, also configured only for Vercel Preview | GitHub Preview environment secret |
 
 ## Vercel Preview Configuration
 
-- [ ] Confirm the Preview environment—not Production—has the durable Blob
+- [x] Confirm the Preview environment—not Production—has the durable Blob
   adapter/token and the same generated fixture lifecycle capability. The
   workflow generates its disposable `@example.test` account credentials at
   runtime and never stores them as repository secrets.
-- [ ] Confirm deployment protection is enabled and the automation bypass is
+- [x] Confirm deployment protection is enabled and the automation bypass is
   restricted to the GitHub Preview environment.
 - [ ] Do not set the outage flag in project settings. The workflow applies it
   only to its one-off unaliased outage deployment.
+
+## Protected Preview Tracer Checkpoint
+
+- Candidate commit: `dc5ebf63b8ea6cfc7dc2efabd65f7e0afd6ee17e`
+- Preview deployment: `dpl_CspcvYy8K9HKZMMQkuTufYWbEJrs`
+- Command: `node scripts/run-preview-release-tracer.mjs`
+- UTC: `2026-09-04T23:01:36Z`
+- Result: `passed`
+- Artifact/run: https://github.com/realtypulse73/Scholar-Scout/actions/runs/33927892557
+
+This proves the candidate-bound protected Preview browser lane and exact fixture
+cleanup. It does not replace the separate Preview outage/restoration lane or
+the complete prelaunch rehearsal gate.
 
 ## Verification
 
