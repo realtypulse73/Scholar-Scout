@@ -629,7 +629,8 @@ test('prelaunch workflow orders local proof before isolated Preview outage and c
   assert.match(workflow, /Prove base Preview remained restored/);
   assert.match(workflow, /SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true/);
   assert.match(workflow, /randomBytes\(24\)/);
-  assert.match(workflow, /vercel remove/);
+  assert.match(workflow, /pnpm dlx vercel@58\.10\.0 pull/);
+  assert.match(workflow, /pnpm dlx vercel@58\.10\.0 remove/);
   assert.match(workflow, /--skip-domain/);
   assert.match(workflow, /--aggregate/);
   assert.doesNotMatch(workflow, /--prod\b|vercel promote/);

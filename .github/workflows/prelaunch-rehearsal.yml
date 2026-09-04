@@ -105,8 +105,8 @@ jobs:
         run: pnpm exec playwright install chromium
       - name: Pull Preview configuration and build once
         run: |
-          pnpm exec vercel pull --yes --environment=preview --scope=scholar-scout --project=scholar-scout-web --token="$VERCEL_TOKEN"
-          pnpm exec vercel build --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@58.10.0 pull --yes --environment=preview --scope=scholar-scout --project=scholar-scout-web --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@58.10.0 build --token="$VERCEL_TOKEN"
       - name: Create distinct Preview-only deployment scopes
         shell: bash
         env:
@@ -125,14 +125,14 @@ jobs:
         env:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
         run: |
-          pnpm exec vercel deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
+          pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
             --meta "githubCommitSha=$CANDIDATE_COMMIT" \
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$BASE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
             --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$BASE_FIXTURE_ID" \
             --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true > base-deploy.json
           BASE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('base-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
-          pnpm exec vercel inspect "$BASE_URL" --json --token="$VERCEL_TOKEN" > base-inspect.json
+          pnpm dlx vercel@58.10.0 inspect "$BASE_URL" --json --token="$VERCEL_TOKEN" > base-inspect.json
           BASE_DEPLOYMENT_ID=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; process.stdout.write(JSON.parse(readFileSync('base-inspect.json','utf8')).id)")
           echo "BASE_URL=$BASE_URL" >> "$GITHUB_ENV"
           echo "BASE_DEPLOYMENT_ID=$BASE_DEPLOYMENT_ID" >> "$GITHUB_ENV"
@@ -151,7 +151,7 @@ jobs:
         env:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
         run: |
-          pnpm exec vercel deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
+          pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
             --meta "githubCommitSha=$CANDIDATE_COMMIT" \
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$OUTAGE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
@@ -159,7 +159,7 @@ jobs:
             --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true \
             --env SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1 > outage-deploy.json
           OUTAGE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('outage-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
-          pnpm exec vercel inspect "$OUTAGE_URL" --json --token="$VERCEL_TOKEN" > outage-inspect.json
+          pnpm dlx vercel@58.10.0 inspect "$OUTAGE_URL" --json --token="$VERCEL_TOKEN" > outage-inspect.json
           OUTAGE_DEPLOYMENT_ID=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; process.stdout.write(JSON.parse(readFileSync('outage-inspect.json','utf8')).id)")
           echo "OUTAGE_URL=$OUTAGE_URL" >> "$GITHUB_ENV"
           echo "OUTAGE_DEPLOYMENT_ID=$OUTAGE_DEPLOYMENT_ID" >> "$GITHUB_ENV"
@@ -189,8 +189,8 @@ jobs:
         shell: bash
         run: |
           cleanup_status=0
-          if [[ -n "${OUTAGE_URL:-}" ]]; then pnpm exec vercel remove "$OUTAGE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
-          if [[ -n "${BASE_URL:-}" ]]; then pnpm exec vercel remove "$BASE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
+          if [[ -n "${OUTAGE_URL:-}" ]]; then pnpm dlx vercel@58.10.0 remove "$OUTAGE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
+          if [[ -n "${BASE_URL:-}" ]]; then pnpm dlx vercel@58.10.0 remove "$BASE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
           exit "$cleanup_status"
       - name: Create scrubbed Preview records
         shell: bash
