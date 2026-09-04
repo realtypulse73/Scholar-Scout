@@ -1,16 +1,20 @@
 /** @jest-environment node */
 
-import { DELETE, GET, POST } from '@/app/api/internal/e2e-fixture/route';
+import { DELETE, GET, POST, PUT } from '@/app/api/internal/e2e-fixture/route';
 import {
   cleanupE2eProgrammeFixture,
+  cleanupE2eReleaseDataScope,
   createE2eProgrammeFixture,
+  verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
 jest.mock('@/lib/server/e2e-programme-fixture', () => ({
   cleanupE2eProgrammeFixture: jest.fn(),
+  cleanupE2eReleaseDataScope: jest.fn(),
   createE2eProgrammeFixture: jest.fn(),
   verifyE2eProgrammeFixture: jest.fn(),
+  verifyE2eCommunityOutageNoWrite: jest.fn(),
 }));
 
 const url = 'https://localhost/api/internal/e2e-fixture';
@@ -77,6 +81,22 @@ describe('e2e fixture route', () => {
     expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
   });
 
+  it('accepts a proxy-exposed zero-byte stream when content-length is omitted', async () => {
+    const response = await POST(new Request(url, {
+      method: 'POST',
+      headers,
+      body: new ReadableStream({
+        start(controller) {
+          controller.close();
+        },
+      }),
+      duplex: 'half',
+    } as RequestInit));
+
+    expect(response.status).toBe(200);
+    expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects browser-shaped and caller-selected input before lifecycle access', async () => {
     const response = await GET(new Request(`${url}?fixtureId=attacker`, {
       headers: { ...headers, origin: 'https://localhost' },
@@ -124,5 +144,13 @@ describe('e2e fixture route', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, phase: 'cleaned' });
     expect(cleanupE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+    expect(cleanupE2eReleaseDataScope).toHaveBeenCalledTimes(1);
+  });
+
+  it('verifies the fixed generated outage bodies were not written', async () => {
+    const response = await PUT(new Request(url, { method: 'PUT', headers }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, phase: 'no-write' });
+    expect(verifyE2eCommunityOutageNoWrite).toHaveBeenCalledTimes(1);
   });
 });

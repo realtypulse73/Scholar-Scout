@@ -37,11 +37,23 @@ test('fails before browser creation or traffic when Preview metadata or runner s
 test('orders protected lifecycle, context traffic, student journey, and exact cleanup without secret-bearing children', async () => {
   const events = [];
   const requests = [];
-  const page = { marker: 'page' };
+  const page = {
+    marker: 'page',
+    goto: async (path) => {
+      assert.equal(path, '/');
+      events.push('bootstrap-cookie');
+    },
+  };
   const context = {
     newPage: async () => {
       events.push('new-page');
       return page;
+    },
+    setExtraHTTPHeaders: async (headers) => {
+      events.push('steady-headers');
+      assert.deepEqual(headers, {
+        'x-vercel-protection-bypass': 'preview-bypass-secret',
+      });
     },
     close: async () => { events.push('close-context'); },
   };
@@ -68,7 +80,17 @@ test('orders protected lifecycle, context traffic, student journey, and exact cl
     },
   });
 
-  assert.deepEqual(events, ['POST', 'GET', 'new-context', 'new-page', 'journey', 'DELETE', 'close-context']);
+  assert.deepEqual(events, [
+    'POST',
+    'GET',
+    'new-context',
+    'new-page',
+    'bootstrap-cookie',
+    'steady-headers',
+    'journey',
+    'DELETE',
+    'close-context',
+  ]);
   assert.equal(requests.length, 3);
   assert.ok(requests.every(({ options }) => options.headers['x-scholarscout-e2e-fixture-capability'] === 'fixture-capability-secret'));
   assert.ok(requests.every(({ options }) => !('authorization' in options.headers)));
@@ -94,7 +116,8 @@ test('delegates cleanup exactly once when the student journey fails', async () =
     },
     browser: {
       newContext: async () => ({
-        newPage: async () => ({}),
+        newPage: async () => ({ goto: async () => {} }),
+        setExtraHTTPHeaders: async () => {},
         close: async () => { contextClosed += 1; },
       }),
     },

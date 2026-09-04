@@ -3,6 +3,7 @@ import { request as requestHttps } from 'node:https';
 import { runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 import {
   createPreviewContextOptions,
+  createPreviewSteadyStateHeaders,
   getVerifiedPreviewMetadata,
   scrubPreviewTracerOutcome,
   VERCEL_BYPASS_COOKIE_HEADER,
@@ -10,6 +11,7 @@ import {
 
 const FIXTURE_CAPABILITY_NAME = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
 const CANDIDATE_COMMIT_NAME = 'SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT';
+const RECOMMENDATIONS_HYDRATION_TIMEOUT_MS = 10_000;
 
 function getFixtureCapability(environment) {
   const capability = environment[FIXTURE_CAPABILITY_NAME];
@@ -102,8 +104,14 @@ async function runStudentReleaseJourney({ page, expect }) {
   await expect(profileResponse.json()).resolves.toEqual({ profile: expect.any(Object) });
 
   await page.goto('/recommendations');
-  await expect(page.getByRole('heading', { name: 'Your best next move' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Generated Technology Pathway' }).first()).toBeVisible();
+  // This standalone runner does not load playwright.config.ts. Preserve its
+  // configured wait for the client-hydrated recommendation context explicitly.
+  await expect(page.getByRole('heading', { name: 'Your best next move' })).toBeVisible({
+    timeout: RECOMMENDATIONS_HYDRATION_TIMEOUT_MS,
+  });
+  await expect(
+    page.getByRole('heading', { name: 'Generated Technology Pathway' }).first(),
+  ).toBeVisible({ timeout: RECOMMENDATIONS_HYDRATION_TIMEOUT_MS });
 
   await page.goto('/simulate');
   await page.getByRole('button', {
@@ -164,6 +172,10 @@ export async function runPreviewReleaseTracer({
           ignoreHTTPSErrors: contextOptions.ignoreHTTPSErrors,
         });
         const page = await context.newPage();
+        await page.goto('/');
+        await context.setExtraHTTPHeaders(
+          createPreviewSteadyStateHeaders(contextOptions),
+        );
         try {
           await runStudentJourney({ page, context, metadata });
         } catch {

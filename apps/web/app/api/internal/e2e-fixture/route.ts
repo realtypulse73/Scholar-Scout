@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 
 import {
   cleanupE2eProgrammeFixture,
+  cleanupE2eReleaseDataScope,
   createE2eProgrammeFixture,
+  verifyE2eCommunityOutageNoWrite,
   verifyE2eProgrammeFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
@@ -33,15 +35,17 @@ function hasBrowserShape(request: Request): boolean {
   );
 }
 
-function hasNoBodyTransport(request: Request): boolean {
+async function hasNoBodyTransport(request: Request): Promise<boolean> {
   const contentLength = request.headers.get('content-length');
   if (request.headers.has('transfer-encoding')) return false;
+  if (contentLength !== null && contentLength !== '0') return false;
   if (request.body === null) return contentLength === null || contentLength === '0';
-  // Next's Node adapter can expose a zero-byte POST as an empty stream.
-  return contentLength === '0';
+  // Vercel/Next can expose a zero-byte request as an empty stream and omit the
+  // original content-length header. Capability and protocol checks run first.
+  return (await request.arrayBuffer()).byteLength === 0;
 }
 
-function getDenialReason(request: Request): DenialReason | null {
+async function getDenialReason(request: Request): Promise<DenialReason | null> {
   const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
   if (process.env.VERCEL_ENV === 'production') return 'production';
   if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED !== 'true') return 'fixture-disabled';
@@ -52,13 +56,13 @@ function getDenialReason(request: Request): DenialReason | null {
     return 'protocol-mismatch';
   }
   if (new URL(request.url).search !== '') return 'query-present';
-  if (!hasNoBodyTransport(request)) return 'non-empty-transport';
+  if (!(await hasNoBodyTransport(request))) return 'non-empty-transport';
   if (hasBrowserShape(request)) return 'browser-shaped';
   return null;
 }
 
 async function guard(request: Request): Promise<NextResponse | null> {
-  const reason = getDenialReason(request);
+  const reason = await getDenialReason(request);
   return reason ? deny(reason) : null;
 }
 
@@ -81,5 +85,13 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   const rejected = await guard(request);
   if (rejected) return rejected;
   await cleanupE2eProgrammeFixture();
+  await cleanupE2eReleaseDataScope();
   return NextResponse.json({ ok: true, phase: 'cleaned' });
+}
+
+export async function PUT(request: Request): Promise<NextResponse> {
+  const rejected = await guard(request);
+  if (rejected) return rejected;
+  await verifyE2eCommunityOutageNoWrite();
+  return NextResponse.json({ ok: true, phase: 'no-write' });
 }

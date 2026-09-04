@@ -5,6 +5,11 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { loadEnvFileFromArgs } from './env-file.mjs';
 
+export {
+  runLocalReleaseEvidence,
+  validateReleaseEvidence,
+} from './release-evidence.mjs';
+
 const args = parseArgs(process.argv.slice(2));
 loadEnvFileFromArgs(process.argv.slice(2));
 const outputDir = path.resolve(args.outputDir || 'reports/prelaunch-rehearsal');

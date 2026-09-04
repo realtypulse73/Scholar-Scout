@@ -7,6 +7,14 @@ import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import {
+  CANDIDATE_QUALITY_COMMANDS,
+  HIGH_RISK_COMMANDS,
+  LOCAL_BROWSER_COMMAND,
+  LOCAL_BROWSER_SETUP_COMMAND,
+  runLocalReleaseEvidence,
+  validateReleaseEvidence,
+} from './release-evidence.mjs';
 
 const nodeBin = process.execPath;
 const isWindows = process.platform === 'win32';
@@ -454,6 +462,194 @@ test('prelaunch rehearsal can load readiness values from an env file', async () 
   );
 
   assert.equal(envReport.summary.failures, 0);
+});
+
+test('release evidence runs immutable quality, high-risk, and local browser lanes in order', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-evidence-'));
+  const commands = [];
+  const candidateCommit = 'a'.repeat(40);
+
+  const records = await runLocalReleaseEvidence({
+    candidateCommit,
+    outputDir: tempDir,
+    now: () => '2026-09-03T00:00:00.000Z',
+    runCommand: async (command) => {
+      commands.push(command);
+      return { code: 0 };
+    },
+  });
+
+  assert.deepEqual(commands, [
+    ...CANDIDATE_QUALITY_COMMANDS,
+    ...HIGH_RISK_COMMANDS,
+    LOCAL_BROWSER_SETUP_COMMAND,
+    LOCAL_BROWSER_COMMAND,
+  ]);
+  assert.deepEqual(records.map(({ kind }) => kind), [
+    'candidate-quality',
+    'high-risk',
+    'local-browser',
+  ]);
+  assert.equal(records.every(({ result }) => result === 'passed'), true);
+});
+
+test('release evidence stops before later lanes after the first failed command', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-failure-'));
+  const commands = [];
+
+  await assert.rejects(
+    runLocalReleaseEvidence({
+      candidateCommit: 'b'.repeat(40),
+      outputDir: tempDir,
+      runCommand: async (command) => {
+        commands.push(command);
+        return { code: command === CANDIDATE_QUALITY_COMMANDS[1] ? 1 : 0 };
+      },
+    }),
+    /candidate-quality evidence failed/i,
+  );
+
+  assert.deepEqual(commands, CANDIDATE_QUALITY_COMMANDS.slice(0, 2));
+});
+
+test('release gate requires five distinct candidate-bound scrubbed passing records', () => {
+  const candidateCommit = 'c'.repeat(40);
+  const utc = '2026-09-03T00:00:00.000Z';
+  const records = [
+    {
+      kind: 'candidate-quality',
+      candidateCommit,
+      utc,
+      commands: [...CANDIDATE_QUALITY_COMMANDS],
+      result: 'passed',
+    },
+    {
+      kind: 'high-risk',
+      candidateCommit,
+      utc,
+      commands: [...HIGH_RISK_COMMANDS],
+      result: 'passed',
+    },
+    {
+      kind: 'local-browser',
+      candidateCommit,
+      utc,
+      command: LOCAL_BROWSER_COMMAND,
+      result: 'passed',
+    },
+    {
+      kind: 'preview-browser',
+      candidateCommit,
+      utc,
+      result: 'passed',
+      safeCategory: 'passed',
+      deploymentId: 'dpl_preview',
+      artifactUrl: 'https://github.com/example/repo/actions/runs/1',
+    },
+    {
+      kind: 'preview-outage',
+      candidateCommit,
+      utc,
+      result: 'passed',
+      safeCategory: 'passed',
+      deploymentId: 'dpl_outage',
+      baseDeploymentId: 'dpl_preview',
+      artifactUrl: 'https://vercel.com/example/deployments/outage',
+      cleanup: 'passed',
+      restored: true,
+    },
+  ];
+
+  assert.deepEqual(validateReleaseEvidence(candidateCommit, records), {
+    category: 'passed',
+    candidateCommit,
+    lanes: [
+      'candidate-quality',
+      'high-risk',
+      'local-browser',
+      'preview-browser',
+      'preview-outage',
+    ],
+  });
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.slice(0, 4)),
+    /incomplete/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.map((record) => (
+      record.kind === 'preview-browser' ? { ...record, result: 'failed' } : record
+    ))),
+    /did not pass/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence(candidateCommit, records.map((record) => (
+      record.kind === 'preview-browser' ? { ...record, cookie: 'forbidden' } : record
+    ))),
+    /unapproved fields/i,
+  );
+  assert.throws(
+    () => validateReleaseEvidence('d'.repeat(40), records),
+    /mismatch/i,
+  );
+});
+
+test('release evidence docs keep candidate, Preview, and Production proof distinct', async () => {
+  const [template, runbook] = await Promise.all([
+    readFile(path.join(process.cwd(), 'docs/prelaunch-evidence-template.md'), 'utf8'),
+    readFile(path.join(process.cwd(), 'docs/production-release-runbook.md'), 'utf8'),
+  ]);
+
+  for (const value of [
+    'Candidate Quality',
+    'Local browser journey',
+    'Protected Preview browser journey',
+    'Preview outage and restoration',
+  ]) {
+    assert.match(template, new RegExp(value, 'i'));
+  }
+  assert.match(runbook, /pnpm install --frozen-lockfile --ignore-scripts/);
+  assert.match(runbook, /one\s+record cannot satisfy another lane/i);
+  assert.match(runbook, /never replace.*Production/is);
+  assert.match(runbook, /Neither lane may target\s+Production, promote a deployment, create an alias/is);
+});
+
+test('prelaunch workflow orders local proof before isolated Preview outage and cleanup', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /candidate_commit:/);
+  assert.match(workflow, /refs\/heads\/worktree-agent-/);
+  assert.match(workflow, /candidate-evidence:[\s\S]*preview-evidence:/);
+  assert.match(workflow, /rehearse:release-evidence[\s\S]*--local-only/);
+  assert.match(workflow, /run-preview-release-tracer\.mjs/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1/);
+  assert.match(workflow, /run-preview-outage-tracer\.mjs/);
+  assert.match(workflow, /Prove base Preview remained restored/);
+  assert.match(workflow, /SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true/);
+  assert.match(workflow, /randomBytes\(24\)/);
+  assert.match(workflow, /pnpm dlx vercel@58\.10\.0 pull/);
+  assert.match(workflow, /pnpm dlx vercel@58\.10\.0 remove/);
+  assert.match(workflow, /--skip-domain/);
+  assert.match(workflow, /--aggregate/);
+  assert.doesNotMatch(workflow, /--prod\b|vercel promote/);
+  assert.doesNotMatch(
+    workflow,
+    /--env "?SCHOLARSCOUT_(?:VERCEL_PROTECTION_BYPASS|E2E_FIXTURE_CAPABILITY)=/,
+  );
+});
+
+test('protected Preview tracer explicitly authorizes only its immutable deployment host', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/preview-release-tracer.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT:\s*'true'/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_URL:\s*\$\{\{ inputs\.preview_url \}\}/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID:\s*\$\{\{ inputs\.preview_deployment_id \}\}/);
+  assert.doesNotMatch(workflow, /--prod\b|vercel promote/);
 });
 
 test('environment provisioning writes local env and external checklist', async () => {

@@ -3,72 +3,220 @@ name: ScholarScout Prelaunch Rehearsal
 on:
   workflow_dispatch:
     inputs:
-      base_url:
-        description: Production or preview URL to rehearse
-        required: false
+      candidate_commit:
+        description: Exact 40-character candidate commit SHA
+        required: true
+        type: string
+      candidate_ref:
+        description: Candidate worktree-agent branch ref (refs/heads/worktree-agent-*)
+        required: true
         type: string
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
-  group: scholarscout-prelaunch-rehearsal
-  cancel-in-progress: true
+  group: scholarscout-prelaunch-rehearsal-${{ inputs.candidate_commit }}
+  cancel-in-progress: false
 
 jobs:
-  rehearsal:
-    name: Prelaunch rehearsal
+  validate-inputs:
+    name: Validate candidate metadata
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
-      GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
-      SCHOLARSCOUT_STAFF_EMAILS: ${{ secrets.SCHOLARSCOUT_STAFF_EMAILS }}
-      SCHOLARSCOUT_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_HEALTH_TOKEN }}
-      SCHOLARSCOUT_DATA_ADAPTER: ${{ secrets.SCHOLARSCOUT_DATA_ADAPTER }}
-      SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
-      SCHOLARSCOUT_DATA_SERVICE_URL: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_URL }}
-      SCHOLARSCOUT_DATA_SERVICE_TOKEN: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_TOKEN }}
-      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ inputs.base_url || secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
-      SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
-      SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
-      SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
-      SCHOLARSCOUT_SMOKE_TIMEOUT_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_TIMEOUT_MS }}
-      SCHOLARSCOUT_SMOKE_RETRIES: ${{ secrets.SCHOLARSCOUT_SMOKE_RETRIES }}
-      SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS }}
+    timeout-minutes: 2
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Reject malformed candidate metadata
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          CANDIDATE_REF: ${{ inputs.candidate_ref }}
+        run: |
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]
+          [[ "$CANDIDATE_REF" =~ ^refs/heads/worktree-agent-[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 
+  candidate-evidence:
+    name: Candidate quality, high-risk, and local browser evidence
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_ref }}
+      - name: Confirm candidate checkout
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Enable Corepack
         run: corepack enable
-
-      - name: Install without postinstall scripts
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Run prelaunch rehearsal
-        run: pnpm run rehearse:prelaunch
-
-      - name: Summarize prelaunch rehearsal
-        if: always()
-        run: cat reports/prelaunch-rehearsal/prelaunch-summary.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload prelaunch rehearsal artifacts
-        if: always()
+      - name: Run ordered candidate-bound local evidence lanes
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: >-
+          pnpm run rehearse:release-evidence --
+          --candidate-commit "$CANDIDATE_COMMIT"
+          --output-dir reports/prelaunch-rehearsal/release-evidence
+          --local-only
+      - name: Upload scrubbed local evidence
         uses: actions/upload-artifact@v4
         with:
-          name: prelaunch-rehearsal
-          path: reports/prelaunch-rehearsal
+          name: prelaunch-local-evidence-${{ inputs.candidate_commit }}
+          path: reports/prelaunch-rehearsal/release-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  preview-evidence:
+    name: Protected Preview browser and outage/restoration evidence
+    needs: candidate-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: Preview
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS }}
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
+      SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'true'
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_ref }}
+      - name: Confirm candidate checkout
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install immutable candidate dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+      - name: Pull Preview configuration and build once
+        run: |
+          pnpm dlx vercel@58.10.0 pull --yes --environment=preview --scope=scholar-scout --project=scholar-scout-web --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@58.10.0 build --token="$VERCEL_TOKEN"
+      - name: Create distinct Preview-only deployment scopes
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          echo "BASE_FIXTURE_ID=phase6-${GITHUB_RUN_ID}-base" >> "$GITHUB_ENV"
+          echo "OUTAGE_FIXTURE_ID=phase6-${GITHUB_RUN_ID}-outage" >> "$GITHUB_ENV"
+          echo "BASE_DATA_PATH=scholarscout/e2e/${CANDIDATE_COMMIT}/${GITHUB_RUN_ID}/base.json" >> "$GITHUB_ENV"
+          echo "OUTAGE_DATA_PATH=scholarscout/e2e/${CANDIDATE_COMMIT}/${GITHUB_RUN_ID}/outage.json" >> "$GITHUB_ENV"
+          echo "SCHOLARSCOUT_E2E_STUDENT_EMAIL=phase6-${GITHUB_RUN_ID}@example.test" >> "$GITHUB_ENV"
+          STUDENT_PASSWORD=$(node --input-type=module -e "import {randomBytes} from 'node:crypto'; process.stdout.write(randomBytes(24).toString('base64url'))")
+          echo "::add-mask::$STUDENT_PASSWORD"
+          echo "SCHOLARSCOUT_E2E_STUDENT_PASSWORD=$STUDENT_PASSWORD" >> "$GITHUB_ENV"
+      - name: Deploy unaliased base Preview
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
+            --meta "githubCommitSha=$CANDIDATE_COMMIT" \
+            --env "SCHOLARSCOUT_BLOB_DATA_PATH=$BASE_DATA_PATH" \
+            --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
+            --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$BASE_FIXTURE_ID" \
+            --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true > base-deploy.json
+          BASE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('base-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
+          pnpm dlx vercel@58.10.0 inspect "$BASE_URL" --json --token="$VERCEL_TOKEN" > base-inspect.json
+          BASE_DEPLOYMENT_ID=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; process.stdout.write(JSON.parse(readFileSync('base-inspect.json','utf8')).id)")
+          echo "BASE_URL=$BASE_URL" >> "$GITHUB_ENV"
+          echo "BASE_DEPLOYMENT_ID=$BASE_DEPLOYMENT_ID" >> "$GITHUB_ENV"
+      - name: Run protected base Preview browser lane
+        shell: bash
+        env:
+          VERCEL_ENV: preview
+          SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          SCHOLARSCOUT_PREVIEW_COMMIT_SHA: ${{ inputs.candidate_commit }}
+        run: >-
+          SCHOLARSCOUT_PREVIEW_URL="$BASE_URL"
+          SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID="$BASE_DEPLOYMENT_ID"
+          node scripts/run-preview-release-tracer.mjs > preview-browser-raw.json
+      - name: Deploy distinct unaliased outage Preview
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
+            --meta "githubCommitSha=$CANDIDATE_COMMIT" \
+            --env "SCHOLARSCOUT_BLOB_DATA_PATH=$OUTAGE_DATA_PATH" \
+            --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
+            --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$OUTAGE_FIXTURE_ID" \
+            --env SCHOLARSCOUT_E2E_PURGE_DATA_ON_CLEANUP=true \
+            --env SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1 > outage-deploy.json
+          OUTAGE_URL=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; const value=JSON.parse(readFileSync('outage-deploy.json','utf8')); process.stdout.write(value.url.startsWith('http') ? value.url : 'https://' + value.url)")
+          pnpm dlx vercel@58.10.0 inspect "$OUTAGE_URL" --json --token="$VERCEL_TOKEN" > outage-inspect.json
+          OUTAGE_DEPLOYMENT_ID=$(node --input-type=module -e "import {readFileSync} from 'node:fs'; process.stdout.write(JSON.parse(readFileSync('outage-inspect.json','utf8')).id)")
+          echo "OUTAGE_URL=$OUTAGE_URL" >> "$GITHUB_ENV"
+          echo "OUTAGE_DEPLOYMENT_ID=$OUTAGE_DEPLOYMENT_ID" >> "$GITHUB_ENV"
+      - name: Run authenticated outage and no-write lane
+        shell: bash
+        env:
+          VERCEL_ENV: preview
+          SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          SCHOLARSCOUT_PREVIEW_COMMIT_SHA: ${{ inputs.candidate_commit }}
+        run: >-
+          SCHOLARSCOUT_PREVIEW_URL="$OUTAGE_URL"
+          SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID="$OUTAGE_DEPLOYMENT_ID"
+          SCHOLARSCOUT_E2E_FIXTURE_ID="$OUTAGE_FIXTURE_ID"
+          node scripts/run-preview-outage-tracer.mjs > preview-outage-raw.json
+      - name: Prove base Preview remained restored
+        shell: bash
+        env:
+          VERCEL_ENV: preview
+          SCHOLARSCOUT_PREVIEW_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          SCHOLARSCOUT_PREVIEW_COMMIT_SHA: ${{ inputs.candidate_commit }}
+        run: >-
+          SCHOLARSCOUT_PREVIEW_URL="$BASE_URL"
+          SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID="$BASE_DEPLOYMENT_ID"
+          node scripts/run-preview-release-tracer.mjs > preview-restoration-raw.json
+      - name: Remove both unaliased deployments
+        if: always()
+        shell: bash
+        run: |
+          cleanup_status=0
+          if [[ -n "${OUTAGE_URL:-}" ]]; then pnpm dlx vercel@58.10.0 remove "$OUTAGE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
+          if [[ -n "${BASE_URL:-}" ]]; then pnpm dlx vercel@58.10.0 remove "$BASE_URL" --yes --token="$VERCEL_TOKEN" || cleanup_status=$?; fi
+          exit "$cleanup_status"
+      - name: Create scrubbed Preview records
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          mkdir -p reports/prelaunch-rehearsal/release-evidence
+          node --input-type=module -e "import {writeFile} from 'node:fs/promises'; const utc=new Date().toISOString(); const artifactUrl=process.env.GITHUB_SERVER_URL+'/'+process.env.GITHUB_REPOSITORY+'/actions/runs/'+process.env.GITHUB_RUN_ID; await writeFile('reports/prelaunch-rehearsal/release-evidence/preview-browser.json',JSON.stringify({kind:'preview-browser',candidateCommit:process.env.CANDIDATE_COMMIT,utc,result:'passed',safeCategory:'passed',deploymentId:process.env.BASE_DEPLOYMENT_ID,artifactUrl})+'\n'); await writeFile('reports/prelaunch-rehearsal/release-evidence/preview-outage.json',JSON.stringify({kind:'preview-outage',candidateCommit:process.env.CANDIDATE_COMMIT,utc,result:'passed',safeCategory:'passed',deploymentId:process.env.OUTAGE_DEPLOYMENT_ID,baseDeploymentId:process.env.BASE_DEPLOYMENT_ID,artifactUrl,cleanup:'passed',restored:true})+'\n');"
+      - name: Download local evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: prelaunch-local-evidence-${{ inputs.candidate_commit }}
+          path: reports/prelaunch-rehearsal/release-evidence
+      - name: Aggregate five independent release lanes
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: >-
+          pnpm run rehearse:release-evidence --
+          --candidate-commit "$CANDIDATE_COMMIT"
+          --output-dir reports/prelaunch-rehearsal/release-evidence
+          --aggregate
+      - name: Upload scrubbed release evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prelaunch-release-evidence-${{ inputs.candidate_commit }}
+          path: reports/prelaunch-rehearsal/release-evidence
+          if-no-files-found: error
           retention-days: 14
