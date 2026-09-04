@@ -100,6 +100,7 @@ jobs:
           SCHOLARSCOUT_PREVIEW_COMMIT_SHA: ${{ inputs.candidate_commit }}
           SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.preview_url }}
           SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: ${{ inputs.preview_deployment_id }}
+          SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'true'
           SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS }}
           SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
         run: |

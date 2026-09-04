@@ -639,6 +639,18 @@ test('prelaunch workflow orders local proof before isolated Preview outage and c
   );
 });
 
+test('protected Preview tracer explicitly authorizes only its immutable deployment host', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/preview-release-tracer.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT:\s*'true'/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_URL:\s*\$\{\{ inputs\.preview_url \}\}/);
+  assert.match(workflow, /SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID:\s*\$\{\{ inputs\.preview_deployment_id \}\}/);
+  assert.doesNotMatch(workflow, /--prod\b|vercel promote/);
+});
+
 test('environment provisioning writes local env and external checklist', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-provision-'));
   const localFile = path.join(tempDir, '.env.prelaunch.local');
