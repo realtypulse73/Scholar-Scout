@@ -83,6 +83,10 @@ jobs:
       SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
       SCHOLARSCOUT_PREVIEW_UNALIASED_DEPLOYMENT: 'true'
+      # This is a syntactically valid, non-routable build-time origin. It
+      # overrides only the malformed Preview setting for these ephemeral
+      # rehearsal deployments; it never changes Vercel project settings.
+      SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL: 'https://prelaunch.invalid'
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -106,7 +110,7 @@ jobs:
       - name: Pull Preview configuration and build once
         run: |
           pnpm dlx vercel@58.10.0 pull --yes --environment=preview --scope=scholar-scout --project=scholar-scout-web --token="$VERCEL_TOKEN"
-          pnpm dlx vercel@58.10.0 build --token="$VERCEL_TOKEN"
+          NEXTAUTH_URL="$SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL" pnpm dlx vercel@58.10.0 build --token="$VERCEL_TOKEN"
       - name: Create distinct Preview-only deployment scopes
         shell: bash
         env:
@@ -127,6 +131,7 @@ jobs:
         run: |
           pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
             --meta "githubCommitSha=$CANDIDATE_COMMIT" \
+            --env "NEXTAUTH_URL=$SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL" \
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$BASE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
             --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$BASE_FIXTURE_ID" \
@@ -153,6 +158,7 @@ jobs:
         run: |
           pnpm dlx vercel@58.10.0 deploy --prebuilt --skip-domain --json --token="$VERCEL_TOKEN" \
             --meta "githubCommitSha=$CANDIDATE_COMMIT" \
+            --env "NEXTAUTH_URL=$SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL" \
             --env "SCHOLARSCOUT_BLOB_DATA_PATH=$OUTAGE_DATA_PATH" \
             --env SCHOLARSCOUT_E2E_FIXTURE_ENABLED=true \
             --env "SCHOLARSCOUT_E2E_FIXTURE_ID=$OUTAGE_FIXTURE_ID" \

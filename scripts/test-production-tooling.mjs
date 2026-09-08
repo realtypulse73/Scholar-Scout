@@ -631,9 +631,19 @@ test('prelaunch workflow orders local proof before isolated Preview outage and c
   assert.match(workflow, /randomBytes\(24\)/);
   assert.match(workflow, /pnpm dlx vercel@58\.10\.0 pull/);
   assert.match(workflow, /pnpm dlx vercel@58\.10\.0 remove/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL:\s*'https:\/\/prelaunch\.invalid'/);
+  assert.match(
+    workflow,
+    /NEXTAUTH_URL="\$SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL" pnpm dlx vercel@58\.10\.0 build/,
+  );
+  assert.equal(
+    (workflow.match(/--env "NEXTAUTH_URL=\$SCHOLARSCOUT_REHEARSAL_NEXTAUTH_URL"/g) ?? []).length,
+    2,
+  );
   assert.match(workflow, /--skip-domain/);
   assert.match(workflow, /--aggregate/);
   assert.doesNotMatch(workflow, /--prod\b|vercel promote/);
+  assert.doesNotMatch(workflow, /vercel env (?:add|rm|update)/);
   assert.doesNotMatch(
     workflow,
     /--env "?SCHOLARSCOUT_(?:VERCEL_PROTECTION_BYPASS|E2E_FIXTURE_CAPABILITY)=/,
