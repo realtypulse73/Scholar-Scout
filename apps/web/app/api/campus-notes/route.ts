@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { authOptions } from '@/auth';
 import { creatorProfiles } from '@/lib/platform';
 import { createCampusNote, getCampusNotes } from '@/lib/server/data-store';
+import { reserveCommunitySubmission } from '@/lib/server/community-submission';
 import type { CampusNote } from '@/lib/campus-community';
 
 export async function GET(request: Request) {
@@ -16,6 +17,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Sign in to post a note.' }, { status: 401 });
+  if (reserveCommunitySubmission().status === 'unavailable') {
+    return NextResponse.json(
+      { error: 'Community submissions are not available right now. Please try again shortly.' },
+      { status: 503 },
+    );
+  }
   const input = (await request.json()) as Omit<CampusNote, 'id' | 'author_id' | 'created_at'>;
   const uploader = input.uploader_username
     ? creatorProfiles.find((item) => item.username === input.uploader_username && item.schoolSlug === input.school_slug)

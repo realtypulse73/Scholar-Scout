@@ -5,12 +5,19 @@ import { creatorProfiles } from '@/lib/platform';
 import {
   createUploaderInboxRequest,
 } from '@/lib/server/data-store';
+import { reserveCommunitySubmission } from '@/lib/server/community-submission';
 import type { UploaderInboxRequest } from '@/lib/campus-community';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Sign in to request a peer connection.' }, { status: 401 });
+  }
+  if (reserveCommunitySubmission().status === 'unavailable') {
+    return NextResponse.json(
+      { error: 'Community submissions are not available right now. Please try again shortly.' },
+      { status: 503 },
+    );
   }
 
   const input = (await request.json()) as Pick<
