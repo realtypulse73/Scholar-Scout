@@ -5,6 +5,20 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createLifecycleRequest, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 
+export function parseLauncherOptions(args) {
+  const options = { spec: undefined, project: undefined };
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if ((argument === '--spec' || argument === '--project') && args[index + 1]) {
+      options[argument.slice(2)] = args[index + 1];
+      index += 1;
+      continue;
+    }
+    throw new Error('E2E fixture launcher accepts only --spec and --project.');
+  }
+  return options;
+}
+
 export function validateE2eFixtureEnvironment(env = process.env) {
   if (env.VERCEL_ENV === 'production' || env.SCHOLARSCOUT_E2E_BASE_URL || env.SCHOLARSCOUT_DATA_FILE || (env.SCHOLARSCOUT_DATA_ADAPTER && env.SCHOLARSCOUT_DATA_ADAPTER !== 'json')) {
     throw new Error('E2E fixture runner accepts only its owned non-production JSON target.');
@@ -61,6 +75,21 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
   }
 }
 
+export function createPlaywrightRunner(options, spawnProcess = spawn) {
+  return ({ baseUrl }) => new Promise((resolve, reject) => {
+    const args = ['exec', 'playwright', 'test'];
+    if (options.spec) args.push(options.spec);
+    if (options.project) args.push('--project', options.project);
+    const child = spawnProcess('pnpm', args, {
+      cwd: process.cwd(),
+      env: { PATH: process.env.PATH, SCHOLARSCOUT_E2E_BASE_URL: baseUrl },
+      stdio: 'inherit',
+    });
+    child.once('error', reject);
+    child.once('exit', (code) => code === 0 ? resolve() : reject(new Error('Browser test runner failed.')));
+  });
+}
+
 async function waitForReady(baseUrl, fetchImpl) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
@@ -70,4 +99,12 @@ async function waitForReady(baseUrl, fetchImpl) {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error('Owned E2E application process did not become ready.');
+}
+
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+  const options = parseLauncherOptions(process.argv.slice(2));
+  runE2eFixture({ runPlaywright: createPlaywrightRunner(options) }).catch((error) => {
+    process.exitCode = 1;
+    console.error(error.message);
+  });
 }

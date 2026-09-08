@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { validateE2eFixtureEnvironment } from './run-e2e-fixture.mjs';
+import { parseLauncherOptions, validateE2eFixtureEnvironment } from './run-e2e-fixture.mjs';
 
 test('rejects production and caller-selected fixture targets', () => {
   for (const env of [
@@ -16,4 +16,13 @@ test('rejects production and caller-selected fixture targets', () => {
 
 test('accepts an unset local environment', () => {
   assert.doesNotThrow(() => validateE2eFixtureEnvironment({}));
+});
+
+test('accepts only a selected browser spec and project', () => {
+  assert.deepEqual(
+    parseLauncherOptions(['--spec', 'apps/web/e2e/student.spec.ts', '--project', 'chromium']),
+    { spec: 'apps/web/e2e/student.spec.ts', project: 'chromium' },
+  );
+  assert.throws(() => parseLauncherOptions(['--base-url', 'https://example.test']));
+  assert.throws(() => parseLauncherOptions(['--fixture-id', 'caller-selected']));
 });
