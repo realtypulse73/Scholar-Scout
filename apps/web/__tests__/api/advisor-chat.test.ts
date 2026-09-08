@@ -33,6 +33,9 @@ const contextModule = jest.requireMock('../../lib/server/advisor-context') as {
 const dataStoreModule = jest.requireMock('../../lib/server/data-store') as {
   getGuestQuotaBindingForAccount: jest.Mock;
 };
+const platformStoreModule = jest.requireMock('../../lib/server/platform-store') as {
+  appendAnalyticsEvent: jest.Mock;
+};
 
 function advisorRequest(value: unknown): Request {
   const body = JSON.stringify(value);
@@ -151,7 +154,7 @@ describe('advisor chat route', () => {
     expect(upstreamPayload.input).not.toContain('account:student-one');
   });
 
-  it('returns the fixed fallback after one schema retry and exposes no provider diagnostic', async () => {
+  it('returns the fixed fallback after one schema retry without provider diagnostics', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
@@ -162,15 +165,19 @@ describe('advisor chat route', () => {
     const response = await POST(advisorRequest({ message: 'Help me plan.' }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
+    const payload = await response.json();
+
+    expect(payload).toEqual({
       reply: ADVISOR_SAFE_FALLBACK,
       fallback: true,
       crisis: false,
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(payload)).not.toContain('OpenAI');
+    expect(JSON.stringify(payload)).not.toContain('x-request-id');
   });
 
-  it('fails closed when the limiter is unavailable and handles acute crisis before actor access', async () => {
+  it('fails closed when the limiter is unavailable before provider or account mutation', async () => {
     rateLimitModule.reserveAdvisorAccount.mockResolvedValue({
       status: 'unavailable',
       allowed: false,
@@ -178,11 +185,23 @@ describe('advisor chat route', () => {
       retryAfterSeconds: null,
     });
     const unavailable = await POST(advisorRequest({ message: 'Compare options.' }));
-    const crisis = await POST(advisorRequest({ message: 'I want to hurt myself tonight.' }));
 
     expect(unavailable.status).toBe(503);
-    expect(crisis.status).toBe(200);
     expect(actorModule.resolveStudentActor).toHaveBeenCalledTimes(1);
+    await expect(unavailable.json()).resolves.toEqual({
+      error: 'The advisor is not available right now. Please try again shortly.',
+    });
+    expect(contextModule.buildAdvisorContext).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(platformStoreModule.appendAnalyticsEvent).not.toHaveBeenCalled();
+  });
+
+  it('handles acute crisis before actor, provider, or account mutation', async () => {
+    const crisis = await POST(advisorRequest({ message: 'I want to hurt myself tonight.' }));
+
+    expect(crisis.status).toBe(200);
+    expect(actorModule.resolveStudentActor).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(platformStoreModule.appendAnalyticsEvent).not.toHaveBeenCalled();
   });
 });

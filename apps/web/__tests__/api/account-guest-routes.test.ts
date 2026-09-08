@@ -338,6 +338,8 @@ describe('account guest routes', () => {
       category: 'conflict',
       action: 'reload',
     });
+    expect(saveOnboardingProfileMock).toHaveBeenCalledWith(account.storageKey, completeProfile);
+    expect(saveShortlistStateMock).toHaveBeenCalledWith(account.storageKey, [], {});
   });
 
   it('reads migrated shortlist activity through the account and rejects the invalidated guest', async () => {
