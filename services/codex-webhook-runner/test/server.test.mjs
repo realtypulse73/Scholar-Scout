@@ -219,6 +219,29 @@ describe('Codex webhook runner', () => {
       error: 'Webhook delivery failed',
     });
   });
+
+  it('stops before agent dispatch when the configured GitHub provider is unavailable', async () => {
+    const fetchCalls = [];
+    const server = createCodexWebhookRunner({
+      webhookSecret: WEBHOOK_SECRET,
+      repository: CONFIGURED_REPOSITORY,
+      githubToken: 'github-token',
+      codexAgentEndpoint: 'https://agent.example/jobs',
+      codexAgentBearerToken: 'agent-token',
+      fetchImpl: async (...args) => {
+        fetchCalls.push(args);
+        throw new Error('provider unavailable');
+      },
+    });
+    const baseUrl = await listen(server, servers);
+
+    const response = await postWebhook(baseUrl, createIssuePayload());
+
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), { error: 'Webhook delivery failed' });
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(fetchCalls[0][0], 'https://api.github.example/issues/42/comments');
+  });
 });
 
 function createIssuePayload({

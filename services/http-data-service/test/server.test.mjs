@@ -141,6 +141,23 @@ describe('ScholarScout HTTP data service fixture', () => {
     assert.equal(storedFile.programmeRecords[0].id, 'service-programme');
   });
 
+  it('rejects malformed replacement input without replacing the winning document', async () => {
+    const before = await readFile(dataFile, 'utf8');
+    const response = await fetch(baseUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer test-token',
+        'Content-Type': 'application/json',
+        'If-Match': '"not-the-current-document"',
+      },
+      body: '{bad json',
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'Invalid JSON document' });
+    assert.equal(await readFile(dataFile, 'utf8'), before);
+  });
+
   it('backs up the previous document before replacing it', async () => {
     const updatedDocument = {
       users: [],
