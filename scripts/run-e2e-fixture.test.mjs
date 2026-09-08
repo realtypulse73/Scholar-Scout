@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import path from 'node:path';
 
-import { parseLauncherOptions, validateE2eFixtureEnvironment } from './run-e2e-fixture.mjs';
+import {
+  isCliEntrypoint,
+  parseLauncherOptions,
+  validateE2eFixtureEnvironment,
+} from './run-e2e-fixture.mjs';
 
 test('rejects production and caller-selected fixture targets', () => {
   for (const env of [
@@ -25,4 +30,11 @@ test('accepts only a selected browser spec and project', () => {
   );
   assert.throws(() => parseLauncherOptions(['--base-url', 'https://example.test']));
   assert.throws(() => parseLauncherOptions(['--fixture-id', 'caller-selected']));
+});
+
+test('recognizes the launcher entrypoint from a Windows path', () => {
+  const scriptPath = path.resolve('scripts/run-e2e-fixture.mjs');
+  const scriptUrl = new URL('./run-e2e-fixture.mjs', import.meta.url).href;
+
+  assert.equal(isCliEntrypoint(scriptPath, scriptUrl), true);
 });
