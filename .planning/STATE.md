@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 current_phase_name: school-community-and-wny-release-slice
-status: not_started
-stopped_at: Phase 4 verified complete; Phase 5 is next
-last_updated: "2026-08-29T12:35:00.000Z"
+status: blocked
+stopped_at: Plan 05-07 implementation complete; awaiting authorized Preview UAT Test 1
+last_updated: "2026-09-08T12:35:00.000Z"
 last_activity: 2026-08-29
-last_activity_desc: Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
+last_activity_desc: Restored Phase 5/6 planning baseline; Plan 05-07 blocked on Preview UAT
 progress:
   total_phases: 5
   completed_phases: 3
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 Phase: 05 (school-community-and-wny-release-slice) — NOT STARTED
 Plan: 0 of TBD
-Status: Phase 4 verified complete; Phase 5 is next
-Last activity: 2026-08-29 — Phase 4 canonical re-verification passed 3/3 after HTTP CAS gap closure
+Status: Plan 05-07 source correction/test complete; Preview UAT remains blocked
+Last activity: 2026-09-08 — Historical Phase 6 plan baseline restored; Phase 5 gate remains active
 
 Progress: [██████████] 100%
 
@@ -196,5 +196,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-29T07:10:03.047Z
-Stopped at: Phase 4 verified complete; Phase 5 is next
+Stopped at: Plan 05-07 implementation complete; awaiting authorized Preview UAT Test 1
 Resume file: None
