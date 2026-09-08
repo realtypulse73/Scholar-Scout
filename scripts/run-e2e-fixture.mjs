@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { createLifecycleRequest, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 
@@ -91,7 +92,7 @@ export function createPlaywrightRunner(options, spawnProcess = spawn) {
 }
 
 async function waitForReady(baseUrl, fetchImpl) {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       const response = await fetchImpl(`${baseUrl}/programmes`, { dispatcher: undefined });
       if (response.ok) return;
@@ -101,7 +102,11 @@ async function waitForReady(baseUrl, fetchImpl) {
   throw new Error('Owned E2E application process did not become ready.');
 }
 
-if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+export function isCliEntrypoint(entryPath, moduleUrl = import.meta.url) {
+  return Boolean(entryPath) && pathToFileURL(path.resolve(entryPath)).href === moduleUrl;
+}
+
+if (isCliEntrypoint(process.argv[1])) {
   const options = parseLauncherOptions(process.argv.slice(2));
   runE2eFixture({ runPlaywright: createPlaywrightRunner(options) }).catch((error) => {
     process.exitCode = 1;
