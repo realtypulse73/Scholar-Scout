@@ -41,3 +41,13 @@ test('fails closed without runner-only bypass material', () => {
     env: {},
   }));
 });
+
+test('normalizes only surrounding whitespace from runner-owned bypass material', () => {
+  const options = createProtectedPreviewContextOptions({
+    metadata,
+    candidateCommit: 'candidate-commit',
+    env: { SCHOLARSCOUT_VERCEL_BYPASS: '  sensitive-bypass\n' },
+  });
+
+  assert.equal(options.extraHTTPHeaders['x-vercel-protection-bypass'], 'sensitive-bypass');
+});

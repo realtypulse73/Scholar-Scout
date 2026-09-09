@@ -50,6 +50,46 @@ test('fails closed before navigation when lifecycle configuration is absent or u
   assert.throws(() => createLifecycleRequest('https://127.0.0.1:4300', ''));
 });
 
+test('normalizes surrounding whitespace from a runner-owned lifecycle capability', async () => {
+  const request = createLifecycleRequest(
+    'https://preview.example.test',
+    '  runner-capability\n',
+  );
+  const originalFetch = globalThis.fetch;
+  let authorization;
+  globalThis.fetch = async (_url, options) => {
+    authorization = options.headers.Authorization;
+    return { ok: true };
+  };
+
+  try {
+    await request('POST');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(authorization, 'Bearer runner-capability');
+});
+
+test('uses manual redirects so protected login pages cannot satisfy the lifecycle', async () => {
+  const request = createLifecycleRequest('https://preview.example.test', 'runner-capability');
+  const originalFetch = globalThis.fetch;
+  let redirect;
+  globalThis.fetch = async (_url, options) => {
+    redirect = options.redirect;
+    return { ok: false, status: 302 };
+  };
+
+  try {
+    const response = await request('POST');
+    assert.equal(response.ok, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(redirect, 'manual');
+});
+
 test('does not begin the browser run when create or verify is rejected', async () => {
   const phases = [];
   let ranBrowser = false;

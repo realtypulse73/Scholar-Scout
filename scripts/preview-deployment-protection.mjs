@@ -32,8 +32,8 @@ export function validatePreviewDeployment(metadata, candidateCommit) {
  */
 export function createProtectedPreviewContextOptions({ metadata, candidateCommit, env = process.env }) {
   const baseURL = validatePreviewDeployment(metadata, candidateCommit);
-  const bypass = env[BYPASS_ENV];
-  if (typeof bypass !== 'string' || bypass.length === 0) {
+  const bypass = normalizeRunnerHeaderValue(env[BYPASS_ENV]);
+  if (!bypass) {
     throw new Error('Preview tracer requires runner-only protection material.');
   }
   return {
@@ -43,4 +43,13 @@ export function createProtectedPreviewContextOptions({ metadata, candidateCommit
       'x-vercel-set-bypass-cookie': 'true',
     },
   };
+}
+
+/**
+ * GitHub and provider secret CLIs can preserve a final line ending when a
+ * runner-only header value is copied from a handoff file. Normalize that
+ * boundary whitespace before use, without ever exposing the value.
+ */
+function normalizeRunnerHeaderValue(value) {
+  return typeof value === 'string' ? value.trim() : '';
 }
