@@ -121,3 +121,27 @@ test('scrubs sensitive failure details and always delegates lifecycle cleanup', 
   assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
   assert.equal(JSON.stringify(result).includes('runner-capability'), false);
 });
+
+test('records a scrubbed lifecycle failure when Preview fixture provisioning is denied', async () => {
+  let browserStarted = false;
+  const result = await runPreviewReleaseTracer({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    env: {
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
+    },
+    createLifecycleRequest: () => async () => ({ ok: false }),
+    createBrowser: async () => { browserStarted = true; },
+  });
+
+  assert.equal(browserStarted, false);
+  assert.deepEqual(result, {
+    outcome: 'failed',
+    target: metadata.url,
+    candidateCommit: 'candidate-commit',
+    errorCategory: 'fixture-provision-failed',
+  });
+  assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
+  assert.equal(JSON.stringify(result).includes('runner-capability'), false);
+});

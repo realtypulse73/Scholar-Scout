@@ -53,3 +53,33 @@ test('fails closed when the outage result discloses sensitive material', async (
   assert.equal(result.outcome, 'failed');
   assert.equal(result.errorCategory, 'outage-proof-failed');
 });
+
+test('records a scrubbed lifecycle failure when outage cleanup is denied', async () => {
+  const phases = [];
+  const result = await runPreviewOutageRehearsal({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    env: {
+      SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
+    },
+    createLifecycle: () => async (method) => {
+      phases.push(method);
+      return { ok: method !== 'DELETE' };
+    },
+    fetchImpl: async () => ({
+      status: 503,
+      text: async () => JSON.stringify({ error: 'Community submissions are unavailable.' }),
+    }),
+  });
+
+  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(result, {
+    candidateCommit: 'candidate-commit',
+    target: metadata.url,
+    outcome: 'failed',
+    errorCategory: 'fixture-cleanup-failed',
+  });
+  assert.equal(JSON.stringify(result).includes('bypass-value'), false);
+  assert.equal(JSON.stringify(result).includes('capability-value'), false);
+});

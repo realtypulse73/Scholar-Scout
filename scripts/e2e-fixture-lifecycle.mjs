@@ -1,11 +1,47 @@
 const PROTOCOL = 'lifecycle-v1';
 
+const METHOD_STAGES = {
+  POST: 'provision',
+  GET: 'verification',
+  DELETE: 'cleanup',
+};
+
+export class FixtureLifecycleError extends Error {
+  constructor(stage) {
+    super(`E2E fixture ${stage} lifecycle request failed.`);
+    this.name = 'FixtureLifecycleError';
+    this.stage = stage;
+  }
+}
+
+/**
+ * Maps fixture lifecycle faults to the only categories permitted in releasable records.
+ */
+export function classifyFixtureLifecycleFailure(error) {
+  if (!(error instanceof FixtureLifecycleError)) {
+    return 'fixture-lifecycle-transport-failed';
+  }
+
+  return {
+    provision: 'fixture-provision-failed',
+    verification: 'fixture-verification-failed',
+    cleanup: 'fixture-cleanup-failed',
+    transport: 'fixture-lifecycle-transport-failed',
+  }[error.stage] ?? 'fixture-lifecycle-transport-failed';
+}
+
 export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
   let cleanupStarted = false;
   const lifecycleRequest = async (method) => {
-    const response = await request(method, { body: undefined });
+    const stage = METHOD_STAGES[method] ?? 'transport';
+    let response;
+    try {
+      response = await request(method, { body: undefined });
+    } catch {
+      throw new FixtureLifecycleError('transport');
+    }
     if (!response?.ok) {
-      throw new Error(`E2E fixture ${method} lifecycle request was denied.`);
+      throw new FixtureLifecycleError(stage);
     }
     return response;
   };
@@ -15,12 +51,20 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
     await lifecycleRequest('DELETE');
   };
   onCleanupReady?.(cleanup);
+  let lifecycleFailed = false;
   try {
     await lifecycleRequest('POST');
     await lifecycleRequest('GET');
     return await run();
+  } catch (error) {
+    lifecycleFailed = true;
+    throw error;
   } finally {
-    await cleanup();
+    try {
+      await cleanup();
+    } catch (error) {
+      if (!lifecycleFailed) throw error;
+    }
   }
 }
 

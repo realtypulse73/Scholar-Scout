@@ -3,7 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  classifyFixtureLifecycleFailure,
   createLifecycleRequest,
+  FixtureLifecycleError,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
 import { createProtectedPreviewContextOptions } from './preview-deployment-protection.mjs';
@@ -42,25 +44,35 @@ export async function runPreviewOutageRehearsal({
     options.extraHTTPHeaders,
   );
 
-  return runFixtureLifecycle({
-    request: lifecycle,
-    run: async () => {
-      const response = await fetchImpl(new URL('/api/campus-notes', options.baseURL), {
-        method: 'POST',
-        headers: options.extraHTTPHeaders,
-      });
-      const body = await response.text();
-      if (response.status !== 503 || /token|cookie|fixture|storage|student/i.test(body)) {
-        return {
-          candidateCommit,
-          target: options.baseURL,
-          outcome: 'failed',
-          errorCategory: 'outage-proof-failed',
-        };
-      }
-      return { candidateCommit, target: options.baseURL, outcome: 'passed' };
-    },
-  });
+  try {
+    return await runFixtureLifecycle({
+      request: lifecycle,
+      run: async () => {
+        const response = await fetchImpl(new URL('/api/campus-notes', options.baseURL), {
+          method: 'POST',
+          headers: options.extraHTTPHeaders,
+        });
+        const body = await response.text();
+        if (response.status !== 503 || /token|cookie|fixture|storage|student/i.test(body)) {
+          return {
+            candidateCommit,
+            target: options.baseURL,
+            outcome: 'failed',
+            errorCategory: 'outage-proof-failed',
+          };
+        }
+        return { candidateCommit, target: options.baseURL, outcome: 'passed' };
+      },
+    });
+  } catch (error) {
+    if (!(error instanceof FixtureLifecycleError)) throw error;
+    return {
+      candidateCommit,
+      target: options.baseURL,
+      outcome: 'failed',
+      errorCategory: classifyFixtureLifecycleFailure(error),
+    };
+  }
 }
 
 async function runCli() {

@@ -4,7 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  classifyFixtureLifecycleFailure,
   createLifecycleRequest as createFixtureLifecycleRequest,
+  FixtureLifecycleError,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
 import { createProtectedPreviewContextOptions } from './preview-deployment-protection.mjs';
@@ -66,33 +68,43 @@ export async function runPreviewReleaseTracer({
   );
   let browser;
 
-  return runFixtureLifecycle({
-    request,
-    run: async () => {
-      try {
-        browser = await createBrowser({
-          ...protectedOptions,
-          ignoreHTTPSErrors: false,
-        });
-        await runStudentSpec({
-          browser,
-          baseURL: protectedOptions.baseURL,
-          childEnv: {},
-          diagnostics: { trace: 'off', screenshot: 'off', video: 'off' },
-        });
-        return createSafeOutcome('passed', protectedOptions.baseURL, candidateCommit);
-      } catch {
-        return createSafeOutcome(
-          'failed',
-          protectedOptions.baseURL,
-          candidateCommit,
-          'student-tracer-failed',
-        );
-      } finally {
-        await browser?.close();
-      }
-    },
-  });
+  try {
+    return await runFixtureLifecycle({
+      request,
+      run: async () => {
+        try {
+          browser = await createBrowser({
+            ...protectedOptions,
+            ignoreHTTPSErrors: false,
+          });
+          await runStudentSpec({
+            browser,
+            baseURL: protectedOptions.baseURL,
+            childEnv: {},
+            diagnostics: { trace: 'off', screenshot: 'off', video: 'off' },
+          });
+          return createSafeOutcome('passed', protectedOptions.baseURL, candidateCommit);
+        } catch {
+          return createSafeOutcome(
+            'failed',
+            protectedOptions.baseURL,
+            candidateCommit,
+            'student-tracer-failed',
+          );
+        } finally {
+          await browser?.close();
+        }
+      },
+    });
+  } catch (error) {
+    if (!(error instanceof FixtureLifecycleError)) throw error;
+    return createSafeOutcome(
+      'failed',
+      protectedOptions.baseURL,
+      candidateCommit,
+      classifyFixtureLifecycleFailure(error),
+    );
+  }
 }
 
 function parseRunnerMetadata(value) {
