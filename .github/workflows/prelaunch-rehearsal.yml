@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Production or preview URL to rehearse
+        description: Protected Preview URL only; never a production URL
         required: false
+        type: string
+      candidate_commit:
+        description: Immutable candidate commit to rehearse
+        required: true
         type: string
 
 permissions:
@@ -58,8 +62,25 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Run prelaunch rehearsal
-        run: pnpm run rehearse:prelaunch
+      - name: Run candidate quality, high-risk, and local browser proof
+        run: |
+          pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"
+
+      - name: Protected Preview browser proof (maintainer-owned runner)
+        run: |
+          test -n "${{ inputs.base_url }}"
+          test "${{ inputs.base_url }}" != "${{ secrets.NEXTAUTH_URL }}"
+          node scripts/run-preview-release-tracer.mjs
+          test -f reports/prelaunch-rehearsal/preview-browser.json
+
+      - name: Separate Preview outage and restoration proof (maintainer-owned runner)
+        run: |
+          test -f reports/prelaunch-rehearsal/preview-outage.json
+
+      - name: Aggregate candidate release rehearsal
+        run: |
+          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json
+          test -f reports/prelaunch-rehearsal/release-records.json
 
       - name: Summarize prelaunch rehearsal
         if: always()

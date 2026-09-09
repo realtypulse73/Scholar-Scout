@@ -42,10 +42,19 @@ async function main() {
   if (args.releaseGate) {
     const candidateCommit = args.candidateCommit || process.env.GITHUB_SHA;
     if (!candidateCommit) throw new Error('Release rehearsal requires an explicit candidate commit.');
-    const records = {};
-    records['candidate-quality'] = await runReleaseLane('candidate-quality', candidateCommit, CANDIDATE_QUALITY_COMMANDS, outputDir);
-    if (records['candidate-quality'].outcome === 'passed') records['high-risk'] = await runReleaseLane('high-risk', candidateCommit, HIGH_RISK_COMMANDS, outputDir);
-    if (records['high-risk']?.outcome === 'passed') records['local-browser'] = await runReleaseLane('local-browser', candidateCommit, [LOCAL_BROWSER_COMMAND], outputDir);
+    const records = args.aggregateOnly
+      ? {
+          'candidate-quality': await loadRequiredRecord(path.join(outputDir, 'candidate-quality.json'), 'candidate-quality', candidateCommit),
+          'high-risk': await loadRequiredRecord(path.join(outputDir, 'high-risk.json'), 'high-risk', candidateCommit),
+          'local-browser': await loadRequiredRecord(path.join(outputDir, 'local-browser.json'), 'local-browser', candidateCommit),
+        }
+      : {};
+    if (!args.aggregateOnly) {
+      records['candidate-quality'] = await runReleaseLane('candidate-quality', candidateCommit, CANDIDATE_QUALITY_COMMANDS, outputDir);
+      if (records['candidate-quality'].outcome === 'passed') records['high-risk'] = await runReleaseLane('high-risk', candidateCommit, HIGH_RISK_COMMANDS, outputDir);
+      if (records['high-risk']?.outcome === 'passed') records['local-browser'] = await runReleaseLane('local-browser', candidateCommit, [LOCAL_BROWSER_COMMAND], outputDir);
+    }
+    if (args.localOnly) return;
     records['preview-browser'] = await loadRequiredRecord(args.previewBrowserRecord, 'preview-browser', candidateCommit);
     records['preview-outage'] = await loadRequiredRecord(args.previewOutageRecord, 'preview-outage', candidateCommit);
     await writeFile(path.join(outputDir, 'release-records.json'), `${JSON.stringify(records, null, 2)}\n`);
@@ -91,7 +100,7 @@ function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
 function runCommand(command, commandArgs) { return new Promise((resolve) => { const child = spawn(command, commandArgs, { cwd: process.cwd(), env: process.env }); let stdout = ''; let stderr = ''; child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
 function hasSmokeTarget() { return Boolean(process.env.SCHOLARSCOUT_SMOKE_BASE_URL || process.env.NEXTAUTH_URL); }
-function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
+function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
 function childArgs(values, args) { return args.envFile ? [...values, '--env-file', args.envFile] : values; }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
