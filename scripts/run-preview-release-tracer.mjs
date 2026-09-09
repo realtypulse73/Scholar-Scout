@@ -1,4 +1,7 @@
 import { chromium } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   createLifecycleRequest as createFixtureLifecycleRequest,
@@ -90,4 +93,37 @@ export async function runPreviewReleaseTracer({
       }
     },
   });
+}
+
+function parseRunnerMetadata(value) {
+  try {
+    const metadata = JSON.parse(value ?? '');
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      throw new Error();
+    }
+    return metadata;
+  } catch {
+    throw new Error('Preview tracer requires scrubbed Preview deployment metadata.');
+  }
+}
+
+async function runCli() {
+  const outputFlag = process.argv.indexOf('--output');
+  const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
+  const candidateCommit = process.env.GITHUB_SHA;
+  if (!outputPath || !candidateCommit) {
+    throw new Error('Preview tracer requires a candidate commit and an output path.');
+  }
+  const outcome = await runPreviewReleaseTracer({
+    candidateCommit,
+    metadata: parseRunnerMetadata(process.env.SCHOLARSCOUT_PREVIEW_METADATA),
+  });
+  const record = { ...outcome, recordedAt: new Date().toISOString() };
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(record, null, 2)}\n`);
+  if (record.outcome !== 'passed') process.exitCode = 1;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runCli().catch(() => { process.exitCode = 1; });
 }

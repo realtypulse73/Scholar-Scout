@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
+      GITHUB_SHA: ${{ inputs.candidate_commit }}
       NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -47,6 +48,10 @@ jobs:
       SCHOLARSCOUT_SMOKE_TIMEOUT_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_TIMEOUT_MS }}
       SCHOLARSCOUT_SMOKE_RETRIES: ${{ secrets.SCHOLARSCOUT_SMOKE_RETRIES }}
       SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS }}
+      SCHOLARSCOUT_VERCEL_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_BYPASS }}
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
+      SCHOLARSCOUT_PREVIEW_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_METADATA }}
+      SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,11 +75,12 @@ jobs:
         run: |
           test -n "${{ inputs.base_url }}"
           test "${{ inputs.base_url }}" != "${{ secrets.NEXTAUTH_URL }}"
-          node scripts/run-preview-release-tracer.mjs
+          node scripts/run-preview-release-tracer.mjs --output reports/prelaunch-rehearsal/preview-browser.json
           test -f reports/prelaunch-rehearsal/preview-browser.json
 
       - name: Separate Preview outage and restoration proof (maintainer-owned runner)
         run: |
+          node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
           test -f reports/prelaunch-rehearsal/preview-outage.json
 
       - name: Aggregate candidate release rehearsal
