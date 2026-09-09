@@ -36,7 +36,7 @@ function isAuthorizedLifecycleRequest(request: Request): boolean {
     request.body !== null ||
     request.headers.get('authorization') !== `Bearer ${capability}` ||
     request.headers.get('x-scholarscout-e2e-fixture-protocol') !== PROTOCOL ||
-    request.headers.get('content-length') ||
+    (request.headers.get('content-length') && request.headers.get('content-length') !== '0') ||
     request.headers.get('content-type') ||
     request.headers.get('transfer-encoding') ||
     request.headers.get('origin') ||

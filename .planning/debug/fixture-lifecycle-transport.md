@@ -7,10 +7,10 @@ updated: 2026-09-09T01:00:00-04:00
 
 ## Current Focus
 
-hypothesis: "The lifecycle client must fail closed if Vercel protection redirects it away from the exact endpoint, while runner-owned opaque values must be normalized without disclosure."
-test: "Regression tests verify manual redirect handling and boundary-whitespace normalization; a synthetic unauthenticated request confirms the protected Preview redirects to Vercel login."
-expecting: "A rerun from GitHub Actions will now reject any protection redirect as provisioning failure and proceed only on a direct authorized endpoint response."
-next_action: "Rerun the protected Preview rehearsal from an authorized maintainer workflow; do not change provider settings in this debug session."
+hypothesis: "Node fetch's no-body POST carries Content-Length: 0, which the route currently denies even though it cannot contain a request body."
+test: "Route regression invokes the lifecycle POST with the exact runner headers and Content-Length: 0, while body-bearing input remains denied."
+expecting: "The protected runner can provision the fixture after a fresh Preview deploy; nonzero or body-bearing requests remain denied."
+next_action: "Deploy the corrected immutable candidate and rerun the authorized protected Preview rehearsal."
 
 ## Symptoms
 
@@ -30,10 +30,14 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
   observation: "A synthetic unauthenticated request to the selected protected Preview was redirected to Vercel login rather than the lifecycle endpoint. No real capability or bypass value was used."
 - timestamp: 2026-09-09T06:00:00Z
   observation: "Focused lifecycle tests (18) and production-tooling tests (22) pass after redirect and opaque-value handling coverage was added."
+- timestamp: 2026-09-09T06:00:00Z
+  observation: "A managed-bypass lifecycle probe reached the protected application but POST/DELETE were denied while GET reached fixture verification. The strict route rejects every Content-Length header."
+- timestamp: 2026-09-09T06:00:00Z
+  observation: "The route regression with Content-Length: 0 and exact runner headers passes after allowing only that zero-length value; body-bearing input remains denied."
 
 ## Resolution
 
-root_cause: "The lifecycle client followed protection redirects, allowing an authentication gateway response to masquerade as a successful lifecycle response; it also did not normalize boundary whitespace on opaque runner-owned values. The original transport category contains no raw cause, so external rerun is still required to confirm the provider-side path."
-fix: "Use manual redirects for lifecycle requests and normalize only surrounding whitespace on runner-owned bypass and fixture capability values; add regression tests."
-verification: "node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs scripts/run-preview-release-tracer.test.mjs scripts/run-preview-outage-rehearsal.test.mjs (18 passed); pnpm test:production-tooling (22 passed)."
-files_changed: ["scripts/e2e-fixture-lifecycle.mjs", "scripts/e2e-fixture-lifecycle.test.mjs", "scripts/preview-deployment-protection.mjs", "scripts/preview-deployment-protection.test.mjs"]
+root_cause: "The lifecycle route treated Content-Length: 0 as evidence of a body. Node fetch adds that header for a no-body POST, so a valid protected runner provisioning request was denied before fixture creation. Redirect handling and opaque boundary-value normalization remain defense-in-depth hardening."
+fix: "Allow only Content-Length: 0 for an otherwise no-body lifecycle request; continue denying any nonzero length, body, content type, transfer encoding, query, browser metadata, or selector. Retain manual redirect and runner-value normalization hardening."
+verification: "pnpm --filter @scholar-scout/web test --runInBand __tests__/app/api/internal/e2e-fixture/route.test.ts (7 passed); node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs (11 passed); previous production-tooling run passed 22 tests."
+files_changed: ["apps/web/app/api/internal/e2e-fixture/route.ts", "apps/web/__tests__/app/api/internal/e2e-fixture/route.test.ts", "scripts/e2e-fixture-lifecycle.mjs", "scripts/e2e-fixture-lifecycle.test.mjs", "scripts/preview-deployment-protection.mjs", "scripts/preview-deployment-protection.test.mjs"]
