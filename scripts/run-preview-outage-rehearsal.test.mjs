@@ -16,7 +16,7 @@ test('proves the Preview outage before input processing and cleans its lifecycle
     metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
-      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability-value',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
     },
     createLifecycle: () => async (method) => {
       phases.push(method);
@@ -44,7 +44,7 @@ test('fails closed when the outage result discloses sensitive material', async (
     metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
-      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability-value',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
     },
     createLifecycle: () => async () => ({ ok: true }),
     fetchImpl: async () => ({ status: 503, text: async () => 'fixture should never be exposed' }),

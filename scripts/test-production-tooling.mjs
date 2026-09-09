@@ -560,6 +560,32 @@ test('production value provisioning writes generated secrets and provider checkl
   assert.doesNotMatch(report, /\bnpm run/);
 });
 
+test('Preview rehearsal provisioning creates distinct ignored lifecycle scopes without disclosing them in its report', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-provision-'));
+  const localFile = path.join(tempDir, '.env.preview-rehearsal.local');
+  const reportFile = path.join(tempDir, 'preview-rehearsal-provisioning.md');
+  const result = await runNode([
+    'scripts/provision-preview-rehearsal.mjs',
+    '--local-file',
+    localFile,
+    '--report-file',
+    reportFile,
+  ]);
+
+  assert.equal(result.code, 0, result.stderr);
+  const handoff = await readFile(localFile, 'utf8');
+  const report = await readFile(reportFile, 'utf8');
+  const baseline = handoff.match(/BASELINE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
+  const outage = handoff.match(/OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
+
+  assert.match(handoff, /BASELINE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
+  assert.match(handoff, /OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
+  assert.ok(baseline && outage && baseline !== outage);
+  assert.match(report, /SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY/);
+  assert.doesNotMatch(report, new RegExp(baseline));
+  assert.doesNotMatch(report, new RegExp(outage));
+});
+
 test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
   const result = await runCommand(
     'powershell',

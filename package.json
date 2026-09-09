@@ -23,6 +23,7 @@
     "lint": "pnpm --recursive --if-present run lint",
     "check:production-env": "node scripts/production-env-check.mjs",
     "provision:env": "node scripts/provision-environment.mjs",
+    "provision:preview-rehearsal": "node scripts/provision-preview-rehearsal.mjs",
     "provision:production-values": "node scripts/provision-production-values.mjs",
     "rehearse:prelaunch": "node scripts/prelaunch-rehearsal.mjs",
     "report:production": "node scripts/production-report-summary.mjs",

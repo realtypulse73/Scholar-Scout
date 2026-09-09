@@ -83,6 +83,14 @@ Only an authorized Vercel maintainer may then dispatch **ScholarScout Prelaunch 
 
 The workflow consumes the runner-only bypass, lifecycle capability, and scrubbed base/outage Preview metadata only from GitHub Actions secrets. The repository-side runners write only scrubbed candidate-bound JSON records and fail closed if a secret, metadata, lifecycle cleanup, 503 proof, or restoration record is missing. Do not echo, download, or paste the input values.
 
+For a one-time fresh baseline/outage lifecycle scope, generate the ignored local handoff and follow its scrubbed report:
+
+```bash
+pnpm run provision:preview-rehearsal
+```
+
+The handoff creates different baseline and outage fixture IDs and capabilities. Map them only to their matching one-off Preview deployments and to the corresponding GitHub Actions secrets; delete the handoff and rotate both values after the rehearsal. It never provisions Vercel bypass material or writes project-level Preview configuration.
+
 The releasable record fields are limited to candidate commit, Preview URL/ID, UTC, command, pass/fail result, safe error category, and approved artifact/deployment identifier or link. Never record secrets, cookies, capabilities, fixture identifiers, storage configuration, exports, or student content. A missing, failed, mismatched, or shared candidate-quality, high-risk, local-browser, protected Preview-browser, or Preview-outage record blocks the candidate; one lane cannot satisfy another.
 
 Preview rehearsal evidence supplements rather than replaces the protected-`main` CI, real production deployment/build-log, post-deploy smoke, and incident evidence described below. Preview deployments must not be production, promoted, aliased, or implemented as a persistent project-level Preview configuration change.
