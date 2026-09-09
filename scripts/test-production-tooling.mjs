@@ -440,6 +440,24 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(workflow, /preview-outage/);
 });
 
+test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
+  const previewBrowser = workflow.indexOf('Protected Preview browser proof');
+  const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
+  const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
+
+  assert.ok(localProof >= 0);
+  assert.ok(previewBrowser > localProof);
+  assert.ok(previewOutage > previewBrowser);
+  assert.ok(aggregate > previewOutage);
+  assert.doesNotMatch(workflow, /--prod|promote|alias/);
+});
+
 test('prelaunch rehearsal can load readiness values from an env file', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-env-'));
   const outputDir = path.join(tempDir, 'reports');
