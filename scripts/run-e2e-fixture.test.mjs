@@ -3,6 +3,8 @@ import test from 'node:test';
 import path from 'node:path';
 
 import {
+  getPnpmInvocation,
+  getFixtureStopCommand,
   getPnpmCommand,
   isCliEntrypoint,
   parseLauncherOptions,
@@ -43,4 +45,22 @@ test('recognizes the launcher entrypoint from a Windows path', () => {
 test('uses the executable pnpm shim on Windows', () => {
   assert.equal(getPnpmCommand('win32'), 'pnpm.cmd');
   assert.equal(getPnpmCommand('linux'), 'pnpm');
+});
+
+test('uses the Corepack JavaScript entrypoint on Windows without a shell', () => {
+  assert.deepEqual(
+    getPnpmInvocation('win32', 'C:/node/node.exe'),
+    {
+      command: 'C:/node/node.exe',
+      args: [path.join('C:/node', 'node_modules', 'corepack', 'dist', 'corepack.js'), 'pnpm'],
+    },
+  );
+});
+
+test('uses taskkill to stop a Windows fixture process tree', () => {
+  assert.deepEqual(getFixtureStopCommand('win32', 1234), {
+    command: 'taskkill.exe',
+    args: ['/pid', '1234', '/t', '/f'],
+  });
+  assert.equal(getFixtureStopCommand('linux', 1234), null);
 });

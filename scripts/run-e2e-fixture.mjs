@@ -38,13 +38,14 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
   let terminalError;
   const stop = async () => {
     await cleanupLifecycle();
-    if (child && !child.killed) child.kill('SIGTERM');
+    await stopFixtureProcess(child);
   };
   const handleSignal = () => stop().finally(() => process.exitCode = 130);
   process.once('SIGINT', handleSignal);
   process.once('SIGTERM', handleSignal);
   try {
-    child = spawnChild(getPnpmCommand(), ['--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
+    const pnpm = getPnpmInvocation();
+    child = spawnChild(pnpm.command, [...pnpm.args, '--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
       cwd: process.cwd(),
       env: {
         PATH: process.env.PATH,
@@ -78,10 +79,11 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
 
 export function createPlaywrightRunner(options, spawnProcess = spawn) {
   return ({ baseUrl }) => new Promise((resolve, reject) => {
-    const args = ['exec', 'playwright', 'test'];
+    const pnpm = getPnpmInvocation();
+    const args = [...pnpm.args, 'exec', 'playwright', 'test'];
     if (options.spec) args.push(options.spec);
     if (options.project) args.push('--project', options.project);
-    const child = spawnProcess(getPnpmCommand(), args, {
+    const child = spawnProcess(pnpm.command, args, {
       cwd: process.cwd(),
       env: { PATH: process.env.PATH, SCHOLARSCOUT_E2E_BASE_URL: baseUrl },
       stdio: 'inherit',
@@ -93,6 +95,55 @@ export function createPlaywrightRunner(options, spawnProcess = spawn) {
 
 export function getPnpmCommand(platform = process.platform) {
   return platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+}
+
+export function getPnpmInvocation(platform = process.platform, execPath = process.execPath) {
+  if (platform !== 'win32') {
+    return { command: getPnpmCommand(platform), args: [] };
+  }
+
+  return {
+    command: execPath,
+    args: [
+      path.join(path.dirname(execPath), 'node_modules', 'corepack', 'dist', 'corepack.js'),
+      'pnpm',
+    ],
+  };
+}
+
+export function getFixtureStopCommand(platform, pid) {
+  if (platform !== 'win32' || !Number.isSafeInteger(pid) || pid <= 0) {
+    return null;
+  }
+
+  return {
+    command: 'taskkill.exe',
+    args: ['/pid', String(pid), '/t', '/f'],
+  };
+}
+
+async function stopFixtureProcess(child) {
+  if (!child || child.killed) {
+    return;
+  }
+
+  const taskkill = getFixtureStopCommand(process.platform, child.pid);
+  if (!taskkill) {
+    child.kill('SIGTERM');
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const taskkillProcess = spawn(taskkill.command, taskkill.args, {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    taskkillProcess.once('error', () => {
+      child.kill('SIGTERM');
+      resolve();
+    });
+    taskkillProcess.once('exit', resolve);
+  });
 }
 
 async function waitForReady(baseUrl, fetchImpl) {
