@@ -12,6 +12,7 @@ const metadata = {
 test('provisions, verifies, runs with protected page and API transport, and cleans once', async () => {
   const phases = [];
   let browserOptions;
+  let studentBrowser;
   let closed = false;
 
   const result = await runPreviewReleaseTracer({
@@ -21,9 +22,13 @@ test('provisions, verifies, runs with protected page and API transport, and clea
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
     },
-    createLifecycleRequest: (url, capability) => {
+    createLifecycleRequest: (url, capability, headers) => {
       assert.equal(url, metadata.url);
       assert.equal(capability, 'runner-capability');
+      assert.deepEqual(headers, {
+        'x-vercel-protection-bypass': 'sensitive-bypass',
+        'x-vercel-set-bypass-cookie': 'true',
+      });
       return async (method) => {
         phases.push(method);
         return { ok: true };
@@ -35,15 +40,21 @@ test('provisions, verifies, runs with protected page and API transport, and clea
         close: async () => { closed = true; },
       };
     },
-    runStudentSpec: async ({ browser, baseURL, childEnv }) => {
-      assert.equal(browserOptions, browser);
+    runStudentSpec: async ({ browser, baseURL, childEnv, diagnostics }) => {
+      studentBrowser = browser;
       assert.equal(baseURL, metadata.url);
       assert.deepEqual(childEnv, {});
+      assert.deepEqual(diagnostics, {
+        trace: 'off',
+        screenshot: 'off',
+        video: 'off',
+      });
     },
   });
 
   assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
   assert.equal(closed, true);
+  assert.equal(studentBrowser.close instanceof Function, true);
   assert.deepEqual(browserOptions, {
     baseURL: metadata.url,
     extraHTTPHeaders: {

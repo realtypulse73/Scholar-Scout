@@ -24,7 +24,7 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
   }
 }
 
-export function createLifecycleRequest(baseUrl, capability) {
+export function createLifecycleRequest(baseUrl, capability, protectionHeaders = {}) {
   const endpoint = new URL('/api/internal/e2e-fixture', baseUrl);
   if (
     endpoint.protocol !== 'https:' ||
@@ -41,6 +41,7 @@ export function createLifecycleRequest(baseUrl, capability) {
     headers: {
       Authorization: `Bearer ${capability}`,
       'x-scholarscout-e2e-fixture-protocol': PROTOCOL,
+      ...protectionHeaders,
     },
   });
 }
