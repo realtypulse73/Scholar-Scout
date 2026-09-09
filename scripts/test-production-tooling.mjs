@@ -419,6 +419,27 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and Preview records', async () => {
+  const rehearsal = await readFile(
+    path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
+    'utf8',
+  );
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  assert.match(rehearsal, /candidate-quality/);
+  assert.match(rehearsal, /high-risk/);
+  assert.match(rehearsal, /local-browser/);
+  assert.match(rehearsal, /preview-browser/);
+  assert.match(rehearsal, /preview-outage/);
+  assert.match(rehearsal, /pnpm install --frozen-lockfile --ignore-scripts/);
+  assert.match(rehearsal, /run-e2e-fixture\.mjs/);
+  assert.match(workflow, /run-preview-release-tracer/);
+  assert.match(workflow, /preview-outage/);
+});
+
 test('prelaunch rehearsal can load readiness values from an env file', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-env-'));
   const outputDir = path.join(tempDir, 'reports');
