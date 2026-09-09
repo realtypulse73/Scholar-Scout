@@ -23,6 +23,23 @@ describe('internal e2e fixture route', () => {
     expect(await response.json()).toEqual({ error: 'Not found' });
   });
 
+  it.each([
+    ['referer', 'https://localhost/programmes'],
+    ['sec-fetch-user', '?1'],
+    ['sec-ch-ua', '"Chromium"'],
+  ])('denies browser navigation metadata (%s)', async (name, value) => {
+    const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer browser-value',
+        'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        [name]: value,
+      },
+    }));
+
+    expect(response.status).toBe(403);
+  });
+
   it('denies a body even when the caller has the protocol-shaped headers', async () => {
     const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
       method: 'POST',

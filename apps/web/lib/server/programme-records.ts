@@ -8,10 +8,6 @@ import {
   readScholarScoutData,
 } from '@/lib/server/data-store';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
-import {
-  getConfiguredE2eFixtureId,
-  getE2eFixtureProgrammes,
-} from '@/lib/server/e2e-programme-fixture';
 
 export class ProgrammeRevisionConflictError extends Error {
   constructor(
@@ -92,10 +88,6 @@ export async function deleteProgrammeRecord(userId: string, programmeId: string)
 }
 
 export async function getGovernedProgrammes() {
-  const fixtureId = getConfiguredE2eFixtureId();
-  if (fixtureId) {
-    return getE2eFixtureProgrammes(fixtureId);
-  }
   const governedRecords = await getProgrammeRecords();
   return mergeProgrammes(programmes, getPublishedProgrammeRecords(governedRecords));
 }

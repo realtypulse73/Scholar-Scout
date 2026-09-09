@@ -75,9 +75,11 @@ export async function createAndVerifyE2eFixture(): Promise<'verified'> {
   const fixtureId = requireConfiguredFixtureId();
   const { getGovernedProgrammes, saveProgrammeRecord } = await import('./programme-records');
   const records = createE2eProgrammeFixture(fixtureId);
-  await Promise.all(records.map((record) => saveProgrammeRecord(fixtureActor(fixtureId), record)));
+  for (const record of records) {
+    await saveProgrammeRecord(fixtureActor(fixtureId), record);
+  }
   const governed = await getGovernedProgrammes();
-  if (governed.length !== records.length || !records.every((record) => governed.some((item) => item.id === record.id))) {
+  if (!records.every((record) => governed.some((item) => item.id === record.id))) {
     throw new Error('E2E fixture records were not available through the governed catalogue.');
   }
   return 'verified';
@@ -88,7 +90,7 @@ export async function verifyE2eFixture(): Promise<'verified'> {
   const { getGovernedProgrammes } = await import('./programme-records');
   const expected = createE2eProgrammeFixture(fixtureId);
   const governed = await getGovernedProgrammes();
-  if (governed.length !== expected.length || !expected.every((record) => governed.some((item) => item.id === record.id))) {
+  if (!expected.every((record) => governed.some((item) => item.id === record.id))) {
     throw new Error('E2E fixture records could not be verified.');
   }
   return 'verified';
@@ -97,9 +99,9 @@ export async function verifyE2eFixture(): Promise<'verified'> {
 export async function cleanupE2eFixture(): Promise<'cleaned'> {
   const fixtureId = requireConfiguredFixtureId();
   const { deleteProgrammeRecord } = await import('./programme-records');
-  await Promise.all(createE2eProgrammeFixture(fixtureId).map((record) =>
-    deleteProgrammeRecord(fixtureActor(fixtureId), record.id),
-  ));
+  for (const record of createE2eProgrammeFixture(fixtureId)) {
+    await deleteProgrammeRecord(fixtureActor(fixtureId), record.id);
+  }
   return 'cleaned';
 }
 
