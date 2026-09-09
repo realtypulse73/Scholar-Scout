@@ -27,7 +27,6 @@ test('provisions, verifies, runs with protected page and API transport, and clea
       assert.equal(capability, 'runner-capability');
       assert.deepEqual(headers, {
         'x-vercel-protection-bypass': 'sensitive-bypass',
-        'x-vercel-set-bypass-cookie': 'true',
       });
       return async (method) => {
         phases.push(method);

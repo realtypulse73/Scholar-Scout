@@ -7,9 +7,9 @@ updated: 2026-09-09T01:00:00-04:00
 
 ## Current Focus
 
-hypothesis: "Node fetch's no-body POST carries Content-Length: 0, which the route currently denies even though it cannot contain a request body."
-test: "Route regression invokes the lifecycle POST with the exact runner headers and Content-Length: 0, while body-bearing input remains denied."
-expecting: "The protected runner can provision the fixture after a fresh Preview deploy; nonzero or body-bearing requests remain denied."
+hypothesis: "The lifecycle request must not carry the browser-only bypass-cookie header because Vercel correctly redirects that request, while the lifecycle transport correctly rejects redirects."
+test: "Protected-runner regressions prove direct lifecycle transport retains only the bypass header, while Playwright retains cookie setup."
+expecting: "The protected runner provisions directly and the browser receives its bypass cookie independently."
 next_action: "Deploy the corrected immutable candidate and rerun the authorized protected Preview rehearsal."
 
 ## Symptoms
@@ -34,10 +34,14 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
   observation: "A managed-bypass lifecycle probe reached the protected application but POST/DELETE were denied while GET reached fixture verification. The strict route rejects every Content-Length header."
 - timestamp: 2026-09-09T06:00:00Z
   observation: "The route regression with Content-Length: 0 and exact runner headers passes after allowing only that zero-length value; body-bearing input remains denied."
+- timestamp: 2026-09-09T06:00:00Z
+  observation: "The hardened manual-redirect transport continued to record provisioning failure because the lifecycle request also carried x-vercel-set-bypass-cookie. Vercel uses that browser-only header to redirect after setting a cookie."
+- timestamp: 2026-09-09T06:00:00Z
+  observation: "Nineteen focused lifecycle/protection/tracer tests and twenty-two production-tooling tests pass after separating direct lifecycle headers from browser context headers."
 
 ## Resolution
 
-root_cause: "The lifecycle route treated Content-Length: 0 as evidence of a body. Node fetch adds that header for a no-body POST, so a valid protected runner provisioning request was denied before fixture creation. Redirect handling and opaque boundary-value normalization remain defense-in-depth hardening."
-fix: "Allow only Content-Length: 0 for an otherwise no-body lifecycle request; continue denying any nonzero length, body, content type, transfer encoding, query, browser metadata, or selector. Retain manual redirect and runner-value normalization hardening."
-verification: "pnpm --filter @scholar-scout/web test --runInBand __tests__/app/api/internal/e2e-fixture/route.test.ts (7 passed); node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs (11 passed); previous production-tooling run passed 22 tests."
-files_changed: ["apps/web/app/api/internal/e2e-fixture/route.ts", "apps/web/__tests__/app/api/internal/e2e-fixture/route.test.ts", "scripts/e2e-fixture-lifecycle.mjs", "scripts/e2e-fixture-lifecycle.test.mjs", "scripts/preview-deployment-protection.mjs", "scripts/preview-deployment-protection.test.mjs"]
+root_cause: "Two valid runner request details were denied: Node fetch adds Content-Length: 0 to a no-body POST, and the lifecycle transport reused the browser-only x-vercel-set-bypass-cookie header. The route interpreted the former as a body; Vercel correctly redirects the latter while the lifecycle transport correctly rejects redirects."
+fix: "Allow only Content-Length: 0 for an otherwise no-body lifecycle request, and use only the direct protection-bypass header for lifecycle transport. Keep bypass-cookie setup only in the Playwright browser context. All nonzero/body-bearing lifecycle input, browser metadata, selectors, and redirects remain fail-closed."
+verification: "pnpm --filter @scholar-scout/web test --runInBand __tests__/app/api/internal/e2e-fixture/route.test.ts (7 passed); node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs scripts/run-preview-release-tracer.test.mjs scripts/run-preview-outage-rehearsal.test.mjs (19 passed); pnpm test:production-tooling (22 passed)."
+files_changed: ["apps/web/app/api/internal/e2e-fixture/route.ts", "apps/web/__tests__/app/api/internal/e2e-fixture/route.test.ts", "scripts/e2e-fixture-lifecycle.mjs", "scripts/e2e-fixture-lifecycle.test.mjs", "scripts/preview-deployment-protection.mjs", "scripts/preview-deployment-protection.test.mjs", "scripts/run-preview-release-tracer.mjs", "scripts/run-preview-outage-rehearsal.mjs", "scripts/run-preview-release-tracer.test.mjs", "scripts/run-preview-outage-rehearsal.test.mjs"]

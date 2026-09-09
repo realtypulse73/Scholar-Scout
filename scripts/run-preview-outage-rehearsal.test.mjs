@@ -18,9 +18,14 @@ test('proves the Preview outage before input processing and cleans its lifecycle
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
     },
-    createLifecycle: () => async (method) => {
-      phases.push(method);
-      return { ok: true };
+    createLifecycle: (url, capability, headers) => {
+      assert.equal(url, metadata.url);
+      assert.equal(capability, 'capability-value');
+      assert.deepEqual(headers, { 'x-vercel-protection-bypass': 'bypass-value' });
+      return async (method) => {
+        phases.push(method);
+        return { ok: true };
+      };
     },
     fetchImpl: async (url, options) => {
       assert.equal(url.toString(), 'https://scholar-scout-outage.vercel.app/api/campus-notes');

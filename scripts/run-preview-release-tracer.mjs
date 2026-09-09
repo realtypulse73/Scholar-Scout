@@ -9,7 +9,10 @@ import {
   FixtureLifecycleError,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
-import { createProtectedPreviewContextOptions } from './preview-deployment-protection.mjs';
+import {
+  createLifecycleProtectionHeaders,
+  createProtectedPreviewContextOptions,
+} from './preview-deployment-protection.mjs';
 import { runStudentReleaseJourney } from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
@@ -64,7 +67,7 @@ export async function runPreviewReleaseTracer({
   const request = createLifecycleRequest(
     protectedOptions.baseURL,
     capability,
-    protectedOptions.extraHTTPHeaders,
+    createLifecycleProtectionHeaders(protectedOptions.extraHTTPHeaders),
   );
   let browser;
 

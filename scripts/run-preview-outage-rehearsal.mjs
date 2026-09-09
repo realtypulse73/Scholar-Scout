@@ -8,7 +8,10 @@ import {
   FixtureLifecycleError,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
-import { createProtectedPreviewContextOptions } from './preview-deployment-protection.mjs';
+import {
+  createLifecycleProtectionHeaders,
+  createProtectedPreviewContextOptions,
+} from './preview-deployment-protection.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY';
 
@@ -41,7 +44,7 @@ export async function runPreviewOutageRehearsal({
   const lifecycle = createLifecycle(
     options.baseURL,
     getCapability(env),
-    options.extraHTTPHeaders,
+    createLifecycleProtectionHeaders(options.extraHTTPHeaders),
   );
 
   try {

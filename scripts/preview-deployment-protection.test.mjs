@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  createLifecycleProtectionHeaders,
   createProtectedPreviewContextOptions,
   validatePreviewDeployment,
 } from './preview-deployment-protection.mjs';
@@ -50,4 +51,13 @@ test('normalizes only surrounding whitespace from runner-owned bypass material',
   });
 
   assert.equal(options.extraHTTPHeaders['x-vercel-protection-bypass'], 'sensitive-bypass');
+});
+
+test('omits browser cookie setup from direct lifecycle transport', () => {
+  assert.deepEqual(createLifecycleProtectionHeaders({
+    'x-vercel-protection-bypass': 'sensitive-bypass',
+    'x-vercel-set-bypass-cookie': 'true',
+  }), {
+    'x-vercel-protection-bypass': 'sensitive-bypass',
+  });
 });

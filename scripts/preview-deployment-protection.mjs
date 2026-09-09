@@ -46,6 +46,16 @@ export function createProtectedPreviewContextOptions({ metadata, candidateCommit
 }
 
 /**
+ * Server-side lifecycle requests authenticate directly. They must not request
+ * the browser bypass cookie because Vercel responds to that request with a
+ * redirect, which the lifecycle transport intentionally rejects.
+ */
+export function createLifecycleProtectionHeaders(headers) {
+  const { 'x-vercel-set-bypass-cookie': _cookieHeader, ...lifecycleHeaders } = headers;
+  return lifecycleHeaders;
+}
+
+/**
  * GitHub and provider secret CLIs can preserve a final line ending when a
  * runner-only header value is copied from a handoff file. Normalize that
  * boundary whitespace before use, without ever exposing the value.
