@@ -61,6 +61,30 @@ pnpm run rehearse:prelaunch -- --skip-smoke --env-file .env.prelaunch.local
 
 The local workaround intentionally allows credentials-only auth and a localhost HTTP data service. It is not a substitute for the real production launch rehearsal with OAuth and a durable hosted data adapter.
 
+### Candidate Preview Rehearsal (separate from production)
+
+Before any Preview work, record the same immutable candidate commit passing, in order:
+
+```bash
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm test
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+```
+
+Then run the high-risk route, webhook, and HTTP-data-service suites, followed by the owned local Chromium command:
+
+```bash
+node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
+```
+
+Only an authorized Vercel maintainer may then dispatch **ScholarScout Prelaunch Rehearsal** for a protected Preview candidate. Configure Preview-only durable-adapter/lifecycle values and runner-only bypass material through authorized deployment controls; never add them to the repository, workflow logs, or this record. The protected Preview tracer uses the existing Plan 06-06 supervisor. Run a distinct one-off outage Preview with a fresh lifecycle scope, verify its safe 503 occurs before writes or disclosure, confirm exact server cleanup and base Preview restoration, and retain separate approved artifact/deployment links.
+
+The releasable record fields are limited to candidate commit, Preview URL/ID, UTC, command, pass/fail result, safe error category, and approved artifact/deployment identifier or link. Never record secrets, cookies, capabilities, fixture identifiers, storage configuration, exports, or student content. A missing, failed, mismatched, or shared candidate-quality, high-risk, local-browser, protected Preview-browser, or Preview-outage record blocks the candidate; one lane cannot satisfy another.
+
+Preview rehearsal evidence supplements rather than replaces the protected-`main` CI, real production deployment/build-log, post-deploy smoke, and incident evidence described below. Preview deployments must not be production, promoted, aliased, or implemented as a persistent project-level Preview configuration change.
+
 ## 3. Deploy
 
 Deploy from the repository root with the Docker-free path:

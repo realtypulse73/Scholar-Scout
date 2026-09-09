@@ -434,7 +434,7 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /local-browser/);
   assert.match(rehearsal, /preview-browser/);
   assert.match(rehearsal, /preview-outage/);
-  assert.match(rehearsal, /pnpm install --frozen-lockfile --ignore-scripts/);
+  assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
