@@ -3,6 +3,7 @@ import test from 'node:test';
 import path from 'node:path';
 
 import {
+  getPnpmCommand,
   isCliEntrypoint,
   parseLauncherOptions,
   validateE2eFixtureEnvironment,
@@ -37,4 +38,9 @@ test('recognizes the launcher entrypoint from a Windows path', () => {
   const scriptUrl = new URL('./run-e2e-fixture.mjs', import.meta.url).href;
 
   assert.equal(isCliEntrypoint(scriptPath, scriptUrl), true);
+});
+
+test('uses the executable pnpm shim on Windows', () => {
+  assert.equal(getPnpmCommand('win32'), 'pnpm.cmd');
+  assert.equal(getPnpmCommand('linux'), 'pnpm');
 });

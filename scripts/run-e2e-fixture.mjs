@@ -44,7 +44,7 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
   process.once('SIGINT', handleSignal);
   process.once('SIGTERM', handleSignal);
   try {
-    child = spawnChild('pnpm', ['--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
+    child = spawnChild(getPnpmCommand(), ['--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
       cwd: process.cwd(),
       env: {
         PATH: process.env.PATH,
@@ -81,7 +81,7 @@ export function createPlaywrightRunner(options, spawnProcess = spawn) {
     const args = ['exec', 'playwright', 'test'];
     if (options.spec) args.push(options.spec);
     if (options.project) args.push('--project', options.project);
-    const child = spawnProcess('pnpm', args, {
+    const child = spawnProcess(getPnpmCommand(), args, {
       cwd: process.cwd(),
       env: { PATH: process.env.PATH, SCHOLARSCOUT_E2E_BASE_URL: baseUrl },
       stdio: 'inherit',
@@ -89,6 +89,10 @@ export function createPlaywrightRunner(options, spawnProcess = spawn) {
     child.once('error', reject);
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error('Browser test runner failed.')));
   });
+}
+
+export function getPnpmCommand(platform = process.platform) {
+  return platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 }
 
 async function waitForReady(baseUrl, fetchImpl) {
