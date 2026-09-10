@@ -2,15 +2,16 @@
 status: blocked-external-verification
 trigger: "Protected Preview fixture lifecycle returns fixture-lifecycle-transport-failed in the GitHub Actions prelaunch rehearsal."
 created: 2026-09-09T00:00:00-04:00
-updated: 2026-09-09T01:00:00-04:00
+updated: 2026-09-10T00:00:00-04:00
 ---
 
 ## Current Focus
 
-hypothesis: "The lifecycle request must not carry the browser-only bypass-cookie header because Vercel correctly redirects that request, while the lifecycle transport correctly rejects redirects."
-test: "Protected-runner regressions prove direct lifecycle transport retains only the bypass header, while Playwright retains cookie setup."
-expecting: "The protected runner provisions directly and the browser receives its bypass cookie independently."
-next_action: "An authorized Vercel maintainer must verify the deployment-protection bypass material against the project and then rerun the protected Preview rehearsal."
+bug_class: heisenbug-mandelbug
+hypothesis: "No repository-side root cause remains supported. The latest fixture-provision-failed response is either a deployed lifecycle enablement/ID/capability mismatch (4xx), a Vercel protection redirect (3xx), or a deployed durable-adapter write failure (5xx); the scrubbed record now preserves only that safe response class."
+test: "All candidate-matched lifecycle sources and focused route, fixture-persistence, protection, tracer, and outage tests were executed; no semantic knowledge-base match exists."
+expecting: "An authorized maintainer must verify the selected Preview's deployment-local lifecycle mapping and adapter write readiness without exposing values, then rerun the isolated rehearsal."
+next_action: "Await maintainer verification of the selected Preview deployment's one-time fixture enablement, valid fixture ID/capability match, and durable-adapter write access; capture only approved safe status/evidence and rerun the rehearsal."
 
 ## Symptoms
 
@@ -22,8 +23,45 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
 
 ## Eliminated
 
+- hypothesis: "The current internal fixture route deterministically rejects a valid no-body lifecycle POST before persistence."
+  evidence: "The focused guarded route suite passed all 7 tests, including Content-Length: 0 acceptance while body-bearing and browser-shaped requests remain rejected."
+  timestamp: 2026-09-10T00:00:00-04:00
+- hypothesis: "Generated fixture creation, verification, or cleanup deterministically fails in repository persistence code."
+  evidence: "The in-memory fixture suite passed both tests for creating, verifying, and cleaning only the declared generated records through the governed catalogue."
+  timestamp: 2026-09-10T00:00:00-04:00
+- hypothesis: "The latest failure is caused by stale or different candidate lifecycle source code."
+  evidence: "All workflow, runner, route, fixture, programme-record, persistence-operation, and data-store sources match candidate f0fbfe9."
+  timestamp: 2026-09-10T00:00:00-04:00
+- hypothesis: "The browser-only bypass-cookie redirect regression still causes the latest failure."
+  evidence: "The 19 direct lifecycle/protection/tracer/outage tests pass with direct requests carrying only x-vercel-protection-bypass and browser contexts retaining cookie setup; the latest category is provision, not transport."
+  timestamp: 2026-09-10T00:00:00-04:00
+
 ## Evidence
 
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "The direct lifecycle/protection/tracer/outage Node suites passed all 20 tests. They verify manual redirects, direct-only bypass headers, browser-only cookie setup, lifecycle cleanup, and that a failed lifecycle request records only redirected, rejected, or server-failed—not a raw status, response body, secret, fixture, or student data."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "No debug knowledge base exists, and no MemPalace recall connector is available in this session, so there is no matching prior resolution to test."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "Focused generated-fixture Jest suite passed: 1 suite, 2 tests. The repository's programme-record persistence path can create, verify, and remove the isolated fixture deterministically against the governed catalogue."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "Focused internal fixture-route Jest suite passed: 1 suite, 7 tests. The repository route accepts the valid no-body Node transport contract and preserves its rejection of body-bearing/browser-shaped requests."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "All relevant workflow, runner, route, fixture, programme-record, persistence-operation, and data-store files match f0fbfe9. Fixture persistence is a read/mutate/conditional-write sequence; its only repository-level failure modes here are adapter read/write failure or write conflict, both dependent on the deployed adapter state rather than a change since the candidate Preview."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "The candidate's workflow, direct lifecycle runner, and protected tracer sources match f0fbfe9 despite the workflow checkout lacking an explicit candidate ref. Thus a runner-source mismatch does not explain this failed candidate, though pinning checkout remains a separate integrity improvement."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "Fixture provisioning requires deployment-local SCHOLARSCOUT_E2E_FIXTURE, fixture ID, and capability values; the workflow supplies only runner capabilities. The provisioner deliberately instructs an authorized maintainer to map the deployment-local values separately. A mismatch or absent value therefore yields a non-OK route result outside repository control."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "The direct lifecycle request uses HTTPS, no body, manual redirects, a normalized bearer capability, the protocol header, and only x-vercel-protection-bypass. The deployed route permits the no-body Content-Length: 0 form and then POST invokes fixture persistence. Therefore fixture-provision-failed means a non-OK direct POST, but the scrubbed record does not reveal whether it was route denial (403) or an unhandled persistence failure (5xx)."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "The rehearsal workflow sets GITHUB_SHA from its candidate input but its checkout step does not pin ref to that input. This is a repository candidate-integrity risk, but it has not yet been shown to differ for the failed candidate."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "The lifecycle route, lifecycle transport, preview-protection helper, Preview tracer, outage runner, and their tests have no uncommitted changes. Commit f0fbfe9 contains the most recent direct/browser header separation; therefore the new failure cannot be attributed to an uncommitted partial application of that fix."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "Project configuration defines no agent-specific skills and no project skill directories are present. The worktree contains unrelated user modifications and untracked artifacts, so this investigation must limit edits to fixture-lifecycle files and the existing debug record."
+- timestamp: 2026-09-10T00:00:00-04:00
+  observation: "A complete static review reconfirmed that provision-preview-rehearsal.mjs only creates a local handoff and a scrubbed instruction report; it cannot set Preview deployment variables. The deployed route can therefore return 403 when the maintainer-owned enablement/ID/capability mapping is absent or mismatched, while a configured route can still surface an unhandled adapter write as 5xx. The runner intentionally records neither response detail, so repository inspection cannot distinguish those two external branches."
 - timestamp: 2026-09-09T06:00:00Z
   observation: "The existing GitHub Actions run recorded fixture-lifecycle-transport-failed without disclosing a raw exception; its job log contained no additional safe network detail."
 - timestamp: 2026-09-09T06:00:00Z
@@ -43,7 +81,7 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
 
 ## Resolution
 
-root_cause: "Two valid runner request details were denied: Node fetch adds Content-Length: 0 to a no-body POST, and the lifecycle transport reused the browser-only x-vercel-set-bypass-cookie header. The route interpreted the former as a body; Vercel correctly redirects the latter while the lifecycle transport correctly rejects redirects."
-fix: "Allow only Content-Length: 0 for an otherwise no-body lifecycle request, and use only the direct protection-bypass header for lifecycle transport. Keep bypass-cookie setup only in the Playwright browser context. All nonzero/body-bearing lifecycle input, browser metadata, selectors, and redirects remain fail-closed."
-verification: "pnpm --filter @scholar-scout/web test --runInBand __tests__/app/api/internal/e2e-fixture/route.test.ts (7 passed); node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs scripts/run-preview-release-tracer.test.mjs scripts/run-preview-outage-rehearsal.test.mjs (19 passed); pnpm test:production-tooling (22 passed). External rehearsal 34320893425 remains blocked at a scrubbed fixture-provision-failed result."
-files_changed: ["apps/web/app/api/internal/e2e-fixture/route.ts", "apps/web/__tests__/app/api/internal/e2e-fixture/route.test.ts", "scripts/e2e-fixture-lifecycle.mjs", "scripts/e2e-fixture-lifecycle.test.mjs", "scripts/preview-deployment-protection.mjs", "scripts/preview-deployment-protection.test.mjs", "scripts/run-preview-release-tracer.mjs", "scripts/run-preview-outage-rehearsal.mjs", "scripts/run-preview-release-tracer.test.mjs", "scripts/run-preview-outage-rehearsal.test.mjs"]
+root_cause: "The previous Content-Length and browser-cookie transport defects are fixed. The latest fixture-provision-failed result is not reproducible in candidate-matched repository code; its unobserved cause remains either deployed Preview lifecycle configuration/capability mismatch or the selected Preview durable-adapter write failure."
+fix: "The lifecycle error classifier now records only a scrubbed HTTP-status class when a response exists: redirected (3xx), rejected (4xx), or server-failed (5xx). It retains the generic failure category for absent or non-HTTP transport failures."
+verification: "Focused lifecycle/protection/tracer/outage Node tests (20 passed) and production-tooling tests (22 passed). The protected Preview rehearsal remains blocked until a fresh candidate reports the safe class; its record still omits the raw status, response body, and all sensitive material."
+files_changed: [".planning/debug/fixture-lifecycle-transport.md"]

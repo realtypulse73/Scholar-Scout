@@ -7,10 +7,11 @@ const METHOD_STAGES = {
 };
 
 export class FixtureLifecycleError extends Error {
-  constructor(stage) {
+  constructor(stage, responseClass) {
     super(`E2E fixture ${stage} lifecycle request failed.`);
     this.name = 'FixtureLifecycleError';
     this.stage = stage;
+    this.responseClass = responseClass;
   }
 }
 
@@ -22,12 +23,24 @@ export function classifyFixtureLifecycleFailure(error) {
     return 'fixture-lifecycle-transport-failed';
   }
 
+  if (error.responseClass) {
+    return `fixture-${error.stage}-${error.responseClass}`;
+  }
+
   return {
     provision: 'fixture-provision-failed',
     verification: 'fixture-verification-failed',
     cleanup: 'fixture-cleanup-failed',
     transport: 'fixture-lifecycle-transport-failed',
   }[error.stage] ?? 'fixture-lifecycle-transport-failed';
+}
+
+function classifyLifecycleResponse(response) {
+  const status = response?.status;
+  if (status >= 300 && status < 400) return 'redirected';
+  if (status >= 400 && status < 500) return 'rejected';
+  if (status >= 500 && status < 600) return 'server-failed';
+  return undefined;
 }
 
 export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
@@ -41,7 +54,7 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
       throw new FixtureLifecycleError('transport');
     }
     if (!response?.ok) {
-      throw new FixtureLifecycleError(stage);
+      throw new FixtureLifecycleError(stage, classifyLifecycleResponse(response));
     }
     return response;
   };

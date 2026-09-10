@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  classifyFixtureLifecycleFailure,
   createLifecycleRequest,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
@@ -104,4 +105,25 @@ test('does not begin the browser run when create or verify is rejected', async (
 
   assert.deepEqual(phases, ['POST', 'DELETE']);
   assert.equal(ranBrowser, false);
+});
+
+test('classifies lifecycle responses without retaining a raw status or response body', async () => {
+  for (const [status, category] of [
+    [302, 'fixture-provision-redirected'],
+    [403, 'fixture-provision-rejected'],
+    [503, 'fixture-provision-server-failed'],
+  ]) {
+    await assert.rejects(
+      () => runFixtureLifecycle({
+        request: async (method) => ({ ok: method !== 'POST', status, body: 'sensitive' }),
+        run: async () => undefined,
+      }),
+      (error) => {
+        assert.equal(classifyFixtureLifecycleFailure(error), category);
+        assert.equal(JSON.stringify(error).includes(String(status)), false);
+        assert.equal(JSON.stringify(error).includes('sensitive'), false);
+        return true;
+      },
+    );
+  }
 });
