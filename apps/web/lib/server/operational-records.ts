@@ -6,6 +6,7 @@ import {
   writeVersionedScholarScoutData,
   type ScholarScoutData,
 } from '@/lib/server/data-store';
+import type { CampusNote } from '@/lib/campus-community';
 
 export interface OperationalMutationPolicy {
   name: string;
@@ -29,6 +30,90 @@ export const OPERATIONAL_MUTATION_POLICIES = {
   memoryReplacement: { name: 'memory-replacement', retry: 'never' },
   decisionReplacement: { name: 'decision-replacement', retry: 'never' },
 } as const satisfies Record<string, OperationalMutationPolicy>;
+
+export interface PendingReviewCampusNote {
+  noteId: string;
+  schoolSlug: string;
+  uploaderUsername: string | null;
+  programId: string | null;
+  excerpt: string;
+  reportedAt: string;
+}
+
+export type CampusNoteModerationResult =
+  | { status: 'reported' | 'restored' | 'removed' }
+  | { status: 'conflict' };
+
+/** Moves a public note into review and creates one stable, private review record. */
+export async function reportCampusNoteForReview(input: {
+  noteId: string;
+  reporterId: string;
+}): Promise<CampusNoteModerationResult> {
+  return transitionCampusNote(input.noteId, (data, note) => {
+    if (note.status === 'pending-review') return { status: 'reported' };
+    if (note.status !== 'public') return { status: 'conflict' };
+
+    note.status = 'pending-review';
+    const reviews = data.campusNoteReviews ?? [];
+    const reviewId = `campus-note-review:${note.id}`;
+    if (!reviews.some((review) => review.id === reviewId)) {
+      data.campusNoteReviews = [
+        ...reviews,
+        {
+          id: reviewId,
+          note_id: note.id,
+          reporter_id: input.reporterId,
+          created_at: new Date().toISOString(),
+        },
+      ];
+    }
+    return { status: 'reported' };
+  });
+}
+
+/** Lists only pending-review notes through a deliberately identity-safe staff DTO. */
+export async function listPendingReviewCampusNotes(
+  limit = 50,
+): Promise<PendingReviewCampusNote[]> {
+  const data = await readVersionedScholarScoutData();
+  return (data.data.campusNotes ?? [])
+    .filter((note) => note.status === 'pending-review')
+    .sort((left, right) => right.created_at.localeCompare(left.created_at))
+    .slice(0, Math.min(Math.max(limit, 1), 50))
+    .map((note) => {
+      const review = (data.data.campusNoteReviews ?? []).find(
+        (candidate) => candidate.note_id === note.id,
+      );
+      return {
+        noteId: note.id,
+        schoolSlug: note.school_slug,
+        uploaderUsername: note.uploader_username,
+        programId: note.program_id,
+        excerpt: note.body.slice(0, 500),
+        reportedAt: review?.created_at ?? note.created_at,
+      };
+    });
+}
+
+export async function restorePendingReviewCampusNote(
+  noteId: string,
+): Promise<CampusNoteModerationResult> {
+  return transitionCampusNote(noteId, (_data, note) => {
+    if (note.status !== 'pending-review') return { status: 'conflict' };
+    note.status = 'public';
+    return { status: 'restored' };
+  });
+}
+
+export async function removePendingReviewCampusNote(
+  noteId: string,
+): Promise<CampusNoteModerationResult> {
+  return transitionCampusNote(noteId, (_data, note) => {
+    if (note.status !== 'pending-review') return { status: 'conflict' };
+    note.status = 'removed';
+    return { status: 'removed' };
+  });
+}
 
 export async function appendOperationalRecord<T extends { id: string }>(input: {
   policy: OperationalMutationPolicy;
@@ -73,6 +158,25 @@ async function commitMutation<T>(
     const value = mutate(snapshot.data);
     const result = await writeVersionedScholarScoutData(snapshot.data, snapshot.version);
     if (result.status === 'applied') return value;
+  }
+  throw new PersistenceConflictError();
+}
+
+async function transitionCampusNote(
+  noteId: string,
+  transition: (data: ScholarScoutData, note: CampusNote) => CampusNoteModerationResult,
+): Promise<CampusNoteModerationResult> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const snapshot = await readVersionedScholarScoutData();
+    const note = (snapshot.data.campusNotes ?? []).find((candidate) => candidate.id === noteId);
+    if (!note) return { status: 'conflict' };
+
+    const initialStatus = note.status;
+    const result = transition(snapshot.data, note);
+    if (result.status === 'conflict') return result;
+    if (result.status === 'reported' && initialStatus === 'pending-review') return result;
+    const write = await writeVersionedScholarScoutData(snapshot.data, snapshot.version);
+    if (write.status === 'applied') return result;
   }
   throw new PersistenceConflictError();
 }

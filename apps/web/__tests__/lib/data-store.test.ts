@@ -1,6 +1,7 @@
 import {
   BlobPreconditionFailedError,
   get,
+  head,
   put,
   type GetBlobResult,
   type PutBlobResult,
@@ -25,6 +26,7 @@ import {
   getRestoreBackupRetentionStatus,
   getShortlistPlans,
   readScholarScoutData,
+  readVersionedScholarScoutData,
   restoreScholarScoutDataFromBackup,
   restoreScholarScoutDataFromImport,
   saveProgrammeRecord,
@@ -47,6 +49,7 @@ import { programmes } from '@/lib/programmes';
 jest.mock('@vercel/blob', () => ({
   BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
   get: jest.fn(),
+  head: jest.fn(),
   put: jest.fn(),
 }));
 
@@ -87,6 +90,39 @@ function cloneData(data: ScholarScoutData) {
 }
 
 describe('ScholarScout data store adapter', () => {
+  it('normalizes legacy campus notes to public status and preserves moderation fields in versioned snapshots', async () => {
+    const store = new MemoryDataStore();
+    store.data.campusNotes = [{
+      id: 'legacy-note',
+      author_id: 'student-private-id',
+      school_slug: 'buffalo-state',
+      uploader_username: null,
+      program_id: null,
+      body: 'Legacy public note.',
+      created_at: '2026-08-29T00:00:00.000Z',
+    }] as never;
+    setScholarScoutDataStoreForTests(store);
+
+    const snapshot = await readVersionedScholarScoutData();
+    expect(snapshot.data.campusNotes).toEqual([
+      expect.objectContaining({ id: 'legacy-note', status: 'public' }),
+    ]);
+
+    snapshot.data.campusNotes![0].status = 'pending-review';
+    snapshot.data.campusNoteReviews = [{
+      id: 'campus-note-review:legacy-note',
+      note_id: 'legacy-note',
+      reporter_id: 'reporter-private-id',
+      created_at: '2026-08-29T01:00:00.000Z',
+    }];
+    await store.writeVersioned(snapshot.data, snapshot.version);
+
+    await expect(readScholarScoutData()).resolves.toMatchObject({
+      campusNotes: [expect.objectContaining({ status: 'pending-review' })],
+      campusNoteReviews: [expect.objectContaining({ note_id: 'legacy-note' })],
+    });
+  });
+
   it('keeps migrated domain modules off the unconditional whole-document write', async () => {
     const boundedModules = [
       'programme-records.ts',
@@ -480,6 +516,7 @@ describe('ScholarScout data store adapter', () => {
     process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
     process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'private/scholarscout.json';
     const getMock = jest.mocked(get);
+    const headMock = jest.mocked(head);
     const putMock = jest.mocked(put);
 
     getMock.mockImplementation(async () => ({
@@ -503,6 +540,9 @@ describe('ScholarScout data store adapter', () => {
         size: 10,
       },
     } as unknown as GetBlobResult));
+    headMock.mockResolvedValue({
+      etag: 'authoritative-etag',
+    } as Awaited<ReturnType<typeof head>>);
     putMock.mockResolvedValue({
       url: 'https://blob.example/private/scholarscout.json',
       downloadUrl: 'https://blob.example/private/scholarscout.json',
@@ -521,13 +561,17 @@ describe('ScholarScout data store adapter', () => {
       token: 'blob-token',
       useCache: false,
     });
+    expect(headMock).toHaveBeenCalledWith('private/scholarscout.json', {
+      token: 'blob-token',
+    });
     expect(putMock).toHaveBeenCalledWith(
       'private/scholarscout.json',
       expect.stringContaining('blob-record'),
       expect.objectContaining({
         access: 'private',
+        addRandomSuffix: false,
         allowOverwrite: true,
-        ifMatch: 'etag',
+        ifMatch: 'authoritative-etag',
         cacheControlMaxAge: 60,
         contentType: 'application/json',
         token: 'blob-token',
@@ -572,7 +616,9 @@ describe('ScholarScout data store adapter', () => {
       expect.not.objectContaining({ ifMatch: expect.anything() }),
     );
     expect(putMock).toHaveBeenCalledWith(
-      expect.any(String), expect.any(String), expect.objectContaining({ allowOverwrite: false }),
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ addRandomSuffix: false, allowOverwrite: false }),
     );
   });
 

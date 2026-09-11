@@ -29,10 +29,11 @@
 
 ### Product Completion and Community Safety
 
-- [ ] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
-- [ ] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
-- [ ] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
+- [x] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
+- [x] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
+- [x] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
 - [ ] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
+- [ ] **PROD-07**: Students can discover source-verified higher-education and local transition resources for Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Area-aware advisor/simulation guidance is student-centered, choice-preserving, and source-linked; it may use only data the student knowingly and voluntarily provides for that stated advice purpose, with field-level explanation, consent, minimization, protection, retention/deletion controls, clear limits/verification guidance, and no unsupported admissions/eligibility claims.
 
 ## User Stories
 
@@ -94,15 +95,16 @@
 | DATA-01 | Phase 4 | Complete |
 | DATA-02 | Phase 4 | Complete |
 | DATA-03 | Phase 3 | Complete |
-| PROD-01 | Phase 5 | Pending |
-| PROD-02 | Phase 5 | Pending |
-| PROD-03 | Phase 5 | Pending |
+| PROD-01 | Phase 5 | Complete |
+| PROD-02 | Phase 5 | Complete |
+| PROD-03 | Phase 5 | Complete |
 | PROD-04 | Phase 6 | Pending |
+| PROD-07 | Phase 8 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 17 total
-- Mapped to phases: 17
+- v1 requirements: 18 total
+- Mapped to phases: 18
 - Unmapped: 0
 
 ---

@@ -2,8 +2,19 @@ import type { OnboardingData } from '@/lib/onboarding-types';
 import type { CreatorProfile } from '@/lib/platform';
 import type { Programme } from '@/lib/programmes';
 
+export interface PublicCampusUploader {
+  displayName: string;
+  school: string;
+  schoolSlug: string;
+  currentStage: string;
+  conversationTopics: string[];
+  inboxEnabled: boolean;
+  bio: string;
+}
+
 export interface CampusUploaderMatch {
-  uploader: CreatorProfile;
+  uploader: PublicCampusUploader;
+  uploaderUsername: string;
   programme: Programme;
   reasons: string[];
 }
@@ -39,8 +50,30 @@ export function getCampusUploaderMatches(
       reasons.push('Offers a delivery format compatible with your online preference.');
     }
 
-    return [{ uploader, programme, reasons }];
-  });
+    return [{
+      uploader: toPublicCampusUploader(uploader),
+      uploaderUsername: uploader.username,
+      programme,
+      reasons,
+    }];
+  }).sort((left, right) => normalizedDisplayName(left.uploader.displayName)
+    .localeCompare(normalizedDisplayName(right.uploader.displayName), 'en-US'));
+}
+
+function toPublicCampusUploader(uploader: CreatorProfile): PublicCampusUploader {
+  return {
+    displayName: uploader.displayName,
+    school: uploader.school,
+    schoolSlug: uploader.schoolSlug,
+    currentStage: uploader.currentStage,
+    conversationTopics: uploader.conversationTopics,
+    inboxEnabled: uploader.inboxEnabled,
+    bio: uploader.bio,
+  };
+}
+
+function normalizedDisplayName(value: string): string {
+  return value.normalize('NFKD').toLocaleLowerCase('en-US');
 }
 
 function matchesDeclaredPath(programme: Programme, profile: OnboardingData) {

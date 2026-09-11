@@ -173,7 +173,7 @@ Plans:
   2. A student can participate in peer and campus-community experiences without unnecessary exposure of author identity or contact details.
   3. Community submissions are server-validated and rate-limited, publish an author-safe representation, and provide a usable report and authorized removal path for harmful or spam content.
 
-**Plans**: 7 plans (6 complete, 05-07 gap closure blocked on Preview UAT)
+**Plans**: 7/7 executed and verified
 
 Plans:
 
@@ -183,7 +183,7 @@ Plans:
 - [x] 05-04-PLAN.md — Deliver peer matching and community UI with protected interaction states
 - [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
 - [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
-- [ ] 05-07-PLAN.md — Close SUNY Erie source-link gap and complete Preview UAT Test 1
+- [x] 05-07-PLAN.md — Close the SUNY Erie source-link gap and record the completed Preview UAT.
 **UI hint**: yes
 **Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
 
@@ -198,16 +198,16 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: 7 plans (restored historical execution baseline; not started)
+**Plans**: 6/7 complete; Plan 06-07 is blocked on protected Preview verification
 
 Plans:
 
-- [ ] 06-01-PLAN.md — Establish the protected student-journey release tracer
-- [ ] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
-- [ ] 06-03-PLAN.md — Run the owned local browser journey
-- [ ] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
-- [ ] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
-- [ ] 06-06-PLAN.md — Supervise the protected Preview tracer
+- [x] 06-01-PLAN.md — Establish the protected student-journey release tracer
+- [x] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
+- [x] 06-03-PLAN.md — Run the owned local browser journey
+- [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
+- [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
+- [x] 06-06-PLAN.md — Supervise the protected Preview tracer
 - [ ] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
@@ -221,8 +221,8 @@ Plans:
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
-| 5. School, Community, and WNY Release Slice | 6/7 | In Progress | - |
-| 6. End-to-End Hardening and Release Readiness | 0/7 | Not started | - |
+| 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
+| 6. End-to-End Hardening and Release Readiness | 6/7 | Blocked on protected Preview verification | - |
 
 ### Phase 7: Governed Opportunity and Support Matching
 

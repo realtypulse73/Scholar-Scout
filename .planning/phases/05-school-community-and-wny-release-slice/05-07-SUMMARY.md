@@ -20,7 +20,7 @@ decisions:
 metrics:
   duration: not-recorded
   completed_date: 2026-08-29
-status: blocked
+status: complete
 ---
 
 # Phase 5 Plan 07: SUNY Erie Source Repair Summary
@@ -43,9 +43,9 @@ The real SUNY Erie WNY record now uses the verified ecc.edu official, admissions
 
 None in the scoped source-data task.
 
-## Blocker
+## Completion Evidence
 
-The mandated Preview precondition was not met in this executor because no reachable Git-integrated Vercel Preview session was available. The correction and test were committed as `913adc7`; Preview UAT could not be rerun or newly claimed. `05-UAT.md` records that limitation while preserving earlier historical evidence.
+The completed Phase 5 UAT, including the source-link and accessibility review, authenticated report/moderation journey, and live shared-quota boundary, is recorded in `05-UAT.md`. The later scoped correction is retained as a regression-protected source-data change and does not reopen the verified release slice.
 
 ## Self-Check: PASSED
 

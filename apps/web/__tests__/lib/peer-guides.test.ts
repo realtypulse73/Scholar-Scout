@@ -14,11 +14,30 @@ describe('campus uploader matching', () => {
       supportNeeds: [],
     });
 
-    expect(matches.map((match) => match.uploader.username)).toEqual(['maya-health']);
+    expect(matches.map((match) => match.uploaderUsername)).toEqual(['maya-health']);
   });
 
   it('requires a pathway profile before exposing a request-eligible guide', () => {
     expect(getCampusUploaderMatches(creatorProfiles, programmes, null)).toEqual([]);
+  });
+
+  it('orders compatible uploaders by normalized public display name and omits private profile signals', () => {
+    const matches = getCampusUploaderMatches([
+      { ...creatorProfiles[0], username: 'zoe', displayName: 'Zoë A.' },
+      { ...creatorProfiles[0], username: 'emile', displayName: 'Émile B.' },
+    ], programmes, {
+      gpaBand: 'no-gpa',
+      interests: ['healthcare'],
+      locationPreference: 'local',
+      pathwayPreference: '2-year-community-college',
+      affordabilitySensitivity: 3,
+      supportNeeds: [],
+    });
+
+    expect(matches.map((match) => match.uploader.displayName)).toEqual(['Émile B.', 'Zoë A.']);
+    expect(matches[0].uploader).not.toHaveProperty('stats');
+    expect(matches[0].uploader).not.toHaveProperty('clarityScore');
+    expect(matches[0].uploader).not.toHaveProperty('username');
   });
 
   it('keeps contact details out of the first connection request', () => {

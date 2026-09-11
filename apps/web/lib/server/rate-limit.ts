@@ -7,6 +7,7 @@ import { Redis } from '@upstash/redis';
 export interface RateLimitWindow {
   seconds: number;
   duration: '1 d' | '15 m' | '1 h';
+  algorithm: 'fixed' | 'sliding';
 }
 
 export interface AtomicReservationResponse {
@@ -56,25 +57,31 @@ interface RateLimitPolicy {
 export const ADVISOR_GUEST_POLICY: RateLimitPolicy = {
   limit: 10,
   prefix: 'advisor-guest',
-  window: { seconds: 86_400, duration: '1 d' },
+  window: { seconds: 86_400, duration: '1 d', algorithm: 'fixed' },
 };
 
 export const ADVISOR_ACCOUNT_POLICY: RateLimitPolicy = {
   limit: 25,
   prefix: 'advisor-account',
-  window: { seconds: 86_400, duration: '1 d' },
+  window: { seconds: 86_400, duration: '1 d', algorithm: 'fixed' },
 };
 
 export const SIGN_IN_POLICY: RateLimitPolicy = {
   limit: 5,
   prefix: 'sign-in',
-  window: { seconds: 900, duration: '15 m' },
+  window: { seconds: 900, duration: '15 m', algorithm: 'fixed' },
 };
 
 export const REGISTRATION_POLICY: RateLimitPolicy = {
   limit: 5,
   prefix: 'registration',
-  window: { seconds: 3_600, duration: '1 h' },
+  window: { seconds: 3_600, duration: '1 h', algorithm: 'fixed' },
+};
+
+export const COMMUNITY_SUBMISSION_POLICY: RateLimitPolicy = {
+  limit: 5,
+  prefix: 'community-submission',
+  window: { seconds: 3_600, duration: '1 h', algorithm: 'sliding' },
 };
 
 const PROVIDER_KEY_PREFIX = 'scholar-scout:rate-limit';
@@ -103,7 +110,7 @@ class UpstashAtomicReservationLimiter implements AtomicReservationLimiter {
   }
 
   private getLimiter(limit: number, window: RateLimitWindow): Ratelimit {
-    const limiterKey = `${limit}:${window.duration}`;
+    const limiterKey = createLimiterCacheKey(limit, window);
     const existing = this.limiters.get(limiterKey);
 
     if (existing) {
@@ -112,7 +119,9 @@ class UpstashAtomicReservationLimiter implements AtomicReservationLimiter {
 
     const limiter = new Ratelimit({
       redis: this.redis,
-      limiter: Ratelimit.fixedWindow(limit, window.duration),
+      limiter: window.algorithm === 'sliding'
+        ? Ratelimit.slidingWindow(limit, window.duration)
+        : Ratelimit.fixedWindow(limit, window.duration),
       prefix: PROVIDER_KEY_PREFIX,
       ephemeralCache: false,
       timeout: 0,
@@ -133,6 +142,7 @@ export interface RateLimitService {
     ip: string;
   }): Promise<RateLimitReservation>;
   reserveRegistration(ip: string): Promise<RateLimitReservation>;
+  reserveCommunitySubmission(accountId: string): Promise<RateLimitReservation>;
 }
 
 export function createRateLimitService(options: {
@@ -163,6 +173,9 @@ export function createRateLimitService(options: {
     },
     reserveRegistration(ip) {
       return reserve(options.limiter, REGISTRATION_POLICY, ip, now);
+    },
+    reserveCommunitySubmission(accountId) {
+      return reserve(options.limiter, COMMUNITY_SUBMISSION_POLICY, accountId, now);
     },
   };
 }
@@ -195,6 +208,35 @@ export function reserveRegistration(ip: string): Promise<RateLimitReservation> {
   return getRateLimitService().reserveRegistration(ip);
 }
 
+/** Creates the production Redis-backed reservation limiter. */
+export function createUpstashAtomicReservationLimiter(redis: Redis): AtomicReservationLimiter {
+  return new UpstashAtomicReservationLimiter(redis);
+}
+
+export function createLimiterCacheKey(limit: number, window: RateLimitWindow): string {
+  return `${limit}:${window.duration}:${window.algorithm}`;
+}
+
+export function reserveCommunitySubmission(accountId: string): Promise<RateLimitReservation> {
+  if (isPreviewCommunityOutageEnabled()) {
+    return Promise.resolve(unavailableReservation());
+  }
+
+  return getRateLimitService().reserveCommunitySubmission(accountId);
+}
+
+/**
+ * Allows an isolated Vercel Preview to exercise the community provider-outage
+ * path after sign-in. The switch is deliberately ignored outside Preview so it
+ * cannot disable production community submissions.
+ */
+export function isPreviewCommunityOutageEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env.VERCEL_ENV === 'preview' &&
+    env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE === '1';
+}
+
 export function setAtomicReservationLimiterForTests(
   limiter: AtomicReservationLimiter | null,
 ): void {
@@ -214,7 +256,7 @@ function getAtomicReservationLimiter(): AtomicReservationLimiter | null {
     return activeLimiter;
   }
 
-  activeLimiter = new UpstashAtomicReservationLimiter(new Redis({ url, token }));
+  activeLimiter = createUpstashAtomicReservationLimiter(new Redis({ url, token }));
   return activeLimiter;
 }
 

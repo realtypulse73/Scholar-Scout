@@ -2,37 +2,37 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 05
-current_phase_name: school-community-and-wny-release-slice
+current_phase: 06
+current_phase_name: End-to-End Hardening and Release Readiness
 status: blocked
-stopped_at: Plan 05-07 implementation complete; awaiting authorized Preview UAT Test 1
-last_updated: "2026-09-08T12:35:00.000Z"
-last_activity: 2026-08-29
-last_activity_desc: Restored Phase 5/6 planning baseline; Plan 05-07 blocked on Preview UAT
+stopped_at: Plan 06-07 blocked on protected Preview fixture lifecycle verification
+last_updated: "2026-09-11T00:00:00.000Z"
+last_activity: 2026-09-10
+last_activity_desc: Phase 5 completion merged into the active Phase 6 release-rehearsal line
 progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 30
-  completed_plans: 30
+  total_phases: 8
+  completed_phases: 5
+  total_plans: 44
+  completed_plans: 43
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-25)
+See: .planning/PROJECT.md (updated 2026-08-31)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 05 — school-community-and-wny-release-slice
+**Current focus:** Phase 06 — End-to-End Hardening and Release Readiness
 
 ## Current Position
 
-Phase: 05 (school-community-and-wny-release-slice) — NOT STARTED
-Plan: 0 of TBD
-Status: Plan 05-07 source correction/test complete; Preview UAT remains blocked
-Last activity: 2026-09-08 — Historical Phase 6 plan baseline restored; Phase 5 gate remains active
+Phase: 06 — End-to-End Hardening and Release Readiness
+Plan: 06-07 of 07
+Status: Candidate quality, high-risk, and local-browser lanes pass; protected Preview fixture lifecycle verification remains blocked.
+Last activity: 2026-09-11 — Merged verified Phase 5 safety and release-slice work into the active Phase 6 line.
 
-Progress: [██████████] 100%
+Progress: [█████████░] 98%
 
 ## Performance Metrics
 
@@ -195,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-29T07:10:03.047Z
-Stopped at: Plan 05-07 implementation complete; awaiting authorized Preview UAT Test 1
+Last session: 2026-09-11T00:00:00-04:00
+Stopped at: Phase 5 completion integrated; Plan 06-07 awaits protected Preview fixture lifecycle verification
 Resume file: None

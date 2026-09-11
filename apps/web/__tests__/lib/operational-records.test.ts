@@ -1,9 +1,14 @@
 import {
   appendOperationalRecord,
   applyOperationalReplacement,
+  listPendingReviewCampusNotes,
   OPERATIONAL_MUTATION_POLICIES,
+  removePendingReviewCampusNote,
+  reportCampusNoteForReview,
+  restorePendingReviewCampusNote,
 } from '@/lib/server/operational-records';
 import {
+  getCampusNotes,
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
   type ScholarScoutDataStore,
@@ -145,4 +150,69 @@ describe('bounded operational records', () => {
       record: { userId: 'student' } as never,
     })).rejects.toThrow('stable event ID');
   });
+
+  it('hides a reported note immediately and creates one identity-safe review item', async () => {
+    const store = new ConflictStore();
+    store.data.campusNotes = [campusNote('public') as never];
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(reportCampusNoteForReview({ noteId: 'public', reporterId: 'student-2' }))
+      .resolves.toMatchObject({ status: 'reported' });
+    await expect(reportCampusNoteForReview({ noteId: 'public', reporterId: 'student-3' }))
+      .resolves.toMatchObject({ status: 'reported' });
+
+    await expect(getCampusNotes('buffalo-state')).resolves.toEqual([]);
+    expect(store.data.campusNoteReviews).toHaveLength(1);
+    await expect(listPendingReviewCampusNotes()).resolves.toEqual([
+      expect.objectContaining({ noteId: 'public', excerpt: 'A safe public note.' }),
+    ]);
+    expect(JSON.stringify(await listPendingReviewCampusNotes())).not.toMatch(
+      /student-1|student-2|student-3|author_id|reporter/i,
+    );
+  });
+
+  it('retries a report after a competing publication write and keeps the stable note out of public reads', async () => {
+    const store = new ConflictStore();
+    store.data.campusNotes = [campusNote('race-note') as never];
+    store.conflictsRemaining = 1;
+    store.onConflict = (data) => {
+      data.campusNotes = [{ ...campusNote('race-note'), body: 'Published while report retried.' }] as never;
+    };
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(reportCampusNoteForReview({ noteId: 'race-note', reporterId: 'student-2' }))
+      .resolves.toMatchObject({ status: 'reported' });
+
+    expect(store.writes).toBe(2);
+    await expect(getCampusNotes('buffalo-state')).resolves.not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'race-note' })]),
+    );
+  });
+
+  it('permits staff resolution only from pending review and never republishes a removed note', async () => {
+    const store = new ConflictStore();
+    store.data.campusNotes = [campusNote('resolution-note') as never];
+    setScholarScoutDataStoreForTests(store);
+
+    await reportCampusNoteForReview({ noteId: 'resolution-note', reporterId: 'student-2' });
+    await expect(restorePendingReviewCampusNote('resolution-note')).resolves.toMatchObject({ status: 'restored' });
+    await expect(removePendingReviewCampusNote('resolution-note')).resolves.toMatchObject({ status: 'conflict' });
+    await reportCampusNoteForReview({ noteId: 'resolution-note', reporterId: 'student-2' });
+    await expect(removePendingReviewCampusNote('resolution-note')).resolves.toMatchObject({ status: 'removed' });
+    await expect(restorePendingReviewCampusNote('resolution-note')).resolves.toMatchObject({ status: 'conflict' });
+    await expect(getCampusNotes('buffalo-state')).resolves.toEqual([]);
+  });
 });
+
+function campusNote(id: string) {
+  return {
+    id,
+    author_id: 'student-1',
+    school_slug: 'buffalo-state',
+    uploader_username: null,
+    program_id: null,
+    body: 'A safe public note.',
+    created_at: '2026-08-29T00:00:00.000Z',
+    status: 'public' as const,
+  };
+}
