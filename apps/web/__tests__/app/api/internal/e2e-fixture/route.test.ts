@@ -59,6 +59,31 @@ describe('internal e2e fixture route', () => {
     expect(response.status).toBe(403);
   });
 
+  it('reports a disabled fixture only to a caller that already holds its capability', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'false';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        },
+      }));
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get('x-scholarscout-e2e-fixture-denial')).toBe('not-enabled');
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
   it('accepts a no-body Node fetch request with Content-Length: 0', async () => {
     const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
     const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;

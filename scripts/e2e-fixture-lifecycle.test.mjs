@@ -127,3 +127,22 @@ test('classifies lifecycle responses without retaining a raw status or response 
     );
   }
 });
+
+test('identifies a disabled fixture without recording the protected response body', async () => {
+  await assert.rejects(
+    () => runFixtureLifecycle({
+      request: async (method) => ({
+        ok: method !== 'POST',
+        status: 403,
+        headers: { get: (name) => name === 'x-scholarscout-e2e-fixture-denial' ? 'not-enabled' : null },
+        body: 'sensitive',
+      }),
+      run: async () => undefined,
+    }),
+    (error) => {
+      assert.equal(classifyFixtureLifecycleFailure(error), 'fixture-provision-not-enabled');
+      assert.equal(JSON.stringify(error).includes('sensitive'), false);
+      return true;
+    },
+  );
+});

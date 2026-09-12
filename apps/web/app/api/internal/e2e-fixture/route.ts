@@ -8,19 +8,19 @@ import {
 const PROTOCOL = 'lifecycle-v1';
 
 export async function POST(request: Request) {
-  if (!isAuthorizedLifecycleRequest(request)) return denied();
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
   await createAndVerifyE2eFixture();
   return NextResponse.json({ ok: true, phase: 'verified' });
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorizedLifecycleRequest(request)) return denied();
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
   await verifyE2eFixture();
   return NextResponse.json({ ok: true, phase: 'verified' });
 }
 
 export async function DELETE(request: Request) {
-  if (!isAuthorizedLifecycleRequest(request)) return denied();
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
   await cleanupE2eFixture();
   return NextResponse.json({ ok: true, phase: 'cleaned' });
 }
@@ -52,6 +52,20 @@ function isAuthorizedLifecycleRequest(request: Request): boolean {
   return true;
 }
 
-function denied() {
-  return NextResponse.json({ error: 'Not found' }, { status: 403 });
+function denied(request: Request) {
+  const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+  const hasFixtureCapability = Boolean(capability) &&
+    request.headers.get('authorization') === `Bearer ${capability}`;
+  const lifecycleEnabled = process.env.VERCEL_ENV !== 'production' &&
+    process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
+
+  return NextResponse.json(
+    { error: 'Not found' },
+    {
+      status: 403,
+      headers: hasFixtureCapability && !lifecycleEnabled
+        ? { 'x-scholarscout-e2e-fixture-denial': 'not-enabled' }
+        : undefined,
+    },
+  );
 }
