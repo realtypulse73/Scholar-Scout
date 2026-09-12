@@ -577,6 +577,7 @@ export function getDataStoreConfigurationSummary() {
       process.env.BLOB_READ_WRITE_TOKEN;
     return {
       adapter,
+      // Preview branches may point here at isolated rehearsal data in Blob.
       backingStore:
         process.env.SCHOLARSCOUT_BLOB_DATA_PATH ?? 'scholarscout/data.json',
       isDurable: Boolean(token),
