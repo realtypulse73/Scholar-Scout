@@ -10,6 +10,7 @@ import {
 import { programmes } from '@/lib/programmes';
 import {
   setScholarScoutDataStoreForTests,
+  validateScholarScoutDataImport,
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
@@ -64,10 +65,21 @@ describe('e2e programme fixture', () => {
   });
 
   it('derives deterministic generated records from configured fixture state', () => {
-    expect(createE2eProgrammeFixture('run-abc').map((programme) => programme.id)).toEqual([
+    const records = createE2eProgrammeFixture('run-abc');
+    expect(records.map((programme) => programme.id)).toEqual([
       'e2e-run-abc-health',
       'e2e-run-abc-technology',
     ]);
+    expect(records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        lastVerifiedAt: '2026-01-01T00:00:00.000Z',
+        sourceNotes: 'Generated fixture record for isolated Preview rehearsal.',
+      }),
+    ]));
+    expect(validateScholarScoutDataImport({
+      ...initialData,
+      programmeRecords: records,
+    }).isValid).toBe(true);
     expect(getE2eFixtureProgrammes('run-abc')).toHaveLength(2);
   });
 

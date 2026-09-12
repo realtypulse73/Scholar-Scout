@@ -45,7 +45,9 @@ export function createE2eProgrammeFixture(fixtureId: string): Programme[] {
       publicationStatus: 'published',
       sourceName: 'Generated fixture',
       sourceConfidence: 'verified',
+      sourceNotes: 'Generated fixture record for isolated Preview rehearsal.',
       sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
+      lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
     {
       id: `${prefix}-technology`,
@@ -68,7 +70,9 @@ export function createE2eProgrammeFixture(fixtureId: string): Programme[] {
       publicationStatus: 'published',
       sourceName: 'Generated fixture',
       sourceConfidence: 'verified',
+      sourceNotes: 'Generated fixture record for isolated Preview rehearsal.',
       sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
+      lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
   ];
 }
