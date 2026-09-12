@@ -57,14 +57,40 @@ function denied(request: Request) {
     request.headers.get('authorization') === `Bearer ${capability}`;
   const lifecycleEnabled = process.env.VERCEL_ENV !== 'production' &&
     process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
+  const denial = !hasFixtureCapability
+    ? undefined
+    : !lifecycleEnabled
+      ? 'not-enabled'
+      : getRejectedRequestShape(request);
 
   return NextResponse.json(
     { error: 'Not found' },
     {
       status: 403,
-      headers: hasFixtureCapability && !lifecycleEnabled
-        ? { 'x-scholarscout-e2e-fixture-denial': 'not-enabled' }
+      headers: denial
+        ? { 'x-scholarscout-e2e-fixture-denial': denial }
         : undefined,
     },
   );
+}
+
+function getRejectedRequestShape(request: Request): string | undefined {
+  if (request.body !== null) return 'body-present';
+  if (request.headers.get('content-length') && request.headers.get('content-length') !== '0') {
+    return 'content-length';
+  }
+  if (request.headers.get('content-type') || request.headers.get('transfer-encoding')) {
+    return 'content-metadata';
+  }
+  if (
+    request.headers.get('origin') ||
+    request.headers.get('referer') ||
+    request.headers.get('cookie') ||
+    request.headers.get('sec-fetch-site') ||
+    request.headers.get('sec-fetch-mode') ||
+    request.headers.get('sec-fetch-dest') ||
+    request.headers.get('sec-fetch-user') ||
+    request.headers.get('sec-ch-ua')
+  ) return 'browser-metadata';
+  return undefined;
 }

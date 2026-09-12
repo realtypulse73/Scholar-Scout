@@ -37,7 +37,9 @@ export function classifyFixtureLifecycleFailure(error) {
 
 function classifyLifecycleResponse(response) {
   const denial = response?.headers?.get?.('x-scholarscout-e2e-fixture-denial');
-  if (denial === 'not-enabled') return 'not-enabled';
+  if (['not-enabled', 'body-present', 'content-length', 'content-metadata', 'browser-metadata'].includes(denial)) {
+    return denial;
+  }
 
   const status = response?.status;
   if (status >= 300 && status < 400) return 'redirected';

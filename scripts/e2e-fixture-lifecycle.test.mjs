@@ -146,3 +146,22 @@ test('identifies a disabled fixture without recording the protected response bod
     },
   );
 });
+
+test('identifies a rejected fixture request shape without recording the protected response body', async () => {
+  await assert.rejects(
+    () => runFixtureLifecycle({
+      request: async (method) => ({
+        ok: method !== 'POST',
+        status: 403,
+        headers: { get: (name) => name === 'x-scholarscout-e2e-fixture-denial' ? 'body-present' : null },
+        body: 'sensitive',
+      }),
+      run: async () => undefined,
+    }),
+    (error) => {
+      assert.equal(classifyFixtureLifecycleFailure(error), 'fixture-provision-body-present');
+      assert.equal(JSON.stringify(error).includes('sensitive'), false);
+      return true;
+    },
+  );
+});
