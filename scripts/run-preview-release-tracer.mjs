@@ -136,6 +136,9 @@ async function runCli() {
   const record = { ...outcome, recordedAt: new Date().toISOString() };
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(record, null, 2)}\n`);
+  // The record contains only the scrubbed release-evidence fields, so it is
+  // safe to surface the failure category in an Actions log for triage.
+  process.stdout.write(`Preview release tracer record: ${JSON.stringify(record)}\n`);
   if (record.outcome !== 'passed') process.exitCode = 1;
 }
 
