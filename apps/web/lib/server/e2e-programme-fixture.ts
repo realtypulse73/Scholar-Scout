@@ -3,6 +3,8 @@ import 'server-only';
 import type { Programme } from '@/lib/programmes';
 
 const FIXTURE_ACTOR_PREFIX = 'e2e-fixture:';
+const FIXTURE_VERIFICATION_ATTEMPTS = 5;
+const FIXTURE_VERIFICATION_DELAY_MS = 250;
 
 export function isE2eFixtureEnabled(): boolean {
   return process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
@@ -78,10 +80,7 @@ export async function createAndVerifyE2eFixture(): Promise<'verified'> {
   for (const record of records) {
     await saveProgrammeRecord(fixtureActor(fixtureId), record);
   }
-  const governed = await getGovernedProgrammes();
-  if (!records.every((record) => governed.some((item) => item.id === record.id))) {
-    throw new Error('E2E fixture records were not available through the governed catalogue.');
-  }
+  await waitForFixtureRecords(getGovernedProgrammes, records, 'available');
   return 'verified';
 }
 
@@ -89,10 +88,7 @@ export async function verifyE2eFixture(): Promise<'verified'> {
   const fixtureId = requireConfiguredFixtureId();
   const { getGovernedProgrammes } = await import('./programme-records');
   const expected = createE2eProgrammeFixture(fixtureId);
-  const governed = await getGovernedProgrammes();
-  if (!expected.every((record) => governed.some((item) => item.id === record.id))) {
-    throw new Error('E2E fixture records could not be verified.');
-  }
+  await waitForFixtureRecords(getGovernedProgrammes, expected, 'verified');
   return 'verified';
 }
 
@@ -115,4 +111,19 @@ function requireConfiguredFixtureId(): string {
 
 function fixtureActor(fixtureId: string): string {
   return `${FIXTURE_ACTOR_PREFIX}${fixtureId}`;
+}
+
+async function waitForFixtureRecords(
+  getGovernedProgrammes: () => Promise<Programme[]>,
+  expected: Programme[],
+  phase: 'available' | 'verified',
+): Promise<void> {
+  for (let attempt = 1; attempt <= FIXTURE_VERIFICATION_ATTEMPTS; attempt += 1) {
+    const governed = await getGovernedProgrammes();
+    if (expected.every((record) => governed.some((item) => item.id === record.id))) return;
+    if (attempt < FIXTURE_VERIFICATION_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, FIXTURE_VERIFICATION_DELAY_MS));
+    }
+  }
+  throw new Error(`E2E fixture records were not ${phase} through the governed catalogue.`);
 }
