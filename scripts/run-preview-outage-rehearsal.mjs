@@ -13,6 +13,8 @@ import {
   createProtectedPreviewContextOptions,
 } from './preview-deployment-protection.mjs';
 
+const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
+
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY';
 
 function parseMetadata(value) {
@@ -81,12 +83,13 @@ export async function runPreviewOutageRehearsal({
 async function runCli() {
   const outputFlag = process.argv.indexOf('--output');
   const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
-  if (!outputPath || !process.env.GITHUB_SHA) {
+  const candidateCommit = process.env[CANDIDATE_COMMIT_ENV] ?? process.env.GITHUB_SHA;
+  if (!outputPath || !candidateCommit) {
     throw new Error('Preview outage rehearsal requires a candidate commit and output path.');
   }
   const record = {
     ...(await runPreviewOutageRehearsal({
-      candidateCommit: process.env.GITHUB_SHA,
+      candidateCommit,
       metadata: parseMetadata(process.env.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA),
     })),
     recordedAt: new Date().toISOString(),

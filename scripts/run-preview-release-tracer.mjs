@@ -16,6 +16,7 @@ import {
 import { runStudentReleaseJourney } from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
+const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
 
 function getLifecycleCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -139,7 +140,7 @@ function classifyCliConfigurationFailure(error) {
 async function runCli() {
   const outputFlag = process.argv.indexOf('--output');
   const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
-  const candidateCommit = process.env.GITHUB_SHA;
+  const candidateCommit = process.env[CANDIDATE_COMMIT_ENV] ?? process.env.GITHUB_SHA;
   if (!outputPath || !candidateCommit) {
     throw new Error('Preview tracer requires a candidate commit and an output path.');
   }

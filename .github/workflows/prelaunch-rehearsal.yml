@@ -26,7 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      GITHUB_SHA: ${{ inputs.candidate_commit }}
+      # GitHub reserves GITHUB_SHA for the workflow revision. Keep the
+      # independently selected Preview candidate under our own name.
+      SCHOLARSCOUT_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
       NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
