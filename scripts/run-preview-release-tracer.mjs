@@ -122,6 +122,20 @@ function parseRunnerMetadata(value) {
   }
 }
 
+function classifyCliConfigurationFailure(error) {
+  const message = error instanceof Error ? error.message : '';
+  if (message.includes('scrubbed Preview deployment metadata')) {
+    return 'preview-metadata-invalid';
+  }
+  if (message.includes('runner-only protection material')) {
+    return 'preview-bypass-invalid';
+  }
+  if (message.includes('runner-owned fixture lifecycle capability')) {
+    return 'preview-capability-invalid';
+  }
+  return 'preview-runner-configuration-invalid';
+}
+
 async function runCli() {
   const outputFlag = process.argv.indexOf('--output');
   const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
@@ -129,10 +143,20 @@ async function runCli() {
   if (!outputPath || !candidateCommit) {
     throw new Error('Preview tracer requires a candidate commit and an output path.');
   }
-  const outcome = await runPreviewReleaseTracer({
-    candidateCommit,
-    metadata: parseRunnerMetadata(process.env.SCHOLARSCOUT_PREVIEW_METADATA),
-  });
+  let outcome;
+  try {
+    outcome = await runPreviewReleaseTracer({
+      candidateCommit,
+      metadata: parseRunnerMetadata(process.env.SCHOLARSCOUT_PREVIEW_METADATA),
+    });
+  } catch (error) {
+    outcome = createSafeOutcome(
+      'failed',
+      process.env.NEXTAUTH_URL ?? '',
+      candidateCommit,
+      classifyCliConfigurationFailure(error),
+    );
+  }
   const record = { ...outcome, recordedAt: new Date().toISOString() };
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(record, null, 2)}\n`);
