@@ -33,7 +33,6 @@ function isAuthorizedLifecycleRequest(request: Request): boolean {
     process.env.SCHOLARSCOUT_E2E_FIXTURE !== 'true' ||
     !capability ||
     url.search ||
-    request.body !== null ||
     request.headers.get('authorization') !== `Bearer ${capability}` ||
     request.headers.get('x-scholarscout-e2e-fixture-protocol') !== PROTOCOL ||
     (request.headers.get('content-length') && request.headers.get('content-length') !== '0') ||
@@ -75,7 +74,6 @@ function denied(request: Request) {
 }
 
 function getRejectedRequestShape(request: Request): string | undefined {
-  if (request.body !== null) return 'body-present';
   if (request.headers.get('content-length') && request.headers.get('content-length') !== '0') {
     return 'content-length';
   }

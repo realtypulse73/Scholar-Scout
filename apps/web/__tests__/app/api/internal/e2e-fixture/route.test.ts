@@ -134,4 +134,32 @@ describe('internal e2e fixture route', () => {
       else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
     }
   });
+
+  it('accepts an empty proxy request stream when the headers prove it has no content', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const proxyRequest = {
+        url: 'https://localhost/api/internal/e2e-fixture',
+        body: new ReadableStream(),
+        headers: new Headers({
+          Authorization: 'Bearer runner-capability',
+          'Content-Length': '0',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        }),
+      } as unknown as Request;
+
+      const response = await POST(proxyRequest);
+
+      expect(response.status).toBe(200);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
 });
