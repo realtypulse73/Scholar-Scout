@@ -474,10 +474,21 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
 
       const body = await readStreamText(blob.stream);
       const metadata = await head(this.pathname, { token: this.token });
-      return {
-        data: parseStoredScholarScoutData(JSON.parse(body)),
-        version: metadata.etag,
-      };
+      try {
+        return {
+          data: parseStoredScholarScoutData(JSON.parse(body)),
+          version: metadata.etag,
+        };
+      } catch (error) {
+        if (
+          isIsolatedPreviewBlobPath(this.pathname) &&
+          error instanceof ScholarScoutDataStoreReadError &&
+          error.category === 'invalid-data'
+        ) {
+          return { data: createInitialData(), version: metadata.etag };
+        }
+        throw error;
+      }
     } catch (error) {
       if (error instanceof ScholarScoutDataStoreReadError) {
         throw error;
