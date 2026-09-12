@@ -466,6 +466,9 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       }
 
       if (!blob.stream) {
+        if (isIsolatedPreviewBlobPath(this.pathname)) {
+          return { data: createInitialData(), version: null };
+        }
         throw new ScholarScoutDataStoreReadError('invalid-data');
       }
 
@@ -528,6 +531,10 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       throw error;
     }
   }
+}
+
+function isIsolatedPreviewBlobPath(pathname: string): boolean {
+  return process.env.VERCEL_ENV === 'preview' && pathname.startsWith('scholarscout/preview/');
 }
 
 let activeDataStore: ScholarScoutDataStore | null = null;

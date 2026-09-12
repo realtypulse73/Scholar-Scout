@@ -640,6 +640,22 @@ describe('ScholarScout data store adapter', () => {
     });
   });
 
+  it('initializes an isolated Preview Blob path when the provider returns no stream', async () => {
+    const originalVercelEnv = process.env.VERCEL_ENV;
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'scholarscout/preview/phase6.json';
+    process.env.VERCEL_ENV = 'preview';
+    const getMock = jest.mocked(get);
+    getMock.mockResolvedValue({ statusCode: 200, stream: null } as unknown as GetBlobResult);
+
+    try {
+      await expect(readScholarScoutData()).resolves.toMatchObject(initialData);
+    } finally {
+      restoreEnv('VERCEL_ENV', originalVercelEnv);
+    }
+  });
+
   it('creates OAuth users with staff allowlist roles', async () => {
     process.env.SCHOLARSCOUT_STAFF_EMAILS =
       'staff@example.com, advising@example.com';
