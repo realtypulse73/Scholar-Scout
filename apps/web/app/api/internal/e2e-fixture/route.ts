@@ -26,6 +26,7 @@ export async function DELETE(request: Request) {
 }
 
 function isAuthorizedLifecycleRequest(request: Request): boolean {
+  // This route is deliberately enabled only by the branch-scoped Preview fixture switch.
   const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
   const url = new URL(request.url);
   if (
