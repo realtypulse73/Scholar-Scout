@@ -5,12 +5,17 @@ import { POST } from '@/app/api/campus-notes/route';
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }));
 jest.mock('@/lib/server/data-store', () => ({ createCampusNote: jest.fn(), getCampusNotes: jest.fn() }));
-jest.mock('@/lib/server/rate-limit', () => ({ reserveCommunitySubmission: jest.fn() }));
+jest.mock('@/lib/server/rate-limit', () => ({
+  isPreviewCommunityOutageEnabled: jest.fn(),
+  reserveCommunitySubmission: jest.fn(),
+}));
 
 const getServerSessionMock = jest.requireMock('next-auth').getServerSession as jest.Mock;
 const createCampusNoteMock = jest.requireMock('@/lib/server/data-store').createCampusNote as jest.Mock;
 const reserveCommunitySubmissionMock = jest.requireMock('@/lib/server/rate-limit')
   .reserveCommunitySubmission as jest.Mock;
+const isPreviewCommunityOutageEnabledMock = jest.requireMock('@/lib/server/rate-limit')
+  .isPreviewCommunityOutageEnabled as jest.Mock;
 
 describe('campus note submission outage boundary', () => {
   const originalVercelEnvironment = process.env.VERCEL_ENV;
@@ -19,6 +24,7 @@ describe('campus note submission outage boundary', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     getServerSessionMock.mockResolvedValue({ user: { id: 'student-one' } });
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(false);
     reserveCommunitySubmissionMock.mockResolvedValue({ status: 'allowed' });
     delete process.env.VERCEL_ENV;
     delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
@@ -34,17 +40,19 @@ describe('campus note submission outage boundary', () => {
   it('fails closed before creating a note for the Preview-only provider outage rehearsal', async () => {
     process.env.VERCEL_ENV = 'preview';
     process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
-    reserveCommunitySubmissionMock.mockResolvedValue({ status: 'unavailable' });
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(true);
+    getServerSessionMock.mockResolvedValue(null);
 
     const response = await POST(new Request('https://scholar-scout.test/api/campus-notes', {
       method: 'POST',
-      body: JSON.stringify({ school_slug: 'north-valley-college', uploader_username: null, program_id: null, body: 'Can anyone share a study tip?' }),
     }));
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
       error: 'Community submissions are not available right now. Please try again shortly.',
     });
+    expect(getServerSessionMock).not.toHaveBeenCalled();
+    expect(reserveCommunitySubmissionMock).not.toHaveBeenCalled();
     expect(createCampusNoteMock).not.toHaveBeenCalled();
   });
 
