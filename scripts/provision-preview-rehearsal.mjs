@@ -54,7 +54,7 @@ export async function provisionPreviewRehearsal({
     '1. For the baseline protected Preview, set `SCHOLARSCOUT_E2E_FIXTURE=true`, then map the baseline fixture ID and capability from the local handoff to `SCHOLARSCOUT_E2E_FIXTURE_ID` and `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY` for that one deployment only.',
     '2. For the separate outage Preview, set the same fixture enablement with the outage fixture ID and capability, plus `SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1`, for that one deployment only.',
     '3. In GitHub Actions repository secrets, map the baseline capability to `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY` and the outage capability to `SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY`.',
-    '4. Add Vercel protection bypass and scrubbed candidate-bound Preview metadata separately. Do not place bypass material in this handoff.',
+    '4. Keep the Vercel protection bypass in GitHub Actions secrets. In the workflow form, paste the baseline and outage Preview URLs as ordinary inputs; do not save either URL as a secret.',
     '5. Delete this local handoff after the rehearsal and rotate both capabilities. Do not use either value for production, aliases, or later Preview deployments.',
     '',
   ].join('\n'));

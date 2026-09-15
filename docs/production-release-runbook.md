@@ -81,7 +81,7 @@ node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spe
 
 Only an authorized Vercel maintainer may then dispatch **ScholarScout Prelaunch Rehearsal** for a protected Preview candidate. Configure Preview-only durable-adapter/lifecycle values and runner-only bypass material through authorized deployment controls; never add them to the repository, workflow logs, or this record. The protected Preview tracer uses the existing Plan 06-06 supervisor. Run a distinct one-off outage Preview with a fresh lifecycle scope, verify its safe 503 occurs before writes or disclosure, confirm exact server cleanup and base Preview restoration, and retain separate approved artifact/deployment links.
 
-The workflow consumes the runner-only bypass, lifecycle capability, and scrubbed base/outage Preview metadata only from GitHub Actions secrets. The repository-side runners write only scrubbed candidate-bound JSON records and fail closed if a secret, metadata, lifecycle cleanup, 503 proof, or restoration record is missing. Do not echo, download, or paste the input values.
+The workflow consumes the runner-only bypass and lifecycle capabilities from GitHub Actions secrets. Paste the baseline and outage Preview URLs into the required workflow fields; those URLs are ordinary inputs, not secrets, and the runner binds each to the selected candidate at runtime. The repository-side runners write only scrubbed candidate-bound JSON records and fail closed if an input, secret, lifecycle cleanup, 503 proof, or restoration record is missing. Do not echo or download secret values.
 
 For a one-time fresh baseline/outage lifecycle scope, generate the ignored local handoff and follow its scrubbed report:
 
