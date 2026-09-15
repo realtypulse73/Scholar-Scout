@@ -5,12 +5,17 @@ import {
   runStudentReleaseJourney,
   STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
   STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING,
+  STUDENT_RELEASE_JOURNEY_RECOMMENDATIONS_HEADING,
   StudentReleaseJourneyError,
 } from './student-release-journey.mjs';
 
 test('uses the current accessible completion heading from onboarding', () => {
   assert.equal(STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING.test("You're all set!"), true);
   assert.equal(STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING.test('Your pathway snapshot'), false);
+});
+
+test('uses the current accessible recommendation heading', () => {
+  assert.equal(STUDENT_RELEASE_JOURNEY_RECOMMENDATIONS_HEADING, 'Your best next move');
 });
 
 test('gives the hosted Preview student journey a bounded cold-start timeout', async () => {

@@ -1,5 +1,6 @@
 export const STUDENT_RELEASE_JOURNEY_TIMEOUT_MS = 60_000;
 export const STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING = /you['’]re all set/i;
+export const STUDENT_RELEASE_JOURNEY_RECOMMENDATIONS_HEADING = 'Your best next move';
 
 export class StudentReleaseJourneyError extends Error {
   constructor(stage, cause) {
@@ -66,7 +67,7 @@ export async function runStudentReleaseJourney(
 
     stage = 'recommendations';
     await page.goto('/recommendations');
-    await page.getByText('Your next-step recommendations').waitFor();
+    await page.getByRole('heading', { name: STUDENT_RELEASE_JOURNEY_RECOMMENDATIONS_HEADING }).waitFor();
 
     stage = 'simulation';
     await page.goto('/simulate');
