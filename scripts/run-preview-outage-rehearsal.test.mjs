@@ -45,6 +45,7 @@ test('proves the Preview outage before input processing and cleans its lifecycle
       assert.equal(url.toString(), 'https://scholar-scout-outage.vercel.app/api/campus-notes');
       assert.equal(options.method, 'POST');
       assert.equal(options.body, undefined);
+      assert.deepEqual(options.headers, { 'x-vercel-protection-bypass': 'bypass-value' });
       return { status: 503, text: async () => JSON.stringify({ error: 'Community submissions are not available right now.' }) };
     },
   });
@@ -55,6 +56,28 @@ test('proves the Preview outage before input processing and cleans its lifecycle
     target: metadata.url,
     outcome: 'passed',
   });
+});
+
+test('records a scrubbed transport failure instead of dropping the outage record', async () => {
+  const result = await runPreviewOutageRehearsal({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    env: {
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'sensitive-capability',
+    },
+    createLifecycle: () => async () => ({ ok: true }),
+    fetchImpl: async () => { throw new Error('sensitive-bypass sensitive-capability'); },
+  });
+
+  assert.deepEqual(result, {
+    candidateCommit: 'candidate-commit',
+    target: metadata.url,
+    outcome: 'failed',
+    errorCategory: 'outage-transport-failed',
+  });
+  assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
+  assert.equal(JSON.stringify(result).includes('sensitive-capability'), false);
 });
 
 test('fails closed when the outage result discloses sensitive material', async () => {

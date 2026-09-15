@@ -42,10 +42,11 @@ export async function runPreviewOutageRehearsal({
   createLifecycle = createLifecycleRequest,
 } = {}) {
   const options = createProtectedPreviewContextOptions({ metadata, candidateCommit, env });
+  const directProtectionHeaders = createLifecycleProtectionHeaders(options.extraHTTPHeaders);
   const lifecycle = createLifecycle(
     options.baseURL,
     getCapability(env),
-    createLifecycleProtectionHeaders(options.extraHTTPHeaders),
+    directProtectionHeaders,
   );
 
   try {
@@ -54,7 +55,7 @@ export async function runPreviewOutageRehearsal({
       run: async () => {
         const response = await fetchImpl(new URL('/api/campus-notes', options.baseURL), {
           method: 'POST',
-          headers: options.extraHTTPHeaders,
+          headers: directProtectionHeaders,
         });
         const body = await response.text();
         if (response.status !== 503 || /token|cookie|fixture|storage|student/i.test(body)) {
@@ -69,7 +70,14 @@ export async function runPreviewOutageRehearsal({
       },
     });
   } catch (error) {
-    if (!(error instanceof FixtureLifecycleError)) throw error;
+    if (!(error instanceof FixtureLifecycleError)) {
+      return {
+        candidateCommit,
+        target: options.baseURL,
+        outcome: 'failed',
+        errorCategory: 'outage-transport-failed',
+      };
+    }
     return {
       candidateCommit,
       target: options.baseURL,
@@ -95,6 +103,7 @@ async function runCli() {
   };
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(record, null, 2)}\n`);
+  process.stdout.write(`Preview outage rehearsal record: ${JSON.stringify(record)}\n`);
   if (record.outcome !== 'passed') process.exitCode = 1;
 }
 
