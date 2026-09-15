@@ -1,13 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { runPreviewReleaseTracer } from './run-preview-release-tracer.mjs';
+import {
+  createPreviewMetadata,
+  runPreviewReleaseTracer,
+} from './run-preview-release-tracer.mjs';
 
 const metadata = {
   environment: 'preview',
   url: 'https://scholar-scout-pr-42.vercel.app',
   commit: 'candidate-commit',
 };
+
+test('builds candidate-bound metadata from a non-secret Preview URL input', () => {
+  assert.deepEqual(
+    createPreviewMetadata(' https://scholar-scout-pr-42.vercel.app/ ', 'candidate-commit'),
+    metadata,
+  );
+  assert.throws(
+    () => createPreviewMetadata('', 'candidate-commit'),
+    /Preview URL workflow input/,
+  );
+});
 
 test('provisions, verifies, runs with protected page and API transport, and cleans once', async () => {
   const phases = [];

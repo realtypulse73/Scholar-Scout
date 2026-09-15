@@ -1,13 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { runPreviewOutageRehearsal } from './run-preview-outage-rehearsal.mjs';
+import {
+  createPreviewOutageMetadata,
+  runPreviewOutageRehearsal,
+} from './run-preview-outage-rehearsal.mjs';
 
 const metadata = {
   environment: 'preview',
   url: 'https://scholar-scout-outage.vercel.app',
   commit: 'candidate-commit',
 };
+
+test('builds candidate-bound metadata from a non-secret outage Preview URL input', () => {
+  assert.deepEqual(
+    createPreviewOutageMetadata(' https://scholar-scout-outage.vercel.app/ ', 'candidate-commit'),
+    metadata,
+  );
+  assert.throws(
+    () => createPreviewOutageMetadata('', 'candidate-commit'),
+    /outage Preview URL workflow input/,
+  );
+});
 
 test('proves the Preview outage before input processing and cleans its lifecycle', async () => {
   const phases = [];

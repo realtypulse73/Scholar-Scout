@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Protected Preview URL only; never a production URL
-        required: false
+        description: Protected baseline Preview URL; paste from Vercel, never a secret
+        required: true
+        type: string
+      outage_base_url:
+        description: Separate protected outage Preview URL; paste from Vercel, never a secret
+        required: true
         type: string
       candidate_commit:
         description: Immutable candidate commit to rehearse
@@ -53,8 +57,8 @@ jobs:
       SCHOLARSCOUT_VERCEL_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_BYPASS }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY }}
-      SCHOLARSCOUT_PREVIEW_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_METADATA }}
-      SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA }}
+      SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.base_url }}
+      SCHOLARSCOUT_PREVIEW_OUTAGE_URL: ${{ inputs.outage_base_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

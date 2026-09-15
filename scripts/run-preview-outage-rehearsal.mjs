@@ -14,17 +14,16 @@ import {
 } from './preview-deployment-protection.mjs';
 
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
+const PREVIEW_OUTAGE_URL_ENV = 'SCHOLARSCOUT_PREVIEW_OUTAGE_URL';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY';
 
-function parseMetadata(value) {
-  try {
-    const metadata = JSON.parse(value ?? '');
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error();
-    return metadata;
-  } catch {
-    throw new Error('Preview outage rehearsal requires scrubbed outage Preview metadata.');
+export function createPreviewOutageMetadata(url, candidateCommit) {
+  const normalizedUrl = typeof url === 'string' ? url.trim().replace(/\/$/, '') : '';
+  if (!normalizedUrl) {
+    throw new Error('Preview outage rehearsal requires an outage Preview URL workflow input.');
   }
+  return { environment: 'preview', url: normalizedUrl, commit: candidateCommit };
 }
 
 function getCapability(env) {
@@ -90,7 +89,7 @@ async function runCli() {
   const record = {
     ...(await runPreviewOutageRehearsal({
       candidateCommit,
-      metadata: parseMetadata(process.env.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA),
+      metadata: createPreviewOutageMetadata(process.env[PREVIEW_OUTAGE_URL_ENV], candidateCommit),
     })),
     recordedAt: new Date().toISOString(),
   };

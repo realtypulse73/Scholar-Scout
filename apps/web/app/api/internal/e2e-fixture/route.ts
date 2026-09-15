@@ -42,12 +42,22 @@ function isAuthorizedLifecycleRequest(request: Request): boolean {
     request.headers.get('referer') ||
     request.headers.get('cookie') ||
     request.headers.get('sec-fetch-site') ||
-    request.headers.get('sec-fetch-mode') ||
+    isBrowserNavigationRequest(request) ||
     request.headers.get('sec-fetch-dest') ||
     request.headers.get('sec-fetch-user') ||
     request.headers.get('sec-ch-ua')
   ) return false;
   return true;
+}
+
+/**
+ * Node's built-in fetch sends Sec-Fetch-Mode: cors without browser origin,
+ * site, cookie, or client-hint metadata. That is the protected Preview
+ * server-runner shape; browser navigations remain denied.
+ */
+function isBrowserNavigationRequest(request: Request): boolean {
+  const mode = request.headers.get('sec-fetch-mode');
+  return Boolean(mode && mode !== 'cors');
 }
 
 function denied(request: Request) {
@@ -85,7 +95,7 @@ function getRejectedRequestShape(request: Request): string | undefined {
     request.headers.get('referer') ||
     request.headers.get('cookie') ||
     request.headers.get('sec-fetch-site') ||
-    request.headers.get('sec-fetch-mode') ||
+    isBrowserNavigationRequest(request) ||
     request.headers.get('sec-fetch-dest') ||
     request.headers.get('sec-fetch-user') ||
     request.headers.get('sec-ch-ua')

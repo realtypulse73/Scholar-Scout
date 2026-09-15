@@ -17,6 +17,7 @@ import { runStudentReleaseJourney } from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
+const PREVIEW_URL_ENV = 'SCHOLARSCOUT_PREVIEW_URL';
 
 function getLifecycleCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -111,22 +112,18 @@ export async function runPreviewReleaseTracer({
   }
 }
 
-function parseRunnerMetadata(value) {
-  try {
-    const metadata = JSON.parse(value ?? '');
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-      throw new Error();
-    }
-    return metadata;
-  } catch {
-    throw new Error('Preview tracer requires scrubbed Preview deployment metadata.');
+export function createPreviewMetadata(url, candidateCommit) {
+  const normalizedUrl = typeof url === 'string' ? url.trim().replace(/\/$/, '') : '';
+  if (!normalizedUrl) {
+    throw new Error('Preview tracer requires a Preview URL workflow input.');
   }
+  return { environment: 'preview', url: normalizedUrl, commit: candidateCommit };
 }
 
 function classifyCliConfigurationFailure(error) {
   const message = error instanceof Error ? error.message : '';
-  if (message.includes('scrubbed Preview deployment metadata')) {
-    return 'preview-metadata-invalid';
+  if (message.includes('Preview URL workflow input')) {
+    return 'preview-url-invalid';
   }
   if (message.includes('runner-only protection material')) {
     return 'preview-bypass-invalid';
@@ -148,7 +145,7 @@ async function runCli() {
   try {
     outcome = await runPreviewReleaseTracer({
       candidateCommit,
-      metadata: parseRunnerMetadata(process.env.SCHOLARSCOUT_PREVIEW_METADATA),
+      metadata: createPreviewMetadata(process.env[PREVIEW_URL_ENV], candidateCommit),
     });
   } catch (error) {
     outcome = createSafeOutcome(

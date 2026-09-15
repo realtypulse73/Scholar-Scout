@@ -31,6 +31,8 @@ describe('internal e2e fixture route', () => {
 
   it.each([
     ['referer', 'https://localhost/programmes'],
+    ['sec-fetch-site', 'same-origin'],
+    ['sec-fetch-mode', 'navigate'],
     ['sec-fetch-user', '?1'],
     ['sec-ch-ua', '"Chromium"'],
   ])('denies browser navigation metadata (%s)', async (name, value) => {
@@ -123,6 +125,7 @@ describe('internal e2e fixture route', () => {
           Authorization: 'Bearer runner-capability',
           'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
           'Content-Length': '0',
+          'Sec-Fetch-Mode': 'cors',
         },
       }));
 
