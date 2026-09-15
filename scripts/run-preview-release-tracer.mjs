@@ -16,6 +16,7 @@ import {
 import {
   runStudentReleaseJourney,
   STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
+  StudentReleaseJourneyError,
 } from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
@@ -40,6 +41,10 @@ function createSafeOutcome(outcome, baseURL, candidateCommit, errorCategory) {
 }
 
 function classifyStudentTracerFailure(error) {
+  if (error instanceof StudentReleaseJourneyError) {
+    const causeMessage = error.cause instanceof Error ? error.cause.message : '';
+    return `student-${error.stage}-${causeMessage.includes('Timeout') ? 'timeout' : 'failed'}`;
+  }
   const message = error instanceof Error ? error.message : '';
   if (message.includes('did not start with an empty profile')) {
     return 'student-profile-not-empty';
