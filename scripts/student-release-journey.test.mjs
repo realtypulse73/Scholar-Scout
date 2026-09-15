@@ -4,8 +4,14 @@ import test from 'node:test';
 import {
   runStudentReleaseJourney,
   STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
+  STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING,
   StudentReleaseJourneyError,
 } from './student-release-journey.mjs';
+
+test('uses the current accessible completion heading from onboarding', () => {
+  assert.equal(STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING.test("You're all set!"), true);
+  assert.equal(STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING.test('Your pathway snapshot'), false);
+});
 
 test('gives the hosted Preview student journey a bounded cold-start timeout', async () => {
   const timeouts = [];

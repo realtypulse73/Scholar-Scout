@@ -1,4 +1,5 @@
 export const STUDENT_RELEASE_JOURNEY_TIMEOUT_MS = 60_000;
+export const STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING = /you['’]re all set/i;
 
 export class StudentReleaseJourneyError extends Error {
   constructor(stage, cause) {
@@ -43,7 +44,7 @@ export async function runStudentReleaseJourney(
     await page.getByRole('button', { name: 'Financial Aid & Scholarships' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('button', { name: 'Save profile' }).click();
-    await page.getByText('Your pathway snapshot').waitFor();
+    await page.getByRole('heading', { name: STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING }).waitFor();
 
     const savedProfile = await page.request.get('/api/account/onboarding');
     const profile = await savedProfile.json();
