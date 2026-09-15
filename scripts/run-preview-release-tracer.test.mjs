@@ -53,7 +53,7 @@ test('provisions, verifies, runs with protected page and API transport, and clea
         close: async () => { closed = true; },
       };
     },
-    runStudentSpec: async ({ browser, baseURL, childEnv, diagnostics }) => {
+    runStudentSpec: async ({ browser, baseURL, childEnv, diagnostics, timeoutMs }) => {
       studentBrowser = browser;
       assert.equal(baseURL, metadata.url);
       assert.deepEqual(childEnv, {});
@@ -62,6 +62,7 @@ test('provisions, verifies, runs with protected page and API transport, and clea
         screenshot: 'off',
         video: 'off',
       });
+      assert.equal(timeoutMs, 60_000);
     },
   });
 

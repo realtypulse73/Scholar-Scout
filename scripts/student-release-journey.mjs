@@ -1,4 +1,15 @@
-export async function runStudentReleaseJourney(page) {
+export const STUDENT_RELEASE_JOURNEY_TIMEOUT_MS = 60_000;
+
+/**
+ * Runs the Preview student path with enough time for a cold serverless Preview
+ * deployment to respond, without weakening application assertions.
+ */
+export async function runStudentReleaseJourney(
+  page,
+  { timeoutMs = STUDENT_RELEASE_JOURNEY_TIMEOUT_MS } = {},
+) {
+  page.setDefaultTimeout(timeoutMs);
+  page.setDefaultNavigationTimeout(timeoutMs);
   const initialProfile = await page.request.get('/api/account/onboarding');
   if (!initialProfile.ok() || JSON.stringify(await initialProfile.json()) !== '{"profile":null}') {
     throw new Error('Student release fixture did not start with an empty profile.');

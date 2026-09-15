@@ -13,7 +13,10 @@ import {
   createLifecycleProtectionHeaders,
   createProtectedPreviewContextOptions,
 } from './preview-deployment-protection.mjs';
-import { runStudentReleaseJourney } from './student-release-journey.mjs';
+import {
+  runStudentReleaseJourney,
+  STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
+} from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
@@ -104,6 +107,7 @@ export async function runPreviewReleaseTracer({
             baseURL: protectedOptions.baseURL,
             childEnv: {},
             diagnostics: { trace: 'off', screenshot: 'off', video: 'off' },
+            timeoutMs: STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
           });
           return createSafeOutcome('passed', protectedOptions.baseURL, candidateCommit);
         } catch (error) {
