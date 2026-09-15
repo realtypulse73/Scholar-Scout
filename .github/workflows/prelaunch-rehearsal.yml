@@ -74,6 +74,9 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install Chromium for Preview browser proof
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run candidate quality, high-risk, and local browser proof
         run: |
           pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"

@@ -446,12 +446,15 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
     'utf8',
   );
 
+  const chromiumInstall = workflow.indexOf('Install Chromium for Preview browser proof');
   const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
   const previewBrowser = workflow.indexOf('Protected Preview browser proof');
   const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
   const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
 
-  assert.ok(localProof >= 0);
+  assert.ok(chromiumInstall >= 0);
+  assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
+  assert.ok(localProof > chromiumInstall);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
   assert.ok(aggregate > previewOutage);
