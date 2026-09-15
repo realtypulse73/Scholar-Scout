@@ -36,6 +36,23 @@ function createSafeOutcome(outcome, baseURL, candidateCommit, errorCategory) {
   };
 }
 
+function classifyStudentTracerFailure(error) {
+  const message = error instanceof Error ? error.message : '';
+  if (message.includes('did not start with an empty profile')) {
+    return 'student-profile-not-empty';
+  }
+  if (message.includes('did not expose the governed programme')) {
+    return 'student-programme-not-visible';
+  }
+  if (message.includes('profile did not persist')) {
+    return 'student-onboarding-not-persisted';
+  }
+  if (message.includes('Timeout')) {
+    return 'student-journey-timeout';
+  }
+  return 'student-tracer-failed';
+}
+
 async function createProtectedBrowser(options) {
   const browser = await chromium.launch();
   const context = await browser.newContext(options);
@@ -89,12 +106,12 @@ export async function runPreviewReleaseTracer({
             diagnostics: { trace: 'off', screenshot: 'off', video: 'off' },
           });
           return createSafeOutcome('passed', protectedOptions.baseURL, candidateCommit);
-        } catch {
+        } catch (error) {
           return createSafeOutcome(
             'failed',
             protectedOptions.baseURL,
             candidateCommit,
-            'student-tracer-failed',
+            classifyStudentTracerFailure(error),
           );
         } finally {
           await browser?.close();

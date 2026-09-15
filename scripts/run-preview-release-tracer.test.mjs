@@ -135,6 +135,25 @@ test('scrubs sensitive failure details and always delegates lifecycle cleanup', 
   assert.equal(JSON.stringify(result).includes('runner-capability'), false);
 });
 
+test('records a safe programme-visibility category without browser diagnostics', async () => {
+  const result = await runPreviewReleaseTracer({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    env: {
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
+    },
+    createLifecycleRequest: () => async () => ({ ok: true }),
+    createBrowser: async () => ({ close: async () => undefined }),
+    runStudentSpec: async () => {
+      throw new Error('Student release fixture did not expose the governed programme.');
+    },
+  });
+
+  assert.equal(result.errorCategory, 'student-programme-not-visible');
+  assert.equal(JSON.stringify(result).includes('programme.'), false);
+});
+
 test('records a scrubbed lifecycle failure when Preview fixture provisioning is denied', async () => {
   let browserStarted = false;
   const result = await runPreviewReleaseTracer({
