@@ -130,7 +130,7 @@ export default function OnboardingWizard() {
     );
   }
 
-  function handleNext() {
+  async function handleNext() {
     const validationError = validateStep(step, data);
 
     if (validationError) {
@@ -152,11 +152,16 @@ export default function OnboardingWizard() {
     window.localStorage.removeItem(ONBOARDING_DRAFT_STORAGE_KEY);
 
     if (typeof fetch === 'function') {
-      void fetch('/api/account/onboarding', {
+      const response = await fetch('/api/account/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+
+      if (!response.ok) {
+        setError('Your profile could not be saved. Please try again.');
+        return;
+      }
     }
 
     setCompleted(true);

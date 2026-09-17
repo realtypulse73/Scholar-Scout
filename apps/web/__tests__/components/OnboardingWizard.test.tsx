@@ -58,6 +58,36 @@ describe('OnboardingWizard 4-step flow', () => {
     expect(window.localStorage.getItem('scholarscout.onboarding-draft')).toBeNull();
   });
 
+  it('waits for a successful profile save before showing completion', async () => {
+    const originalFetch = global.fetch;
+    let resolveSave: ((response: Response) => void) | undefined;
+    global.fetch = jest.fn(() => new Promise<Response>((resolve) => {
+      resolveSave = resolve;
+    }));
+
+    try {
+      render(<OnboardingWizard />);
+      fireEvent.click(screen.getByRole('button', { name: 'STEM' }));
+      fireEvent.click(screen.getByRole('button', { name: '4-Year University' }));
+      clickNext();
+      fireEvent.click(screen.getByRole('button', { name: /3.0/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'In-State' }));
+      clickNext();
+      fireEvent.click(screen.getByRole('button', { name: /Financial Aid/i }));
+      clickNext();
+      clickSave();
+
+      expect(screen.queryByText(/you're all set/i)).not.toBeInTheDocument();
+      resolveSave?.({ ok: true } as Response);
+
+      await waitFor(() => {
+        expect(screen.getByText(/you're all set/i)).toBeInTheDocument();
+      });
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it('can go back and persists draft data', () => {
     render(<OnboardingWizard />);
 
