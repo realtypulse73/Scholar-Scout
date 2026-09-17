@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { loadEnvFileFromArgs } from './env-file.mjs';
 
-const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory']);
+const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory', 'failedCommand']);
 const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
@@ -93,6 +93,7 @@ async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
     if (result.code !== 0) {
       record.outcome = 'failed';
       record.errorCategory = 'command-failed';
+      record.failedCommand = formatCommand([command, commandArgs]);
       break;
     }
   }

@@ -486,6 +486,7 @@ test('release rehearsal fails locally and records a scrubbed failed quality lane
       ],
       outcome: 'failed',
       errorCategory: 'command-failed',
+      failedCommand: 'pnpm install --frozen-lockfile --ignore-scripts',
     });
   } finally {
     await rm(tempDir, { recursive: true, force: true });
