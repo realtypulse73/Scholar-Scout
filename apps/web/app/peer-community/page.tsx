@@ -8,6 +8,8 @@ import { creatorProfiles } from '@/lib/platform';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { getOnboardingProfile } from '@/lib/server/data-store';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Campus Conversations | ScholarScout',
   description: 'Connect prospective students with the campus uploaders sharing their experience.',

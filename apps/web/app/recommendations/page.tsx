@@ -3,6 +3,8 @@ import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import RecommendationDashboard from '@/components/recommendations/RecommendationDashboard';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Recommendations | ScholarScout',
   description:

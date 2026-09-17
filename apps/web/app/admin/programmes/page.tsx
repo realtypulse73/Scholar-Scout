@@ -4,6 +4,8 @@ import ProgrammeAdminManager from '@/components/admin/ProgrammeAdminManager';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Programme Admin | ScholarScout',
   description:

@@ -16,6 +16,8 @@ import {
 } from '@/lib/programmes';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{
     id: string;

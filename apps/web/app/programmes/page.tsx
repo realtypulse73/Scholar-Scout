@@ -16,6 +16,8 @@ import { rankProgrammesForProfile } from '@/lib/preference-matching';
 import { getOnboardingProfile } from '@/lib/server/data-store';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 const tuitionOptions = [
   { label: 'Any tuition', value: '' },
   { label: '$5k or less', value: '5000' },

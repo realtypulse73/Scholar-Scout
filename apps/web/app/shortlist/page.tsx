@@ -4,6 +4,8 @@ import ShortlistComparison from '@/components/shortlist/ShortlistComparison';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Shortlist | ScholarScout',
   description:

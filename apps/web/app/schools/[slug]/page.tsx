@@ -6,6 +6,8 @@ import { Badge, Card } from '@/components/ui';
 import { creatorProfiles } from '@/lib/platform';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SchoolLockerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const uploaders = creatorProfiles.filter((uploader) => uploader.schoolSlug === slug);
