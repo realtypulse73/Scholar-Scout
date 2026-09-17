@@ -18,7 +18,7 @@ const HIGH_RISK_COMMANDS = [
   ['pnpm', ['--filter', '@scholar-scout/web', 'test', '--runInBand', '__tests__/api/advisor-chat.test.ts', '__tests__/api/account-guest-routes.test.ts', '__tests__/api/campus-notes.test.ts', '__tests__/api/peer-connections.test.ts']],
   ['pnpm', ['--filter', '@scholar-scout/codex-webhook-runner', 'test']],
   ['pnpm', ['--filter', '@scholar-scout/http-data-service', 'test']],
-  ['pnpm', ['test:production-tooling']],
+  [process.execPath, ['--test', 'scripts/test-production-tooling.mjs']],
 ];
 const LOCAL_BROWSER_COMMAND = [process.execPath, ['scripts/run-e2e-fixture.mjs', '--spec', 'apps/web/e2e/student-release-journey.spec.ts', '--project', 'chromium']];
 

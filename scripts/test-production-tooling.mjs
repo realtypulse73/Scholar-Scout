@@ -498,6 +498,10 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
     path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
     'utf8',
   );
+  const rehearsal = await readFile(
+    path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
+    'utf8',
+  );
 
   const chromiumInstall = workflow.indexOf('Install Chromium for Preview browser proof');
   const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
@@ -508,6 +512,7 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.ok(chromiumInstall >= 0);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
   assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
+  assert.match(rehearsal, /\[process\.execPath, \['--test', 'scripts\/test-production-tooling\.mjs'\]\]/);
   assert.ok(localProof > chromiumInstall);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
