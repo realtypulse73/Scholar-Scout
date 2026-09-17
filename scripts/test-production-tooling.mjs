@@ -539,7 +539,7 @@ test('prelaunch rehearsal can load readiness values from an env file', async () 
     ].join('\n'),
   );
 
-  const result = await runNode([
+  const result = await runIsolatedNode([
     'scripts/prelaunch-rehearsal.mjs',
     '--output-dir',
     outputDir,
