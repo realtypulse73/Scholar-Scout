@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
+import https from 'node:https';
 import { createLifecycleRequest, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 
 export function parseLauncherOptions(args) {
@@ -26,7 +27,7 @@ export function validateE2eFixtureEnvironment(env = process.env) {
   }
 }
 
-export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchImpl = fetch } = {}) {
+export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchImpl = requestOwnedFixture } = {}) {
   validateE2eFixtureEnvironment();
   const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-e2e-'));
   const dataFile = path.join(directory, 'scholarscout-data.json');
@@ -47,21 +48,14 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
     const pnpm = getPnpmInvocation();
     child = spawnChild(pnpm.command, [...pnpm.args, '--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
       cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        SCHOLARSCOUT_DATA_ADAPTER: 'json',
-        SCHOLARSCOUT_DATA_FILE: dataFile,
-        SCHOLARSCOUT_E2E_FIXTURE: 'true',
-        SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
-        SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
-      },
+      env: createFixtureEnvironment({ dataFile, fixtureId, capability }),
     });
     child.once('error', (error) => { terminalError = error; });
     child.once('exit', (code) => {
       if (code && !child.killed) terminalError = new Error('Owned E2E application process exited unexpectedly.');
     });
     const baseUrl = `https://127.0.0.1:${port}`;
-    const request = createLifecycleRequest(baseUrl, capability);
+    const request = createLifecycleRequest(baseUrl, capability, {}, requestOwnedFixture);
     await waitForReady(baseUrl, fetchImpl);
     if (terminalError) throw terminalError;
     await runFixtureLifecycle({
@@ -146,15 +140,47 @@ async function stopFixtureProcess(child) {
   });
 }
 
-async function waitForReady(baseUrl, fetchImpl) {
+export async function waitForReady(baseUrl, requestImpl) {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetchImpl(`${baseUrl}/programmes`, { dispatcher: undefined });
+      const response = await requestImpl(`${baseUrl}/programmes`);
       if (response.ok) return;
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error('Owned E2E application process did not become ready.');
+}
+
+export function requestOwnedFixture(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const request = https.request(url, {
+      method: options.method ?? 'GET',
+      headers: options.headers,
+      rejectUnauthorized: false,
+    }, (response) => {
+      response.resume();
+      resolve({
+        ok: response.statusCode >= 200 && response.statusCode < 300,
+        status: response.statusCode,
+        headers: {
+          get: (name) => response.headers[name.toLowerCase()] ?? null,
+        },
+      });
+    });
+    request.once('error', reject);
+    request.end();
+  });
+}
+
+export function createFixtureEnvironment({ dataFile, fixtureId, capability }, environment = process.env) {
+  return {
+    ...environment,
+    SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    SCHOLARSCOUT_DATA_FILE: dataFile,
+    SCHOLARSCOUT_E2E_FIXTURE: 'true',
+    SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
+    SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
+  };
 }
 
 export function isCliEntrypoint(entryPath, moduleUrl = import.meta.url) {

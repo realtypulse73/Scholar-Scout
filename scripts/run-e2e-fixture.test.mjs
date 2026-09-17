@@ -6,8 +6,10 @@ import {
   getPnpmInvocation,
   getFixtureStopCommand,
   getPnpmCommand,
+  createFixtureEnvironment,
   isCliEntrypoint,
   parseLauncherOptions,
+  waitForReady,
   validateE2eFixtureEnvironment,
 } from './run-e2e-fixture.mjs';
 
@@ -63,4 +65,36 @@ test('uses taskkill to stop a Windows fixture process tree', () => {
     args: ['/pid', '1234', '/t', '/f'],
   });
   assert.equal(getFixtureStopCommand('linux', 1234), null);
+});
+
+test('probes only the owned HTTPS fixture address before browser tests run', async () => {
+  let observedUrl;
+
+  await waitForReady('https://127.0.0.1:4300', async (url) => {
+    observedUrl = url;
+    return { ok: true };
+  });
+
+  assert.equal(observedUrl, 'https://127.0.0.1:4300/programmes');
+});
+
+test('keeps platform startup settings while overriding the owned fixture target', () => {
+  const environment = createFixtureEnvironment(
+    {
+      dataFile: 'fixture.json',
+      fixtureId: 'fixture-id',
+      capability: 'fixture-capability',
+    },
+    {
+      PATH: 'path',
+      APPDATA: 'app-data',
+      SCHOLARSCOUT_DATA_ADAPTER: 'http',
+      SCHOLARSCOUT_DATA_FILE: 'external.json',
+    },
+  );
+
+  assert.equal(environment.APPDATA, 'app-data');
+  assert.equal(environment.SCHOLARSCOUT_DATA_ADAPTER, 'json');
+  assert.equal(environment.SCHOLARSCOUT_DATA_FILE, 'fixture.json');
+  assert.equal(environment.SCHOLARSCOUT_E2E_FIXTURE_ID, 'fixture-id');
 });

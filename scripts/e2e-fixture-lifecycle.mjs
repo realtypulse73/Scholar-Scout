@@ -86,7 +86,7 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
   }
 }
 
-export function createLifecycleRequest(baseUrl, capability, protectionHeaders = {}) {
+export function createLifecycleRequest(baseUrl, capability, protectionHeaders = {}, requestImpl = (...args) => fetch(...args)) {
   const endpoint = new URL('/api/internal/e2e-fixture', baseUrl);
   const normalizedCapability = typeof capability === 'string' ? capability.trim() : '';
   if (
@@ -98,7 +98,7 @@ export function createLifecycleRequest(baseUrl, capability, protectionHeaders = 
     throw new Error('E2E fixture lifecycle requires an HTTPS URL and runner capability.');
   }
 
-  return async (method) => fetch(endpoint, {
+  return async (method) => requestImpl(endpoint, {
     method,
     // A protected Preview must answer from the lifecycle endpoint directly.
     // Following a Vercel login redirect could otherwise make an unrelated 2xx
