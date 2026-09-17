@@ -147,7 +147,7 @@ test('production env checker can load values from an env file', async () => {
     ].join('\n'),
   );
 
-  const result = await runNode([
+  const result = await runIsolatedNode([
     'scripts/production-env-check.mjs',
     '--json',
     '--env-file',
@@ -669,6 +669,10 @@ function runNode(args, env = {}) {
   return runCommand(nodeBin, args, { ...validRecoverySigning, ...env });
 }
 
+function runIsolatedNode(args, env = {}) {
+  return runCommand(nodeBin, args, { ...validRecoverySigning, ...env }, false);
+}
+
 function productionEnv() {
   return {
     NEXTAUTH_URL: 'https://scholarscout.example.org',
@@ -685,12 +689,12 @@ function productionEnv() {
   };
 }
 
-function runCommand(command, args, env = {}) {
+function runCommand(command, args, env = {}, inheritEnvironment = true) {
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd: process.cwd(),
       env: {
-        ...process.env,
+        ...(inheritEnvironment ? process.env : {}),
         ...env,
       },
     });
