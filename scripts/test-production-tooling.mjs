@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -438,6 +438,58 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
+});
+
+test('release rehearsal fails locally and records a scrubbed failed quality lane', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-gate-'));
+  const commandDir = path.join(tempDir, 'bin');
+  const outputDir = path.join(tempDir, 'reports');
+  const commandPath = path.join(commandDir, isWindows ? 'pnpm.cmd' : 'pnpm');
+  const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
+
+  try {
+    await mkdir(commandDir, { recursive: true });
+    await writeFile(
+      commandPath,
+      isWindows ? '@exit /b 1\r\n' : '#!/usr/bin/env sh\nexit 1\n',
+    );
+    if (!isWindows) await chmod(commandPath, 0o755);
+
+    const result = await runNode(
+      [
+        'scripts/prelaunch-rehearsal.mjs',
+        '--output-dir',
+        outputDir,
+        '--release-gate',
+        '--local-only',
+        '--candidate-commit',
+        'candidate-failure-test',
+      ],
+      {
+        [pathKey]: `${commandDir}${path.delimiter}${process.env[pathKey] ?? ''}`,
+      },
+    );
+
+    assert.equal(result.code, 1, result.stderr);
+    const record = JSON.parse(
+      await readFile(path.join(outputDir, 'candidate-quality.json'), 'utf8'),
+    );
+    assert.deepEqual(record, {
+      candidateCommit: 'candidate-failure-test',
+      recordedAt: record.recordedAt,
+      commands: [
+        'pnpm install --frozen-lockfile --ignore-scripts',
+        'pnpm test',
+        'pnpm run lint',
+        'pnpm run typecheck',
+        'pnpm run build',
+      ],
+      outcome: 'failed',
+      errorCategory: 'command-failed',
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
