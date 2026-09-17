@@ -169,7 +169,7 @@ test('production env checker can load values from an env file', async () => {
 
 test('production smoke JSON passes expected provider and health checks', async () => {
   await withSmokeServer(async (baseUrl) => {
-    const result = await runNode(['scripts/production-smoke.mjs', '--json'], {
+    const result = await runIsolatedNode(['scripts/production-smoke.mjs', '--json'], {
       SCHOLARSCOUT_SMOKE_BASE_URL: baseUrl,
       SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: 'health-token',
       SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
@@ -199,7 +199,7 @@ test('production smoke JSON passes expected provider and health checks', async (
 
 test('production smoke fails missing expected providers', async () => {
   await withSmokeServer(async (baseUrl) => {
-    const result = await runNode(['scripts/production-smoke.mjs', '--json'], {
+    const result = await runIsolatedNode(['scripts/production-smoke.mjs', '--json'], {
       SCHOLARSCOUT_SMOKE_BASE_URL: baseUrl,
       SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: 'health-token',
       SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
@@ -215,7 +215,7 @@ test('production smoke fails missing expected providers', async () => {
 });
 
 test('production smoke JSON reports network failures without crashing', async () => {
-  const result = await runNode(['scripts/production-smoke.mjs', '--json'], {
+  const result = await runIsolatedNode(['scripts/production-smoke.mjs', '--json'], {
     SCHOLARSCOUT_SMOKE_BASE_URL: 'http://127.0.0.1:9',
     SCHOLARSCOUT_SMOKE_TIMEOUT_MS: '250',
   });
@@ -232,7 +232,7 @@ test('production smoke retries transient request failures', async () => {
 
   await withSmokeServer(
     async (baseUrl) => {
-      const result = await runNode(['scripts/production-smoke.mjs', '--json'], {
+      const result = await runIsolatedNode(['scripts/production-smoke.mjs', '--json'], {
         SCHOLARSCOUT_SMOKE_BASE_URL: baseUrl,
         SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: 'health-token',
         SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
@@ -268,7 +268,7 @@ test('production smoke retries transient request failures', async () => {
 test('production smoke can fail slow endpoint latency', async () => {
   await withSmokeServer(
     async (baseUrl) => {
-      const result = await runNode(['scripts/production-smoke.mjs', '--json'], {
+      const result = await runIsolatedNode(['scripts/production-smoke.mjs', '--json'], {
         SCHOLARSCOUT_SMOKE_BASE_URL: baseUrl,
         SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: 'health-token',
         SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: 'vercel-blob',
