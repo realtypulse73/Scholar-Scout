@@ -29,6 +29,7 @@ jest.mock('@/lib/server/data-store', () => ({
 }));
 jest.mock('@/lib/server/rate-limit', () => ({
   reserveCommunitySubmission: jest.fn(),
+  isPreviewCommunityOutageEnabled: jest.fn(),
 }));
 jest.mock('@/lib/server/operational-records', () => ({
   reportCampusNoteForReview: jest.fn(),
