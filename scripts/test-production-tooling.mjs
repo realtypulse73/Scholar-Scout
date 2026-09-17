@@ -507,6 +507,7 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
 
   assert.ok(chromiumInstall >= 0);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
+  assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
   assert.ok(localProof > chromiumInstall);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
