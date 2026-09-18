@@ -61,6 +61,34 @@ pnpm run rehearse:prelaunch -- --skip-smoke --env-file .env.prelaunch.local
 
 The local workaround intentionally allows credentials-only auth and a localhost HTTP data service. It is not a substitute for the real production launch rehearsal with OAuth and a durable hosted data adapter.
 
+### Candidate Rehearsal (separate from production)
+
+Before any rehearsal, open a normal pull request to `main` and record its immutable head commit passing, in order:
+
+```bash
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm test
+pnpm run lint
+pnpm run typecheck
+pnpm run build:vercel
+```
+
+Then run the high-risk route, webhook, and HTTP-data-service suites, followed by the owned local Chromium command:
+
+```bash
+node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
+```
+
+That local command creates its own temporary JSON file and an internal, local-only
+fixture flag. It cannot activate the lifecycle in a Vercel deployment; Preview
+rehearsal projects remain Blob-only and use their fixed fixture namespace.
+
+The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it reads the two Vercel Git statuses for that exact commit, reads those two deployment IDs through Vercel's deployment API with their project-scoped Preview tokens, runs the normal journey and the outage proof, and cleans each fixture automatically.
+
+The workflow needs only the two permanent runner capabilities plus its two static project-scoped Preview-environment Vercel tokens. It never receives production credentials, Vercel branch overrides, manually copied URLs, bypass cookies, or a temporary handoff file. It writes only candidate commit, generated Preview URL, UTC, pass/fail result, and safe error category.
+
+For the one-time rehearsal-project configuration, follow [the rehearsal environment runbook](rehearsal-environment-runbook.md). Preview rehearsal evidence supplements—but never replaces—protected-main CI, the real production build log, post-deploy smoke, and incident evidence.
+
 ## 3. Deploy
 
 Deploy from the repository root with the Docker-free path:

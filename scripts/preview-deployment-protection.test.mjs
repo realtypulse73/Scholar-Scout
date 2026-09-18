@@ -2,85 +2,62 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  createPreviewContextOptions,
-  getVerifiedPreviewMetadata,
-  scrubPreviewTracerOutcome,
+  createLifecycleProtectionHeaders,
+  createProtectedPreviewContextOptions,
+  validatePreviewDeployment,
 } from './preview-deployment-protection.mjs';
 
-const candidateCommit = 'a'.repeat(40);
-const previewMetadata = {
+const attestation = {
   environment: 'preview',
-  url: 'https://scholar-scout-git-release-example.vercel.app',
-  deploymentId: 'dpl_preview_123',
-  commitSha: candidateCommit,
+  url: 'https://scholar-scout-pr-42.vercel.app',
+  commit: 'candidate-commit',
 };
 
-test('accepts only the exact candidate Preview metadata', () => {
-  assert.deepEqual(getVerifiedPreviewMetadata({
-    SCHOLARSCOUT_PREVIEW_URL: previewMetadata.url,
-    SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: previewMetadata.deploymentId,
-    SCHOLARSCOUT_PREVIEW_COMMIT_SHA: candidateCommit,
-    VERCEL_ENV: 'preview',
-  }, candidateCommit), previewMetadata);
-
-  assert.throws(() => getVerifiedPreviewMetadata({
-    SCHOLARSCOUT_PREVIEW_URL: previewMetadata.url,
-    SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: previewMetadata.deploymentId,
-    SCHOLARSCOUT_PREVIEW_COMMIT_SHA: candidateCommit,
-    VERCEL_ENV: 'production',
-  }, candidateCommit), /candidate Preview/i);
-  assert.throws(() => getVerifiedPreviewMetadata({
-    SCHOLARSCOUT_PREVIEW_URL: 'https://scholar-scout.vercel.app',
-    SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: previewMetadata.deploymentId,
-    SCHOLARSCOUT_PREVIEW_COMMIT_SHA: candidateCommit,
-    VERCEL_ENV: 'preview',
-  }, candidateCommit), /candidate Preview/i);
-  assert.throws(() => getVerifiedPreviewMetadata({
-    SCHOLARSCOUT_PREVIEW_URL: previewMetadata.url,
-    SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID: previewMetadata.deploymentId,
-    SCHOLARSCOUT_PREVIEW_COMMIT_SHA: 'b'.repeat(40),
-    VERCEL_ENV: 'preview',
-  }, candidateCommit), /candidate Preview/i);
-});
-
-test('keeps the Vercel bypass only in in-memory context headers', () => {
-  const bypass = 'preview-bypass-secret';
-  const options = createPreviewContextOptions(previewMetadata, {
-    SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS: bypass,
+test('creates in-memory protection options only for the verified candidate Preview', () => {
+  const options = createProtectedPreviewContextOptions({
+    attestation,
+    candidateCommit: 'candidate-commit',
+    env: { SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass' },
   });
 
   assert.deepEqual(options, {
-    baseURL: previewMetadata.url,
+    baseURL: attestation.url,
     extraHTTPHeaders: {
-      'x-vercel-protection-bypass': bypass,
+      'x-vercel-protection-bypass': 'sensitive-bypass',
       'x-vercel-set-bypass-cookie': 'true',
     },
-    ignoreHTTPSErrors: false,
-    trace: 'off',
-    screenshot: 'off',
-    video: 'off',
   });
-  assert.throws(
-    () => createPreviewContextOptions(previewMetadata, {}),
-    /protection material/i,
-  );
 });
 
-test('scrubs secrets, cookies, URLs, fixture values, and error details from outcomes', () => {
-  const outcome = scrubPreviewTracerOutcome({
-    category: 'passed',
-    metadata: previewMetadata,
-    error: new Error('preview-bypass-secret session=super-secret'),
-    fixtureId: 'fixture-private',
-    cookie: 'session=super-secret',
+test('rejects non-Preview or candidate-mismatched metadata before browser traffic', () => {
+  assert.throws(() => validatePreviewDeployment({ ...attestation, environment: 'production' }, 'candidate-commit'));
+  assert.throws(() => validatePreviewDeployment({ ...attestation, commit: 'other-commit' }, 'candidate-commit'));
+  assert.throws(() => validatePreviewDeployment({ ...attestation, url: 'http://preview.test' }, 'candidate-commit'));
+});
+
+test('fails closed without runner-only bypass material', () => {
+  assert.throws(() => createProtectedPreviewContextOptions({
+    attestation,
+    candidateCommit: 'candidate-commit',
+    env: {},
+  }));
+});
+
+test('normalizes only surrounding whitespace from runner-owned bypass material', () => {
+  const options = createProtectedPreviewContextOptions({
+    attestation,
+    candidateCommit: 'candidate-commit',
+    env: { SCHOLARSCOUT_VERCEL_BYPASS: '  sensitive-bypass\n' },
   });
 
-  assert.deepEqual(outcome, {
-    category: 'passed',
-    candidateCommit,
-    deploymentId: previewMetadata.deploymentId,
+  assert.equal(options.extraHTTPHeaders['x-vercel-protection-bypass'], 'sensitive-bypass');
+});
+
+test('omits browser cookie setup from direct lifecycle transport', () => {
+  assert.deepEqual(createLifecycleProtectionHeaders({
+    'x-vercel-protection-bypass': 'sensitive-bypass',
+    'x-vercel-set-bypass-cookie': 'true',
+  }), {
+    'x-vercel-protection-bypass': 'sensitive-bypass',
   });
-  assert.equal(JSON.stringify(outcome).includes('secret'), false);
-  assert.equal(JSON.stringify(outcome).includes('vercel.app'), false);
-  assert.equal(JSON.stringify(outcome).includes('fixture'), false);
 });

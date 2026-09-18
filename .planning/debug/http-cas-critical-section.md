@@ -1,8 +1,8 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "Canonical verification reports that HTTP conditional PUT validates ETag before awaited backup/write/rename, allowing simultaneous handlers to both validate and lose an update."
 created: 2026-08-29T00:00:00-04:00
-updated: 2026-08-29T02:00:00-04:00
+updated: 2026-09-09T00:00:00-04:00
 ---
 
 ## Current Focus
@@ -21,7 +21,7 @@ reasoning_checkpoint:
     - "environment: multiple local fixture processes or service objects can target the same path"
     - "data: the race requires both writers to carry the same current ETag or absent precondition"
   and_gate: "yes — silent overwrite requires the instance-scoped queue plus two independently scheduled handlers sharing one file and one expected version"
-next_action: Canonical Phase 4 verifier must confirm the corrected HTTP evidence closes DATA-01 and the phase goal.
+next_action: Resolved — Phase 4 canonical verification and the current focused HTTP suite confirm DATA-01 remains closed.
 
 ## Symptoms
 
@@ -81,6 +81,8 @@ verification:
   adjacent_tests: { result: pass, suites_run: ["data-store", "data-recovery", "admin-data-routes", "HTTP fixture build"] }
   revert_and_reconfirm: { result: pass, bug_returned_on_revert: true, fixed_on_reapply: true }
   guardrail_verdict: accepted
+  canonical_phase_verifier: { result: pass, report: ".planning/phases/04-incremental-durable-persistence-boundaries/04-VERIFICATION.md", verified: "2026-08-29" }
+  resumed_session_check: { result: pass, command: "node --test services/http-data-service/test/server.test.mjs", tests: "13/13", verified: "2026-09-09" }
 files_changed:
   - services/http-data-service/src/server.mjs
   - services/http-data-service/test/server.test.mjs

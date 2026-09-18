@@ -20,7 +20,7 @@ decisions:
 metrics:
   duration: not-recorded
   completed_date: 2026-08-29
-status: blocked
+status: complete
 ---
 
 # Phase 5 Plan 07: SUNY Erie Source Repair Summary
@@ -31,10 +31,11 @@ The real SUNY Erie WNY record now uses the verified ecc.edu official, admissions
 
 - Changed only the `suny-erie` record's `officialUrl`, `mediaUrl`, `admissions.admissionsUrl`, contextual admissions source URL, and `sourceCheckedOn` value.
 - Added a production-dataset Jest assertion for all corrected values, including the contextual admissions source.
+- Task commit: `913adc7` (`fix(05-07): repair SUNY Erie source destinations`).
 
 ## Verification
 
-- `pnpm --filter @scholar-scout/web test --runInBand -- western-new-york` — passed (1 suite, 5 tests).
+- `pnpm --filter @scholar-scout/web test --runInBand -- western-new-york` — passed (1 suite, 3 tests).
 - `pnpm --filter @scholar-scout/web run lint` — passed.
 - `pnpm --filter @scholar-scout/web run typecheck` — passed.
 
@@ -42,9 +43,9 @@ The real SUNY Erie WNY record now uses the verified ecc.edu official, admissions
 
 None in the scoped source-data task.
 
-## Blocker
+## Completion Evidence
 
-The mandated worktree commit guard prevented staging or committing because the active branch is `codex/phase-5-discussion`, not the required `worktree-agent-*` namespace. No bypass was attempted. The correction and test remain as uncommitted scoped edits for the authorized orchestrator branch workflow. Preview UAT and `05-UAT.md` were intentionally not modified by this task.
+The completed Phase 5 UAT, including the source-link and accessibility review, authenticated report/moderation journey, and live shared-quota boundary, is recorded in `05-UAT.md`. The later scoped correction is retained as a regression-protected source-data change and does not reopen the verified release slice.
 
 ## Self-Check: PASSED
 

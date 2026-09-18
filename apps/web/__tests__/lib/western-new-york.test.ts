@@ -1,6 +1,6 @@
 import {
-  rankWesternNewYorkInstitutions,
   WESTERN_NEW_YORK_INSTITUTIONS,
+  rankWesternNewYorkInstitutions,
   type WesternNewYorkInstitution,
 } from '@/lib/western-new-york';
 
@@ -94,5 +94,27 @@ describe('rankWesternNewYorkInstitutions', () => {
       'Álpha University',
       'Žižkov College',
     ]);
+  });
+});
+
+describe('production SUNY Erie source record', () => {
+  it('keeps every visible source on the verified ecc.edu destinations', () => {
+    const sunyErie = WESTERN_NEW_YORK_INSTITUTIONS.find((item) => item.id === 'suny-erie');
+
+    expect(sunyErie).toMatchObject({
+      officialUrl: 'https://www.ecc.edu/',
+      mediaUrl: 'https://www.ecc.edu/admissions-and-aid/index.html',
+      sourceCheckedOn: '2026-08-29',
+      admissions: {
+        admissionsUrl: 'https://www.ecc.edu/admissions-and-aid/how-to-apply.html',
+      },
+      accountability: {
+        sources: [
+          {
+            url: 'https://www.ecc.edu/admissions-and-aid/index.html',
+          },
+        ],
+      },
+    });
   });
 });

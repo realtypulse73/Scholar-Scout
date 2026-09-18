@@ -1,82 +1,72 @@
 /** @jest-environment node */
 
-import { getServerSession } from 'next-auth';
 import { POST } from '@/app/api/peer-connections/route';
-import { createUploaderInboxRequest } from '@/lib/server/data-store';
-import { setAtomicReservationLimiterForTests } from '@/lib/server/rate-limit';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }));
-jest.mock('@/lib/platform', () => ({ creatorProfiles: [{
-  username: 'maya-health', programmeId: 'north-valley-health', inboxEnabled: true,
-}] }));
 jest.mock('@/lib/server/data-store', () => ({ createUploaderInboxRequest: jest.fn() }));
+jest.mock('@/lib/server/rate-limit', () => ({
+  isPreviewCommunityOutageEnabled: jest.fn(),
+  reserveCommunitySubmission: jest.fn(),
+}));
 
-const originalEnvironment = {
-  outage: process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE,
-  vercel: process.env.VERCEL_ENV,
-};
+const getServerSessionMock = jest.requireMock('next-auth').getServerSession as jest.Mock;
+const createUploaderInboxRequestMock = jest.requireMock('@/lib/server/data-store').createUploaderInboxRequest as jest.Mock;
+const reserveCommunitySubmissionMock = jest.requireMock('@/lib/server/rate-limit')
+  .reserveCommunitySubmission as jest.Mock;
+const isPreviewCommunityOutageEnabledMock = jest.requireMock('@/lib/server/rate-limit')
+  .isPreviewCommunityOutageEnabled as jest.Mock;
 
-function inboxRequest(): Request {
-  return new Request('https://scholar-scout.test/api/peer-connections', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      uploader_username: 'maya-health',
-      program_id: 'north-valley-health',
-      body: 'What helped you decide this programme was a fit?',
-    }),
-  });
-}
+describe('peer inbox submission outage boundary', () => {
+  const originalVercelEnvironment = process.env.VERCEL_ENV;
+  const originalOutage = process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
 
-describe('peer-inbox Preview community outage boundary', () => {
   beforeEach(() => {
     jest.resetAllMocks();
-    jest.mocked(getServerSession).mockResolvedValue({ user: { id: 'student-session-id' } } as never);
-    setAtomicReservationLimiterForTests({
-      reserve: jest.fn().mockResolvedValue({
-        allowed: true,
-        resetAt: new Date('2026-09-01T00:00:00.000Z'),
-        retryAfterSeconds: 0,
-      }),
-    });
+    getServerSessionMock.mockResolvedValue({ user: { id: 'student-one' } });
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(false);
+    reserveCommunitySubmissionMock.mockResolvedValue({ status: 'allowed' });
+    delete process.env.VERCEL_ENV;
+    delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
   });
 
   afterEach(() => {
-    setAtomicReservationLimiterForTests(null);
-    if (originalEnvironment.vercel === undefined) delete process.env.VERCEL_ENV;
-    else process.env.VERCEL_ENV = originalEnvironment.vercel;
-    if (originalEnvironment.outage === undefined) delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
-    else process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = originalEnvironment.outage;
+    if (originalVercelEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalVercelEnvironment;
+    if (originalOutage === undefined) delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
+    else process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = originalOutage;
   });
 
-  it('returns the safe Preview outage category before an inbox write', async () => {
+  it('fails closed before creating an inbox request for the Preview-only provider outage rehearsal', async () => {
     process.env.VERCEL_ENV = 'preview';
     process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(true);
+    getServerSessionMock.mockResolvedValue(null);
 
-    const response = await POST(inboxRequest());
-    const body = await response.json();
+    const response = await POST(new Request('https://scholar-scout.test/api/peer-connections', {
+      method: 'POST',
+    }));
 
     expect(response.status).toBe(503);
-    expect(body).toEqual({
-      error: 'Inbox requests are temporarily unavailable. Please try again later.',
+    await expect(response.json()).resolves.toEqual({
+      error: 'Community submissions are not available right now. Please try again shortly.',
     });
-    expect(JSON.stringify(body)).not.toMatch(/limit|provider|remaining|upstash/i);
-    expect(createUploaderInboxRequest).not.toHaveBeenCalled();
+    expect(getServerSessionMock).not.toHaveBeenCalled();
+    expect(reserveCommunitySubmissionMock).not.toHaveBeenCalled();
+    expect(createUploaderInboxRequestMock).not.toHaveBeenCalled();
   });
 
-  it('ignores the isolated outage switch outside Preview', async () => {
+  it('does not activate the Preview-only outage switch outside Preview', async () => {
     process.env.VERCEL_ENV = 'development';
     process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
-    jest.mocked(createUploaderInboxRequest).mockResolvedValue({
-      id: 'inbox-1', sender_id: 'student-session-id', uploader_username: 'maya-health',
-      program_id: 'north-valley-health', body: 'What helped you decide this programme was a fit?',
-      status: 'pending', created_at: '2026-09-01T00:00:00.000Z',
-    } as never);
+    createUploaderInboxRequestMock.mockResolvedValue({ id: 'request-one' });
 
-    const response = await POST(inboxRequest());
+    const response = await POST(new Request('https://scholar-scout.test/api/peer-connections', {
+      method: 'POST',
+      body: JSON.stringify({ uploader_username: 'maya-health', program_id: 'north-valley-health', body: 'What helped you prepare for labs?' }),
+    }));
 
     expect(response.status).toBe(201);
-    expect(createUploaderInboxRequest).toHaveBeenCalledWith('student-session-id', expect.any(Object));
+    expect(createUploaderInboxRequestMock).toHaveBeenCalledWith('student-one', expect.any(Object));
   });
 });

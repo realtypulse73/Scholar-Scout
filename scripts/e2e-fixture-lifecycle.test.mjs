@@ -1,68 +1,195 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
+import {
+  classifyFixtureLifecycleFailure,
+  createLifecycleRequest,
+  requestLoopbackHttps,
+  runFixtureLifecycle,
+} from './e2e-fixture-lifecycle.mjs';
 
-test('runs fixed create, verify, and cleanup lifecycle requests', async () => {
-  const requests = [];
-  const result = await runFixtureLifecycle({
-    baseUrl: 'https://127.0.0.1:4311',
-    capability: 'capability',
-    request: async (method, path, options) => {
-      requests.push({ method, path, options });
-      return { ok: true, phase: method === 'DELETE' ? 'cleaned' : 'verified' };
+test('creates, verifies, and cleans a fixture with no request body', async () => {
+  const phases = [];
+  await runFixtureLifecycle({
+    request: async (method, options) => {
+      phases.push({ method, options });
+      return { ok: true };
     },
-    run: async () => ({ category: 'passed' }),
+    run: async () => undefined,
   });
-
-  assert.deepEqual(result, { category: 'passed' });
-  assert.deepEqual(requests.map(({ method }) => method), ['POST', 'GET', 'DELETE']);
-  assert.ok(requests.every(({ path }) => path === '/api/internal/e2e-fixture'));
-  assert.ok(requests.every(({ options }) => options.body === undefined));
-  assert.ok(requests.every(({ options }) => options.headers['content-length'] === '0'));
-  assert.ok(requests.every(({ options }) => options.headers['x-scholarscout-e2e-fixture-capability'] === 'capability'));
-  assert.ok(requests.every(({ options }) => !('authorization' in options.headers)));
+  assert.deepEqual(phases.map(({ method }) => method), ['HEAD', 'POST', 'GET', 'DELETE']);
+  assert.ok(phases.every(({ options }) => options.body === undefined));
 });
 
-test('cleans once when the browser command rejects', async () => {
-  const methods = [];
+test('cleans exactly once after a failing browser run', async () => {
+  const phases = [];
   await assert.rejects(() => runFixtureLifecycle({
-    baseUrl: 'https://127.0.0.1:4311',
-    capability: 'capability',
     request: async (method) => {
-      methods.push(method);
-      return { ok: true, phase: method === 'DELETE' ? 'cleaned' : 'verified' };
+      phases.push(method);
+      return { ok: true };
     },
-    run: async () => {
-      throw new Error('test failed');
-    },
+    run: async () => { throw new Error('test failed'); },
   }));
-  assert.deepEqual(methods, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
 });
 
-test('cleans once when a terminal handler invokes the registered cleanup', async () => {
-  const methods = [];
+test('exposes the same awaited cleanup for a child crash or signal handler', async () => {
+  const phases = [];
   let cleanup;
-  let finishRun;
-  const lifecycle = runFixtureLifecycle({
-    baseUrl: 'https://127.0.0.1:4311',
-    capability: 'capability',
+  await runFixtureLifecycle({
     request: async (method) => {
-      methods.push(method);
-      return { ok: true, phase: method === 'DELETE' ? 'cleaned' : 'verified' };
+      phases.push(method);
+      return { ok: true };
     },
-    onCleanup: (registeredCleanup) => {
-      cleanup = registeredCleanup;
-    },
-    run: async () => new Promise((resolve) => {
-      finishRun = resolve;
-    }),
+    onCleanupReady: (value) => { cleanup = value; },
+    run: async () => cleanup(),
   });
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
+});
 
-  await new Promise((resolve) => setImmediate(resolve));
-  await cleanup();
-  finishRun({ category: 'interrupted' });
-  await lifecycle;
+test('fails closed before navigation when lifecycle configuration is absent or unsafe', () => {
+  assert.throws(() => createLifecycleRequest('http://127.0.0.1:4300', 'capability'));
+  assert.throws(() => createLifecycleRequest('https://127.0.0.1:4300', ''));
+});
 
-  assert.deepEqual(methods, ['POST', 'GET', 'DELETE']);
+test('normalizes surrounding whitespace from a runner-owned lifecycle capability', async () => {
+  const request = createLifecycleRequest(
+    'https://preview.example.test',
+    '  runner-capability\n',
+  );
+  const originalFetch = globalThis.fetch;
+  let authorization;
+  globalThis.fetch = async (_url, options) => {
+    authorization = options.headers.Authorization;
+    return { ok: true };
+  };
+
+  try {
+    await request('POST');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(authorization, 'Bearer runner-capability');
+});
+
+test('uses manual redirects so protected login pages cannot satisfy the lifecycle', async () => {
+  const request = createLifecycleRequest('https://preview.example.test', 'runner-capability');
+  const originalFetch = globalThis.fetch;
+  let redirect;
+  globalThis.fetch = async (_url, options) => {
+    redirect = options.redirect;
+    return { ok: false, status: 302 };
+  };
+
+  try {
+    const response = await request('POST');
+    assert.equal(response.ok, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(redirect, 'manual');
+});
+
+test('does not begin the browser run when create or verify is rejected', async () => {
+  const phases = [];
+  let ranBrowser = false;
+
+  await assert.rejects(() => runFixtureLifecycle({
+    request: async (method) => {
+      phases.push(method);
+      return { ok: method !== 'POST' };
+    },
+    run: async () => { ranBrowser = true; },
+  }));
+
+  assert.deepEqual(phases, ['HEAD', 'POST', 'DELETE']);
+  assert.equal(ranBrowser, false);
+});
+
+test('does not provision or clean a fixture when the no-write preflight is rejected', async () => {
+  const phases = [];
+  let ranBrowser = false;
+
+  await assert.rejects(() => runFixtureLifecycle({
+    request: async (method) => {
+      phases.push(method);
+      return { ok: false, status: 403 };
+    },
+    run: async () => { ranBrowser = true; },
+  }));
+
+  assert.deepEqual(phases, ['HEAD']);
+  assert.equal(ranBrowser, false);
+});
+
+test('classifies lifecycle responses without retaining a raw status or response body', async () => {
+  for (const [status, category] of [
+    [302, 'fixture-provision-redirected'],
+    [403, 'fixture-provision-rejected'],
+    [503, 'fixture-provision-server-failed'],
+  ]) {
+    await assert.rejects(
+      () => runFixtureLifecycle({
+        request: async (method) => ({ ok: method !== 'POST', status, body: 'sensitive' }),
+        run: async () => undefined,
+      }),
+      (error) => {
+        assert.equal(classifyFixtureLifecycleFailure(error), category);
+        assert.equal(JSON.stringify(error).includes(String(status)), false);
+        assert.equal(JSON.stringify(error).includes('sensitive'), false);
+        return true;
+      },
+    );
+  }
+});
+
+test('limits self-signed HTTPS acceptance to the owned loopback lifecycle target', async () => {
+  await assert.rejects(
+    requestLoopbackHttps('https://localhost:4300/api/internal/e2e-fixture'),
+    /loopback HTTPS server/,
+  );
+  await assert.rejects(
+    requestLoopbackHttps('https://127.0.0.1:4300/api/internal/e2e-fixture', { body: 'unexpected' }),
+    /loopback HTTPS server/,
+  );
+});
+
+test('identifies a disabled fixture without recording the protected response body', async () => {
+  await assert.rejects(
+    () => runFixtureLifecycle({
+      request: async (method) => ({
+        ok: method !== 'POST',
+        status: 403,
+        headers: { get: (name) => name === 'x-scholarscout-e2e-fixture-denial' ? 'not-enabled' : null },
+        body: 'sensitive',
+      }),
+      run: async () => undefined,
+    }),
+    (error) => {
+      assert.equal(classifyFixtureLifecycleFailure(error), 'fixture-provision-not-enabled');
+      assert.equal(JSON.stringify(error).includes('sensitive'), false);
+      return true;
+    },
+  );
+});
+
+test('identifies a rejected fixture request shape without recording the protected response body', async () => {
+  await assert.rejects(
+    () => runFixtureLifecycle({
+      request: async (method) => ({
+        ok: method !== 'POST',
+        status: 403,
+        headers: { get: (name) => name === 'x-scholarscout-e2e-fixture-denial' ? 'body-present' : null },
+        body: 'sensitive',
+      }),
+      run: async () => undefined,
+    }),
+    (error) => {
+      assert.equal(classifyFixtureLifecycleFailure(error), 'fixture-provision-body-present');
+      assert.equal(JSON.stringify(error).includes('sensitive'), false);
+      return true;
+    },
+  );
 });

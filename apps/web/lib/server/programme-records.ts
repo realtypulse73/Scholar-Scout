@@ -7,6 +7,7 @@ import {
   getProgrammeRecords,
   readScholarScoutData,
 } from '@/lib/server/data-store';
+import { getConfiguredE2eFixtureId } from '@/lib/server/e2e-fixture-config';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
 
 export class ProgrammeRevisionConflictError extends Error {
@@ -89,12 +90,20 @@ export async function deleteProgrammeRecord(userId: string, programmeId: string)
 
 export async function getGovernedProgrammes() {
   const governedRecords = await getProgrammeRecords();
-  if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED === 'true') {
-    return getPublishedProgrammeRecords(governedRecords).filter((record) =>
-      record.id.startsWith(`e2e-${process.env.SCHOLARSCOUT_E2E_FIXTURE_ID}-`),
-    );
+  const publishedRecords = getPublishedProgrammeRecords(governedRecords);
+  const fixtureId = getConfiguredE2eFixtureId();
+
+  if (fixtureId) {
+    const { createE2eProgrammeFixture } = await import('./e2e-programme-fixture');
+    const recordsById = new Map(publishedRecords.map((record) => [record.id, record]));
+
+    return createE2eProgrammeFixture(fixtureId).flatMap((fixture) => {
+      const record = recordsById.get(fixture.id);
+      return record ? [record] : [];
+    });
   }
-  return mergeProgrammes(programmes, getPublishedProgrammeRecords(governedRecords));
+
+  return mergeProgrammes(programmes, publishedRecords);
 }
 
 export function mergeProgrammes(seedProgrammes: Programme[], records: Programme[]) {

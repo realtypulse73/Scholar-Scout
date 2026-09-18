@@ -3,14 +3,16 @@ name: ScholarScout Prelaunch Rehearsal
 on:
   workflow_dispatch:
     inputs:
-      base_url:
-        description: Production or preview URL to rehearse
-        required: false
+      candidate_commit:
+        description: Full SHA of an open pull request to main
+        required: true
         type: string
 
 permissions:
   contents: read
   actions: read
+  pull-requests: read
+  statuses: read
 
 concurrency:
   group: scholarscout-prelaunch-rehearsal
@@ -20,37 +22,49 @@ jobs:
   rehearsal:
     name: Prelaunch rehearsal
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    environment: Preview
     env:
-      NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
-      GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
-      SCHOLARSCOUT_STAFF_EMAILS: ${{ secrets.SCHOLARSCOUT_STAFF_EMAILS }}
-      SCHOLARSCOUT_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_HEALTH_TOKEN }}
-      SCHOLARSCOUT_DATA_ADAPTER: ${{ secrets.SCHOLARSCOUT_DATA_ADAPTER }}
-      SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
-      SCHOLARSCOUT_DATA_SERVICE_URL: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_URL }}
-      SCHOLARSCOUT_DATA_SERVICE_TOKEN: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_TOKEN }}
-      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ inputs.base_url || secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
-      SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
-      SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
-      SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
-      SCHOLARSCOUT_SMOKE_TIMEOUT_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_TIMEOUT_MS }}
-      SCHOLARSCOUT_SMOKE_RETRIES: ${{ secrets.SCHOLARSCOUT_SMOKE_RETRIES }}
-      SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS }}
+      SCHOLARSCOUT_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY }}
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY }}
+      SCHOLARSCOUT_VERCEL_BASELINE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN }}
+      SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
+      # These permanent project slugs are part of the rehearsal infrastructure,
+      # not per-environment deployment settings. Keeping them here prevents a
+      # missing GitHub variable from turning the deployment wait into retries.
+      SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX: scholar-scout-rehearsal-baseline-
+      SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX: scholar-scout-rehearsal-outage-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Require an open candidate pull request to main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const candidate = process.env.SCHOLARSCOUT_CANDIDATE_COMMIT;
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+            if (!pulls.some((pull) => pull.head.sha === candidate)) {
+              core.setFailed('The candidate commit must be the current head of an open pull request to main.');
+            }
 
-      - name: Set up Node
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_commit }}
+
+      - name: Verify candidate checkout
+        run: test "$(git rev-parse HEAD)" = "${{ inputs.candidate_commit }}"
+
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Enable Corepack
         run: corepack enable
@@ -58,8 +72,40 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Run prelaunch rehearsal
-        run: pnpm run rehearse:prelaunch
+      - name: Wait for the two isolated rehearsal deployments
+        run: |
+          for attempt in $(seq 1 40); do
+            if node scripts/discover-rehearsal-preview-deployments.mjs \
+              --candidate-commit "${{ inputs.candidate_commit }}" \
+              --baseline-host-prefix "$SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX" \
+              --outage-host-prefix "$SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX" \
+              --baseline-project scholar-scout-rehearsal-baseline \
+              --outage-project scholar-scout-rehearsal-outage \
+              --vercel-scope scholar-scout \
+              --output reports/prelaunch-rehearsal/discovered-previews.json \
+              --github-env "$GITHUB_ENV"; then
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
+
+      - name: Install Chromium for browser proof
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run candidate quality, high-risk, and local browser proof
+        run: pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"
+
+      - name: Baseline rehearsal
+        run: node scripts/run-preview-release-tracer.mjs --output reports/prelaunch-rehearsal/preview-browser.json
+
+      - name: Outage rehearsal and restoration proof
+        run: node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
+
+      - name: Aggregate candidate release rehearsal
+        run: |
+          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json
+          test -f reports/prelaunch-rehearsal/release-records.json
 
       - name: Summarize prelaunch rehearsal
         if: always()

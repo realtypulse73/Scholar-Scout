@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -419,6 +419,186 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and isolated Preview records', async () => {
+  const rehearsal = await readFile(
+    path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
+    'utf8',
+  );
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  assert.match(rehearsal, /candidate-quality/);
+  assert.match(rehearsal, /high-risk/);
+  assert.match(rehearsal, /local-browser/);
+  assert.match(rehearsal, /preview-browser/);
+  assert.match(rehearsal, /preview-outage/);
+  assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
+  assert.match(rehearsal, /run-e2e-fixture\.mjs/);
+  assert.match(rehearsal, /data-adapter-empty/);
+  assert.match(rehearsal, /CANDIDATE_QUALITY_ENV/);
+  assert.match(rehearsal, /HIGH_RISK_UNSET_ENV/);
+  assert.match(workflow, /run-preview-release-tracer/);
+  assert.match(workflow, /preview-outage/);
+  assert.match(workflow, /discover-rehearsal-preview-deployments/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY/);
+  assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
+  assert.match(rehearsal, /aggregateLocalReleaseRecords/);
+});
+
+test('release aggregation requires two distinct Vercel rehearsal records', async () => {
+  const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-cleanup-'));
+  const candidateCommit = 'candidate-commit';
+  const laneRecords = {
+    'candidate-quality': { candidateCommit, target: 'candidate', outcome: 'passed' },
+    'high-risk': { candidateCommit, target: 'candidate', outcome: 'passed' },
+    'local-browser': { candidateCommit, target: 'local', outcome: 'passed' },
+    'preview-browser': { candidateCommit, target: 'https://scholar-scout-baseline-scholar-scout.vercel.app', outcome: 'passed' },
+    'preview-outage': { candidateCommit, target: 'https://scholar-scout-outage-scholar-scout.vercel.app', outcome: 'passed' },
+  };
+  for (const [lane, record] of Object.entries(laneRecords)) {
+    await writeFile(path.join(outputDir, `${lane}.json`), `${JSON.stringify(record)}\n`);
+  }
+
+  const args = [
+    'scripts/prelaunch-rehearsal.mjs',
+    '--release-gate',
+    '--aggregate-only',
+    '--candidate-commit',
+    candidateCommit,
+    '--output-dir',
+    outputDir,
+    '--preview-browser-record',
+    path.join(outputDir, 'preview-browser.json'),
+    '--preview-outage-record',
+    path.join(outputDir, 'preview-outage.json'),
+  ];
+
+  const passed = await runNode(args);
+  assert.equal(passed.code, 0, passed.stderr);
+
+  laneRecords['preview-outage'].target = laneRecords['preview-browser'].target;
+  await writeFile(path.join(outputDir, 'preview-outage.json'), `${JSON.stringify(laneRecords['preview-outage'])}\n`);
+  const duplicate = await runNode(args);
+  assert.equal(duplicate.code, 1);
+  assert.match(duplicate.stderr, /Release rehearsal is incomplete/);
+});
+
+test('local release rehearsal records and reports a failed local lane', async () => {
+  const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-lane-failure-'));
+  const commandLog = path.join(outputDir, 'pnpm-commands.log');
+  const launcherPath = path.join(outputDir, isWindows ? 'pnpm.cmd' : 'pnpm');
+  const launcherContents = isWindows
+    ? [
+      '@echo off',
+      'echo %*>> "%SCHOLARSCOUT_TEST_COMMAND_LOG%"',
+      ':next',
+      'if "%~1"=="" exit /b 0',
+      'if /I "%~1"=="test" exit /b 1',
+      'shift',
+      'goto next',
+      '',
+    ].join('\r\n')
+    : [
+      '#!/bin/sh',
+      'echo "$*" >> "$SCHOLARSCOUT_TEST_COMMAND_LOG"',
+      'for arg in "$@"; do [ "$arg" = "test" ] && exit 1; done',
+      'exit 0',
+      '',
+    ].join('\n');
+  await writeFile(launcherPath, launcherContents);
+  if (!isWindows) await chmod(launcherPath, 0o755);
+  const result = await runNode(
+    [
+      'scripts/prelaunch-rehearsal.mjs',
+      '--release-gate',
+      '--local-only',
+      '--candidate-commit',
+      'candidate-commit',
+      '--output-dir',
+      outputDir,
+    ],
+    {
+      PATH: outputDir,
+      Path: outputDir,
+      SCHOLARSCOUT_TEST_COMMAND_LOG: commandLog,
+    },
+  );
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /Local candidate rehearsal is incomplete/);
+  const record = JSON.parse(
+    await readFile(path.join(outputDir, 'candidate-quality.json'), 'utf8'),
+  );
+  assert.deepEqual(record, {
+    candidateCommit: 'candidate-commit',
+    recordedAt: record.recordedAt,
+    commands: [
+      'pnpm install --frozen-lockfile --ignore-scripts',
+      'pnpm test',
+      'pnpm run lint',
+      'pnpm run typecheck',
+      'pnpm run build:vercel',
+    ],
+    outcome: 'failed',
+    errorCategory: 'command-failed',
+    failedCommand: 'pnpm test',
+  });
+  assert.deepEqual(
+    (await readFile(commandLog, 'utf8')).trim().split(/\r?\n/),
+    [
+      'install --frozen-lockfile --ignore-scripts',
+      'test',
+    ],
+  );
+  await assert.rejects(readFile(path.join(outputDir, 'high-risk.json'), 'utf8'));
+  await assert.rejects(readFile(path.join(outputDir, 'local-browser.json'), 'utf8'));
+});
+
+test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  const chromiumInstall = workflow.indexOf('Install Chromium for browser proof');
+  const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
+  const previewBrowser = workflow.indexOf('Baseline rehearsal');
+  const previewOutage = workflow.indexOf('Outage rehearsal and restoration proof');
+  const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
+  const candidateCheckout = workflow.indexOf('Verify candidate checkout');
+
+  assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
+  assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$\{\{ inputs\.candidate_commit \}\}"/);
+  assert.ok(candidateCheckout >= 0);
+  assert.ok(candidateCheckout < chromiumInstall);
+  assert.ok(chromiumInstall >= 0);
+  assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
+  assert.ok(localProof > chromiumInstall);
+  assert.ok(previewBrowser > localProof);
+  assert.ok(previewOutage > previewBrowser);
+  assert.ok(aggregate > previewOutage);
+  assert.match(workflow, /Wait for the two isolated rehearsal deployments/);
+  assert.match(workflow, /environment:\s*Preview/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX:\s*scholar-scout-rehearsal-baseline-/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX:\s*scholar-scout-rehearsal-outage-/);
+  assert.doesNotMatch(workflow, /vars\.SCHOLARSCOUT_REHEARSAL_(BASELINE|OUTAGE)_HOST_PREFIX/);
+  assert.doesNotMatch(workflow, /Install Vercel deployment reader/);
+  assert.match(workflow, /SCHOLARSCOUT_VERCEL_BASELINE_TOKEN:\s*\$\{\{ secrets\.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN \}\}/);
+  assert.match(workflow, /SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN:\s*\$\{\{ secrets\.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN \}\}/);
+  assert.match(workflow, /statuses:\s*read/);
+  assert.match(workflow, /GITHUB_TOKEN:\s*\$\{\{ github\.token \}\}/);
+  assert.doesNotMatch(workflow, /\bVERCEL_TOKEN:\s*\$\{\{ secrets\.VERCEL_TOKEN \}\}/);
+  assert.match(workflow, /--baseline-project scholar-scout-rehearsal-baseline/);
+  assert.match(workflow, /--outage-project scholar-scout-rehearsal-outage/);
+  assert.match(workflow, /--vercel-scope scholar-scout/);
+  assert.doesNotMatch(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN|deployments:\s*read/);
+  assert.doesNotMatch(workflow, /SCHOLARSCOUT_PREVIEW_METADATA|SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA/);
+  assert.doesNotMatch(workflow, /--prod|promote|alias/);
+});
+
 test('prelaunch rehearsal can load readiness values from an env file', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-env-'));
   const outputDir = path.join(tempDir, 'reports');
@@ -521,21 +701,11 @@ test('production value provisioning writes generated secrets and provider checkl
   assert.doesNotMatch(report, /\bnpm run/);
 });
 
-test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
-  const result = await runCommand(
-    'powershell',
-    [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
-      'scripts\\pnpm-portable.ps1',
-      '--version',
-    ],
-  );
-
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /\d+\.\d+\.\d+/);
+test('portable Corepack helpers target the supported Node 24 runtime', async () => {
+  const portable = await readFile(path.join(process.cwd(), 'scripts/pnpm-portable.ps1'), 'utf8');
+  const activation = await readFile(path.join(process.cwd(), 'scripts/use-portable-node.ps1'), 'utf8');
+  assert.match(portable, /node-v24\.21\.0-win-x64/);
+  assert.match(activation, /Node\.js 24\.x/);
 });
 
 function runNode(args, env = {}) {

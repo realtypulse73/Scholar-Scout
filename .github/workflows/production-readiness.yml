@@ -30,6 +30,9 @@ jobs:
       GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
       SCHOLARSCOUT_STAFF_EMAILS: ${{ secrets.SCHOLARSCOUT_STAFF_EMAILS }}
       SCHOLARSCOUT_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_HEALTH_TOKEN }}
+      SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID: ${{ secrets.SCHOLARSCOUT_RECOVERY_SIGNING_KEY_ID }}
+      SCHOLARSCOUT_RECOVERY_SIGNING_SECRET: ${{ secrets.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET }}
+      SCHOLARSCOUT_ALLOW_CREDENTIALS_ONLY_PRODUCTION: ${{ secrets.SCHOLARSCOUT_ALLOW_CREDENTIALS_ONLY_PRODUCTION }}
       SCHOLARSCOUT_DATA_ADAPTER: ${{ secrets.SCHOLARSCOUT_DATA_ADAPTER }}
       SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
@@ -45,7 +48,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Enable Corepack
         run: corepack enable
@@ -58,7 +61,7 @@ jobs:
 
       - name: Write readiness report
         if: always()
-        run: pnpm run check:production-env -- --json > production-env-readiness.json
+        run: node scripts/production-env-check.mjs --json > production-env-readiness.json
 
       - name: Summarize readiness report
         if: always()

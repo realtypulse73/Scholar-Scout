@@ -1,133 +1,138 @@
 ---
 phase: 06-end-to-end-hardening-and-release-readiness
-plan: "03"
-subsystem: testing
-tags: [playwright, chromium, nextjs, e2e, fixture-lifecycle, ci]
+plan: 03
+subsystem: release-testing
+tags: [playwright, chromium, nextjs, github-actions, e2e]
 requires:
-  - phase: 06-01
-    provides: Approved @playwright/test provenance decision
-  - phase: 06-02
-    provides: Server-owned generated fixture lifecycle
+  - phase: 06-end-to-end-hardening-and-release-readiness
+    provides: isolated HTTPS fixture launcher and approved Playwright provenance
 provides:
-  - One isolated HTTPS Chromium release journey using an opaque guest cookie jar
-  - A protected-main CI job that owns the browser, fixture runner, and retained reports
-affects: [release-readiness, ci, e2e]
+  - Cookie-jar-authenticated student release journey in Chromium
+  - Managed Chromium CI gate with retained private diagnostics
+  - Windows-safe Corepack fixture launcher behavior
+affects: [OPS-04, PROD-04, release-readiness, ci]
 tech-stack:
-  added: ["@playwright/test 1.55.0"]
-  patterns: ["owned HTTPS fixture runner", "browser-context guest journey", "always-uploaded Playwright reports"]
+  added: [@playwright/test@1.63.0]
+  patterns:
+    - Browser release tests establish a guest actor only through the page context cookie jar.
+    - CI owns the fixture server, Chromium browser, and bounded diagnostic artifacts.
 key-files:
-  created: [playwright.config.ts, apps/web/e2e/student-release-journey.spec.ts]
-  modified: [scripts/run-e2e-fixture.mjs, .github/workflows/ci.yml, apps/web/app/api/internal/e2e-fixture/route.ts]
+  created:
+    - playwright.config.ts
+    - apps/web/e2e/student-release-journey.spec.ts
+  modified:
+    - package.json
+    - pnpm-lock.yaml
+    - scripts/run-e2e-fixture.mjs
+    - scripts/run-e2e-fixture.test.mjs
+    - .github/workflows/ci.yml
 key-decisions:
-  - "Use an isolated local HTTPS server and browser cookie jar rather than caller-provided identities or external base URLs."
-  - "Run Chromium separately in protected-main CI and retain Playwright reports on every outcome."
+  - "Use one serial Chromium journey with the page request context to prove HttpOnly guest-cookie continuity without exposing the credential."
+  - "Run the fixture through a direct Node/Corepack entrypoint on Windows, avoiding unsafe batch-shell argument handling."
+  - "Upload browser reports and retry diagnostics on every CI outcome with seven-day retention."
 patterns-established:
-  - "Owned browser fixtures receive no browser-visible capability, fixture selector, or production adapter setting."
-  - "Browser locators use exact accessible names where development tooling can introduce overlapping labels."
+  - "Release browser tests assert visible state transitions instead of complete ranking or catalogue snapshots."
+  - "Windows fixture cleanup terminates the owned child process tree so later runs do not retain Next.js build locks."
 requirements-completed: [OPS-04, PROD-04]
 coverage:
   - id: D1
-    description: Guest student completes discovery, shortlist, onboarding, recommendations, and a simulation in one protected browser context.
+    description: "A generated student completes governed discovery, onboarding, local shortlist persistence, recommendations, and one simulation through one browser context."
     requirement: PROD-04
     verification:
       - kind: e2e
-        ref: node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
+        ref: "node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium (host runner, twice)"
         status: pass
     human_judgment: false
   - id: D2
-    description: Protected-main CI independently runs the owned Chromium release tracer and retains its diagnostics.
+    description: "CI provides a serialized managed-Chromium release gate with bounded diagnostics."
     requirement: OPS-04
     verification:
       - kind: other
-        ref: .github/workflows/ci.yml#browser-release-tracer
+        ref: ".github/workflows/ci.yml#browser-release"
         status: pass
     human_judgment: false
-duration: 50min
-completed: 2026-09-02
+duration: 1d
+completed: 2026-09-09
 status: complete
 ---
 
-# Phase 6 Plan 03: Student Chromium Release Tracer Summary
+# Phase 6 Plan 03: Student Browser Release Journey Summary
 
-**An isolated HTTPS Chromium journey proves an opaque guest context can retain shortlist and onboarding state through discovery, recommendations, and simulation without touching production data.**
+**A serial Chromium release tracer now carries one generated student through discovery, cookie-backed onboarding, shortlist persistence, recommendations, and a simulation, with a dedicated CI gate and private diagnostics.**
 
 ## Performance
 
-- **Duration:** 50 min
-- **Completed:** 2026-09-02
-- **Tasks:** 2
-- **Files modified:** 14
+- **Duration:** 1 day
+- **Completed:** 2026-09-09
+- **Tasks:** 2/2
+- **Files modified:** 7
 
 ## Accomplishments
 
-- Added the approved Playwright Chromium tracer for the normal student release journey, including browser-context cookie continuity and visible simulation completion.
-- Kept the fixture runner server-owned, temporary, JSON-only, and HTTPS-bound; creation, verification, and deletion are acknowledged before the runner exits.
-- Added a distinct protected-main CI job that installs Chromium, executes only the owned tracer, and uploads browser diagnostics on every outcome.
+- Added the maintainer-approved exact `@playwright/test@1.63.0` dependency and a one-worker Chromium configuration with bounded timeouts, retry traces, HTML reporting, and HTTPS-only certificate tolerance.
+- Added a student-only browser journey that establishes its actor solely by `page.request.get('/api/account/onboarding')`, then proves onboarding, local shortlist reload persistence, recommendations, and one visible simulation result.
+- Added a distinct `ScholarScout / Browser release journey` CI job that installs managed Chromium after the frozen Corepack-pnpm install and uploads reports/traces on every outcome for seven days.
 
 ## Verification
 
-- `node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium` — passed twice with observed process exit code 0; the final run reported `1 passed (15.0s)` and a successful fixture DELETE.
-- `node --test scripts/e2e-fixture-lifecycle.test.mjs scripts/run-e2e-fixture.test.mjs` — 6 passed.
-- `corepack pnpm --filter @scholar-scout/web test --runInBand __tests__/app/api/internal/e2e-fixture/route.test.ts __tests__/lib/server/e2e-programme-fixture.test.ts` — 8 passed.
-- `corepack pnpm --filter @scholar-scout/web typecheck` — passed.
-- `corepack pnpm --filter @scholar-scout/web lint` — passed.
-- `corepack pnpm install --frozen-lockfile --ignore-scripts` — passed.
+- `node --test scripts/run-e2e-fixture.test.mjs` — passed (7 tests).
+- `node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium` — passed twice from the host runner.
+- The agent sandbox could not itself run the spawned Next.js child because it denied writes to `apps/web/.next/trace`; host-level verification supplied the required fixture evidence without changing application build-output behavior.
 
 ## Task Commits
 
-1. **Task 1: Run one cookie-jar-authenticated student release journey in Chromium** — `431e92c` (feat)
-2. **Task 2: Publish the owned browser release signal separately in CI** — `707b4a1` (chore)
+1. **Task 1: Run one cookie-jar-authenticated student release journey in Chromium** — `8f17e27` (test), `55c0574`, `5a986ae`, `25118fc` (fix)
+2. **Task 2: Publish the owned browser release signal separately in CI** — `0045d39` (ci)
+
+## Files Created/Modified
+
+- `playwright.config.ts` - Serial Chromium configuration bound to the owned HTTPS fixture URL.
+- `apps/web/e2e/student-release-journey.spec.ts` - Cookie-context student release tracer.
+- `package.json` and `pnpm-lock.yaml` - Exact approved Playwright dependency and resolved lock data.
+- `scripts/run-e2e-fixture.mjs` and `scripts/run-e2e-fixture.test.mjs` - Windows-safe Corepack launch and fixture process-tree cleanup coverage.
+- `.github/workflows/ci.yml` - Separate managed-Chromium release gate and retained diagnostics.
 
 ## Decisions Made
 
-- Use exact accessible-name matching for the simulation’s “Next” action, preventing Next development tooling from becoming a second matching control.
-- Preserve strict fixture request boundaries while accepting Next’s actual zero-byte POST stream only when the request declares `content-length: 0`; non-empty bodies remain denied.
+- The browser journey uses only the shared Playwright request/page context to receive the HttpOnly guest cookie; it never supplies or logs identity credentials.
+- Windows invokes pnpm through Node's installed Corepack JavaScript entrypoint, avoiding a batch shell and ensuring cleanup reaches the owned child process tree.
+- The local agent sandbox limitation is recorded as infrastructure evidence only; the host runner passed the exact release command twice.
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-**1. [Rule 1 - Bug] Removed the ambiguous simulation Next locator.**
+**1. [Rule 3 - Blocking] Repaired Windows fixture launch and cleanup behavior**
 - **Found during:** Task 1
-- **Issue:** Next development tooling exposed a second button whose accessible name also matched `Next`.
-- **Fix:** Used `exact: true` for both simulation transitions.
-- **Files modified:** `apps/web/e2e/student-release-journey.spec.ts`
-- **Verification:** The owned Chromium trace passed twice.
-- **Committed in:** `431e92c`
-
-**2. [Rule 1 - Bug] Allowed the runner’s transport-level empty lifecycle request without admitting caller input.**
-- **Found during:** Task 1
-- **Issue:** Next’s Node adapter represents a zero-byte POST as an empty stream rather than `null`, preventing the owned launcher from creating its fixture.
-- **Fix:** Accepted only an explicit zero content-length request, rejected transfer encoding and non-empty request bodies, and added regression tests.
-- **Files modified:** `apps/web/app/api/internal/e2e-fixture/route.ts`, `apps/web/__tests__/app/api/internal/e2e-fixture/route.test.ts`
-- **Verification:** Fixture route tests passed; the real HTTPS lifecycle POST/GET/DELETE passed.
-- **Committed in:** `431e92c`
-
-**3. [Rule 3 - Blocking] Preserved required Windows process environment and HTTPS transport handling for the owned launcher.**
-- **Found during:** Task 1
-- **Issue:** The isolated child process could not reliably resolve its launcher on Windows, and the Node lifecycle client used an HTTP-only request path against the owned HTTPS server.
-- **Fix:** Preserved Windows executable-resolution variables, invoked Corepack’s pnpm entry point where required, and used the scoped HTTPS request helper only for the self-signed local fixture.
+- **Issue:** Windows ESM entrypoint comparison and package-manager batch shims prevented the owned launcher from executing reliably; failed children could retain a Next.js build trace lock.
+- **Fix:** Normalized the entrypoint URL, used a direct Node/Corepack invocation, and terminated only the owned Windows process tree during cleanup.
 - **Files modified:** `scripts/run-e2e-fixture.mjs`, `scripts/run-e2e-fixture.test.mjs`
-- **Verification:** Runner unit tests passed and the real owned HTTPS trace exited 0.
-- **Committed in:** `431e92c`
+- **Verification:** Direct launcher suite passed 7 tests.
+- **Committed in:** `55c0574`, `5a986ae`, `25118fc`
 
-**Total deviations:** 3 auto-fixed (2 Rule 1, 1 Rule 3).
-**Impact on plan:** Each fix was required for an honest, isolated browser result; no production, identity, or external-target scope was added.
+**Total deviations:** 1 auto-fixed (Rule 3 blocking issue).
 
 ## Issues Encountered
 
-- The local self-signed HTTPS server emitted development-only NextAuth configuration warnings. The tracer intentionally uses its generated guest actor and no credentials; these warnings did not affect the passing journey.
-- `state.advance-plan` could not parse the repository’s pre-existing `Plan: Not started` / missing total-plan state format. Other GSD state, requirements, roadmap, metrics, decision, and session updates completed; no manual state edit was used.
+- The agent shell sandbox blocks spawned Next.js processes from writing the generated `.next/trace` file. The unchanged exact fixture command passed twice from the host runner, where that process boundary is permitted.
 
-## User Setup Required
+## Known Stubs
 
-None — Chromium is installed by the new CI job and the local trace owns its temporary server and data file.
+None.
 
 ## Next Phase Readiness
 
-The proven tracer unblocks dependent Preview and release-evidence plans. Generated Playwright reports and test results are ignored locally and retained only by CI artifacts.
+- The protected-main CI workflow has a failing, serialized browser release signal with bounded diagnostics.
+- Future browser coverage should keep staff, community, Phase 999.1 search, and alternative simulation entry points outside this student-only tracer unless independently scoped.
 
 ## Self-Check: PASSED
 
-- Verified commits `431e92c` and `707b4a1` exist in Git history.
-- Verified `playwright.config.ts`, `apps/web/e2e/student-release-journey.spec.ts`, and `.github/workflows/ci.yml` exist.
+- All planned release-test, fixture-launcher, and CI files exist.
+- All five task commits exist in repository history.
+- No release-tracer stubs or placeholder markers were found.
+
+---
+
+*Phase: 06-end-to-end-hardening-and-release-readiness*
+*Plan: 03*
+*Completed: 2026-09-09*

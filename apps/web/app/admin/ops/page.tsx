@@ -3,11 +3,11 @@ import PlatformDashboard from '@/components/admin/PlatformDashboard';
 import { requireActiveStaff } from '@/lib/server/active-staff';
 import { getPlatformMetrics } from '@/lib/server/platform-store';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Operations | ScholarScout',
 };
-
-export const dynamic = 'force-dynamic';
 
 export default async function AdminOpsPage() {
   const authorization = await requireActiveStaff({

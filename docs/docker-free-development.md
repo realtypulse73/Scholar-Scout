@@ -1,6 +1,6 @@
 # Docker-Free Development
 
-ScholarScout can move forward without Docker for the current frontend scope. The app is a Node 20.x/pnpm workspace. The root `packageManager` selects pnpm 10.34.5 through Corepack.
+ScholarScout can move forward without Docker for the current frontend scope. The app is a Node 24.x/pnpm workspace. The root `packageManager` selects pnpm 10.34.5 through Corepack.
 
 ## One-Time Setup
 

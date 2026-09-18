@@ -21,7 +21,6 @@ import {
   type SupportNeed,
 } from '@/lib/onboarding-types';
 import { validateStep } from '@/lib/onboarding-validation';
-import { ROLE_LANGUAGE } from '@/lib/role-language';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   serializeOnboardingProfile,
@@ -131,7 +130,7 @@ export default function OnboardingWizard() {
     );
   }
 
-  function handleNext() {
+  async function handleNext() {
     const validationError = validateStep(step, data);
 
     if (validationError) {
@@ -146,20 +145,27 @@ export default function OnboardingWizard() {
       return;
     }
 
+    if (typeof fetch === 'function') {
+      try {
+        const response = await fetch('/api/account/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+          throw new Error('Onboarding profile save failed.');
+        }
+      } catch {
+        setError('We could not save your profile. Please try again.');
+        return;
+      }
+    }
+
     window.localStorage.setItem(
       ONBOARDING_PROFILE_STORAGE_KEY,
       serializeOnboardingProfile(data),
     );
     window.localStorage.removeItem(ONBOARDING_DRAFT_STORAGE_KEY);
-
-    if (typeof fetch === 'function') {
-      void fetch('/api/account/onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-    }
-
     setCompleted(true);
   }
 
@@ -199,7 +205,7 @@ export default function OnboardingWizard() {
               Step {step} of {TOTAL_STEPS}
             </p>
             <h1 className="mt-2 text-3xl font-extrabold text-ink-900">
-              Build your pathway profile: {steps[step - 1].title}
+              {steps[step - 1].title}
             </h1>
             <p className="mt-2 text-sm leading-6 text-ink-600">
               {steps[step - 1].helper}
@@ -242,7 +248,7 @@ export default function OnboardingWizard() {
           ) : null}
 
           <p className="mt-6 rounded-card border border-brand-100 bg-brand-50 p-3 text-sm leading-6 text-brand-800">
-            {ROLE_LANGUAGE.student.profile} These answers help ScholarScout rank
+            You are not being screened out. These answers help ScholarScout rank
             practical next steps and show what to verify.
           </p>
 
@@ -261,7 +267,7 @@ export default function OnboardingWizard() {
               onClick={handleNext}
               className="min-h-touch flex-1 rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
-              {step === TOTAL_STEPS ? 'Save my pathway profile' : 'Continue to next step'}
+              {step === TOTAL_STEPS ? 'Save profile' : 'Next'}
             </button>
           </div>
         </section>

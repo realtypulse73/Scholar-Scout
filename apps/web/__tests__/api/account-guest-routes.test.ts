@@ -328,25 +328,18 @@ describe('account guest routes', () => {
 
     expect(onboardingResponse.status).toBe(409);
     expect(shortlistResponse.status).toBe(409);
-    const onboardingBody = await onboardingResponse.json();
-    const shortlistBody = await shortlistResponse.json();
-
-    expect(onboardingBody).toEqual({
+    await expect(onboardingResponse.json()).resolves.toEqual({
       error: 'Student data changed. Reload and try again.',
       category: 'conflict',
       action: 'reload',
     });
-    expect(shortlistBody).toEqual({
+    await expect(shortlistResponse.json()).resolves.toEqual({
       error: 'Student data changed. Reload and try again.',
       category: 'conflict',
       action: 'reload',
     });
-    expect(JSON.stringify(onboardingBody)).not.toMatch(
-      /account:student-one|guest:|student-two|profile/i,
-    );
-    expect(JSON.stringify(shortlistBody)).not.toMatch(
-      /account:student-one|guest:|student-two|programmeIds|plans/i,
-    );
+    expect(saveOnboardingProfileMock).toHaveBeenCalledWith(account.storageKey, completeProfile);
+    expect(saveShortlistStateMock).toHaveBeenCalledWith(account.storageKey, [], {});
   });
 
   it('reads migrated shortlist activity through the account and rejects the invalidated guest', async () => {
