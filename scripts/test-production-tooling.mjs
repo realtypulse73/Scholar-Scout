@@ -546,6 +546,7 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
 
   const chromiumInstall = workflow.indexOf('Install Chromium for Preview browser proof');
   const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
+  const localReport = workflow.indexOf('Report safe local candidate result');
   const previewBrowser = workflow.indexOf('Protected Preview browser proof');
   const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
   const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
@@ -555,6 +556,8 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
   assert.match(rehearsal, /\[process\.execPath, \['--test', 'scripts\/test-production-tooling\.mjs'\]\]/);
   assert.ok(localProof > chromiumInstall);
+  assert.ok(localReport > localProof);
+  assert.match(workflow, /cat reports\/prelaunch-rehearsal\/candidate-quality\.json >> "\$GITHUB_STEP_SUMMARY"/);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
   assert.ok(aggregate > previewOutage);

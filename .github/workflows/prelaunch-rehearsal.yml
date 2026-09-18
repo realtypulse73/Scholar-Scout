@@ -83,6 +83,13 @@ jobs:
         run: |
           pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"
 
+      - name: Report safe local candidate result
+        if: always()
+        run: |
+          if test -f reports/prelaunch-rehearsal/candidate-quality.json; then
+            cat reports/prelaunch-rehearsal/candidate-quality.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Protected Preview browser proof (maintainer-owned runner)
         run: |
           test -n "${{ inputs.base_url }}"
