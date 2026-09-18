@@ -116,7 +116,7 @@ function parseFailedTestName(output) { return output.match(/^not ok \d+ - ([^\r\
 export function parseSafeFailureDetail(output) {
   const lifecycle = output.match(/E2E fixture (provision|verification|cleanup|transport) lifecycle request failed\./);
   if (lifecycle) return `fixture-${lifecycle[1]}`;
-  const journey = output.match(/Student release journey failed during (profile-read|catalogue|onboarding|shortlist|recommendations|simulation)\./);
+  const journey = output.match(/Student release journey failed during (profile-read|catalogue|onboarding(?:-(?:open|interest|pathway|next-one|gpa|location|next-two|support|next-three|save|complete|persist))?|shortlist|recommendations|simulation)\./);
   if (journey) return `journey-${journey[1]}`;
   if (output.includes('Owned E2E application process did not become ready.')) return 'fixture-not-ready';
   if (output.includes('Browser test runner failed.')) return 'browser-runner';

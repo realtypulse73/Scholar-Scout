@@ -34,19 +34,30 @@ export async function runStudentReleaseJourney(
     if (!(await programmeResults.textContent())?.includes('E2E Applied Health Pathway')) {
       throw new Error('Student release fixture did not expose the governed programme.');
     }
-    stage = 'onboarding';
+    stage = 'onboarding-open';
     await page.goto('/onboarding');
+    stage = 'onboarding-interest';
     await page.getByRole('button', { name: 'Technology & IT' }).click();
+    stage = 'onboarding-pathway';
     await page.getByRole('button', { name: 'Certificate Program' }).click();
+    stage = 'onboarding-next-one';
     await page.getByRole('button', { name: 'Next' }).click();
+    stage = 'onboarding-gpa';
     await page.getByRole('button', { name: '3.0 – 3.4' }).click();
+    stage = 'onboarding-location';
     await page.getByRole('button', { name: 'Close to Home (< 30 mi)' }).click();
+    stage = 'onboarding-next-two';
     await page.getByRole('button', { name: 'Next' }).click();
+    stage = 'onboarding-support';
     await page.getByRole('button', { name: 'Financial Aid & Scholarships' }).click();
+    stage = 'onboarding-next-three';
     await page.getByRole('button', { name: 'Next' }).click();
+    stage = 'onboarding-save';
     await page.getByRole('button', { name: 'Save profile' }).click();
+    stage = 'onboarding-complete';
     await page.getByRole('heading', { name: STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING }).waitFor();
 
+    stage = 'onboarding-persist';
     const savedProfile = await page.request.get('/api/account/onboarding');
     const profile = await savedProfile.json();
     if (
