@@ -93,8 +93,12 @@ export async function runStudentReleaseJourney(
 
     stage = 'simulation';
     await page.goto('/simulate');
+    const simulationChoices = page
+      .locator('main > div > div > div > section')
+      .nth(1)
+      .locator('div.grid.gap-3');
     for (let step = 0; step < 6; step += 1) {
-      await page.locator('main button[type="button"]:has(span)').first().click();
+      await simulationChoices.getByRole('button').first().click();
       const finish = page.getByRole('button', { name: 'Finish simulation' });
       if (await finish.count()) {
         await finish.click();
