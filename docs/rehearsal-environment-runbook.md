@@ -58,3 +58,12 @@ Create each Vercel access token with a 90-day expiry and scope it to only its ma
 4. Read the uploaded `prelaunch-rehearsal` artifact. A pass means both fixture lifecycles were created, checked, and cleaned; a failure gives a safe category without exposing data or credentials.
 
 The projects, their two fixture capabilities, and their two project-scoped Vercel tokens remain in place. Rotate each token before its 90-day expiry. No branches, branch-specific variables, generated handoff files, pasted URLs, or per-run secret changes are needed.
+
+## Rotating a fixture capability
+
+If a fixed fixture capability must be replaced, update its matching Vercel
+Preview secret and GitHub Preview secret, then push one new candidate commit to
+the open pull request. Do not redeploy the previous commit: a redeploy creates
+a second Ready URL for the same Git commit, and the rehearsal deliberately
+refuses to guess which URL has the new settings. The new commit gives each
+rehearsal project one unambiguous, Git-attested Preview deployment.
