@@ -31,7 +31,10 @@ test('gives the hosted Preview student journey a bounded cold-start timeout', as
 
   await assert.rejects(
     () => runStudentReleaseJourney(page),
-    (error) => error instanceof StudentReleaseJourneyError && error.cause === expectedStop,
+    (error) =>
+      error instanceof StudentReleaseJourneyError &&
+      error.cause === expectedStop &&
+      error.interaction === 'failed',
   );
   assert.deepEqual(timeouts, [
     ['default', STUDENT_RELEASE_JOURNEY_TIMEOUT_MS],
@@ -50,7 +53,11 @@ test('reports the safe journey stage without exposing the underlying browser fai
 
   await assert.rejects(
     () => runStudentReleaseJourney(page),
-    (error) => error instanceof StudentReleaseJourneyError && error.stage === 'profile-read' && !error.message.includes('sensitive'),
+    (error) =>
+      error instanceof StudentReleaseJourneyError &&
+      error.stage === 'profile-read' &&
+      error.interaction === 'failed' &&
+      !error.message.includes('sensitive'),
   );
 });
 
@@ -83,6 +90,25 @@ test('reports the safe onboarding interaction stage without exposing the underly
     (error) =>
       error instanceof StudentReleaseJourneyError &&
       error.stage === 'onboarding-interest' &&
+      error.interaction === 'failed' &&
+      !error.message.includes('sensitive'),
+  );
+});
+
+test('classifies a timed-out browser interaction without exposing its detail', async () => {
+  const page = {
+    setDefaultTimeout: () => undefined,
+    setDefaultNavigationTimeout: () => undefined,
+    request: {
+      get: async () => { throw new Error('Timeout 60000ms exceeded: sensitive fixture detail'); },
+    },
+  };
+
+  await assert.rejects(
+    () => runStudentReleaseJourney(page),
+    (error) =>
+      error instanceof StudentReleaseJourneyError &&
+      error.interaction === 'timeout' &&
       !error.message.includes('sensitive'),
   );
 });

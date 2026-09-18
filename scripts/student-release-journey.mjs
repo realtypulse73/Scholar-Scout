@@ -4,11 +4,21 @@ export const STUDENT_RELEASE_JOURNEY_RECOMMENDATIONS_HEADING = 'Your best next m
 
 export class StudentReleaseJourneyError extends Error {
   constructor(stage, cause) {
-    super(`Student release journey failed during ${stage}.`);
+    const interaction = classifyJourneyInteraction(cause);
+    super(`Student release journey failed during ${stage} (${interaction}).`);
     this.name = 'StudentReleaseJourneyError';
     this.stage = stage;
+    this.interaction = interaction;
     this.cause = cause;
   }
+}
+
+function classifyJourneyInteraction(cause) {
+  const message = cause instanceof Error ? cause.message : '';
+  if (message.includes('strict mode violation')) return 'ambiguous';
+  if (message.includes('intercepts pointer events')) return 'blocked';
+  if (message.includes('Timeout')) return 'timeout';
+  return 'failed';
 }
 
 /**
