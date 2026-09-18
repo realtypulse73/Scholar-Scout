@@ -588,6 +588,8 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.match(workflow, /Install Vercel deployment reader/);
   assert.match(workflow, /SCHOLARSCOUT_VERCEL_BASELINE_TOKEN:\s*\$\{\{ secrets\.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN \}\}/);
   assert.match(workflow, /SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN:\s*\$\{\{ secrets\.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN \}\}/);
+  assert.match(workflow, /statuses:\s*read/);
+  assert.match(workflow, /GITHUB_TOKEN:\s*\$\{\{ github\.token \}\}/);
   assert.doesNotMatch(workflow, /\bVERCEL_TOKEN:\s*\$\{\{ secrets\.VERCEL_TOKEN \}\}/);
   assert.match(workflow, /--baseline-project scholar-scout-rehearsal-baseline/);
   assert.match(workflow, /--outage-project scholar-scout-rehearsal-outage/);

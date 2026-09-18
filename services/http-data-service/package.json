@@ -8,7 +8,7 @@
     "start": "node src/server.mjs",
     "build": "node scripts/validate-fixture.mjs",
     "lint": "node scripts/validate-fixture.mjs",
-    "test": "node --test test",
+    "test": "node --test test/*.test.mjs",
     "typecheck": "node scripts/validate-fixture.mjs"
   }
 }

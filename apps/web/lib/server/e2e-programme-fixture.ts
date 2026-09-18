@@ -108,10 +108,15 @@ export async function cleanupE2eFixture(): Promise<'cleaned'> {
  */
 export function assertE2eFixtureRuntimeConfiguration(): string {
   const fixtureId = getConfiguredE2eFixtureId();
+  const usesPreviewBlobFixture = process.env.SCHOLARSCOUT_DATA_ADAPTER === 'vercel-blob';
+  const usesOwnedLocalFixture =
+    process.env.SCHOLARSCOUT_DATA_ADAPTER === 'json' &&
+    process.env.SCHOLARSCOUT_E2E_LOCAL_FIXTURE === 'true' &&
+    process.env.VERCEL !== '1';
   if (
     !fixtureId ||
     !isE2eRehearsalRuntime() ||
-    process.env.SCHOLARSCOUT_DATA_ADAPTER !== 'vercel-blob'
+    (!usesPreviewBlobFixture && !usesOwnedLocalFixture)
   ) {
     throw new Error('E2E fixture lifecycle is unavailable.');
   }

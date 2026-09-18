@@ -12,6 +12,7 @@ permissions:
   contents: read
   actions: read
   pull-requests: read
+  statuses: read
 
 concurrency:
   group: scholarscout-prelaunch-rehearsal
@@ -29,6 +30,7 @@ jobs:
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY }}
       SCHOLARSCOUT_VERCEL_BASELINE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN }}
       SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
       # These permanent project slugs are part of the rehearsal infrastructure,
       # not per-environment deployment settings. Keeping them here prevents a
       # missing GitHub variable from turning the deployment wait into retries.

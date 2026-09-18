@@ -60,6 +60,8 @@ describe('e2e programme fixture', () => {
   const originalVercelEnvironment = process.env.VERCEL_ENV;
   const originalRehearsalMode = process.env.SCHOLARSCOUT_REHEARSAL_MODE;
   const originalDataAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
+  const originalLocalFixture = process.env.SCHOLARSCOUT_E2E_LOCAL_FIXTURE;
+  const originalVercel = process.env.VERCEL;
   const originalBlobPath = process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
 
   beforeEach(() => {
@@ -68,6 +70,8 @@ describe('e2e programme fixture', () => {
     process.env.VERCEL_ENV = 'preview';
     process.env.SCHOLARSCOUT_REHEARSAL_MODE = 'true';
     process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    delete process.env.SCHOLARSCOUT_E2E_LOCAL_FIXTURE;
+    delete process.env.VERCEL;
     delete process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
     setScholarScoutDataStoreForTests(new MemoryDataStore());
   });
@@ -79,6 +83,8 @@ describe('e2e programme fixture', () => {
     restoreEnvironment('VERCEL_ENV', originalVercelEnvironment);
     restoreEnvironment('SCHOLARSCOUT_REHEARSAL_MODE', originalRehearsalMode);
     restoreEnvironment('SCHOLARSCOUT_DATA_ADAPTER', originalDataAdapter);
+    restoreEnvironment('SCHOLARSCOUT_E2E_LOCAL_FIXTURE', originalLocalFixture);
+    restoreEnvironment('VERCEL', originalVercel);
     restoreEnvironment('SCHOLARSCOUT_BLOB_DATA_PATH', originalBlobPath);
   });
 
@@ -194,7 +200,7 @@ describe('e2e programme fixture', () => {
     expect(writeVersioned).not.toHaveBeenCalled();
   });
 
-  it('rejects non-Preview and non-Blob runtime configurations before fixture data access', async () => {
+  it('rejects non-Preview and unowned local runtime configurations before fixture data access', async () => {
     const store = new MemoryDataStore();
     const read = jest.spyOn(store, 'read');
     const write = jest.spyOn(store, 'write');
@@ -211,8 +217,20 @@ describe('e2e programme fixture', () => {
     process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
     await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
 
+    process.env.SCHOLARSCOUT_E2E_LOCAL_FIXTURE = 'true';
+    process.env.VERCEL = '1';
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
     expect(read).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it('allows only the runner-owned local JSON fixture outside Vercel', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
+    process.env.SCHOLARSCOUT_E2E_LOCAL_FIXTURE = 'true';
+
+    await expect(createAndVerifyE2eFixture()).resolves.toBe('verified');
+    await expect(cleanupE2eFixture()).resolves.toBe('cleaned');
   });
 });
 

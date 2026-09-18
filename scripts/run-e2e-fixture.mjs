@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
-import { createLifecycleRequest, requestLoopbackHttps, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
+import {
+  classifyFixtureLifecycleFailure,
+  createLifecycleRequest,
+  requestLoopbackHttps,
+  runFixtureLifecycle,
+} from './e2e-fixture-lifecycle.mjs';
 
 export function parseLauncherOptions(args) {
   const options = { spec: undefined, project: undefined };
@@ -30,6 +35,19 @@ export function buildFixtureProcessEnv(overrides, env = process.env) {
   return { ...env, ...overrides };
 }
 
+export function buildOwnedFixtureEnvironment({ dataFile, fixtureId, capability }) {
+  return {
+    VERCEL_ENV: 'preview',
+    SCHOLARSCOUT_REHEARSAL_MODE: 'true',
+    SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    SCHOLARSCOUT_DATA_FILE: dataFile,
+    SCHOLARSCOUT_E2E_LOCAL_FIXTURE: 'true',
+    SCHOLARSCOUT_E2E_FIXTURE: 'true',
+    SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
+    SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
+  };
+}
+
 export async function runE2eFixture({ runPlaywright, spawnChild = spawn } = {}) {
   validateE2eFixtureEnvironment();
   const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-e2e-'));
@@ -51,13 +69,11 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn } = {}) 
     const pnpm = getPnpmInvocation();
     child = spawnChild(pnpm.command, [...pnpm.args, '--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
       cwd: process.cwd(),
-      env: buildFixtureProcessEnv({
-        SCHOLARSCOUT_DATA_ADAPTER: 'json',
-        SCHOLARSCOUT_DATA_FILE: dataFile,
-        SCHOLARSCOUT_E2E_FIXTURE: 'true',
-        SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
-        SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
-      }),
+      env: buildFixtureProcessEnv(buildOwnedFixtureEnvironment({
+        dataFile,
+        fixtureId,
+        capability,
+      })),
     });
     child.once('error', (error) => { terminalError = error; });
     child.once('exit', (code) => {
@@ -168,6 +184,6 @@ if (isCliEntrypoint(process.argv[1])) {
   const options = parseLauncherOptions(process.argv.slice(2));
   runE2eFixture({ runPlaywright: createPlaywrightRunner(options) }).catch((error) => {
     process.exitCode = 1;
-    console.error(error.message);
+    console.error(`E2E fixture failed: ${classifyFixtureLifecycleFailure(error)}`);
   });
 }

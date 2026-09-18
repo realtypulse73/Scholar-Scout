@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import {
   buildFixtureProcessEnv,
+  buildOwnedFixtureEnvironment,
   getPnpmInvocation,
   getFixtureStopCommand,
   getPnpmCommand,
@@ -37,6 +38,26 @@ test('keeps required host environment values while applying owned fixture settin
       PATH: 'fixture-path',
       SystemRoot: 'system-root',
       SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    },
+  );
+});
+
+test('enables the owned local fixture through the same Preview rehearsal contract', () => {
+  assert.deepEqual(
+    buildOwnedFixtureEnvironment({
+      dataFile: '/tmp/scholarscout-data.json',
+      fixtureId: 'fixture-run-123456',
+      capability: 'fixture-capability',
+    }),
+    {
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_REHEARSAL_MODE: 'true',
+      SCHOLARSCOUT_DATA_ADAPTER: 'json',
+      SCHOLARSCOUT_DATA_FILE: '/tmp/scholarscout-data.json',
+      SCHOLARSCOUT_E2E_LOCAL_FIXTURE: 'true',
+      SCHOLARSCOUT_E2E_FIXTURE: 'true',
+      SCHOLARSCOUT_E2E_FIXTURE_ID: 'fixture-run-123456',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'fixture-capability',
     },
   );
 });

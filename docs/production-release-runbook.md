@@ -79,7 +79,11 @@ Then run the high-risk route, webhook, and HTTP-data-service suites, followed by
 node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
 ```
 
-The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it waits for the two Vercel Git deployments, uses Vercel's CLI and two project-scoped Preview environment tokens to find the one ready URL in each project that is tagged with that exact SHA, runs the normal journey and the outage proof, and cleans each fixture automatically.
+That local command creates its own temporary JSON file and an internal, local-only
+fixture flag. It cannot activate the lifecycle in a Vercel deployment; Preview
+rehearsal projects remain Blob-only and use their fixed fixture namespace.
+
+The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it reads the two Vercel Git statuses for that exact commit, inspects those two deployment IDs with their project-scoped Preview tokens, runs the normal journey and the outage proof, and cleans each fixture automatically.
 
 The workflow needs only the two permanent runner capabilities plus its two static project-scoped Preview-environment Vercel tokens. It never receives production credentials, Vercel branch overrides, manually copied URLs, bypass cookies, or a temporary handoff file. It writes only candidate commit, generated Preview URL, UTC, pass/fail result, and safe error category.
 
