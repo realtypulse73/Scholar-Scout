@@ -12,7 +12,7 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 - [x] **Phase 2: Authentication, API, AI, and Webhook Controls** - Protect student data, privileged actions, and cost-bearing integrations at their server boundaries. (completed 2026-08-28)
 - [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
 - [x] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations. (completed 2026-08-29)
-- [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
+- [x] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections. (completed 2026-09-18)
 - [ ] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks.
 
 ## Phase Details
@@ -183,7 +183,7 @@ Plans:
 - [x] 05-04-PLAN.md — Deliver peer matching and community UI with protected interaction states
 - [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
 - [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
-- [ ] 05-07-PLAN.md — Close SUNY Erie source-link gap and complete Preview UAT Test 1
+- [x] 05-07-PLAN.md — Close SUNY Erie source-link gap and complete Preview UAT Test 1
 
 **UI hint**: yes
 **Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
@@ -223,7 +223,7 @@ Plans:
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
-| 5. School, Community, and WNY Release Slice | 6/7 | In Progress | - |
+| 5. School, Community, and WNY Release Slice | 7/7 | Complete    | 2026-09-18 |
 | 6. End-to-End Hardening and Release Readiness | 0/7 | Not started | - |
 
 ### Phase 7: Governed Opportunity and Support Matching

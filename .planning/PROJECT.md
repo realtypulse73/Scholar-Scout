@@ -22,12 +22,12 @@ Students can confidently discover and act on the education pathways that fit the
 - ✓ Account onboarding and saved shortlist capabilities — existing
 - ✓ Interactive simulations, engagement signals, and recommendation support — existing
 - ✓ Staff-managed programme catalogue foundation — existing
+- ✓ School, Western New York, peer, and campus-community release slice — Phase 5
 
 ### Active
 
 - [ ] Protect user data and cost-bearing integrations with consistent authentication, authorization, validation, and abuse controls.
 - [ ] Restore reliable administration, CI, and test signals so changes can be released safely.
-- [ ] Complete and validate the in-progress school, peer-community, campus-community, and Western New York product work.
 - [ ] Establish an incremental path from whole-document persistence to durable, safe multi-user data operations.
 
 ### Out of Scope
@@ -39,7 +39,7 @@ Students can confidently discover and act on the education pathways that fit the
 
 The application is a Next.js monolith deployed to Vercel, with NextAuth, a programme catalogue, personalised discovery, simulations, and optional OpenAI advisor guidance. Its server state currently uses a pluggable JSON/HTTP/Vercel Blob whole-document store; this makes concurrent writes, targeted data operations, and growth fragile. The codebase map at `.planning/codebase/` identifies exposed unauthenticated routes, a webhook runner that fails open without a signature secret, missing admin data-operation routes, an unrelated failing CI job, and weak route/E2E coverage.
 
-There is a substantial uncommitted feature cluster in the working tree, including school, peer-community, campus-community, and Western New York work. It must remain isolated from stabilization work until it has an explicit validation and release path.
+Phase 5 delivered and verified the school, peer-community, campus-community, and Western New York release slice. Future work should preserve its privacy, moderation, accessibility, and provider-boundary guarantees.
 
 ## Constraints
 
@@ -53,7 +53,7 @@ There is a substantial uncommitted feature cluster in the working tree, includin
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Prioritize security and reliability before broader feature expansion | Public data exposure, anonymous AI spend, broken administrative paths, and failing CI are release blockers | — Pending |
-| Treat the current uncommitted feature cluster as a separately validated release slice | It has broad scope and should not be obscured by stabilization work | — Pending |
+| Treat the school, community, and Western New York work as a separately validated release slice | It had broad scope and needed an explicit release path | Verified in Phase 5 |
 | Modernize persistence incrementally | A wholesale rewrite would create unacceptable delivery and data-migration risk | — Pending |
 
 ## Evolution
@@ -74,4 +74,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-25 after initialization*
+*Last updated: 2026-09-18 after Phase 5*
