@@ -61,7 +61,7 @@ jobs:
 
       - name: Write readiness report
         if: always()
-        run: pnpm run check:production-env -- --json > production-env-readiness.json
+        run: node scripts/production-env-check.mjs --json > production-env-readiness.json
 
       - name: Summarize readiness report
         if: always()
