@@ -199,7 +199,7 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: 9/11 plans executed
+**Plans**: 10/11 plans executed
 
 Plans:
 
@@ -212,7 +212,7 @@ Plans:
 - [x] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
 - [x] 06-08-PLAN.md — Discover and approve the actual Vercel/GitHub Preview deployment semantics
 - [x] 06-09-PLAN.md — Attest each Preview candidate through GitHub Deployments before traffic
-- [ ] 06-10-PLAN.md — Enforce fixture-bound Preview Blob-path isolation and no-write preflight
+- [x] 06-10-PLAN.md — Enforce fixture-bound Preview Blob-path isolation and no-write preflight
 - [ ] 06-11-PLAN.md — Run the two-lane branch-scoped Preview rehearsal with cleanup evidence
 
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
@@ -228,7 +228,7 @@ Plans:
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete    | 2026-09-18 |
-| 6. End-to-End Hardening and Release Readiness | 9/11 | In Progress|  |
+| 6. End-to-End Hardening and Release Readiness | 10/11 | In Progress|  |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
