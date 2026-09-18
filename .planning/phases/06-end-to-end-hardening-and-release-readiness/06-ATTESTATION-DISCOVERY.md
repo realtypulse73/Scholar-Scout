@@ -1,6 +1,6 @@
 # Phase 6 Preview Attestation Discovery
 
-**Observed:** 2026-09-18 21:51:10 UTC  
+**Observed:** 2026-09-18 21:51:10 UTC
 **Purpose:** Approved, non-secret Vercel GitHub Deployment/status semantics for the Phase 6 Preview attestation.
 
 ## Accepted Provider Semantics
