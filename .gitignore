@@ -41,3 +41,7 @@ apps/web/.next-dev.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.worktrees/
+tmp/
+dev-server.log
+output/pdf/
