@@ -1,10 +1,15 @@
 import 'server-only';
 
 import type { Programme } from '@/lib/programmes';
-import { getConfiguredE2eFixtureId } from './e2e-fixture-config';
+import {
+  getConfiguredE2eFixtureId,
+  getE2eFixtureBlobDataPath,
+  isE2eRehearsalRuntime,
+} from './e2e-fixture-config';
 
 export {
   getConfiguredE2eFixtureId,
+  getE2eFixtureBlobDataPath,
   isE2eFixtureEnabled,
 } from './e2e-fixture-config';
 
@@ -103,17 +108,16 @@ export async function cleanupE2eFixture(): Promise<'cleaned'> {
  */
 export function assertE2eFixtureRuntimeConfiguration(): string {
   const fixtureId = getConfiguredE2eFixtureId();
-  const expectedBlobPath = fixtureId
-    ? `scholarscout/preview/${fixtureId}/data.json`
-    : null;
   if (
     !fixtureId ||
-    process.env.VERCEL_ENV !== 'preview' ||
-    process.env.SCHOLARSCOUT_DATA_ADAPTER !== 'vercel-blob' ||
-    process.env.SCHOLARSCOUT_BLOB_DATA_PATH !== expectedBlobPath
+    !isE2eRehearsalRuntime() ||
+    process.env.SCHOLARSCOUT_DATA_ADAPTER !== 'vercel-blob'
   ) {
     throw new Error('E2E fixture lifecycle is unavailable.');
   }
+  // Resolve the path here too, so an invalid configured ID fails before any
+  // data-store operation even if an adapter implementation changes later.
+  getE2eFixtureBlobDataPath(fixtureId);
   return fixtureId;
 }
 

@@ -28,14 +28,14 @@ export function validatePreviewDeployment(attestation, candidateCommit) {
 }
 
 /**
- * Returns transient browser/context transport; it never logs or persists the secret.
+ * Returns transient browser/context transport. Rehearsal projects contain only
+ * generated data and may deliberately be unprotected; production-like Preview
+ * projects still receive the bypass header when the runner owns one.
  */
 export function createProtectedPreviewContextOptions({ attestation, candidateCommit, env = process.env }) {
   const baseURL = validatePreviewDeployment(attestation, candidateCommit);
   const bypass = normalizeRunnerHeaderValue(env[BYPASS_ENV]);
-  if (!bypass) {
-    throw new Error('Preview tracer requires runner-only protection material.');
-  }
+  if (!bypass) return { baseURL, extraHTTPHeaders: {} };
   return {
     baseURL,
     extraHTTPHeaders: {

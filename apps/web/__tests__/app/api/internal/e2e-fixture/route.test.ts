@@ -18,6 +18,11 @@ import {
 describe('internal e2e fixture route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.SCHOLARSCOUT_REHEARSAL_MODE = 'true';
+  });
+
+  afterEach(() => {
+    delete process.env.SCHOLARSCOUT_REHEARSAL_MODE;
   });
 
   it('denies a request without the server-only lifecycle headers', async () => {

@@ -72,6 +72,7 @@ function denied(request: Request) {
   const hasFixtureCapability = Boolean(capability) &&
     request.headers.get('authorization') === `Bearer ${capability}`;
   const lifecycleEnabled = process.env.VERCEL_ENV !== 'production' &&
+    process.env.SCHOLARSCOUT_REHEARSAL_MODE === 'true' &&
     process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
   const denial = !hasFixtureCapability
     ? undefined

@@ -4,7 +4,7 @@ ScholarScout deploys through the Git integration with `apps/web` configured as t
 
 ## Repository Contract
 
-The root `packageManager` selects pnpm 10.34.5. Vercel must use Node 20.x and Corepack so that its build resolves the committed workspace graph exactly as contributors and CI do. Although Vercel starts build commands in `apps/web`, the committed commands first move two levels up to the workspace root, where the sole `pnpm-lock.yaml` and filtered build script live.
+The root `packageManager` selects pnpm 10.34.5. Vercel must use Node 24.x and Corepack so that its build resolves the committed workspace graph exactly as contributors and CI do. Although Vercel starts build commands in `apps/web`, the committed commands first move two levels up to the workspace root, where the sole `pnpm-lock.yaml` and filtered build script live.
 
 | Setting | Required value | Source |
 |---|---|---|
@@ -14,7 +14,7 @@ The root `packageManager` selects pnpm 10.34.5. Vercel must use Node 20.x and Co
 | Install Command | `cd ../.. && pnpm install --frozen-lockfile --ignore-scripts` | [`vercel.json`](../vercel.json) |
 | Build Command | `cd ../.. && pnpm build:vercel` | [`vercel.json`](../vercel.json) |
 | Output Directory | `.next` (relative to `apps/web`) | [`vercel.json`](../vercel.json) |
-| Node Version | 20.x | project runtime contract |
+| Node Version | 24.x | project runtime contract |
 
 In **Vercel Project Settings → Environment Variables**, add `ENABLE_EXPERIMENTAL_COREPACK=1` for the **Production** environment. This is a dashboard setting, not a committed secret or replacement for `vercel.json`.
 
@@ -30,6 +30,7 @@ Before enabling production traffic, configure the matching GitHub ruleset or bra
 - `ScholarScout / Web lint`
 - `ScholarScout / Web Jest`
 - `ScholarScout / Web build`
+- `ScholarScout / Vercel build contract`
 - `ScholarScout / HTTP data-service tests`
 - `ScholarScout / Production-tooling tests`
 

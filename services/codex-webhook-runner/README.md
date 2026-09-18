@@ -28,7 +28,7 @@ CODEX_AGENT_BEARER_TOKEN=replace-with-agent-bearer-token
 
 ## Local development and tests
 
-Use the repository's pinned Node 20/Corepack pnpm toolchain:
+Use the repository's pinned Node 24/Corepack pnpm toolchain:
 
 ```bash
 corepack enable

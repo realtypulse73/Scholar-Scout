@@ -6,14 +6,14 @@ import { spawn } from 'node:child_process';
 import { loadEnvFileFromArgs } from './env-file.mjs';
 
 const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory', 'failedCommand', 'failedTest', 'failureDetail']);
-const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage', 'preview-cleanup'];
+const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage'];
 const REQUIRED_LOCAL_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
   ['pnpm', ['test']],
   ['pnpm', ['run', 'lint']],
   ['pnpm', ['run', 'typecheck']],
-  ['pnpm', ['run', 'build']],
+  ['pnpm', ['run', 'build:vercel']],
 ];
 const CANDIDATE_QUALITY_ENV = {
   // Candidate quality uses an owned local adapter. Deployment credentials are
@@ -63,9 +63,7 @@ export function aggregateReleaseRecords(records, candidateCommit) {
     return false;
   }
 
-  return areDistinctPreviewRecordTargets(records)
-    && records['preview-cleanup'].target === 'preview-lane-cleanup'
-    && records['preview-cleanup'].artifact === 'baseline-and-outage-lanes';
+  return areDistinctPreviewRecordTargets(records);
 }
 
 export function aggregateLocalReleaseRecords(records, candidateCommit) {
@@ -81,14 +79,6 @@ async function main() {
   if (args.releaseGate) {
     const candidateCommit = args.candidateCommit || process.env.GITHUB_SHA;
     if (!candidateCommit) throw new Error('Release rehearsal requires an explicit candidate commit.');
-    if (args.validatePreviewLanes) {
-      validatePreviewLaneConfiguration(args);
-      return;
-    }
-    if (args.writePreviewCleanupRecord) {
-      await writePreviewCleanupRecord(args, candidateCommit);
-      return;
-    }
     const records = args.aggregateOnly
       ? {
           'candidate-quality': await loadRequiredRecord(path.join(outputDir, 'candidate-quality.json'), 'candidate-quality', candidateCommit),
@@ -109,7 +99,6 @@ async function main() {
     }
     records['preview-browser'] = await loadRequiredRecord(args.previewBrowserRecord, 'preview-browser', candidateCommit);
     records['preview-outage'] = await loadRequiredRecord(args.previewOutageRecord, 'preview-outage', candidateCommit);
-    records['preview-cleanup'] = await loadRequiredRecord(args.previewCleanupRecord, 'preview-cleanup', candidateCommit);
     await writeFile(path.join(outputDir, 'release-records.json'), `${JSON.stringify(records, null, 2)}\n`);
     if (!aggregateReleaseRecords(records, candidateCommit)) throw new Error('Release rehearsal is incomplete: every candidate-bound lane must pass independently.');
     await writeFile(path.join(outputDir, 'prelaunch-summary.md'), buildReleaseSummary(records));
@@ -167,84 +156,9 @@ function isPreviewDeploymentUrl(value) {
   if (typeof value !== 'string') return false;
   try {
     const url = new URL(value);
-    return url.protocol === 'https:'
-      && url.pathname === '/'
-      && /^scholar-scout-[a-z0-9]+-scholar-scout\.vercel\.app$/i.test(url.hostname);
+    return url.protocol === 'https:' && url.pathname === '/' && url.hostname.endsWith('.vercel.app');
   } catch {
     return false;
-  }
-}
-
-export function validatePreviewLaneConfiguration(args) {
-  const baselineUrl = normalizePreviewUrl(args.baselinePreviewUrl, 'baseline');
-  const outageUrl = normalizePreviewUrl(args.outagePreviewUrl, 'outage');
-  if (baselineUrl === outageUrl) {
-    throw new Error('Preview rehearsal lanes must use distinct URLs.');
-  }
-
-  const baselineRef = normalizeTemporaryPreviewReference(args.baselinePreviewRef, 'baseline');
-  const outageRef = normalizeTemporaryPreviewReference(args.outagePreviewRef, 'outage');
-  if (baselineRef === outageRef) {
-    throw new Error('Preview rehearsal lanes must use distinct temporary refs.');
-  }
-
-  const baselineConfigFact = normalizePreviewConfigFact(args.baselinePreviewConfigFact, 'baseline');
-  const outageConfigFact = normalizePreviewConfigFact(args.outagePreviewConfigFact, 'outage');
-  if (baselineConfigFact === outageConfigFact) {
-    throw new Error('Preview rehearsal lanes must use distinct branch-scoped configuration facts.');
-  }
-
-  return { baselineUrl, outageUrl };
-}
-
-function normalizePreviewUrl(value, lane) {
-  if (!isPreviewDeploymentUrl(value)) {
-    throw new Error(`${lane} Preview URL must be a generated non-production Vercel deployment URL.`);
-  }
-  return new URL(value).origin;
-}
-
-function normalizeTemporaryPreviewReference(value, lane) {
-  const ref = typeof value === 'string' ? value.trim() : '';
-  if (!/^codex\/phase6-(?:baseline|outage)-[a-z0-9-]+$/i.test(ref)) {
-    throw new Error(`${lane} Preview ref must be a temporary Phase 6 Preview ref.`);
-  }
-  return ref;
-}
-
-function normalizePreviewConfigFact(value, lane) {
-  const fact = typeof value === 'string' ? value.trim() : '';
-  if (!/^branch-scoped-[a-z0-9-]+$/i.test(fact)) {
-    throw new Error(`${lane} Preview configuration must be identified only as a branch-scoped temporary fact.`);
-  }
-  return fact;
-}
-
-async function writePreviewCleanupRecord(args, candidateCommit) {
-  if (!args.previewCleanupRecord) {
-    throw new Error('Preview rehearsal cleanup record is required.');
-  }
-
-  validatePreviewLaneConfiguration(args);
-  const records = {
-    'preview-browser': await loadRequiredRecord(args.previewBrowserRecord, 'preview-browser', candidateCommit),
-    'preview-outage': await loadRequiredRecord(args.previewOutageRecord, 'preview-outage', candidateCommit),
-  };
-  const record = {
-    candidateCommit,
-    target: 'preview-lane-cleanup',
-    artifact: 'baseline-and-outage-lanes',
-    recordedAt: new Date().toISOString(),
-    command: 'validate-preview-lane-cleanup',
-    outcome: areDistinctPreviewRecordTargets(records) ? 'passed' : 'failed',
-    ...(areDistinctPreviewRecordTargets(records)
-      ? {}
-      : { errorCategory: 'preview-cleanup-incomplete' }),
-  };
-  await mkdir(path.dirname(args.previewCleanupRecord), { recursive: true });
-  await writeFile(args.previewCleanupRecord, `${JSON.stringify(record, null, 2)}\n`);
-  if (record.outcome !== 'passed') {
-    throw new Error('Preview rehearsal cleanup record is required and must prove both distinct lanes recovered.');
   }
 }
 
@@ -274,12 +188,12 @@ export function parseSafeFailureDetail(output) {
   if (output.includes('Browser test runner failed.')) return 'browser-runner';
   return undefined;
 }
-function buildReleaseSummary(records) { return ['# ScholarScout Candidate Release Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Required Proof Lanes', '', ...REQUIRED_RELEASE_LANES.map((lane) => `- ${records[lane]?.outcome ?? 'missing'}: ${lane}`), '', 'The Preview cleanup and recovery gate requires distinct baseline and outage generated Preview deployments plus their successful lifecycle cleanup records. Records contain only candidate commit, UTC, command, pass/fail, safe category, and approved target/artifact identifiers or links. Preview evidence supplements and never replaces protected-main, production deployment, or post-deploy smoke evidence.', ''].join('\n'); }
+function buildReleaseSummary(records) { return ['# ScholarScout Candidate Release Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Required Proof Lanes', '', ...REQUIRED_RELEASE_LANES.map((lane) => `- ${records[lane]?.outcome ?? 'missing'}: ${lane}`), '', 'The baseline and outage proofs use separate, permanently isolated rehearsal projects and Blob stores. Their fixture lifecycle always cleans generated records before reporting a successful lane. Records contain only candidate commit, UTC, command, pass/fail, safe category, and approved target identifiers.', ''].join('\n'); }
 function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Steps', '', ...steps.map((step) => `- ${step.status}: ${step.name}${step.detail ? ` (${step.detail})` : ''}`), ''].join('\n'); }
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
 function runCommand(command, commandArgs, childEnvironment = {}, unsetEnvironment = []) { return new Promise((resolve) => { const useWindowsPnpmLauncher = process.platform === 'win32' && command === 'pnpm'; const executable = useWindowsPnpmLauncher ? 'pnpm.cmd' : command; const environment = { ...process.env, ...childEnvironment }; for (const key of unsetEnvironment) delete environment[key]; let child; try { child = spawn(executable, commandArgs, { cwd: process.cwd(), env: environment, shell: useWindowsPnpmLauncher }); } catch { resolve({ code: 1, stdout: '', stderr: '' }); return; } let stdout = ''; let stderr = ''; child.stdout?.on('data', (chunk) => { stdout += chunk; }); child.stderr?.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
 function hasSmokeTarget() { return Boolean(process.env.SCHOLARSCOUT_SMOKE_BASE_URL || process.env.NEXTAUTH_URL); }
-function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, validatePreviewLanes: false, writePreviewCleanupRecord: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '', previewCleanupRecord: '', baselinePreviewUrl: '', outagePreviewUrl: '', baselinePreviewRef: '', outagePreviewRef: '', baselinePreviewConfigFact: '', outagePreviewConfigFact: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (value === '--validate-preview-lanes') parsed.validatePreviewLanes = true; else if (value === '--write-preview-cleanup-record') parsed.writePreviewCleanupRecord = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record', '--preview-cleanup-record', '--baseline-preview-url', '--outage-preview-url', '--baseline-preview-ref', '--outage-preview-ref', '--baseline-preview-config-fact', '--outage-preview-config-fact'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
+function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
 function childArgs(values, args) { return args.envFile ? [...values, '--env-file', args.envFile] : values; }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

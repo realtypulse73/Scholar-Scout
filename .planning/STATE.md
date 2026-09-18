@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 current_phase_name: End-to-End Hardening and Release Readiness
-status: blocked
-stopped_at: Plan 06-07 blocked on protected Preview fixture lifecycle verification
-last_updated: "2026-09-11T00:00:00.000Z"
-last_activity: 2026-09-10
-last_activity_desc: Phase 5 completion merged into the active Phase 6 release-rehearsal line
+status: in_progress
+stopped_at: Plan 06-13 permanent isolated rehearsal implementation
+last_updated: "2026-09-18T00:00:00.000Z"
+last_activity: 2026-09-18
+last_activity_desc: Replaced manual branch-scoped Preview rehearsal configuration with permanent isolated baseline and outage projects
 progress:
   total_phases: 8
   completed_phases: 5
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-08-31)
 ## Current Position
 
 Phase: 06 — End-to-End Hardening and Release Readiness
-Plan: 06-07 of 07
-Status: Candidate quality, high-risk, and local-browser lanes pass; protected Preview fixture lifecycle verification remains blocked.
-Last activity: 2026-09-11 — Merged verified Phase 5 safety and release-slice work into the active Phase 6 line.
+Plan: 06-13 of 13
+Status: Permanent baseline/outage Preview rehearsal infrastructure is configured; source and CI changes are under final verification before the first PR-head rehearsal.
+Last activity: 2026-09-18 — Replaced the manually copied Vercel/GitHub fixture handoff with permanently isolated rehearsal infrastructure.
 
 Progress: [█████████░] 98%
 

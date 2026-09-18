@@ -80,7 +80,7 @@
 - Separate Node processes may host the optional data fixture and GitHub webhook runner, with start commands in `services/http-data-service/package.json` and `services/codex-webhook-runner/package.json`; deployment platform for those processes is not configured in-repository.
 
 **CI Pipeline:**
-- GitHub Actions runs Node 20 quality checks for the web workspace in `.github/workflows/ci.yml`.
+- GitHub Actions runs Node 24 quality checks for the web workspace in `.github/workflows/ci.yml`.
 - GitHub Actions runs production readiness and scheduled smoke monitoring using repository/environment secrets in `.github/workflows/production-readiness.yml` and `.github/workflows/production-monitor.yml`.
 - GitHub Actions can generate operational roadmap artifacts and issue packets in `.github/workflows/autonomous-product-manager.yml`.
 

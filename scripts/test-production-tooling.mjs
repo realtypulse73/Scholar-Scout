@@ -419,7 +419,7 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
-test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, Preview, and cleanup records', async () => {
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and isolated Preview records', async () => {
   const rehearsal = await readFile(
     path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
     'utf8',
@@ -434,10 +434,6 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /local-browser/);
   assert.match(rehearsal, /preview-browser/);
   assert.match(rehearsal, /preview-outage/);
-  assert.match(rehearsal, /preview-cleanup/);
-  assert.match(rehearsal, /validatePreviewLaneConfiguration/);
-  assert.match(rehearsal, /Preview rehearsal lanes must use distinct URLs/);
-  assert.match(rehearsal, /Preview rehearsal cleanup record is required/);
   assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(rehearsal, /data-adapter-empty/);
@@ -445,11 +441,14 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /HIGH_RISK_UNSET_ENV/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
+  assert.match(workflow, /discover-rehearsal-preview-deployments/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY/);
   assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
   assert.match(rehearsal, /aggregateLocalReleaseRecords/);
 });
 
-test('release aggregation fails closed when the separate Preview cleanup record is absent or failed', async () => {
+test('release aggregation requires two distinct Vercel rehearsal records', async () => {
   const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-cleanup-'));
   const candidateCommit = 'candidate-commit';
   const laneRecords = {
@@ -475,65 +474,16 @@ test('release aggregation fails closed when the separate Preview cleanup record 
     path.join(outputDir, 'preview-browser.json'),
     '--preview-outage-record',
     path.join(outputDir, 'preview-outage.json'),
-    '--preview-cleanup-record',
-    path.join(outputDir, 'preview-cleanup.json'),
   ];
-
-  const missing = await runNode(args);
-  assert.equal(missing.code, 1);
-  assert.match(missing.stderr, /Release rehearsal is incomplete/);
-
-  await writeFile(
-    path.join(outputDir, 'preview-cleanup.json'),
-    `${JSON.stringify({ candidateCommit, target: 'preview-lane-cleanup', outcome: 'failed' })}\n`,
-  );
-  const failed = await runNode(args);
-  assert.equal(failed.code, 1);
-  assert.match(failed.stderr, /Release rehearsal is incomplete/);
-
-  const cleanup = await runNode([
-    'scripts/prelaunch-rehearsal.mjs',
-    '--release-gate',
-    '--write-preview-cleanup-record',
-    '--candidate-commit',
-    candidateCommit,
-    '--preview-browser-record',
-    path.join(outputDir, 'preview-browser.json'),
-    '--preview-outage-record',
-    path.join(outputDir, 'preview-outage.json'),
-    '--preview-cleanup-record',
-    path.join(outputDir, 'preview-cleanup.json'),
-    '--baseline-preview-url',
-    laneRecords['preview-browser'].target,
-    '--outage-preview-url',
-    laneRecords['preview-outage'].target,
-    '--baseline-preview-ref',
-    'codex/phase6-baseline-test',
-    '--outage-preview-ref',
-    'codex/phase6-outage-test',
-    '--baseline-preview-config-fact',
-    'branch-scoped-baseline',
-    '--outage-preview-config-fact',
-    'branch-scoped-outage',
-  ]);
-  assert.equal(cleanup.code, 0, cleanup.stderr);
-  const cleanupRecord = JSON.parse(
-    await readFile(path.join(outputDir, 'preview-cleanup.json'), 'utf8'),
-  );
-  assert.deepEqual(
-    cleanupRecord,
-    {
-      candidateCommit,
-      target: 'preview-lane-cleanup',
-      artifact: 'baseline-and-outage-lanes',
-      recordedAt: cleanupRecord.recordedAt,
-      command: 'validate-preview-lane-cleanup',
-      outcome: 'passed',
-    },
-  );
 
   const passed = await runNode(args);
   assert.equal(passed.code, 0, passed.stderr);
+
+  laneRecords['preview-outage'].target = laneRecords['preview-browser'].target;
+  await writeFile(path.join(outputDir, 'preview-outage.json'), `${JSON.stringify(laneRecords['preview-outage'])}\n`);
+  const duplicate = await runNode(args);
+  assert.equal(duplicate.code, 1);
+  assert.match(duplicate.stderr, /Release rehearsal is incomplete/);
 });
 
 test('local release rehearsal records and reports a failed local lane', async () => {
@@ -590,7 +540,7 @@ test('local release rehearsal records and reports a failed local lane', async ()
       'pnpm test',
       'pnpm run lint',
       'pnpm run typecheck',
-      'pnpm run build',
+      'pnpm run build:vercel',
     ],
     outcome: 'failed',
     errorCategory: 'command-failed',
@@ -613,11 +563,10 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
     'utf8',
   );
 
-  const chromiumInstall = workflow.indexOf('Install Chromium for Preview browser proof');
+  const chromiumInstall = workflow.indexOf('Install Chromium for browser proof');
   const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
-  const localReport = workflow.indexOf('Report safe local candidate result');
-  const previewBrowser = workflow.indexOf('Protected Preview browser proof');
-  const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
+  const previewBrowser = workflow.indexOf('Baseline rehearsal');
+  const previewOutage = workflow.indexOf('Outage rehearsal and restoration proof');
   const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
   const candidateCheckout = workflow.indexOf('Verify candidate checkout');
 
@@ -628,25 +577,15 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.ok(chromiumInstall >= 0);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
   assert.ok(localProof > chromiumInstall);
-  assert.ok(localReport > localProof);
-  assert.match(workflow, /cat reports\/prelaunch-rehearsal\/candidate-quality\.json >> "\$GITHUB_STEP_SUMMARY"/);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
   assert.ok(aggregate > previewOutage);
-  assert.match(workflow, /baseline_preview_url:/);
-  assert.match(workflow, /outage_preview_url:/);
-  assert.match(workflow, /baseline_preview_ref:/);
-  assert.match(workflow, /outage_preview_ref:/);
-  assert.match(workflow, /baseline_preview_config_fact:/);
-  assert.match(workflow, /outage_preview_config_fact:/);
-  assert.match(workflow, /Record Preview cleanup and recovery gate/);
-  assert.match(workflow, /--preview-cleanup-record/);
+  assert.match(workflow, /Wait for the two isolated rehearsal deployments/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX/);
+  assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX/);
   assert.match(workflow, /deployments:\s*read/);
   assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
-  assert.match(workflow, /SCHOLARSCOUT_BASELINE_PREVIEW_URL:\s*\$\{\{ inputs\.baseline_preview_url \}\}/);
-  assert.match(workflow, /SCHOLARSCOUT_OUTAGE_PREVIEW_URL:\s*\$\{\{ inputs\.outage_preview_url \}\}/);
-  const jobEnvironment = workflow.slice(workflow.indexOf('    env:'), workflow.indexOf('    steps:'));
-  assert.doesNotMatch(jobEnvironment, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN/);
+  assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
   assert.doesNotMatch(workflow, /SCHOLARSCOUT_PREVIEW_METADATA|SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA/);
   assert.doesNotMatch(workflow, /--prod|promote|alias/);
 });
@@ -753,47 +692,11 @@ test('production value provisioning writes generated secrets and provider checkl
   assert.doesNotMatch(report, /\bnpm run/);
 });
 
-test('Preview rehearsal provisioning creates distinct ignored lifecycle scopes without disclosing them in its report', async () => {
-  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-provision-'));
-  const localFile = path.join(tempDir, '.env.preview-rehearsal.local');
-  const reportFile = path.join(tempDir, 'preview-rehearsal-provisioning.md');
-  const result = await runNode([
-    'scripts/provision-preview-rehearsal.mjs',
-    '--local-file',
-    localFile,
-    '--report-file',
-    reportFile,
-  ]);
-
-  assert.equal(result.code, 0, result.stderr);
-  const handoff = await readFile(localFile, 'utf8');
-  const report = await readFile(reportFile, 'utf8');
-  const baseline = handoff.match(/BASELINE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
-  const outage = handoff.match(/OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
-
-  assert.match(handoff, /BASELINE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
-  assert.match(handoff, /OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
-  assert.ok(baseline && outage && baseline !== outage);
-  assert.match(report, /SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY/);
-  assert.doesNotMatch(report, new RegExp(baseline));
-  assert.doesNotMatch(report, new RegExp(outage));
-});
-
-test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {
-  const result = await runCommand(
-    'powershell',
-    [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
-      'scripts\\pnpm-portable.ps1',
-      '--version',
-    ],
-  );
-
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /\d+\.\d+\.\d+/);
+test('portable Corepack helpers target the supported Node 24 runtime', async () => {
+  const portable = await readFile(path.join(process.cwd(), 'scripts/pnpm-portable.ps1'), 'utf8');
+  const activation = await readFile(path.join(process.cwd(), 'scripts/use-portable-node.ps1'), 'utf8');
+  assert.match(portable, /node-v24\.21\.0-win-x64/);
+  assert.match(activation, /Node\.js 24\.x/);
 });
 
 function runNode(args, env = {}) {

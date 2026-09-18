@@ -11,7 +11,7 @@ The root `packageManager` selects pnpm 10.34.5 through Corepack. Configure the V
 - Install Command: `pnpm install --frozen-lockfile --ignore-scripts`
 - Build Command: `pnpm build:vercel`
 - Output Directory: `apps/web/.next`
-- Node Version: 20.x
+- Node Version: 24.x
 - Production environment variable: `ENABLE_EXPERIMENTAL_COREPACK=1`
 - Production Branch: protected `main`
 

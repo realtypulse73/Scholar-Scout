@@ -1,6 +1,12 @@
 import 'server-only';
 
 import {
+  getConfiguredE2eFixtureId,
+  getE2eFixtureBlobDataPath,
+  isE2eRehearsalRuntime,
+} from './e2e-fixture-config';
+
+import {
   createHash,
   randomBytes,
   randomUUID,
@@ -545,7 +551,20 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
 }
 
 function isIsolatedPreviewBlobPath(pathname: string): boolean {
-  return process.env.VERCEL_ENV === 'preview' && pathname.startsWith('scholarscout/preview/');
+  const fixtureId = getConfiguredE2eFixtureId();
+  return Boolean(
+    fixtureId &&
+    isE2eRehearsalRuntime() &&
+    pathname === getE2eFixtureBlobDataPath(fixtureId),
+  );
+}
+
+function getVercelBlobDataPath(): string {
+  const fixtureId = getConfiguredE2eFixtureId();
+  if (fixtureId && isE2eRehearsalRuntime()) {
+    return getE2eFixtureBlobDataPath(fixtureId);
+  }
+  return process.env.SCHOLARSCOUT_BLOB_DATA_PATH ?? 'scholarscout/data.json';
 }
 
 let activeDataStore: ScholarScoutDataStore | null = null;
@@ -595,9 +614,7 @@ export function getDataStoreConfigurationSummary() {
       process.env.BLOB_READ_WRITE_TOKEN;
     return {
       adapter,
-      // Preview branches may point here at isolated rehearsal data in Blob.
-      backingStore:
-        process.env.SCHOLARSCOUT_BLOB_DATA_PATH ?? 'scholarscout/data.json',
+      backingStore: getVercelBlobDataPath(),
       isDurable: Boolean(token),
       isConfigured: Boolean(token),
       issues: token
@@ -1016,7 +1033,7 @@ export function getScholarScoutDataStore() {
     }
 
     activeDataStore = new VercelBlobScholarScoutDataStore(
-      process.env.SCHOLARSCOUT_BLOB_DATA_PATH ?? 'scholarscout/data.json',
+      getVercelBlobDataPath(),
       token,
     );
     return activeDataStore;
