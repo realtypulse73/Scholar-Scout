@@ -10,7 +10,7 @@ const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser
 const REQUIRED_LOCAL_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
-  ['pnpm', ['--filter', '@scholar-scout/web', 'test', '--', '--runInBand']],
+  ['pnpm', ['--filter', '@scholar-scout/web', 'test', '--', '--runInBand', '--json', '--outputFile', '../../reports/prelaunch-rehearsal/web-test-results.json']],
   ['pnpm', ['--filter', '@scholar-scout/http-data-service', 'test']],
   ['pnpm', ['--filter', '@scholar-scout/codex-webhook-runner', 'test']],
   ['pnpm', ['run', 'lint']],
@@ -98,7 +98,7 @@ async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
       record.outcome = 'failed';
       record.errorCategory = 'command-failed';
       record.failedCommand = formatCommand([command, commandArgs]);
-      const failedTest = parseFailedTestName(`${result.stdout}\n${result.stderr}`);
+      const failedTest = parseFailedTestName(`${result.stdout}\n${result.stderr}`) || await readJestFailureName(outputDir);
       if (failedTest) record.failedTest = failedTest;
       const failureDetail = parseSafeFailureDetail(`${result.stdout}\n${result.stderr}`);
       if (failureDetail) record.failureDetail = failureDetail;
@@ -121,6 +121,15 @@ function parseFailedTestName(output) {
   const nodeTestName = plainOutput.match(/^not ok \d+ - ([^\r\n]+)/m)?.[1];
   if (nodeTestName) return nodeTestName;
   return plainOutput.match(/^\s*FAIL\s+([^\r\n]+)/m)?.[1]?.trim();
+}
+async function readJestFailureName(outputDir) {
+  try {
+    const report = JSON.parse(await readFile(path.join(outputDir, 'web-test-results.json'), 'utf8'));
+    const failed = report.testResults?.find((result) => result?.status === 'failed');
+    return typeof failed?.name === 'string' ? path.basename(failed.name) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 export function parseSafeFailureDetail(output) {
   const lifecycle = output.match(/E2E fixture (provision|verification|cleanup|transport) lifecycle request failed\./);
