@@ -51,7 +51,7 @@ test('proves the Preview outage before input processing and cleans its lifecycle
     },
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.deepEqual(result, {
     candidateCommit: 'candidate-commit',
     target: metadata.url,
@@ -142,7 +142,7 @@ test('records a scrubbed lifecycle failure when outage cleanup is denied', async
     }),
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.deepEqual(result, {
     candidateCommit: 'candidate-commit',
     target: metadata.url,
@@ -153,7 +153,7 @@ test('records a scrubbed lifecycle failure when outage cleanup is denied', async
   assert.equal(JSON.stringify(result).includes('capability-value'), false);
 });
 
-test('requires independent attestation before it creates outage lifecycle or POST traffic', async () => {
+test('stops before the outage POST when the isolated fixture preflight is denied', async () => {
   const phases = [];
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
@@ -169,14 +169,16 @@ test('requires independent attestation before it creates outage lifecycle or POS
       assert.equal(submittedUrl, metadata.url);
       return metadata;
     },
-    createLifecycle: () => {
-      phases.push('lifecycle');
-      return async () => ({ ok: false });
+    createLifecycle: () => async (method) => {
+      phases.push(`fixture-${method}`);
+      return { ok: false };
     },
     fetchImpl: async () => { phases.push('outage-post'); },
   });
 
-  assert.equal(phases[0], 'attestation');
-  assert.equal(result.errorCategory, 'fixture-provision-failed');
+  assert.deepEqual(phases, ['attestation', 'fixture-HEAD']);
+  assert.equal(phases.includes('fixture-POST'), false);
+  assert.equal(phases.includes('outage-post'), false);
+  assert.equal(result.errorCategory, 'fixture-preflight-failed');
   assert.equal(JSON.stringify(result).includes('deployment-read-token'), false);
 });
