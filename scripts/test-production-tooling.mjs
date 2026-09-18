@@ -461,7 +461,7 @@ test('local release rehearsal records and reports a failed local lane', async ()
       '',
     ].join('\r\n')
     : [
-      '#!/usr/bin/env sh',
+      '#!/bin/sh',
       'echo "$*" >> "$SCHOLARSCOUT_TEST_COMMAND_LOG"',
       'for arg in "$@"; do [ "$arg" = "test" ] && exit 1; done',
       'exit 0',
