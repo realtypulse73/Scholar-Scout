@@ -438,6 +438,7 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(rehearsal, /data-adapter-empty/);
   assert.match(rehearsal, /CANDIDATE_QUALITY_ENV/);
+  assert.match(rehearsal, /HIGH_RISK_UNSET_ENV/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
   assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
