@@ -96,7 +96,7 @@ async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
       record.outcome = 'failed';
       record.errorCategory = 'command-failed';
       record.failedCommand = formatCommand([command, commandArgs]);
-      const failedTest = parseFailedTestName(result.stdout);
+      const failedTest = parseFailedTestName(`${result.stdout}\n${result.stderr}`);
       if (failedTest) record.failedTest = failedTest;
       const failureDetail = parseSafeFailureDetail(`${result.stdout}\n${result.stderr}`);
       if (failureDetail) record.failureDetail = failureDetail;
