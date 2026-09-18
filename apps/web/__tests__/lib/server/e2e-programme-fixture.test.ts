@@ -9,12 +9,16 @@ import {
 } from '@/lib/server/e2e-programme-fixture';
 import { programmes } from '@/lib/programmes';
 import {
+  readScholarScoutData,
   setScholarScoutDataStoreForTests,
   validateScholarScoutDataImport,
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
-import { getGovernedProgrammes } from '@/lib/server/programme-records';
+import {
+  getGovernedProgrammes,
+  saveProgrammeRecord,
+} from '@/lib/server/programme-records';
 
 const initialData: ScholarScoutData = {
   users: [],
@@ -51,6 +55,7 @@ class MemoryDataStore implements ScholarScoutDataStore {
 describe('e2e programme fixture', () => {
   const originalFixture = process.env.SCHOLARSCOUT_E2E_FIXTURE;
   const originalFixtureId = process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
+  const originalVercelEnvironment = process.env.VERCEL_ENV;
 
   beforeEach(() => {
     process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
@@ -62,6 +67,7 @@ describe('e2e programme fixture', () => {
     setScholarScoutDataStoreForTests(null);
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE', originalFixture);
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE_ID', originalFixtureId);
+    restoreEnvironment('VERCEL_ENV', originalVercelEnvironment);
   });
 
   it('derives deterministic generated records from configured fixture state', () => {
@@ -83,23 +89,61 @@ describe('e2e programme fixture', () => {
     expect(getE2eFixtureProgrammes('run-abc')).toHaveLength(2);
   });
 
-  it('persists and cleans only declared records through the governed catalogue', async () => {
+  it('creates, reads, and cleans exactly the declared records through the governed catalogue', async () => {
+    await saveProgrammeRecord('staff-unrelated', {
+      ...programmes[0],
+      id: 'unrelated-governed-record',
+      name: 'Unrelated governed record',
+    });
+
     await expect(createAndVerifyE2eFixture()).resolves.toBe('verified');
     await expect(verifyE2eFixture()).resolves.toBe('verified');
 
     const governed = await getGovernedProgrammes();
-    expect(governed).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'e2e-fixture-run-123456-health' }),
-      expect.objectContaining({ id: 'e2e-fixture-run-123456-technology' }),
-      expect.objectContaining({ id: programmes[0].id }),
-    ]));
+    expect(governed.map((programme) => programme.id)).toEqual([
+      'e2e-fixture-run-123456-health',
+      'e2e-fixture-run-123456-technology',
+    ]);
+    expect(governed.map((programme) => programme.id)).not.toContain(programmes[0].id);
+    expect(governed.map((programme) => programme.id)).not.toContain(
+      'unrelated-governed-record',
+    );
 
     await expect(cleanupE2eFixture()).resolves.toBe('cleaned');
     const afterCleanup = await getGovernedProgrammes();
-    expect(afterCleanup.map((programme) => programme.id)).not.toContain(
-      'e2e-fixture-run-123456-health',
+    expect(afterCleanup).toEqual([]);
+
+    const data = await readScholarScoutData();
+    expect(data.programmeRecords.map((programme) => programme.id)).toEqual([
+      'unrelated-governed-record',
+    ]);
+    expect(data.auditEvents.filter((event) => event.userId === 'e2e-fixture:fixture-run-123456'))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ action: 'create', entityId: 'e2e-fixture-run-123456-health' }),
+        expect.objectContaining({ action: 'create', entityId: 'e2e-fixture-run-123456-technology' }),
+        expect.objectContaining({ action: 'delete', entityId: 'e2e-fixture-run-123456-health' }),
+        expect.objectContaining({ action: 'delete', entityId: 'e2e-fixture-run-123456-technology' }),
+      ]));
+  });
+
+  it('retains ordinary seed catalogue behavior when fixture mode is disabled', async () => {
+    delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+
+    await expect(getGovernedProgrammes()).resolves.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: programmes[0].id })]),
     );
-    expect(afterCleanup.map((programme) => programme.id)).toContain(programmes[0].id);
+  });
+
+  it('denies production lifecycle activation before persisting any programme records', async () => {
+    process.env.VERCEL_ENV = 'production';
+
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow(
+      'E2E fixture lifecycle is unavailable.',
+    );
+
+    await expect(readScholarScoutData()).resolves.toEqual(
+      expect.objectContaining({ programmeRecords: [], auditEvents: [] }),
+    );
   });
 });
 
