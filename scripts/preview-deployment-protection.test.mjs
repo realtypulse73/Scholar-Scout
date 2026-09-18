@@ -7,7 +7,7 @@ import {
   validatePreviewDeployment,
 } from './preview-deployment-protection.mjs';
 
-const metadata = {
+const attestation = {
   environment: 'preview',
   url: 'https://scholar-scout-pr-42.vercel.app',
   commit: 'candidate-commit',
@@ -15,13 +15,13 @@ const metadata = {
 
 test('creates in-memory protection options only for the verified candidate Preview', () => {
   const options = createProtectedPreviewContextOptions({
-    metadata,
+    attestation,
     candidateCommit: 'candidate-commit',
     env: { SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass' },
   });
 
   assert.deepEqual(options, {
-    baseURL: metadata.url,
+    baseURL: attestation.url,
     extraHTTPHeaders: {
       'x-vercel-protection-bypass': 'sensitive-bypass',
       'x-vercel-set-bypass-cookie': 'true',
@@ -30,14 +30,14 @@ test('creates in-memory protection options only for the verified candidate Previ
 });
 
 test('rejects non-Preview or candidate-mismatched metadata before browser traffic', () => {
-  assert.throws(() => validatePreviewDeployment({ ...metadata, environment: 'production' }, 'candidate-commit'));
-  assert.throws(() => validatePreviewDeployment({ ...metadata, commit: 'other-commit' }, 'candidate-commit'));
-  assert.throws(() => validatePreviewDeployment({ ...metadata, url: 'http://preview.test' }, 'candidate-commit'));
+  assert.throws(() => validatePreviewDeployment({ ...attestation, environment: 'production' }, 'candidate-commit'));
+  assert.throws(() => validatePreviewDeployment({ ...attestation, commit: 'other-commit' }, 'candidate-commit'));
+  assert.throws(() => validatePreviewDeployment({ ...attestation, url: 'http://preview.test' }, 'candidate-commit'));
 });
 
 test('fails closed without runner-only bypass material', () => {
   assert.throws(() => createProtectedPreviewContextOptions({
-    metadata,
+    attestation,
     candidateCommit: 'candidate-commit',
     env: {},
   }));
@@ -45,7 +45,7 @@ test('fails closed without runner-only bypass material', () => {
 
 test('normalizes only surrounding whitespace from runner-owned bypass material', () => {
   const options = createProtectedPreviewContextOptions({
-    metadata,
+    attestation,
     candidateCommit: 'candidate-commit',
     env: { SCHOLARSCOUT_VERCEL_BYPASS: '  sensitive-bypass\n' },
   });
