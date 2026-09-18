@@ -18,10 +18,14 @@ import {
   STUDENT_RELEASE_JOURNEY_TIMEOUT_MS,
   StudentReleaseJourneyError,
 } from './student-release-journey.mjs';
+import { attestPreviewDeployment as attestGithubPreviewDeployment } from './preview-deployment-attestation.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
 const PREVIEW_URL_ENV = 'SCHOLARSCOUT_PREVIEW_URL';
+const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const GITHUB_OWNER = 'realtypulse73';
+const GITHUB_REPOSITORY = 'Scholar-Scout';
 
 function getLifecycleCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -79,14 +83,28 @@ async function createProtectedBrowser(options) {
  */
 export async function runPreviewReleaseTracer({
   candidateCommit,
+  previewUrl,
   metadata,
   env = process.env,
+  attestPreviewDeployment = attestGithubPreviewDeployment,
   createLifecycleRequest = createFixtureLifecycleRequest,
   createBrowser = createProtectedBrowser,
   runStudentSpec = ({ browser }) => runStudentReleaseJourney(browser.page),
 } = {}) {
+  let attestation;
+  try {
+    attestation = await attestPreviewDeployment({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPOSITORY,
+      candidateCommit,
+      submittedUrl: previewUrl ?? metadata?.url,
+      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+    });
+  } catch {
+    return createSafeOutcome('failed', undefined, candidateCommit, 'preview-attestation-failed');
+  }
   const protectedOptions = createProtectedPreviewContextOptions({
-    metadata,
+    attestation,
     candidateCommit,
     env,
   });
@@ -171,7 +189,10 @@ async function runCli() {
   try {
     outcome = await runPreviewReleaseTracer({
       candidateCommit,
-      metadata: createPreviewMetadata(process.env[PREVIEW_URL_ENV], candidateCommit),
+      previewUrl: createPreviewMetadata(
+        process.env[PREVIEW_URL_ENV] ?? process.env.SCHOLARSCOUT_BASELINE_PREVIEW_URL,
+        candidateCommit,
+      ).url,
     });
   } catch (error) {
     outcome = createSafeOutcome(

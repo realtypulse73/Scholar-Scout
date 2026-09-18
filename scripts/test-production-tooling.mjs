@@ -542,6 +542,15 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
   assert.ok(aggregate > previewOutage);
+  assert.match(workflow, /baseline_preview_url:/);
+  assert.match(workflow, /outage_preview_url:/);
+  assert.match(workflow, /deployments:\s*read/);
+  assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
+  assert.match(workflow, /SCHOLARSCOUT_BASELINE_PREVIEW_URL:\s*\$\{\{ inputs\.baseline_preview_url \}\}/);
+  assert.match(workflow, /SCHOLARSCOUT_OUTAGE_PREVIEW_URL:\s*\$\{\{ inputs\.outage_preview_url \}\}/);
+  const jobEnvironment = workflow.slice(workflow.indexOf('    env:'), workflow.indexOf('    steps:'));
+  assert.doesNotMatch(jobEnvironment, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN/);
+  assert.doesNotMatch(workflow, /SCHOLARSCOUT_PREVIEW_METADATA|SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA/);
   assert.doesNotMatch(workflow, /--prod|promote|alias/);
 });
 

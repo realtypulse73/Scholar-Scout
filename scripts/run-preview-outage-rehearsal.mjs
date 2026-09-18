@@ -12,12 +12,12 @@ import {
   createLifecycleProtectionHeaders,
   createProtectedPreviewContextOptions,
 } from './preview-deployment-protection.mjs';
+import { attestPreviewDeployment as attestGithubPreviewDeployment } from './preview-deployment-attestation.mjs';
 
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
 const PREVIEW_OUTAGE_URL_ENV = 'SCHOLARSCOUT_PREVIEW_OUTAGE_URL';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY';
-
 export function createPreviewOutageMetadata(url, candidateCommit) {
   const normalizedUrl = typeof url === 'string' ? url.trim().replace(/\/$/, '') : '';
   if (!normalizedUrl) {
@@ -25,6 +25,9 @@ export function createPreviewOutageMetadata(url, candidateCommit) {
   }
   return { environment: 'preview', url: normalizedUrl, commit: candidateCommit };
 }
+const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const GITHUB_OWNER = 'realtypulse73';
+const GITHUB_REPOSITORY = 'Scholar-Scout';
 
 function getCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -36,12 +39,30 @@ function getCapability(env) {
 
 export async function runPreviewOutageRehearsal({
   candidateCommit,
+  previewUrl,
   metadata,
   env = process.env,
+  attestPreviewDeployment = attestGithubPreviewDeployment,
   fetchImpl = fetch,
   createLifecycle = createLifecycleRequest,
 } = {}) {
-  const options = createProtectedPreviewContextOptions({ metadata, candidateCommit, env });
+  let attestation;
+  try {
+    attestation = await attestPreviewDeployment({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPOSITORY,
+      candidateCommit,
+      submittedUrl: previewUrl ?? metadata?.url,
+      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+    });
+  } catch {
+    return {
+      candidateCommit,
+      outcome: 'failed',
+      errorCategory: 'preview-attestation-failed',
+    };
+  }
+  const options = createProtectedPreviewContextOptions({ attestation, candidateCommit, env });
   const directProtectionHeaders = createLifecycleProtectionHeaders(options.extraHTTPHeaders);
   const lifecycle = createLifecycle(
     options.baseURL,
@@ -97,7 +118,10 @@ async function runCli() {
   const record = {
     ...(await runPreviewOutageRehearsal({
       candidateCommit,
-      metadata: createPreviewOutageMetadata(process.env[PREVIEW_OUTAGE_URL_ENV], candidateCommit),
+      previewUrl: createPreviewOutageMetadata(
+        process.env[PREVIEW_OUTAGE_URL_ENV] ?? process.env.SCHOLARSCOUT_OUTAGE_PREVIEW_URL,
+        candidateCommit,
+      ).url,
     })),
     recordedAt: new Date().toISOString(),
   };

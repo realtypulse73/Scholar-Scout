@@ -19,6 +19,7 @@ on:
 permissions:
   contents: read
   actions: read
+  deployments: read
 
 concurrency:
   group: scholarscout-prelaunch-rehearsal
@@ -46,7 +47,7 @@ jobs:
       SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
       SCHOLARSCOUT_DATA_SERVICE_URL: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_URL }}
       SCHOLARSCOUT_DATA_SERVICE_TOKEN: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_TOKEN }}
-      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ inputs.base_url || secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
+      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
       SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
       SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
       SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
@@ -94,13 +95,15 @@ jobs:
           fi
 
       - name: Protected Preview browser proof (maintainer-owned runner)
+        env:
+          SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: ${{ github.token }}
         run: |
-          test -n "${{ inputs.base_url }}"
-          test "${{ inputs.base_url }}" != "${{ secrets.NEXTAUTH_URL }}"
           node scripts/run-preview-release-tracer.mjs --output reports/prelaunch-rehearsal/preview-browser.json
           test -f reports/prelaunch-rehearsal/preview-browser.json
 
       - name: Separate Preview outage and restoration proof (maintainer-owned runner)
+        env:
+          SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: ${{ github.token }}
         run: |
           node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
           test -f reports/prelaunch-rehearsal/preview-outage.json

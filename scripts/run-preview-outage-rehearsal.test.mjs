@@ -27,7 +27,8 @@ test('proves the Preview outage before input processing and cleans its lifecycle
   const phases = [];
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
@@ -59,13 +60,15 @@ test('proves the Preview outage before input processing and cleans its lifecycle
 });
 
 test('records a scrubbed transport failure instead of dropping the outage record', async () => {
+  let attestationTraffic = false;
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'sensitive-capability',
     },
+    attestPreviewDeployment: async () => metadata,
     createLifecycle: () => async () => ({ ok: true }),
     fetchImpl: async () => { throw new Error('sensitive-bypass sensitive-capability'); },
   });
@@ -78,12 +81,35 @@ test('records a scrubbed transport failure instead of dropping the outage record
   });
   assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
   assert.equal(JSON.stringify(result).includes('sensitive-capability'), false);
+
+  const failedAttestation = await runPreviewOutageRehearsal({
+    candidateCommit: 'candidate-commit',
+    previewUrl: metadata.url,
+    env: {
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'sensitive-capability',
+    },
+    attestPreviewDeployment: async () => { throw new Error('deployment lookup failed'); },
+    createLifecycle: () => {
+      attestationTraffic = true;
+      return async () => ({ ok: true });
+    },
+    fetchImpl: async () => { attestationTraffic = true; },
+  });
+
+  assert.deepEqual(failedAttestation, {
+    candidateCommit: 'candidate-commit',
+    outcome: 'failed',
+    errorCategory: 'preview-attestation-failed',
+  });
+  assert.equal(attestationTraffic, false);
 });
 
 test('fails closed when the outage result discloses sensitive material', async () => {
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
@@ -100,7 +126,8 @@ test('records a scrubbed lifecycle failure when outage cleanup is denied', async
   const phases = [];
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
@@ -130,7 +157,6 @@ test('requires independent attestation before it creates outage lifecycle or POS
   const phases = [];
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',
-    metadata,
     previewUrl: metadata.url,
     env: {
       SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: 'deployment-read-token',
