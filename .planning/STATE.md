@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-current_phase_name: End-to-End Hardening and Release Readiness
-status: blocked
-stopped_at: Plan 06-07 blocked on protected Preview fixture lifecycle verification
-last_updated: "2026-09-11T00:00:00.000Z"
-last_activity: 2026-09-10
-last_activity_desc: Phase 5 completion merged into the active Phase 6 release-rehearsal line
+current_phase: 07
+current_phase_name: Governed Opportunity and Support Matching
+status: ready_for_planning
+stopped_at: Phase 6 complete; Phase 7 planning is next
+last_updated: "2026-09-18T02:44:41.000Z"
+last_activity: 2026-09-18
+last_activity_desc: Immutable Phase 6 prelaunch rehearsal passed every candidate-quality, Preview, outage/restoration, and aggregate gate
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 44
-  completed_plans: 43
+  completed_plans: 44
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-31)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 06 — End-to-End Hardening and Release Readiness
+**Current focus:** Phase 07 — Governed Opportunity and Support Matching
 
 ## Current Position
 
-Phase: 06 — End-to-End Hardening and Release Readiness
-Plan: 06-07 of 07
-Status: Candidate quality, high-risk, and local-browser lanes pass; protected Preview fixture lifecycle verification remains blocked.
-Last activity: 2026-09-11 — Merged verified Phase 5 safety and release-slice work into the active Phase 6 line.
+Phase: 07 — Governed Opportunity and Support Matching
+Plan: Planning next
+Status: Phase 6 completed with a passing immutable candidate rehearsal; ready to plan Phase 7.
+Last activity: 2026-09-18 — Candidate `891acd2` passed quality, high-risk, local-browser, protected Preview, independent outage/restoration, and aggregate rehearsal gates.
 
-Progress: [█████████░] 98%
+Progress: [██████████] 100% for Phase 6
 
 ## Performance Metrics
 

@@ -12,8 +12,8 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 - [x] **Phase 2: Authentication, API, AI, and Webhook Controls** - Protect student data, privileged actions, and cost-bearing integrations at their server boundaries. (completed 2026-08-28)
 - [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
 - [x] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations. (completed 2026-08-29)
-- [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
-- [ ] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks.
+- [x] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections. (completed 2026-08-31)
+- [x] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks. (completed 2026-09-18)
 
 ## Phase Details
 
@@ -198,7 +198,7 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: 6/7 complete; Plan 06-07 is blocked on protected Preview verification
+**Plans**: 7/7 executed and verified
 
 Plans:
 
@@ -208,7 +208,7 @@ Plans:
 - [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
 - [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
 - [x] 06-06-PLAN.md — Supervise the protected Preview tracer
-- [ ] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+- [x] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
 ## Progress
@@ -222,7 +222,7 @@ Plans:
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
-| 6. End-to-End Hardening and Release Readiness | 6/7 | Blocked on protected Preview verification | - |
+| 6. End-to-End Hardening and Release Readiness | 7/7 | Complete | 2026-09-18 |
 
 ### Phase 7: Governed Opportunity and Support Matching
 

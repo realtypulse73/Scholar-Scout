@@ -2,44 +2,45 @@
 phase: 06-end-to-end-hardening-and-release-readiness
 plan: 07
 subsystem: prelaunch-rehearsal
-status: blocked
-candidate: b50177fcf95ca212b0f1f996a76f790b16a1c7ae
-completed: null
+status: complete
+candidate: 891acd2df1e1013c68254a37e4cad19691423e1e
+completed: 2026-09-18
 ---
 
 # Phase 6 Plan 07: Prelaunch Rehearsal Evidence
 
 ## Outcome
 
-The authorized candidate rehearsal is blocked at the protected Preview browser lane. This is not a passing release record and does not complete Plan 06-07.
+The authorized immutable candidate rehearsal passed all required release lanes. This completes Plan 06-07 and Phase 6 release readiness; it is Preview evidence and does not replace production release evidence.
 
 ## Safe Evidence
 
-- Candidate: `b50177fcf95ca212b0f1f996a76f790b16a1c7ae`
-- Baseline Preview: `https://scholar-scout-4lbow60jh-scholar-scout.vercel.app` (`dpl_6orgHdKWpxe2F17n5MPCXUEABgAR`)
-- Separate outage Preview: `https://scholar-scout-o96hdmkxe-scholar-scout.vercel.app` (`dpl_GJEmt2L6fMmXPVY1rt16f4da8BiL`)
-- Rehearsal runs: [34316898025](https://github.com/realtypulse73/Scholar-Scout/actions/runs/34316898025) and [34317006378](https://github.com/realtypulse73/Scholar-Scout/actions/runs/34317006378)
+- Candidate: `891acd2df1e1013c68254a37e4cad19691423e1e`
+- Baseline Preview: `https://scholar-scout-patdy2e8q-scholar-scout.vercel.app`
+- Independent outage Preview: `https://scholar-scout-fci2iog76-scholar-scout.vercel.app`
+- Rehearsal: [35300385153](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35300385153)
+- Artifact: `prelaunch-rehearsal`
 
-Both runs passed candidate quality, high-risk coverage, and the owned local browser proof. Each then stopped at the protected Preview browser lane. The first retained its required scrubbed record:
-
-```json
-{
-  "outcome": "failed",
-  "target": "https://scholar-scout-4lbow60jh-scholar-scout.vercel.app",
-  "candidateCommit": "b50177fcf95ca212b0f1f996a76f790b16a1c7ae",
-  "errorCategory": "fixture-lifecycle-transport-failed"
-}
-```
-
-The separate outage and aggregation lanes were correctly skipped after the required protected Preview browser proof failed.
+| Lane | Outcome | Recorded UTC |
+| --- | --- | --- |
+| Candidate quality: immutable install, test, lint, typecheck, build | Passed | 2026-09-18T02:42:50.304Z |
+| High-risk API, webhook, and data-service suite | Passed | 2026-09-18T02:43:58.229Z |
+| Owned local browser journey | Passed | 2026-09-18T02:44:04.687Z |
+| Protected Preview browser journey | Passed | 2026-09-18T02:44:39.176Z |
+| Separate Preview outage and restoration | Passed | 2026-09-18T02:44:40.637Z |
+| Fail-closed aggregation | Passed | 2026-09-18T02:44:41Z |
 
 ## Boundary Confirmation
 
-- Both deployments are Preview targets only.
-- Neither deployment was promoted, aliased, or used as a production deployment.
-- Each deployment used a separate isolated Blob data path and one-time lifecycle scope.
-- This evidence contains no bypass material, fixture capability, fixture identifier, storage detail, student content, cookie, or other credential.
+- The baseline and outage targets were separate Preview deployments on the same candidate commit.
+- Neither deployment was promoted or used for production traffic.
+- Rehearsal evidence is scrubbed; it contains no capability, fixture identifier, cookie, storage configuration, student content, or other credential.
 
-## Next Required Action
+## Verification
 
-Diagnose the authenticated lifecycle transport failure while retaining the scrubbed-record contract. Re-run the rehearsal only after the protected Preview browser lane can pass; then run the separate outage proof and fail-closed aggregation.
+- GitHub Actions run `35300385153` completed successfully.
+- Its candidate-quality, high-risk, local-browser, protected Preview-browser, Preview-outage, and aggregate lanes all completed successfully.
+
+## Next Step
+
+Begin Phase 7 planning: Governed Opportunity and Support Matching.
