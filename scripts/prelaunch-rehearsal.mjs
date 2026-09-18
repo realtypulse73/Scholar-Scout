@@ -54,7 +54,15 @@ async function main() {
       if (records['candidate-quality'].outcome === 'passed') records['high-risk'] = await runReleaseLane('high-risk', candidateCommit, HIGH_RISK_COMMANDS, outputDir);
       if (records['high-risk']?.outcome === 'passed') records['local-browser'] = await runReleaseLane('local-browser', candidateCommit, [LOCAL_BROWSER_COMMAND], outputDir);
     }
-    if (args.localOnly) return;
+    if (args.localOnly) {
+      const localProofPassed = ['candidate-quality', 'high-risk', 'local-browser'].every(
+        (lane) => validateReleaseRecord(records[lane], lane, candidateCommit),
+      );
+      if (!localProofPassed) {
+        throw new Error('Release rehearsal local proof is incomplete: every candidate-bound lane must pass before Preview proof.');
+      }
+      return;
+    }
     records['preview-browser'] = await loadRequiredRecord(args.previewBrowserRecord, 'preview-browser', candidateCommit);
     records['preview-outage'] = await loadRequiredRecord(args.previewOutageRecord, 'preview-outage', candidateCommit);
     await writeFile(path.join(outputDir, 'release-records.json'), `${JSON.stringify(records, null, 2)}\n`);
@@ -79,11 +87,15 @@ async function main() {
 async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
   const recordedAt = new Date().toISOString();
   const commandList = commands.map(formatCommand);
+  const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'passed' };
   for (const [command, commandArgs] of commands) {
     const result = await runCommand(command, commandArgs);
-    if (result.code !== 0) return { candidateCommit, recordedAt, commands: commandList, outcome: 'failed', errorCategory: 'command-failed' };
+    if (result.code !== 0) {
+      record.outcome = 'failed';
+      record.errorCategory = 'command-failed';
+      break;
+    }
   }
-  const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'passed' };
   if (commandList.length === 1) record.command = commandList[0];
   await writeFile(path.join(outputDir, `${lane}.json`), `${JSON.stringify(record, null, 2)}\n`);
   return record;

@@ -1,17 +1,29 @@
 ---
-status: blocked-external-verification
+status: awaiting_human_verify
 trigger: "Protected Preview fixture lifecycle returns fixture-lifecycle-transport-failed in the GitHub Actions prelaunch rehearsal."
 created: 2026-09-09T00:00:00-04:00
-updated: 2026-09-10T00:00:00-04:00
+updated: 2026-09-17T04:28:00-04:00
 ---
 
 ## Current Focus
 
-bug_class: heisenbug-mandelbug
-hypothesis: "No repository-side root cause remains supported. The latest fixture-provision-failed response is either a deployed lifecycle enablement/ID/capability mismatch (4xx), a Vercel protection redirect (3xx), or a deployed durable-adapter write failure (5xx); the scrubbed record now preserves only that safe response class."
-test: "All candidate-matched lifecycle sources and focused route, fixture-persistence, protection, tracer, and outage tests were executed; no semantic knowledge-base match exists."
-expecting: "An authorized maintainer must verify the selected Preview's deployment-local lifecycle mapping and adapter write readiness without exposing values, then rerun the isolated rehearsal."
-next_action: "Await maintainer verification of the selected Preview deployment's one-time fixture enablement, valid fixture ID/capability match, and durable-adapter write access; capture only approved safe status/evidence and rerun the rehearsal."
+bug_class: bohrbug
+reasoning_checkpoint:
+  hypothesis: "When a local release-lane command fails, runReleaseLane retains the failed record only in memory and --local-only returns 0 before validating it, so Preview lanes run and aggregation later contains only their persisted records."
+  confirming_evidence:
+    - "The PATH-shadowed pnpm regression exits 0 when the first candidate-quality command exits 1."
+    - "runReleaseLane writes only successful records; --local-only returns before aggregateReleaseRecords or any failure exit."
+    - "A controlled aggregate preserves all valid local records and emits only the present valid lanes when a local record is absent."
+  falsification_test: "After persisting failed lane records and validating local-only records, the same fake pnpm failure would still return exit 0 or produce an unsanitized/missing candidate-quality failure record."
+  fix_rationale: "Write the lane record regardless of outcome, then reject a local-only run unless each local lane has a valid candidate-bound passing record. This stops before Preview work while retaining only permitted scrubbed evidence."
+  blind_spots: "The artifact cannot identify which real candidate-quality command failed; this repair makes that failure visible and fail-closed but does not claim to repair its unknown external trigger."
+  candidate_causes:
+    - "code: runReleaseLane omits failed-record persistence and --local-only never turns a non-passing local record into a failing process exit."
+    - "environment: an actual candidate-quality command returned nonzero during the authorized run, but the record contract intentionally did not retain its command-level diagnostic."
+  and_gate: "yes: the observed two-Preview-lane aggregate required both an actual local command failure and code that swallowed it; this fix addresses the repository-side contributing cause and exposes the external trigger safely."
+test: "An authorized maintainer dispatches a fresh candidate rehearsal after these changes are available on the selected immutable candidate."
+expecting: "A failed local lane stops the workflow before either Preview runner; a passing local proof persists three candidate-bound records and aggregate retains all five lanes."
+next_action: "Await authorized Preview rehearsal confirmation using scrubbed artifact/deployment identifiers only."
 
 ## Symptoms
 
@@ -22,6 +34,14 @@ started: "Observed during the Phase 6 protected Preview rehearsal on 2026-09-09.
 reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protected Preview candidate with runner-only fixture capability and deployment-protection material."
 
 ## Eliminated
+
+- hypothesis: "The authorized rehearsal checked out a revision different from candidate 294c98c5111fedb537ad951e0ddd2309c7162793."
+  evidence: "Scrubbed GitHub Actions metadata for run 35176032342 reports headSha exactly equal to the nominated candidate, so the unpinned checkout is an integrity risk but did not cause this run."
+  timestamp: 2026-09-17T03:49:00-04:00
+
+- hypothesis: "The current repository aggregation helper loses valid candidate-quality, high-risk, and local-browser records."
+  evidence: "A controlled aggregate-only invocation with all five minimal safe candidate-bound records exited 0 and wrote all five lanes. With only high-risk.json removed, it exited 1 and wrote the remaining four lanes, proving it preserves independently valid local records and fails closed."
+  timestamp: 2026-09-17T03:38:00-04:00
 
 - hypothesis: "The current internal fixture route deterministically rejects a valid no-body lifecycle POST before persistence."
   evidence: "The focused guarded route suite passed all 7 tests, including Content-Length: 0 acceptance while body-bearing and browser-shaped requests remain rejected."
@@ -37,6 +57,36 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
   timestamp: 2026-09-10T00:00:00-04:00
 
 ## Evidence
+
+- timestamp: 2026-09-17T04:04:00-04:00
+  observation: "The agent-authored regression was RED before the fix (fake pnpm exited 1 while the local-only runner exited 0) and GREEN after it (runner exits 1 and candidate-quality.json contains only candidateCommit, recordedAt, commands, outcome, and errorCategory)."
+
+- timestamp: 2026-09-17T04:14:00-04:00
+  observation: "pnpm test:production-tooling passed all 23 tests after the repair. The scoped diff adds failure persistence and validation; it contains no behavior-deleting shortcut. No Stryker package or configuration exists, so mutation testing is unavailable."
+
+- timestamp: 2026-09-17T04:20:00-04:00
+  observation: "Revert-and-reconfirm passed: reversing only the local-only validation and failed-record persistence hunk made the focused regression fail again with an incorrect zero exit; reapplying the same hunk made it pass."
+
+- timestamp: 2026-09-17T04:28:00-04:00
+  observation: "Final verification passed: pnpm test:production-tooling completed 23/23 after the controlled reapply, and git diff --check reported no whitespace errors. The synthetic workspace aggregate fixture was removed after inspection."
+
+- timestamp: 2026-09-17T03:49:00-04:00
+  observation: "runReleaseLane returns a failed in-memory record without writing its lane JSON. In --local-only mode, main immediately returns after the lane sequence and never calls aggregateReleaseRecords or sets a nonzero exit code for a failed record. Thus an early failed candidate-quality command leaves all local evidence absent while the workflow step is marked successful; later Preview records can be the only serialized aggregate fields. GitHub run 35176032342 headSha equals candidate 294c98c5111fedb537ad951e0ddd2309c7162793, eliminating source-checkout mismatch for this run."
+
+- timestamp: 2026-09-17T03:38:00-04:00
+  observation: "Focused aggregate-only reproduction: five valid minimal scrubbed records produced a successful release-records.json with all five lanes. Removing only high-risk.json produced the expected fail-closed exit and release-records.json with candidate-quality, local-browser, preview-browser, and preview-outage. Therefore the actual two-Preview-lane artifact requires every local record to have been absent or invalid before aggregate execution; it is not reproduced by the current writer/loader/aggregator."
+
+- timestamp: 2026-09-17T03:27:00-04:00
+  observation: "The first aggregate-only harness did not reach repository code because this sandbox rejects Node path resolution under the system Temp parent with EPERM. The five scrubbed fixture files were present, but no release-records.json was written. This is an environment limitation of the diagnostic setup, not evidence about release-record behavior."
+
+- timestamp: 2026-09-17T03:20:00-04:00
+  observation: "The protected Preview and outage CLI runners only create the parent directory and write their explicitly requested preview-browser.json or preview-outage.json files. The lifecycle helper performs HTTP POST/GET/DELETE only. None of those repository paths removes, renames, or overwrites candidate-quality.json, high-risk.json, or local-browser.json."
+
+- timestamp: 2026-09-17T03:12:00-04:00
+  observation: "The single-job workflow runs local proof, protected Preview browser proof, Preview outage proof, and aggregate-only in order using the same reports/prelaunch-rehearsal directory. Successful local lanes write candidate-quality.json, high-risk.json, and local-browser.json; aggregate loads exactly those files. Its JSON serialization omits an undefined local property, explaining why the retained release-records.json can contain only the two Preview records when the three local loads fail validation or their files are absent."
+
+- timestamp: 2026-09-17T02:55:00-04:00
+  observation: "Authorized Preview-only rehearsal 35176032342 passed candidate quality, high-risk, local-browser, protected Preview-browser, and Preview-outage/restoration steps. Its aggregate step still failed. The retained scrubbed artifact showed passed Preview records bound to candidate 294c98c5111fedb537ad951e0ddd2309c7162793, but no candidate-quality, high-risk, or local-browser records; release-records.json therefore contained only the two Preview lanes."
 
 - timestamp: 2026-09-10T00:00:00-04:00
   observation: "The direct lifecycle/protection/tracer/outage Node suites passed all 20 tests. They verify manual redirects, direct-only bypass headers, browser-only cookie setup, lifecycle cleanup, and that a failed lifecycle request records only redirected, rejected, or server-failed—not a raw status, response body, secret, fixture, or student data."
@@ -81,7 +131,14 @@ reproduction: "Dispatch the prelaunch-rehearsal workflow for the isolated protec
 
 ## Resolution
 
-root_cause: "The previous Content-Length and browser-cookie transport defects are fixed. The latest fixture-provision-failed result is not reproducible in candidate-matched repository code; its unobserved cause remains either deployed Preview lifecycle configuration/capability mismatch or the selected Preview durable-adapter write failure."
-fix: "The lifecycle error classifier now records only a scrubbed HTTP-status class when a response exists: redirected (3xx), rejected (4xx), or server-failed (5xx). It retains the generic failure category for absent or non-HTTP transport failures."
-verification: "Focused lifecycle/protection/tracer/outage Node tests (20 passed) and production-tooling tests (22 passed). The protected Preview rehearsal remains blocked until a fresh candidate reports the safe class; its record still omits the raw status, response body, and all sensitive material."
-files_changed: [".planning/debug/fixture-lifecycle-transport.md"]
+root_cause: "An actual candidate-quality command failed, and the repository release gate neither persisted its scrubbed failed record nor exited nonzero in --local-only mode. That allowed Preview proof to run and produced an aggregate containing only Preview records."
+fix: "runReleaseLane now persists its scrubbed record on success or failure, and --local-only validates all three local candidate-bound records before returning; missing or failed evidence now exits nonzero before Preview work."
+oracle_type: "specified (D-09 requires missing or failed candidate-quality, high-risk, or local-browser proof to exit nonzero before later release lanes can pass)."
+verification:
+  target_test: { result: pass }
+  mutation_check: { result: skipped, reason_if_skipped: "No Stryker package or configuration exists in this repository." }
+  no_op_deletion: { result: pass, deletion_justified_by_rca: false }
+  adjacent_tests: { result: pass, suites_run: ["pnpm test:production-tooling (23 passing)"] }
+  revert_and_reconfirm: { result: pass, bug_returned_on_revert: true, fixed_on_reapply: true }
+  guardrail_verdict: accepted
+files_changed: ["scripts/test-production-tooling.mjs", ".planning/debug/fixture-lifecycle-transport.md"]

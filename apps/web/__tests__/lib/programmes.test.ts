@@ -33,10 +33,12 @@ describe('programme matching helpers', () => {
 
   it('clamps pagination to available pages', () => {
     const page = paginateProgrammes(programmes, 99, 4);
+    const expectedPageCount = Math.ceil(programmes.length / 4);
+    const expectedFinalPageLength = programmes.length % 4 || 4;
 
-    expect(page.page).toBe(2);
-    expect(page.pageCount).toBe(2);
-    expect(page.items).toHaveLength(4);
+    expect(page.page).toBe(expectedPageCount);
+    expect(page.pageCount).toBe(expectedPageCount);
+    expect(page.items).toHaveLength(expectedFinalPageLength);
   });
 
   it('finds a programme by id', () => {

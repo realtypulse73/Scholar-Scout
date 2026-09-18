@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import ProgrammeFitPanel from '@/components/programmes/ProgrammeFitPanel';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
@@ -105,7 +106,20 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          <Card className="p-5">
+          <Card className="overflow-hidden">
+            {programme.image ? (
+              <div className="relative aspect-[3/2] bg-ink-100">
+                <Image
+                  src={programme.image}
+                  alt={`${programme.school} learning environment`}
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 320px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
+            <div className="p-5">
             <h2 className="text-sm font-extrabold uppercase text-ink-500">
               Snapshot
             </h2>
@@ -113,12 +127,20 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
               <Metric label="Annual tuition" value={`$${programme.annualTuition.toLocaleString()}`} />
               <Metric
                 label="Entry flexibility"
-                value={`${programme.acceptanceRate}%`}
-                note="Not an admission prediction"
+                value={
+                  programme.admissionsFlexibilityLabel ??
+                  `${programme.acceptanceRate}%`
+                }
+                note={
+                  programme.admissionsFlexibilityLabel
+                    ? 'Ask the institution for current admissions guidance'
+                    : 'Not an admission prediction'
+                }
               />
               <Metric label="Duration" value={programme.duration} />
               <Metric label="Delivery" value={programme.delivery} />
             </dl>
+            </div>
           </Card>
         </div>
       </section>

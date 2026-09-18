@@ -184,6 +184,7 @@ Plans:
 - [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
 - [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
 - [ ] 05-07-PLAN.md — Close SUNY Erie source-link gap and complete Preview UAT Test 1
+
 **UI hint**: yes
 **Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
 
@@ -209,6 +210,7 @@ Plans:
 - [ ] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
 - [ ] 06-06-PLAN.md — Supervise the protected Preview tracer
 - [ ] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
 ## Progress
@@ -234,3 +236,14 @@ Plans:
 Plans:
 
 - [ ] TBD (run /gsd-plan-phase 7 to break down)
+
+### Phase 8: Matching Algorithm Improvement
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 8 to break down)

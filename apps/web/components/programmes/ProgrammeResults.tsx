@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
@@ -86,8 +87,19 @@ export default function ProgrammeResults({
           const reason = fit?.reasons[0] ?? programme.highlights[0];
 
           return (
-            <Card key={programme.id} className="p-5">
-              <div className="grid gap-5 md:grid-cols-[1fr_auto]">
+            <Card key={programme.id} className="overflow-hidden">
+              <div className="grid gap-5 p-5 md:grid-cols-[180px_1fr_auto]">
+                {programme.image ? (
+                  <div className="relative min-h-40 overflow-hidden rounded-card bg-ink-100 md:min-h-full">
+                    <Image
+                      src={programme.image}
+                      alt={`${programme.school} learning environment`}
+                      fill
+                      sizes="(min-width: 768px) 180px, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : null}
                 <div>
                   <div className="flex flex-wrap gap-2">
                     <Badge tone="success">

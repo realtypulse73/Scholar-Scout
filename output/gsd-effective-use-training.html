@@ -189,6 +189,7 @@
       .loop-step strong { display: block; margin-bottom: 8px; color: var(--primary-dark); font-size: 1.05rem; }
       .loop-step p { margin: 0; color: var(--muted); font-size: 0.92rem; }
       .artifact { display: inline-block; margin-top: 13px; padding: 4px 8px; color: var(--teal); background: #e4f6f2; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.76rem; font-weight: 750; }
+      .loop-command { display: block; margin-top: 11px; color: #163f68; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; font-weight: 800; line-height: 1.35; }
 
       .callout { margin-top: 18px; padding: 18px 20px; border-left: 5px solid var(--teal); background: #eaf8f5; border-radius: 0 13px 13px 0; }
       .callout p { margin: 0; }
@@ -198,7 +199,7 @@
       .command-row:last-child { border-bottom: 0; }
       .command-row.head { color: white; background: var(--ink); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
       code { padding: 3px 6px; color: #163f68; background: #edf3fb; border-radius: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
-      .command-row code, .terminal code { color: #d6fffa; background: transparent; padding: 0; }
+      .terminal code { color: #d6fffa; background: transparent; padding: 0; }
       .tag { justify-self: start; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; }
       .tag.light { color: #39601b; background: #e8f4d7; }
       .tag.medium { color: #87590a; background: #fff1c5; }
@@ -228,6 +229,16 @@
       .feedback { min-height: 26px; margin-top: 14px; font-weight: 700; }
       .feedback.good { color: var(--success); }
       .feedback.bad { color: var(--danger); }
+      .curriculum-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .curriculum-card { padding: 21px; background: white; border: 1px solid var(--line); border-radius: 15px; }
+      .curriculum-card p { color: var(--muted); }
+      .curriculum-card ul { margin: 12px 0 0; padding-left: 20px; color: #40506d; }
+      .curriculum-card li + li { margin-top: 6px; }
+      .question-count { margin: 0 0 16px; color: var(--muted); font-weight: 750; }
+      .quiz-grid { display: grid; gap: 14px; }
+      .quiz-card { padding: 20px; background: white; border: 1px solid var(--line); border-radius: 15px; }
+      .quiz-card legend { padding: 0 5px; color: var(--primary-dark); font-weight: 850; }
+      .quiz-card p { color: var(--muted); }
 
       .mission { padding: 26px; color: white; background: linear-gradient(130deg, #2537a0, #117a72); border-radius: 20px; box-shadow: var(--shadow); }
       .mission h3 { font-size: 1.5rem; }
@@ -260,6 +271,7 @@
         .loop-step:not(:last-child)::after { top: auto; right: 50%; bottom: -25px; transform: translateX(50%) rotate(90deg); }
         .command-row { grid-template-columns: 1fr; gap: 6px; }
         .command-row.head { display: none; }
+        .curriculum-grid { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 620px) {
@@ -320,11 +332,11 @@
       <section class="section" aria-labelledby="loop-title">
         <div class="section-heading"><span class="section-index">02</span><div><h2 id="loop-title">Follow the phase loop</h2><p>The normal workflow is deliberate on purpose. Each stage creates an artifact that protects the next one from assumptions.</p></div></div>
         <div class="loop" aria-label="GSD phase loop">
-          <article class="loop-step"><strong>Discuss</strong><p>Resolve gray areas and lock meaningful product or technical decisions before they become code.</p><span class="artifact">CONTEXT.md</span></article>
-          <article class="loop-step"><strong>Plan</strong><p>Research, slice the work, add verification, and check that the plan can actually achieve the phase goal.</p><span class="artifact">PLAN.md</span></article>
-          <article class="loop-step"><strong>Execute</strong><p>Use focused executors and small commits. The plan, not chat memory, provides the working brief.</p><span class="artifact">SUMMARY.md</span></article>
-          <article class="loop-step"><strong>Verify</strong><p>Test the promised outcomes and use UAT for what needs human judgment. Fix gaps before declaring victory.</p><span class="artifact">VERIFICATION.md</span></article>
-          <article class="loop-step"><strong>Ship</strong><p>Prepare the reviewable change, preserve evidence, and move the milestone forward without losing the learning.</p><span class="artifact">STATE.md</span></article>
+          <article class="loop-step"><strong>Discuss</strong><p>Resolve gray areas and lock meaningful product or technical decisions before they become code.</p><span class="artifact">CONTEXT.md</span><span class="loop-command">$gsd-discuss-phase 2</span></article>
+          <article class="loop-step"><strong>Plan</strong><p>Research, slice the work, add verification, and check that the plan can actually achieve the phase goal.</p><span class="artifact">PLAN.md</span><span class="loop-command">$gsd-plan-phase 2</span></article>
+          <article class="loop-step"><strong>Execute</strong><p>Use focused executors and small commits. The plan, not chat memory, provides the working brief.</p><span class="artifact">SUMMARY.md</span><span class="loop-command">$gsd-execute-phase 2</span></article>
+          <article class="loop-step"><strong>Verify</strong><p>Test the promised outcomes and use UAT for what needs human judgment. Fix gaps before declaring victory.</p><span class="artifact">UAT.md</span><span class="loop-command">$gsd-verify-work 2</span></article>
+          <article class="loop-step"><strong>Ship</strong><p>Prepare the reviewable change, preserve evidence, and move the milestone forward without losing the learning.</p><span class="artifact">PR + STATE.md</span><span class="loop-command">$gsd-ship 2 --draft</span></article>
         </div>
         <div class="grid-2" style="margin-top:18px">
           <article class="card"><h3>Start a new project</h3><p><code>$gsd-new-project</code> captures product context and turns it into requirements and a roadmap. For an existing codebase, begin with <code>$gsd-onboard</code>.</p></article>
@@ -332,8 +344,20 @@
         </div>
       </section>
 
+      <section class="section" aria-labelledby="curriculum-title">
+        <div class="section-heading"><span class="section-index">03</span><div><h2 id="curriculum-title">Curriculum: learn before you test</h2><p>Read these six lessons in order. Every assessment question below is grounded in one of these concepts or commands.</p></div></div>
+        <div class="curriculum-grid">
+          <article class="curriculum-card"><h3>Lesson 1 — Orient yourself</h3><p>GSD protects against context rot by keeping durable decisions and progress in project artifacts. In Codex, invoke commands with a dollar sign.</p><ul><li>Use <code>$gsd-new-project</code> for greenfield setup.</li><li>Use <code>$gsd-onboard</code> for an existing repository.</li><li>Use <code>$gsd-progress</code> for status and <code>$gsd:next</code> for a state-aware menu.</li></ul></article>
+          <article class="curriculum-card"><h3>Lesson 2 — Match workflow depth to risk</h3><p>Pick the smallest process that makes uncertainty visible.</p><ul><li><code>$gsd-fast "..."</code> is for trivial, well-understood, reversible edits.</li><li><code>$gsd-quick --validate "..."</code> is for bounded, multi-step work needing a plan and proof.</li><li><code>$gsd-debug --diagnose "..."</code> investigates an unknown cause without attempting a fix.</li></ul></article>
+          <article class="curriculum-card"><h3>Lesson 3 — Discuss and plan a phase</h3><p>Use the phase number you are working on. Discussion captures decisions before research or implementation begins.</p><ul><li><code>$gsd-discuss-phase 2</code> creates decision context such as <code>CONTEXT.md</code>.</li><li><code>$gsd-plan-phase 2</code> researches, decomposes, and validates the phase plan.</li><li><code>$gsd-plan-phase 2 --research</code> refreshes research; <code>--skip-research</code> is for a familiar domain.</li></ul></article>
+          <article class="curriculum-card"><h3>Lesson 4 — Execute, verify, and ship</h3><p>Execution follows the plan; verification checks the user-visible outcome; shipping prepares the reviewable change.</p><ul><li><code>$gsd-execute-phase 2</code> runs phase plans in dependency-aware waves.</li><li><code>$gsd-verify-work 2</code> runs conversational UAT and records it in <code>UAT.md</code>.</li><li><code>$gsd-ship 2 --draft</code> creates a draft PR after required verification passes.</li></ul></article>
+          <article class="curriculum-card"><h3>Lesson 5 — Use flags deliberately</h3><p>Flags are opt-in: a documented flag does nothing unless you type it.</p><ul><li><code>--wave 2</code> runs only execution wave 2; <code>--interactive</code> executes sequentially with checkpoints.</li><li><code>--gaps-only</code> targets fix plans created after verification gaps.</li><li><code>$gsd-discuss-phase 2 --assumptions</code> surfaces implementation assumptions instead of a normal discussion.</li></ul></article>
+          <article class="curriculum-card"><h3>Lesson 6 — Make a good brief</h3><p>Describe the outcome, the boundaries, and the proof. When you come back, read <code>STATE.md</code> and plan summaries instead of reconstructing history from chat.</p><ul><li>State who should be able to do what.</li><li>Name constraints such as security, compatibility, or rollout safety.</li><li>Ask for tests, observable behavior, or UAT evidence.</li></ul></article>
+        </div>
+      </section>
+
       <section class="section" aria-labelledby="choose-title">
-        <div class="section-heading"><span class="section-index">03</span><div><h2 id="choose-title">Choose the smallest honest command</h2><p>Command choice is where most GSD leverage lives. Use the task’s uncertainty—not its apparent size—to decide how much process you need.</p></div></div>
+        <div class="section-heading"><span class="section-index">04</span><div><h2 id="choose-title">Choose the smallest honest command</h2><p>Command choice is where most GSD leverage lives. Use the task’s uncertainty—not its apparent size—to decide how much process you need.</p></div></div>
         <div class="command-table" role="table" aria-label="GSD command chooser">
           <div class="command-row head" role="row"><span role="columnheader">Situation</span><span role="columnheader">Use this</span><span role="columnheader">Depth</span></div>
           <div class="command-row" role="row"><span role="cell">One obvious, reversible change</span><span role="cell"><code>$gsd-fast "fix the README typo"</code></span><span class="tag light" role="cell">Inline</span></div>
@@ -346,45 +370,17 @@
       </section>
 
       <section class="section" aria-labelledby="practice-title">
-        <div class="section-heading"><span class="section-index">04</span><div><h2 id="practice-title">Practice command judgment</h2><p>Choose the best first command for each situation. Getting a “wrong” answer is useful: read the explanation and try again.</p></div></div>
+        <div class="section-heading"><span class="section-index">05</span><div><h2 id="practice-title">Assessment: 22 multiple-choice questions</h2><p>Every question tests material from the curriculum above. Answer one at a time, read the feedback, and retry any miss.</p></div></div>
         <div class="lab">
           <div class="scenario" style="padding:22px">
-            <fieldset class="scenario-card" data-answer="debug">
-              <legend>Scenario A — production error</legend>
-              <p>A customer reports sporadic 500 responses after a billing-service timeout. You do not yet know whether the cause is retry behavior, a data edge case, or a deployment issue.</p>
-              <div class="options">
-                <label class="option"><input type="radio" name="scenario-a" value="fast" /> <span><code>$gsd-fast "fix billing error"</code></span></label>
-                <label class="option"><input type="radio" name="scenario-a" value="debug" /> <span><code>$gsd-debug --diagnose "sporadic 500 after billing timeout"</code></span></label>
-                <label class="option"><input type="radio" name="scenario-a" value="auto" /> <span><code>$gsd-autonomous</code></span></label>
-              </div>
-              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
-            </fieldset>
-            <fieldset class="scenario-card" data-answer="quick">
-              <legend>Scenario B — bounded feature</legend>
-              <p>You need an admin CSV export. The outcome is clear, but it touches authorization, API output, UI wiring, and tests. You want a plan and verification without turning it into a whole roadmap phase.</p>
-              <div class="options">
-                <label class="option"><input type="radio" name="scenario-b" value="fast" /> <span><code>$gsd-fast "add CSV export"</code></span></label>
-                <label class="option"><input type="radio" name="scenario-b" value="quick" /> <span><code>$gsd-quick --validate "add authorized admin CSV export"</code></span></label>
-                <label class="option"><input type="radio" name="scenario-b" value="new" /> <span><code>$gsd-new-project</code></span></label>
-              </div>
-              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
-            </fieldset>
-            <fieldset class="scenario-card" data-answer="phase">
-              <legend>Scenario C — planned capability</legend>
-              <p>Your roadmap has a phase for role-based access. It has important decisions around migration, behavior for existing accounts, and release safety.</p>
-              <div class="options">
-                <label class="option"><input type="radio" name="scenario-c" value="quick" /> <span><code>$gsd-quick "implement roles"</code></span></label>
-                <label class="option"><input type="radio" name="scenario-c" value="phase" /> <span><code>$gsd-discuss-phase 3</code>, then plan and execute the phase</span></label>
-                <label class="option"><input type="radio" name="scenario-c" value="fast" /> <span><code>$gsd-fast "add role checks"</code></span></label>
-              </div>
-              <button class="secondary check-answer" type="button">Check answer</button><p class="feedback" aria-live="polite"></p>
-            </fieldset>
+            <p class="question-count" id="question-count">0 of 22 answered correctly</p>
+            <div class="quiz-grid" id="quiz-container"></div>
           </div>
         </div>
       </section>
 
       <section class="section" aria-labelledby="brief-title">
-        <div class="section-heading"><span class="section-index">05</span><div><h2 id="brief-title">Give the workflow a useful brief</h2><p>Good GSD inputs make success, constraints, and evidence explicit. Name the outcome—not merely the implementation you first imagined.</p></div></div>
+        <div class="section-heading"><span class="section-index">06</span><div><h2 id="brief-title">Give the workflow a useful brief</h2><p>Good GSD inputs make success, constraints, and evidence explicit. Name the outcome—not merely the implementation you first imagined.</p></div></div>
         <div class="grid-2">
           <article class="card"><h3>Weak request</h3><div class="terminal"><span class="prompt">$</span> $gsd-quick "improve auth"</div><p style="margin-top:14px">It hides the actor, risk, desired behavior, constraints, and proof. The agent must invent them.</p></article>
           <article class="card"><h3>Strong request</h3><div class="terminal"><span class="prompt">$</span> $gsd-quick --discuss --validate "Require sign-in for account exports; preserve staff access; return a clear 401/403 response; add route tests."</div><p style="margin-top:14px">It gives a goal, a constraint, expected behavior, and a verification direction. <code>--discuss</code> is appropriate because authorization policy may contain a real decision.</p></article>
@@ -397,7 +393,7 @@
       </section>
 
       <section class="section" id="mission" aria-labelledby="mission-title">
-        <div class="section-heading"><span class="section-index">06</span><div><h2 id="mission-title">Hands-on mission</h2><p>Simulate a high-quality GSD start. Pick the command that matches the task, then reveal the recommended first move.</p></div></div>
+        <div class="section-heading"><span class="section-index">07</span><div><h2 id="mission-title">Hands-on mission</h2><p>Simulate a high-quality GSD start. Pick the command that matches the task, then reveal the recommended first move.</p></div></div>
         <div class="mission">
           <span class="eyebrow" style="color:#fff;background:rgba(255,255,255,.16)">Mission: one real decision</span>
           <h3>“Add a student recommendation explanation panel.”</h3>
@@ -413,7 +409,7 @@
       </section>
 
       <section class="section" aria-labelledby="habits-title">
-        <div class="section-heading"><span class="section-index">07</span><div><h2 id="habits-title">Build the habits that make GSD effective</h2><p>Use this before launching a substantial task. Check all five; your completion meter will update as you go.</p></div></div>
+        <div class="section-heading"><span class="section-index">08</span><div><h2 id="habits-title">Build the habits that make GSD effective</h2><p>Use this before launching a substantial task. Check all five; your completion meter will update as you go.</p></div></div>
         <div class="checklist">
           <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I chose workflow depth based on uncertainty and risk.</strong><br />A quick fix and a new capability deserve different handling.</span></label>
           <label class="check-item"><input class="habit" type="checkbox" /><span><strong>I stated the outcome and the boundaries.</strong><br />I described what success means and what must not change.</span></label>
@@ -430,8 +426,8 @@
           <p>Copy this, replace the brackets, and make the goal, boundaries, and evidence real for your work.</p>
           <div class="terminal" id="template-command"><span class="prompt">$</span> $gsd-quick --discuss --validate "[outcome]. Preserve [constraint]. Prove it with [test or observable behavior]."</div>
           <button class="copy-button" type="button" data-copy-target="template-command">Copy the template</button>
-          <div class="score" id="score">0/9</div>
-          <p id="score-text">Complete the three scenario checks, the mission, and the five habits to finish the field training.</p>
+          <div class="score" id="score">0/28</div>
+          <p id="score-text">Complete the 22-question assessment, the mission, and the five habits to finish the field training.</p>
           <div class="sources"><strong>Keep learning:</strong><a href="https://github.com/open-gsd/gsd-core" target="_blank" rel="noreferrer">GSD Core</a>·<a href="https://github.com/open-gsd/gsd-core/blob/next/docs/COMMANDS.md" target="_blank" rel="noreferrer">command reference</a>·<a href="https://github.com/gsd-build/get-shit-done" target="_blank" rel="noreferrer">archived original repository</a></div>
         </div>
       </section>
@@ -439,48 +435,81 @@
     <div class="complete" id="completion-toast" role="status">Training complete. You are ready to choose a GSD workflow deliberately.</div>
 
     <script>
-      const answers = {
-        debug: 'Correct. Diagnose first: the root cause is unknown, so avoid committing to a fix before gathering evidence.',
-        quick: 'Correct. This is bounded but cross-cutting, so a quick task with validation gives you a plan and proof without promoting it to a roadmap phase.',
-        phase: 'Correct. This is a planned, consequential capability with policy and migration decisions. Discuss those decisions before creating the phase plan.',
-      };
-      const wrongAnswers = {
-        fast: 'Not yet. Fast is for trivial, well-understood work; this scenario has uncertainty or several important boundaries.',
-        auto: 'Not as a first move. Autonomous execution is powerful after the work has been scoped and planned—not while the root cause is unknown.',
-        new: 'This is an existing-project change, not a new project setup.',
-        quick: 'This is meaningful roadmap work. A phase discussion should capture its policy and migration decisions before quick execution.',
-      };
-      const state = { scenarios: new Set(), mission: false };
+      const quizQuestions = [
+        { id: 'q1', question: 'What GSD practice best resists context rot?', options: ['Keep all work in one long chat', 'Store durable artifacts and use fresh-context work for heavy tasks', 'Skip plans to save context', 'Only write commit messages'], correct: 1, explanation: 'Correct. Durable artifacts preserve what matters while fresh contexts avoid accumulated noise.' },
+        { id: 'q2', question: 'How do you invoke an installed GSD command in Codex?', options: ['With a $ prefix, such as $gsd-progress', 'With npm run gsd-progress', 'With a / prefix only', 'By editing STATE.md directly'], correct: 0, explanation: 'Correct. This training uses Codex command syntax: $gsd-command-name.' },
+        { id: 'q3', question: 'You are adopting GSD in an existing repository. What is the best starting command?', options: ['$gsd-new-project', '$gsd-onboard', '$gsd-ship', '$gsd-verify-work'], correct: 1, explanation: 'Correct. Onboarding maps and sets up an existing codebase; new-project is for greenfield work.' },
+        { id: 'q4', question: 'Which command starts a greenfield GSD project?', options: ['$gsd-onboard', '$gsd-new-project', '$gsd-fast', '$gsd-progress'], correct: 1, explanation: 'Correct. New-project creates the initial project, requirements, roadmap, and state artifacts.' },
+        { id: 'q5', question: 'When is $gsd-fast the right choice?', options: ['A trivial, known, reversible change', 'A new authorization design', 'A production failure with unknown cause', 'A multi-week roadmap phase'], correct: 0, explanation: 'Correct. Fast is intentionally shallow: use it only when uncertainty and risk are already low.' },
+        { id: 'q6', question: 'Which command fits a bounded feature that crosses several files and needs proof?', options: ['$gsd-fast "add export"', '$gsd-quick --validate "add export"', '$gsd-new-project', '$gsd-ship --draft'], correct: 1, explanation: 'Correct. Quick with validation gives bounded work a plan-checking and verification path.' },
+        { id: 'q7', question: 'An intermittent 500 has an unknown cause. What should you run first?', options: ['$gsd-fast "fix the 500"', '$gsd-debug --diagnose "intermittent 500"', '$gsd-ship', '$gsd-autonomous'], correct: 1, explanation: 'Correct. Diagnose mode investigates the cause without presuming the fix.' },
+        { id: 'q8', question: 'Which command is best when you need a status report and the next logical step?', options: ['$gsd-progress', '$gsd-verify-work', '$gsd-fast', '$gsd-ship'], correct: 0, explanation: 'Correct. Progress reads the project state and reports what should happen next.' },
+        { id: 'q9', question: 'What is the purpose of $gsd-discuss-phase 2?', options: ['Create a pull request', 'Capture phase decisions before planning', 'Run only wave 2', 'Repair package installation'], correct: 1, explanation: 'Correct. Discussion surfaces gray areas and turns decisions into planning context.' },
+        { id: 'q10', question: 'What key artifact does phase discussion create for downstream planning?', options: ['CONTEXT.md', 'package-lock.json', 'UAT.md', 'PR.md'], correct: 0, explanation: 'Correct. CONTEXT.md records decisions clearly enough for later work to follow.' },
+        { id: 'q11', question: 'Which command researches, decomposes, and validates a phase plan?', options: ['$gsd-plan-phase 2', '$gsd-execute-phase 2', '$gsd-verify-work 2', '$gsd-progress'], correct: 0, explanation: 'Correct. Plan-phase is the research and plan construction stage.' },
+        { id: 'q12', question: 'Which plan-phase flag forces fresh research even when research already exists?', options: ['--research', '--wave 2', '--draft', '--gaps-only'], correct: 0, explanation: 'Correct. --research refreshes research; it is useful when facts or options may have changed.' },
+        { id: 'q13', question: 'When is --skip-research most appropriate with plan-phase?', options: ['When the domain is familiar and the work is well understood', 'Whenever the phase is high risk', 'When no plan exists', 'When you need UAT'], correct: 0, explanation: 'Correct. Skip research only when it would add little value, not as a shortcut around uncertainty.' },
+        { id: 'q14', question: 'What does $gsd-execute-phase 2 do by default?', options: ['Executes all plans in phase 2 in dependency-aware waves', 'Runs UAT only', 'Creates a new roadmap', 'Shows only the current status'], correct: 0, explanation: 'Correct. Execution coordinates the phase plans, normally grouping independent work into waves.' },
+        { id: 'q15', question: 'What does the flag in $gsd-execute-phase 2 --wave 2 mean?', options: ['Use model version 2', 'Run only execution wave 2', 'Repeat the phase twice', 'Verify two user stories'], correct: 1, explanation: 'Correct. --wave lets you pace execution or run one dependency group at a time.' },
+        { id: 'q16', question: 'Which execute-phase option runs sequentially with user checkpoints?', options: ['--interactive', '--research', '--draft', '--assumptions'], correct: 0, explanation: 'Correct. --interactive is useful for smaller phases, bug fixes, or pair-programming-style execution.' },
+        { id: 'q17', question: 'What is the primary purpose of $gsd-verify-work 2?', options: ['Conversational UAT of the built phase', 'Generating the initial roadmap', 'Running a single execution wave', 'Writing a context artifact'], correct: 0, explanation: 'Correct. Verify-work walks through user-visible outcomes and records UAT results.' },
+        { id: 'q18', question: 'Which artifact records the conversational acceptance testing from verify-work?', options: ['UAT.md', 'CONTEXT.md', 'ROADMAP.md', 'package.json'], correct: 0, explanation: 'Correct. Verify-work records its test results in a phase UAT artifact.' },
+        { id: 'q19', question: 'Verification produced gap-closure plans. What command targets only those plans?', options: ['$gsd-execute-phase 2 --gaps-only', '$gsd-execute-phase 2 --wave 2', '$gsd-fast "close gaps"', '$gsd-ship 2'], correct: 0, explanation: 'Correct. --gaps-only is specifically for the fix plans created after verification gaps.' },
+        { id: 'q20', question: 'When is $gsd-ship 2 --draft appropriate?', options: ['After the phase has the required verification and you want a draft PR', 'Before discussing the phase', 'Before any plan exists', 'Instead of UAT'], correct: 0, explanation: 'Correct. Shipping packages verified work for review; it does not replace planning or verification.' },
+        { id: 'q21', question: 'A documented flag is not included in the command. What happens?', options: ['It activates automatically', 'It stays inactive', 'GSD guesses whether to use it', 'The phase is cancelled'], correct: 1, explanation: 'Correct. Flags are opt-in. The literal flag must be present for its behavior to apply.' },
+        { id: 'q22', question: 'What does $gsd-discuss-phase 2 --assumptions do?', options: ['Surfaces implementation assumptions about the phase', 'Executes assumptions in parallel', 'Skips all discussion and planning', 'Creates a draft PR'], correct: 0, explanation: 'Correct. Assumptions mode exposes what the agent would otherwise silently presume.' },
+      ];
+      const state = { quiz: new Set(), mission: false };
 
       function updateProgress() {
-        const completed = state.scenarios.size + (state.mission ? 1 : 0) + document.querySelectorAll('.habit:checked').length;
-        const percent = Math.round((completed / 9) * 100);
+        const completed = state.quiz.size + (state.mission ? 1 : 0) + document.querySelectorAll('.habit:checked').length;
+        const total = quizQuestions.length + 6;
+        const percent = Math.round((completed / total) * 100);
         document.getElementById('progress-label').textContent = `${percent}% complete`;
         document.getElementById('progress-bar').style.width = `${percent}%`;
-        document.getElementById('score').textContent = `${completed}/9`;
-        document.getElementById('score-text').textContent = completed === 9
-          ? 'Excellent. You can now frame work, choose workflow depth, and demand evidence before declaring a task done.'
-          : 'Complete the three scenario checks, the mission, and the five habits to finish the field training.';
-        if (completed === 9) document.getElementById('completion-toast').classList.add('show');
+        document.getElementById('score').textContent = `${completed}/${total}`;
+        document.getElementById('question-count').textContent = `${state.quiz.size} of ${quizQuestions.length} answered correctly`;
+        document.getElementById('score-text').textContent = completed === total
+          ? 'Excellent. You can choose workflow depth, invoke every phase-loop command, and demand evidence before calling work done.'
+          : 'Complete the 22-question assessment, the hands-on mission, and the five habits to finish the field training.';
+        if (completed === total) document.getElementById('completion-toast').classList.add('show');
       }
 
-      document.querySelectorAll('.check-answer').forEach((button) => {
-        button.addEventListener('click', () => {
-          const fieldset = button.closest('fieldset');
-          const selected = fieldset.querySelector('input:checked');
-          const feedback = fieldset.querySelector('.feedback');
-          if (!selected) {
-            feedback.textContent = 'Choose one option first.';
-            feedback.className = 'feedback bad';
-            return;
-          }
-          const correct = fieldset.dataset.answer === selected.value;
-          feedback.textContent = correct ? answers[selected.value] : (wrongAnswers[selected.value] || 'Try the option that makes uncertainty visible before implementation.');
-          feedback.className = `feedback ${correct ? 'good' : 'bad'}`;
-          if (correct) state.scenarios.add(fieldset.querySelector('legend').textContent);
-          updateProgress();
+      function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = quizQuestions.map((question, index) => `
+          <fieldset class="quiz-card" data-quiz-id="${question.id}">
+            <legend>${index + 1}. ${question.question}</legend>
+            <div class="options">
+              ${question.options.map((option, optionIndex) => `<label class="option"><input type="radio" name="${question.id}" value="${optionIndex}" /><span>${option}</span></label>`).join('')}
+            </div>
+            <button class="secondary quiz-check" type="button">Check answer</button>
+            <p class="feedback" aria-live="polite"></p>
+          </fieldset>
+        `).join('');
+
+        document.querySelectorAll('.quiz-check').forEach((button) => {
+          button.addEventListener('click', () => {
+            const fieldset = button.closest('fieldset');
+            const selected = fieldset.querySelector('input:checked');
+            const feedback = fieldset.querySelector('.feedback');
+            const question = quizQuestions.find((item) => item.id === fieldset.dataset.quizId);
+            if (!selected) {
+              feedback.textContent = 'Choose one option first.';
+              feedback.className = 'feedback bad';
+              return;
+            }
+            const correct = Number(selected.value) === question.correct;
+            feedback.textContent = correct ? question.explanation : `Not quite. ${question.explanation}`;
+            feedback.className = `feedback ${correct ? 'good' : 'bad'}`;
+            if (correct) state.quiz.add(question.id);
+            else state.quiz.delete(question.id);
+            updateProgress();
+          });
         });
-      });
+      }
+
+      renderQuiz();
 
       document.querySelectorAll('.mission-choice').forEach((button) => {
         button.addEventListener('click', () => {

@@ -27,12 +27,18 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 
 ## Current Position
 
-Phase: 05 (school-community-and-wny-release-slice) — NOT STARTED
-Plan: 0 of TBD
-Status: Plan 05-07 source correction/test complete; Preview UAT remains blocked
-Last activity: 2026-09-08 — Historical Phase 6 plan baseline restored; Phase 5 gate remains active
+Phase: 06 (end-to-end-hardening-and-release-readiness) — IN PROGRESS
+Plan: 7 of 7
+Status: Phase 5 complete; Phase 6 Plan 06-07 is blocked on the protected Preview lifecycle transport failure
+Last activity: 2026-09-16 — Resumed GSD workflow to diagnose and close the final prelaunch rehearsal blocker
 
 Progress: [██████████] 100%
+
+## Session Continuity
+
+Last session: 2026-09-16
+Stopped at: Session resumed; diagnosing the protected Preview lifecycle transport failure from Phase 6 Plan 06-07.
+Resume file: None
 
 ## Performance Metrics
 
@@ -160,6 +166,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 7 added: Governed Opportunity and Support Matching
+- Phase 8 added: Matching Algorithm Improvement
 
 ### Pending Todos
 
@@ -185,6 +192,11 @@ None yet.
 | 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
 | 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
 | 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
+| 260916-tsa | Refresh Scholar Scout page imagery with animated alternating backdrop scenes and programme/school photos | 2026-09-16 | Uncommitted | [260916-tsa-refresh-scholar-scout-page-imagery-with-](./quick/260916-tsa-refresh-scholar-scout-page-imagery-with-/) |
+| 260916-u0w | Apply the configured modern Geist typeface site-wide for a future-facing Scholar Scout interface | 2026-09-16 | Uncommitted | [260916-u0w-apply-the-configured-modern-geist-typefa](./quick/260916-u0w-apply-the-configured-modern-geist-typefa/) |
+| 260916-u27 | Add rural and inner-city learning backdrops plus verified private AI, infrastructure, and trades training pathways | 2026-09-16 | Uncommitted | [260916-u27-add-rural-and-inner-city-learning-backdr](./quick/260916-u27-add-rural-and-inner-city-learning-backdr/) |
+| 260916-u7l | Replace stylized ambient imagery with photorealistic campus photo sequences and cinematic movement | 2026-09-16 | Uncommitted | [260916-u7l-replace-stylized-ambient-imagery-with-ph](./quick/260916-u7l-replace-stylized-ambient-imagery-with-ph/) |
+| 260916-uc9 | Add clear photoreal school and training-institute signage to life-transition campus imagery | 2026-09-16 | Uncommitted | [260916-uc9-add-clear-photoreal-school-and-training-](./quick/260916-uc9-add-clear-photoreal-school-and-training-/) |
 
 ## Deferred Items
 

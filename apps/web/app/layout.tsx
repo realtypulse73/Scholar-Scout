@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
+import AmbientCampusBackdrop from "@/components/layout/AmbientCampusBackdrop";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -28,8 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <AmbientCampusBackdrop />
         <AuthSessionProvider>{children}</AuthSessionProvider>
       </body>
     </html>
