@@ -9,7 +9,7 @@ import {
 const PROTOCOL = 'lifecycle-v1';
 
 export async function HEAD(request: Request) {
-  if (!isAuthorizedLifecycleRequest(request)) return denied();
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
   assertE2eFixtureRuntimeConfiguration();
   return new Response(null, { status: 204 });
 }
