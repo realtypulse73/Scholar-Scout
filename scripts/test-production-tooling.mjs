@@ -477,6 +477,7 @@ test('local release rehearsal records and reports a failed local lane', async ()
     ],
     outcome: 'failed',
     errorCategory: 'command-failed',
+    failedCommand: 'pnpm install --frozen-lockfile --ignore-scripts',
   });
 });
 

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { loadEnvFileFromArgs } from './env-file.mjs';
 
-const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory']);
+const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory', 'failedCommand', 'failedTest', 'failureDetail']);
 const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage'];
 const REQUIRED_LOCAL_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser'];
 const CANDIDATE_QUALITY_COMMANDS = [
@@ -89,15 +89,20 @@ async function main() {
 async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
   const recordedAt = new Date().toISOString();
   const commandList = commands.map(formatCommand);
+  const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'passed' };
   for (const [command, commandArgs] of commands) {
     const result = await runCommand(command, commandArgs);
     if (result.code !== 0) {
-      const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'failed', errorCategory: 'command-failed' };
-      await writeFile(path.join(outputDir, `${lane}.json`), `${JSON.stringify(record, null, 2)}\n`);
-      return record;
+      record.outcome = 'failed';
+      record.errorCategory = 'command-failed';
+      record.failedCommand = formatCommand([command, commandArgs]);
+      const failedTest = parseFailedTestName(result.stdout);
+      if (failedTest) record.failedTest = failedTest;
+      const failureDetail = parseSafeFailureDetail(`${result.stdout}\n${result.stderr}`);
+      if (failureDetail) record.failureDetail = failureDetail;
+      break;
     }
   }
-  const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'passed' };
   if (commandList.length === 1) record.command = commandList[0];
   await writeFile(path.join(outputDir, `${lane}.json`), `${JSON.stringify(record, null, 2)}\n`);
   return record;
@@ -109,6 +114,16 @@ async function loadRequiredRecord(recordPath, lane, candidateCommit) {
 }
 
 function formatCommand([command, args]) { return [command, ...args].join(' '); }
+function parseFailedTestName(output) { return output.match(/^not ok \d+ - ([^\r\n]+)/m)?.[1]; }
+export function parseSafeFailureDetail(output) {
+  const lifecycle = output.match(/E2E fixture (provision|verification|cleanup|transport) lifecycle request failed\./);
+  if (lifecycle) return `fixture-${lifecycle[1]}`;
+  const journey = output.match(/Student release journey failed during (profile-read|catalogue|onboarding(?:-(?:open|interest|pathway|next-one|gpa|location|next-two|support|next-three|save|complete|persist))?|shortlist|recommendations|simulation) \((ambiguous|blocked|timeout|failed)\)\./);
+  if (journey) return `journey-${journey[1]}-${journey[2]}`;
+  if (output.includes('Owned E2E application process did not become ready.')) return 'fixture-not-ready';
+  if (output.includes('Browser test runner failed.')) return 'browser-runner';
+  return undefined;
+}
 function buildReleaseSummary(records) { return ['# ScholarScout Candidate Release Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Required Proof Lanes', '', ...REQUIRED_RELEASE_LANES.map((lane) => `- ${records[lane]?.outcome ?? 'missing'}: ${lane}`), '', 'Records contain only candidate commit, UTC, command, pass/fail, safe category, and approved target/artifact identifiers or links. Preview evidence supplements and never replaces protected-main, production deployment, or post-deploy smoke evidence.', ''].join('\n'); }
 function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Steps', '', ...steps.map((step) => `- ${step.status}: ${step.name}${step.detail ? ` (${step.detail})` : ''}`), ''].join('\n'); }
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
