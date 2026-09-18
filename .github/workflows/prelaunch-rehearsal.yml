@@ -3,12 +3,28 @@ name: ScholarScout Prelaunch Rehearsal
 on:
   workflow_dispatch:
     inputs:
-      base_url:
-        description: Protected baseline Preview URL; paste from Vercel, never a secret
+      baseline_preview_url:
+        description: Generated baseline Preview URL; never a Production or stable-domain URL
         required: true
         type: string
-      outage_base_url:
-        description: Separate protected outage Preview URL; paste from Vercel, never a secret
+      outage_preview_url:
+        description: Generated outage Preview URL; separate from baseline and never Production or a stable-domain URL
+        required: true
+        type: string
+      baseline_preview_ref:
+        description: Temporary baseline Preview branch ref; never main or a release ref
+        required: true
+        type: string
+      outage_preview_ref:
+        description: Temporary outage Preview branch ref; separate from baseline
+        required: true
+        type: string
+      baseline_preview_config_fact:
+        description: Safe baseline branch-scoped configuration fact; no values or identifiers
+        required: true
+        type: string
+      outage_preview_config_fact:
+        description: Safe outage branch-scoped configuration fact; separate from baseline
         required: true
         type: string
       candidate_commit:
@@ -34,7 +50,7 @@ jobs:
       # GitHub reserves GITHUB_SHA for the workflow revision. Keep the
       # independently selected Preview candidate under our own name.
       SCHOLARSCOUT_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
-      NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
+      NEXTAUTH_URL: ${{ inputs.baseline_preview_url || secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -57,8 +73,10 @@ jobs:
       SCHOLARSCOUT_VERCEL_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_BYPASS }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY }}
-      SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.base_url }}
-      SCHOLARSCOUT_PREVIEW_OUTAGE_URL: ${{ inputs.outage_base_url }}
+      SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.baseline_preview_url }}
+      SCHOLARSCOUT_PREVIEW_OUTAGE_URL: ${{ inputs.outage_preview_url }}
+      SCHOLARSCOUT_BASELINE_PREVIEW_URL: ${{ inputs.baseline_preview_url }}
+      SCHOLARSCOUT_OUTAGE_PREVIEW_URL: ${{ inputs.outage_preview_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,6 +86,10 @@ jobs:
       - name: Verify candidate checkout
         run: |
           test "$(git rev-parse HEAD)" = "${{ inputs.candidate_commit }}"
+
+      - name: Validate distinct temporary Preview lanes
+        run: |
+          node scripts/prelaunch-rehearsal.mjs --release-gate --validate-preview-lanes --candidate-commit "${{ inputs.candidate_commit }}" --baseline-preview-url "${{ inputs.baseline_preview_url }}" --outage-preview-url "${{ inputs.outage_preview_url }}" --baseline-preview-ref "${{ inputs.baseline_preview_ref }}" --outage-preview-ref "${{ inputs.outage_preview_ref }}" --baseline-preview-config-fact "${{ inputs.baseline_preview_config_fact }}" --outage-preview-config-fact "${{ inputs.outage_preview_config_fact }}"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -108,9 +130,14 @@ jobs:
           node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
           test -f reports/prelaunch-rehearsal/preview-outage.json
 
+      - name: Record Preview cleanup and recovery gate
+        run: |
+          node scripts/prelaunch-rehearsal.mjs --release-gate --write-preview-cleanup-record --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json --preview-cleanup-record reports/prelaunch-rehearsal/preview-cleanup.json --baseline-preview-url "${{ inputs.baseline_preview_url }}" --outage-preview-url "${{ inputs.outage_preview_url }}" --baseline-preview-ref "${{ inputs.baseline_preview_ref }}" --outage-preview-ref "${{ inputs.outage_preview_ref }}" --baseline-preview-config-fact "${{ inputs.baseline_preview_config_fact }}" --outage-preview-config-fact "${{ inputs.outage_preview_config_fact }}"
+          test -f reports/prelaunch-rehearsal/preview-cleanup.json
+
       - name: Aggregate candidate release rehearsal
         run: |
-          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json
+          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json --preview-cleanup-record reports/prelaunch-rehearsal/preview-cleanup.json
           test -f reports/prelaunch-rehearsal/release-records.json
 
       - name: Summarize prelaunch rehearsal

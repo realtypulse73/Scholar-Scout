@@ -18,6 +18,7 @@ Use this template for the launch-readiness note after running a prelaunch rehear
 - `prelaunch-summary.md`:
 - Candidate-quality record (commit and artifact/link only):
 - High-risk record (commit and artifact/link only):
+- Preview cleanup/recovery record (commit and artifact/link only):
 
 ## Candidate Quality
 
@@ -38,6 +39,7 @@ Record each result against the same immutable candidate commit:
 | Local browser | | | | | | | |
 | Protected Preview browser | | | | | | | |
 | Preview outage/restoration | | | | | | | |
+| Preview cleanup/recovery | | Generated Preview lanes only | | | | | |
 
 ## Results
 
@@ -58,5 +60,7 @@ Record each result against the same immutable candidate commit:
 
 Do not paste secrets, cookies, exported snapshots, or full data documents here.
 Do not record fixture IDs, capabilities, storage details, student content, or environment values.
+For the two Preview lanes, retain only the generated Preview URL/ID and the pass/fail fact that each used a separate temporary ref and branch-scoped configuration. Do not record ref names, configuration values, storage paths, or dashboard screenshots containing sensitive values.
+Record the maintainer's separate post-rehearsal confirmation that both temporary Vercel configurations, branch refs, and GitHub Actions lifecycle secrets were removed. The workflow's cleanup/recovery record proves application fixture cleanup; it does not prove dashboard cleanup by itself.
 If `.env.prelaunch.local` was used, mark the evidence as a local rehearsal only, not a production launch rehearsal.
 These Preview results supplement, and never replace, protected-main CI, a production deployment/build log, and post-deploy smoke evidence.

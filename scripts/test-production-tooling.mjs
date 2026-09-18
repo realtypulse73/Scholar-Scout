@@ -419,7 +419,7 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
-test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and Preview records', async () => {
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, Preview, and cleanup records', async () => {
   const rehearsal = await readFile(
     path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
     'utf8',
@@ -434,6 +434,10 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /local-browser/);
   assert.match(rehearsal, /preview-browser/);
   assert.match(rehearsal, /preview-outage/);
+  assert.match(rehearsal, /preview-cleanup/);
+  assert.match(rehearsal, /validatePreviewLaneConfiguration/);
+  assert.match(rehearsal, /Preview rehearsal lanes must use distinct URLs/);
+  assert.match(rehearsal, /Preview rehearsal cleanup record is required/);
   assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(rehearsal, /data-adapter-empty/);
@@ -443,6 +447,93 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(workflow, /preview-outage/);
   assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
   assert.match(rehearsal, /aggregateLocalReleaseRecords/);
+});
+
+test('release aggregation fails closed when the separate Preview cleanup record is absent or failed', async () => {
+  const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-cleanup-'));
+  const candidateCommit = 'candidate-commit';
+  const laneRecords = {
+    'candidate-quality': { candidateCommit, target: 'candidate', outcome: 'passed' },
+    'high-risk': { candidateCommit, target: 'candidate', outcome: 'passed' },
+    'local-browser': { candidateCommit, target: 'local', outcome: 'passed' },
+    'preview-browser': { candidateCommit, target: 'https://scholar-scout-baseline-scholar-scout.vercel.app', outcome: 'passed' },
+    'preview-outage': { candidateCommit, target: 'https://scholar-scout-outage-scholar-scout.vercel.app', outcome: 'passed' },
+  };
+  for (const [lane, record] of Object.entries(laneRecords)) {
+    await writeFile(path.join(outputDir, `${lane}.json`), `${JSON.stringify(record)}\n`);
+  }
+
+  const args = [
+    'scripts/prelaunch-rehearsal.mjs',
+    '--release-gate',
+    '--aggregate-only',
+    '--candidate-commit',
+    candidateCommit,
+    '--output-dir',
+    outputDir,
+    '--preview-browser-record',
+    path.join(outputDir, 'preview-browser.json'),
+    '--preview-outage-record',
+    path.join(outputDir, 'preview-outage.json'),
+    '--preview-cleanup-record',
+    path.join(outputDir, 'preview-cleanup.json'),
+  ];
+
+  const missing = await runNode(args);
+  assert.equal(missing.code, 1);
+  assert.match(missing.stderr, /Release rehearsal is incomplete/);
+
+  await writeFile(
+    path.join(outputDir, 'preview-cleanup.json'),
+    `${JSON.stringify({ candidateCommit, target: 'preview-lane-cleanup', outcome: 'failed' })}\n`,
+  );
+  const failed = await runNode(args);
+  assert.equal(failed.code, 1);
+  assert.match(failed.stderr, /Release rehearsal is incomplete/);
+
+  const cleanup = await runNode([
+    'scripts/prelaunch-rehearsal.mjs',
+    '--release-gate',
+    '--write-preview-cleanup-record',
+    '--candidate-commit',
+    candidateCommit,
+    '--preview-browser-record',
+    path.join(outputDir, 'preview-browser.json'),
+    '--preview-outage-record',
+    path.join(outputDir, 'preview-outage.json'),
+    '--preview-cleanup-record',
+    path.join(outputDir, 'preview-cleanup.json'),
+    '--baseline-preview-url',
+    laneRecords['preview-browser'].target,
+    '--outage-preview-url',
+    laneRecords['preview-outage'].target,
+    '--baseline-preview-ref',
+    'codex/phase6-baseline-test',
+    '--outage-preview-ref',
+    'codex/phase6-outage-test',
+    '--baseline-preview-config-fact',
+    'branch-scoped-baseline',
+    '--outage-preview-config-fact',
+    'branch-scoped-outage',
+  ]);
+  assert.equal(cleanup.code, 0, cleanup.stderr);
+  const cleanupRecord = JSON.parse(
+    await readFile(path.join(outputDir, 'preview-cleanup.json'), 'utf8'),
+  );
+  assert.deepEqual(
+    cleanupRecord,
+    {
+      candidateCommit,
+      target: 'preview-lane-cleanup',
+      artifact: 'baseline-and-outage-lanes',
+      recordedAt: cleanupRecord.recordedAt,
+      command: 'validate-preview-lane-cleanup',
+      outcome: 'passed',
+    },
+  );
+
+  const passed = await runNode(args);
+  assert.equal(passed.code, 0, passed.stderr);
 });
 
 test('local release rehearsal records and reports a failed local lane', async () => {
@@ -544,6 +635,12 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.ok(aggregate > previewOutage);
   assert.match(workflow, /baseline_preview_url:/);
   assert.match(workflow, /outage_preview_url:/);
+  assert.match(workflow, /baseline_preview_ref:/);
+  assert.match(workflow, /outage_preview_ref:/);
+  assert.match(workflow, /baseline_preview_config_fact:/);
+  assert.match(workflow, /outage_preview_config_fact:/);
+  assert.match(workflow, /Record Preview cleanup and recovery gate/);
+  assert.match(workflow, /--preview-cleanup-record/);
   assert.match(workflow, /deployments:\s*read/);
   assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
   assert.match(workflow, /SCHOLARSCOUT_BASELINE_PREVIEW_URL:\s*\$\{\{ inputs\.baseline_preview_url \}\}/);
