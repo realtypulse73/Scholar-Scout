@@ -125,3 +125,32 @@ test('records a scrubbed lifecycle failure when outage cleanup is denied', async
   assert.equal(JSON.stringify(result).includes('bypass-value'), false);
   assert.equal(JSON.stringify(result).includes('capability-value'), false);
 });
+
+test('requires independent attestation before it creates outage lifecycle or POST traffic', async () => {
+  const phases = [];
+  const result = await runPreviewOutageRehearsal({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    previewUrl: metadata.url,
+    env: {
+      SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: 'deployment-read-token',
+      SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
+    },
+    attestPreviewDeployment: async ({ githubToken, submittedUrl }) => {
+      phases.push('attestation');
+      assert.equal(githubToken, 'deployment-read-token');
+      assert.equal(submittedUrl, metadata.url);
+      return metadata;
+    },
+    createLifecycle: () => {
+      phases.push('lifecycle');
+      return async () => ({ ok: false });
+    },
+    fetchImpl: async () => { phases.push('outage-post'); },
+  });
+
+  assert.equal(phases[0], 'attestation');
+  assert.equal(result.errorCategory, 'fixture-provision-failed');
+  assert.equal(JSON.stringify(result).includes('deployment-read-token'), false);
+});

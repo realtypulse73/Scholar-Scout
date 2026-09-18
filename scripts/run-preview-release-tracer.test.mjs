@@ -178,3 +178,32 @@ test('records a scrubbed lifecycle failure when Preview fixture provisioning is 
   assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
   assert.equal(JSON.stringify(result).includes('runner-capability'), false);
 });
+
+test('requires independent attestation before it creates any Preview lifecycle or browser traffic', async () => {
+  const phases = [];
+  const result = await runPreviewReleaseTracer({
+    candidateCommit: 'candidate-commit',
+    metadata,
+    previewUrl: metadata.url,
+    env: {
+      SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: 'deployment-read-token',
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
+    },
+    attestPreviewDeployment: async ({ githubToken, submittedUrl }) => {
+      phases.push('attestation');
+      assert.equal(githubToken, 'deployment-read-token');
+      assert.equal(submittedUrl, metadata.url);
+      return metadata;
+    },
+    createLifecycleRequest: () => {
+      phases.push('lifecycle');
+      return async () => ({ ok: false });
+    },
+    createBrowser: async () => { phases.push('browser'); },
+  });
+
+  assert.equal(phases[0], 'attestation');
+  assert.equal(result.errorCategory, 'fixture-provision-failed');
+  assert.equal(JSON.stringify(result).includes('deployment-read-token'), false);
+});
