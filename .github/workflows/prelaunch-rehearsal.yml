@@ -11,7 +11,6 @@ on:
 permissions:
   contents: read
   actions: read
-  deployments: read
   pull-requests: read
 
 concurrency:
@@ -23,11 +22,12 @@ jobs:
     name: Prelaunch rehearsal
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    environment: Preview
     env:
       SCHOLARSCOUT_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY }}
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY }}
-      SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: ${{ github.token }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX: ${{ vars.SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX }}
       SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX: ${{ vars.SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX }}
     steps:
@@ -66,15 +66,19 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install Vercel deployment reader
+        run: npm install --global vercel@58.10.0
+
       - name: Wait for the two isolated rehearsal deployments
         run: |
           for attempt in $(seq 1 40); do
             if node scripts/discover-rehearsal-preview-deployments.mjs \
-              --owner "${{ github.repository_owner }}" \
-              --repo "${{ github.event.repository.name }}" \
               --candidate-commit "${{ inputs.candidate_commit }}" \
               --baseline-host-prefix "$SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX" \
               --outage-host-prefix "$SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX" \
+              --baseline-project scholar-scout-rehearsal-baseline \
+              --outage-project scholar-scout-rehearsal-outage \
+              --vercel-scope scholar-scout \
               --output reports/prelaunch-rehearsal/discovered-previews.json \
               --github-env "$GITHUB_ENV"; then
               exit 0

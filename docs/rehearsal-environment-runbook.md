@@ -43,6 +43,8 @@ SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX=scholar-scout-rehearsal-baseline-
 SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX=scholar-scout-rehearsal-outage-
 ```
 
+In the GitHub **Preview** environment, retain a `VERCEL_TOKEN` secret with read access to the `scholar-scout` Vercel team. The workflow uses Vercel's CLI to find one `READY` deployment in each rehearsal project whose Git commit metadata exactly matches the candidate SHA. It does not print the token, accept pasted URLs, or copy a Vercel value into GitHub for an individual rehearsal.
+
 ## Run a rehearsal
 
 1. Open or update a pull request to `main`.
@@ -50,4 +52,4 @@ SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX=scholar-scout-rehearsal-outage-
 3. In GitHub Actions, run **ScholarScout Prelaunch Rehearsal** and paste that full commit SHA.
 4. Read the uploaded `prelaunch-rehearsal` artifact. A pass means both fixture lifecycles were created, checked, and cleaned; a failure gives a safe category without exposing data or credentials.
 
-The projects and their two GitHub secrets remain in place. No branches, branch-specific variables, generated handoff files, or per-run secret changes are needed.
+The projects, their two fixture capabilities, and the Preview environment's read-only Vercel token remain in place. No branches, branch-specific variables, generated handoff files, pasted URLs, or per-run secret changes are needed.

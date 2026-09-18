@@ -581,11 +581,15 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   assert.ok(previewOutage > previewBrowser);
   assert.ok(aggregate > previewOutage);
   assert.match(workflow, /Wait for the two isolated rehearsal deployments/);
+  assert.match(workflow, /environment:\s*Preview/);
   assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX/);
   assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX/);
-  assert.match(workflow, /deployments:\s*read/);
-  assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
-  assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
+  assert.match(workflow, /Install Vercel deployment reader/);
+  assert.match(workflow, /VERCEL_TOKEN:\s*\$\{\{ secrets\.VERCEL_TOKEN \}\}/);
+  assert.match(workflow, /--baseline-project scholar-scout-rehearsal-baseline/);
+  assert.match(workflow, /--outage-project scholar-scout-rehearsal-outage/);
+  assert.match(workflow, /--vercel-scope scholar-scout/);
+  assert.doesNotMatch(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN|deployments:\s*read/);
   assert.doesNotMatch(workflow, /SCHOLARSCOUT_PREVIEW_METADATA|SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA/);
   assert.doesNotMatch(workflow, /--prod|promote|alias/);
 });
