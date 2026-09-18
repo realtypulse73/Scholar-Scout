@@ -117,9 +117,10 @@ async function loadRequiredRecord(recordPath, lane, candidateCommit) {
 
 function formatCommand([command, args]) { return [command, ...args].join(' '); }
 function parseFailedTestName(output) {
-  const nodeTestName = output.match(/^not ok \d+ - ([^\r\n]+)/m)?.[1];
+  const plainOutput = output.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '');
+  const nodeTestName = plainOutput.match(/^not ok \d+ - ([^\r\n]+)/m)?.[1];
   if (nodeTestName) return nodeTestName;
-  return output.match(/^\s*FAIL\s+([^\r\n]+)/m)?.[1]?.trim();
+  return plainOutput.match(/^\s*FAIL\s+([^\r\n]+)/m)?.[1]?.trim();
 }
 export function parseSafeFailureDetail(output) {
   const lifecycle = output.match(/E2E fixture (provision|verification|cleanup|transport) lifecycle request failed\./);
