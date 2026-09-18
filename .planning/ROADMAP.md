@@ -199,17 +199,21 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: 7 plans (restored historical execution baseline; not started)
+**Plans**: 11 plans (six completed historical plans, one blocked rehearsal plan, and four planned remediation plans)
 
 Plans:
 
-- [ ] 06-01-PLAN.md — Establish the protected student-journey release tracer
-- [ ] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
-- [ ] 06-03-PLAN.md — Run the owned local browser journey
-- [ ] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
-- [ ] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
-- [ ] 06-06-PLAN.md — Supervise the protected Preview tracer
+- [x] 06-01-PLAN.md — Establish the protected student-journey release tracer
+- [x] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
+- [x] 06-03-PLAN.md — Run the owned local browser journey
+- [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
+- [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
+- [x] 06-06-PLAN.md — Supervise the protected Preview tracer
 - [ ] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+- [ ] 06-08-PLAN.md — Discover and approve the actual Vercel/GitHub Preview deployment semantics
+- [ ] 06-09-PLAN.md — Attest each Preview candidate through GitHub Deployments before traffic
+- [ ] 06-10-PLAN.md — Enforce fixture-bound Preview Blob-path isolation and no-write preflight
+- [ ] 06-11-PLAN.md — Run the two-lane branch-scoped Preview rehearsal with cleanup evidence
 
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
@@ -224,7 +228,7 @@ Plans:
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete    | 2026-09-18 |
-| 6. End-to-End Hardening and Release Readiness | 0/7 | Not started | - |
+| 6. End-to-End Hardening and Release Readiness | 6/11 | In progress | - |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
