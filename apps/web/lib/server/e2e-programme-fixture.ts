@@ -1,25 +1,16 @@
 import 'server-only';
 
 import type { Programme } from '@/lib/programmes';
-import {
-  createAuditEvent,
-} from './data-store';
-import { commitConditionalMutation } from './persistence-operations';
+import { getConfiguredE2eFixtureId } from './e2e-fixture-config';
+
+export {
+  getConfiguredE2eFixtureId,
+  isE2eFixtureEnabled,
+} from './e2e-fixture-config';
 
 const FIXTURE_ACTOR_PREFIX = 'e2e-fixture:';
 const FIXTURE_VERIFICATION_ATTEMPTS = 5;
 const FIXTURE_VERIFICATION_DELAY_MS = 250;
-
-export function isE2eFixtureEnabled(): boolean {
-  return process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
-}
-
-export function getConfiguredE2eFixtureId(): string | null {
-  const fixtureId = process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
-  return isE2eFixtureEnabled() && fixtureId && /^[a-z0-9-]{16,128}$/i.test(fixtureId)
-    ? fixtureId
-    : null;
-}
 
 export function createE2eProgrammeFixture(fixtureId: string): Programme[] {
   const prefix = `e2e-${fixtureId}`;
@@ -109,7 +100,7 @@ export async function cleanupE2eFixture(): Promise<'cleaned'> {
 
 function requireConfiguredFixtureId(): string {
   const fixtureId = getConfiguredE2eFixtureId();
-  if (!fixtureId || process.env.VERCEL_ENV === 'production') {
+  if (!fixtureId) {
     throw new Error('E2E fixture lifecycle is unavailable.');
   }
   return fixtureId;
@@ -120,42 +111,18 @@ function fixtureActor(fixtureId: string): string {
 }
 
 async function writeFixtureRecords(actor: string, records: Programme[]): Promise<void> {
-  const result = await commitConditionalMutation((data) => {
-    for (const record of records) {
-      const existingIndex = data.programmeRecords.findIndex(
-        (item) => item.id === record.id,
-      );
-      const existing = data.programmeRecords[existingIndex];
-      if (existing) {
-        data.programmeRecords[existingIndex] = {
-          ...record,
-          revision: (existing.revision ?? 0) + 1,
-        };
-      } else {
-        data.programmeRecords.unshift({ ...record, revision: 1 });
-      }
-      data.auditEvents.push(
-        createAuditEvent(actor, existing ? 'update' : 'create', 'programme', record.id),
-      );
-    }
-  });
-  if (result.status === 'conflict') {
-    throw new Error('E2E fixture records could not be stored safely.');
+  const { saveProgrammeRecord } = await import('./programme-records');
+
+  for (const record of records) {
+    await saveProgrammeRecord(actor, record);
   }
 }
 
 async function deleteFixtureRecords(actor: string, records: Programme[]): Promise<void> {
-  const fixtureIds = new Set(records.map((record) => record.id));
-  const result = await commitConditionalMutation((data) => {
-    data.programmeRecords = data.programmeRecords.filter(
-      (record) => !fixtureIds.has(record.id),
-    );
-    for (const record of records) {
-      data.auditEvents.push(createAuditEvent(actor, 'delete', 'programme', record.id));
-    }
-  });
-  if (result.status === 'conflict') {
-    throw new Error('E2E fixture records could not be cleaned safely.');
+  const { deleteProgrammeRecord } = await import('./programme-records');
+
+  for (const record of records) {
+    await deleteProgrammeRecord(actor, record.id);
   }
 }
 
