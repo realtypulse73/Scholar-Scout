@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 current_phase_name: End-to-End Hardening and Release Readiness
-status: planning
-stopped_at: Phase 6 remediation plans 06-08 through 06-11 are reviewed and ready to execute.
-last_updated: "2026-09-18T18:00:00.000Z"
+status: executing
+stopped_at: Completed 06-08-PLAN.md; Plan 06-09 is next.
+last_updated: "2026-09-18T18:45:29.000Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase 5 complete, transitioned to Phase 06
+last_activity_desc: Completed Phase 06 Plan 08 Preview attestation discovery
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 48
-  completed_plans: 44
+  completed_plans: 45
 ---
 
 # Project State
@@ -28,23 +28,23 @@ See: .planning/PROJECT.md (updated 2026-09-18)
 ## Current Position
 
 Phase: 06 — End-to-End Hardening and Release Readiness
-Plan: 06-08 through 06-11 planned
+Plan: 06-09 through 06-11 planned
 Status: Ready to execute
-Last activity: 2026-09-18 — Phase 6 remediation plan passed review
+Last activity: 2026-09-18 — Phase 6 Plan 08 Preview attestation discovery completed
 
 Progress: [██████████] 100%
 
 ## Session Continuity
 
 Last session: 2026-09-18
-Stopped at: Phase 6 remediation plans 06-08 through 06-11 passed plan review; execute Plan 06-08 first.
+Stopped at: Completed 06-08-PLAN.md; execute Plan 06-09 next.
 Resume file: None
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -55,6 +55,7 @@ Resume file: None
 | 01 | 6 | - | - |
 | 02 | 13 | - | - |
 | 5 | 7 | - | - |
+| 06 | 1 | 13min | 13min |
 
 **Recent Trend:**
 
@@ -95,6 +96,7 @@ Resume file: None
 | Phase 04 P03 | 24min | 2 tasks | 5 files |
 | Phase 04 P04 | 25min | 2 tasks | 6 files |
 | Phase 04 P05 | 42min | 2 tasks | 3 files |
+| Phase 06 P08 | 13min | 1 task | 2 files |
 
 ## Accumulated Context
 
@@ -103,6 +105,7 @@ Resume file: None
 - Prioritize release confidence and security before product expansion.
 - Treat the current uncommitted school/community/WNY cluster as a separately validated release slice.
 - Modernize whole-document persistence incrementally at high-risk boundaries.
+- [Phase 06]: Use observed GitHub Deployment/status semantics, rather than workflow metadata, as the Preview attestation source; reject records older than 900 seconds.
 - [Phase ?]: Pinned pnpm@10.34.5 through Corepack for the root workspace and portable Windows tooling.
 - [Phase ?]: Use one regenerated root pnpm lockfile, validate it with frozen lifecycle-script-disabled installs, then remove stale locks.
 - [Phase ?]: CI reports six independently named Scholar Scout checks, each with a frozen Corepack-pnpm install.
