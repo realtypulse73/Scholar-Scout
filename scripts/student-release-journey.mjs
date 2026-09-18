@@ -46,24 +46,25 @@ export async function runStudentReleaseJourney(
     }
     stage = 'onboarding-open';
     await page.goto('/onboarding');
+    const onboardingPanel = page.locator('main > div > section');
     stage = 'onboarding-interest';
-    await page.getByRole('button', { name: 'Technology & IT' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Technology & IT' }).click();
     stage = 'onboarding-pathway';
-    await page.getByRole('button', { name: 'Certificate Program' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Certificate Program' }).click();
     stage = 'onboarding-next-one';
-    await page.getByRole('button', { name: 'Next' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Next', exact: true }).click();
     stage = 'onboarding-gpa';
-    await page.getByRole('button', { name: '3.0 – 3.4' }).click();
+    await onboardingPanel.getByRole('button', { name: '3.0 – 3.4' }).click();
     stage = 'onboarding-location';
-    await page.getByRole('button', { name: 'Close to Home (< 30 mi)' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Close to Home (< 30 mi)' }).click();
     stage = 'onboarding-next-two';
-    await page.getByRole('button', { name: 'Next' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Next', exact: true }).click();
     stage = 'onboarding-support';
-    await page.getByRole('button', { name: 'Financial Aid & Scholarships' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Financial Aid & Scholarships' }).click();
     stage = 'onboarding-next-three';
-    await page.getByRole('button', { name: 'Next' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Next', exact: true }).click();
     stage = 'onboarding-save';
-    await page.getByRole('button', { name: 'Save profile' }).click();
+    await onboardingPanel.getByRole('button', { name: 'Save profile' }).click();
     stage = 'onboarding-complete';
     await page.getByRole('heading', { name: STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING }).waitFor();
 

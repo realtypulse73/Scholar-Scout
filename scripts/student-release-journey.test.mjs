@@ -73,6 +73,14 @@ test('reports the safe onboarding interaction stage without exposing the underly
       }),
     },
     goto: async () => undefined,
+    locator: () => ({
+      getByRole: (_role, options) => {
+        if (options?.name === 'Technology & IT') {
+          return { click: async () => { throw sensitiveStop; } };
+        }
+        throw new Error('Unexpected scoped onboarding button.');
+      },
+    }),
     getByRole: (_role, options) => {
       if (options?.name === 'Programme results') {
         return {
@@ -80,8 +88,7 @@ test('reports the safe onboarding interaction stage without exposing the underly
           textContent: async () => 'E2E Applied Health Pathway',
         };
       }
-
-      return { click: async () => { throw sensitiveStop; } };
+      throw new Error('Unexpected page-level control.');
     },
   };
 
