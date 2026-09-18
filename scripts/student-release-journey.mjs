@@ -93,10 +93,8 @@ export async function runStudentReleaseJourney(
 
     stage = 'simulation';
     await page.goto('/simulate');
-    const simulationChoices = page
-      .locator('main > div > div > div > section')
-      .nth(1)
-      .locator('div.grid.gap-3');
+    const simulationPanel = page.locator('main > div > div > div > section').nth(1);
+    const simulationChoices = simulationPanel.locator('div.grid.gap-3');
     for (let step = 0; step < 6; step += 1) {
       await simulationChoices.getByRole('button').first().click();
       const finish = page.getByRole('button', { name: 'Finish simulation' });
@@ -104,7 +102,7 @@ export async function runStudentReleaseJourney(
         await finish.click();
         break;
       }
-      await page.getByRole('button', { name: 'Next' }).click();
+      await simulationPanel.getByRole('button', { name: 'Next', exact: true }).click();
     }
     await page.getByText('Simulation complete').waitFor();
   } catch (cause) {
