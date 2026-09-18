@@ -13,9 +13,13 @@ import {
   createLifecycleProtectionHeaders,
   createProtectedPreviewContextOptions,
 } from './preview-deployment-protection.mjs';
+import { attestPreviewDeployment as attestGithubPreviewDeployment } from './preview-deployment-attestation.mjs';
 import { runStudentReleaseJourney } from './student-release-journey.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
+const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const GITHUB_OWNER = 'realtypulse73';
+const GITHUB_REPOSITORY = 'Scholar-Scout';
 
 function getLifecycleCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -52,14 +56,27 @@ async function createProtectedBrowser(options) {
  */
 export async function runPreviewReleaseTracer({
   candidateCommit,
-  metadata,
+  previewUrl,
   env = process.env,
+  attestPreviewDeployment = attestGithubPreviewDeployment,
   createLifecycleRequest = createFixtureLifecycleRequest,
   createBrowser = createProtectedBrowser,
   runStudentSpec = ({ browser }) => runStudentReleaseJourney(browser.page),
 } = {}) {
+  let attestation;
+  try {
+    attestation = await attestPreviewDeployment({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPOSITORY,
+      candidateCommit,
+      submittedUrl: previewUrl,
+      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+    });
+  } catch {
+    return createSafeOutcome('failed', undefined, candidateCommit, 'preview-attestation-failed');
+  }
   const protectedOptions = createProtectedPreviewContextOptions({
-    metadata,
+    attestation,
     candidateCommit,
     env,
   });
@@ -110,28 +127,17 @@ export async function runPreviewReleaseTracer({
   }
 }
 
-function parseRunnerMetadata(value) {
-  try {
-    const metadata = JSON.parse(value ?? '');
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-      throw new Error();
-    }
-    return metadata;
-  } catch {
-    throw new Error('Preview tracer requires scrubbed Preview deployment metadata.');
-  }
-}
-
 async function runCli() {
   const outputFlag = process.argv.indexOf('--output');
   const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
   const candidateCommit = process.env.GITHUB_SHA;
-  if (!outputPath || !candidateCommit) {
-    throw new Error('Preview tracer requires a candidate commit and an output path.');
+  const previewUrl = process.env.SCHOLARSCOUT_BASELINE_PREVIEW_URL;
+  if (!outputPath || !candidateCommit || !previewUrl) {
+    throw new Error('Preview tracer requires a candidate commit, Preview URL, and output path.');
   }
   const outcome = await runPreviewReleaseTracer({
     candidateCommit,
-    metadata: parseRunnerMetadata(process.env.SCHOLARSCOUT_PREVIEW_METADATA),
+    previewUrl,
   });
   const record = { ...outcome, recordedAt: new Date().toISOString() };
   await mkdir(path.dirname(outputPath), { recursive: true });

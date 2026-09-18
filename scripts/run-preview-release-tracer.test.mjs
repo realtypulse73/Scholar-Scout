@@ -17,7 +17,8 @@ test('provisions, verifies, runs with protected page and API transport, and clea
 
   const result = await runPreviewReleaseTracer({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
@@ -69,16 +70,18 @@ test('provisions, verifies, runs with protected page and API transport, and clea
   });
 });
 
-test('fails before lifecycle or browser traffic when a guard is missing or invalid', async () => {
+test('fails before lifecycle or browser traffic when the attested target or runner guards are invalid', async () => {
   for (const input of [
-    { metadata: { ...metadata, environment: 'production' } },
-    { metadata, candidateCommit: 'other-commit' },
-    { metadata, env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass' } },
-    { metadata, env: { SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability' } },
+    { attestation: { ...metadata, environment: 'production' } },
+    { candidateCommit: 'other-commit' },
+    { env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass' } },
+    { env: { SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability' } },
   ]) {
     let traffic = false;
     await assert.rejects(() => runPreviewReleaseTracer({
       candidateCommit: 'candidate-commit',
+      previewUrl: metadata.url,
+      attestPreviewDeployment: async () => input.attestation ?? metadata,
       env: {
         SCHOLARSCOUT_VERCEL_BYPASS: 'bypass',
         SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability',
@@ -97,7 +100,8 @@ test('scrubs sensitive failure details and always delegates lifecycle cleanup', 
   const phases = [];
   const result = await runPreviewReleaseTracer({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
@@ -125,7 +129,8 @@ test('records a scrubbed lifecycle failure when Preview fixture provisioning is 
   let browserStarted = false;
   const result = await runPreviewReleaseTracer({
     candidateCommit: 'candidate-commit',
-    metadata,
+    previewUrl: metadata.url,
+    attestPreviewDeployment: async () => metadata,
     env: {
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
@@ -149,7 +154,6 @@ test('requires independent attestation before it creates any Preview lifecycle o
   const phases = [];
   const result = await runPreviewReleaseTracer({
     candidateCommit: 'candidate-commit',
-    metadata,
     previewUrl: metadata.url,
     env: {
       SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: 'deployment-read-token',

@@ -3,9 +3,13 @@ name: ScholarScout Prelaunch Rehearsal
 on:
   workflow_dispatch:
     inputs:
-      base_url:
-        description: Protected Preview URL only; never a production URL
-        required: false
+      baseline_preview_url:
+        description: Protected baseline Preview URL to attest; never a production URL
+        required: true
+        type: string
+      outage_preview_url:
+        description: Protected outage Preview URL to attest; never a production URL
+        required: true
         type: string
       candidate_commit:
         description: Immutable candidate commit to rehearse
@@ -15,6 +19,7 @@ on:
 permissions:
   contents: read
   actions: read
+  deployments: read
 
 concurrency:
   group: scholarscout-prelaunch-rehearsal
@@ -27,7 +32,7 @@ jobs:
     timeout-minutes: 15
     env:
       GITHUB_SHA: ${{ inputs.candidate_commit }}
-      NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -41,7 +46,7 @@ jobs:
       SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
       SCHOLARSCOUT_DATA_SERVICE_URL: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_URL }}
       SCHOLARSCOUT_DATA_SERVICE_TOKEN: ${{ secrets.SCHOLARSCOUT_DATA_SERVICE_TOKEN }}
-      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ inputs.base_url || secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
+      SCHOLARSCOUT_SMOKE_BASE_URL: ${{ secrets.SCHOLARSCOUT_SMOKE_BASE_URL }}
       SCHOLARSCOUT_SMOKE_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_SMOKE_HEALTH_TOKEN }}
       SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_ADAPTER }}
       SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS: ${{ secrets.SCHOLARSCOUT_SMOKE_EXPECTED_PROVIDERS }}
@@ -51,8 +56,6 @@ jobs:
       SCHOLARSCOUT_VERCEL_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_BYPASS }}
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY }}
-      SCHOLARSCOUT_PREVIEW_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_METADATA }}
-      SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA: ${{ secrets.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,13 +76,17 @@ jobs:
           pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"
 
       - name: Protected Preview browser proof (maintainer-owned runner)
+        env:
+          SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: ${{ github.token }}
+          SCHOLARSCOUT_BASELINE_PREVIEW_URL: ${{ inputs.baseline_preview_url }}
         run: |
-          test -n "${{ inputs.base_url }}"
-          test "${{ inputs.base_url }}" != "${{ secrets.NEXTAUTH_URL }}"
           node scripts/run-preview-release-tracer.mjs --output reports/prelaunch-rehearsal/preview-browser.json
           test -f reports/prelaunch-rehearsal/preview-browser.json
 
       - name: Separate Preview outage and restoration proof (maintainer-owned runner)
+        env:
+          SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN: ${{ github.token }}
+          SCHOLARSCOUT_OUTAGE_PREVIEW_URL: ${{ inputs.outage_preview_url }}
         run: |
           node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
           test -f reports/prelaunch-rehearsal/preview-outage.json

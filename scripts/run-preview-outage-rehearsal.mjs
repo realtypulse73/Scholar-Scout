@@ -12,18 +12,12 @@ import {
   createLifecycleProtectionHeaders,
   createProtectedPreviewContextOptions,
 } from './preview-deployment-protection.mjs';
+import { attestPreviewDeployment as attestGithubPreviewDeployment } from './preview-deployment-attestation.mjs';
 
 const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY';
-
-function parseMetadata(value) {
-  try {
-    const metadata = JSON.parse(value ?? '');
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error();
-    return metadata;
-  } catch {
-    throw new Error('Preview outage rehearsal requires scrubbed outage Preview metadata.');
-  }
-}
+const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const GITHUB_OWNER = 'realtypulse73';
+const GITHUB_REPOSITORY = 'Scholar-Scout';
 
 function getCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -35,12 +29,29 @@ function getCapability(env) {
 
 export async function runPreviewOutageRehearsal({
   candidateCommit,
-  metadata,
+  previewUrl,
   env = process.env,
+  attestPreviewDeployment = attestGithubPreviewDeployment,
   fetchImpl = fetch,
   createLifecycle = createLifecycleRequest,
 } = {}) {
-  const options = createProtectedPreviewContextOptions({ metadata, candidateCommit, env });
+  let attestation;
+  try {
+    attestation = await attestPreviewDeployment({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPOSITORY,
+      candidateCommit,
+      submittedUrl: previewUrl,
+      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+    });
+  } catch {
+    return {
+      candidateCommit,
+      outcome: 'failed',
+      errorCategory: 'preview-attestation-failed',
+    };
+  }
+  const options = createProtectedPreviewContextOptions({ attestation, candidateCommit, env });
   const lifecycle = createLifecycle(
     options.baseURL,
     getCapability(env),
@@ -81,13 +92,14 @@ export async function runPreviewOutageRehearsal({
 async function runCli() {
   const outputFlag = process.argv.indexOf('--output');
   const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : '';
-  if (!outputPath || !process.env.GITHUB_SHA) {
-    throw new Error('Preview outage rehearsal requires a candidate commit and output path.');
+  const previewUrl = process.env.SCHOLARSCOUT_OUTAGE_PREVIEW_URL;
+  if (!outputPath || !process.env.GITHUB_SHA || !previewUrl) {
+    throw new Error('Preview outage rehearsal requires a candidate commit, Preview URL, and output path.');
   }
   const record = {
     ...(await runPreviewOutageRehearsal({
       candidateCommit: process.env.GITHUB_SHA,
-      metadata: parseMetadata(process.env.SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA),
+      previewUrl,
     })),
     recordedAt: new Date().toISOString(),
   };
