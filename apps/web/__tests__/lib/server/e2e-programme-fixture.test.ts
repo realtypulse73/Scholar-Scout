@@ -100,9 +100,11 @@ describe('e2e programme fixture', () => {
   });
 
   it.each([
+    ['a blank path', ''],
     ['a default path', 'scholarscout/data.json'],
     ['another fixture path', 'scholarscout/preview/another-fixture-123456/data.json'],
     ['a malformed path', 'scholarscout/preview/fixture-run-123456/other.json'],
+    ['an external path', 'https://storage.example.test/data.json'],
   ])('rejects %s before fixture data access', async (_label, blobPath) => {
     process.env.SCHOLARSCOUT_BLOB_DATA_PATH = blobPath;
 
