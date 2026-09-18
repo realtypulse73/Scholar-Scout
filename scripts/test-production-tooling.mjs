@@ -436,7 +436,9 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /preview-outage/);
   assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
+  assert.match(rehearsal, /data-adapter-empty/);
   assert.match(workflow, /run-preview-release-tracer/);
+  assert.match(workflow, /SCHOLARSCOUT_DATA_ADAPTER: \$\{\{ secrets\.SCHOLARSCOUT_DATA_ADAPTER \|\| 'json' \}\}/);
   assert.match(workflow, /preview-outage/);
   assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
   assert.match(rehearsal, /aggregateLocalReleaseRecords/);

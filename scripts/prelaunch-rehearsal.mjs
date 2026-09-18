@@ -130,6 +130,7 @@ async function readJestFailureName(outputDir) {
   }
 }
 export function parseSafeFailureDetail(output) {
+  if (output.includes('Unsupported ScholarScout data adapter ""')) return 'data-adapter-empty';
   const lifecycle = output.match(/E2E fixture (provision|verification|cleanup|transport) lifecycle request failed\./);
   if (lifecycle) return `fixture-${lifecycle[1]}`;
   const journey = output.match(/Student release journey failed during (profile-read|catalogue|onboarding(?:-(?:open|interest|pathway|next-one|gpa|location|next-two|support|next-three|save|complete|persist))?|shortlist|recommendations|simulation) \((ambiguous|blocked|timeout|failed)\)\./);
