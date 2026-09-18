@@ -1,8 +1,8 @@
 # Phase 6: End-to-End Hardening and Release Readiness - Pattern Map
 
-**Mapped:** 2026-09-18  
-**Scope:** Targeted remediation for the two unresolved Preview-release review findings.  
-**Files analyzed:** 11 current seams plus the recommended attestation module/test.  
+**Mapped:** 2026-09-18
+**Scope:** Targeted remediation for the two unresolved Preview-release review findings.
+**Files analyzed:** 11 current seams plus the recommended attestation module/test.
 **Analogs found:** 10 / 12 (there is no existing trusted GitHub Deployment attestation helper).
 
 ## File Classification
@@ -269,6 +269,6 @@ Blob path selection remains server deployment configuration. The lifecycle proto
 
 ## Metadata
 
-**Analog search scope:** `scripts/`, `.github/workflows/`, `apps/web/lib/server/`, `apps/web/__tests__/`, `services/codex-webhook-runner/`, and release documentation.  
-**Files scanned:** 18.  
+**Analog search scope:** `scripts/`, `.github/workflows/`, `apps/web/lib/server/`, `apps/web/__tests__/`, `services/codex-webhook-runner/`, and release documentation.
+**Files scanned:** 18.
 **Pattern extraction date:** 2026-09-18.
