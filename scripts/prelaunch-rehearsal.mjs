@@ -10,7 +10,9 @@ const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser
 const REQUIRED_LOCAL_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
-  ['pnpm', ['test']],
+  ['pnpm', ['--filter', '@scholar-scout/web', 'test']],
+  ['pnpm', ['--filter', '@scholar-scout/http-data-service', 'test']],
+  ['pnpm', ['--filter', '@scholar-scout/codex-webhook-runner', 'test']],
   ['pnpm', ['run', 'lint']],
   ['pnpm', ['run', 'typecheck']],
   ['pnpm', ['run', 'build']],
