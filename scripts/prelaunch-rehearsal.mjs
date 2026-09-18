@@ -7,6 +7,7 @@ import { loadEnvFileFromArgs } from './env-file.mjs';
 
 const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory', 'failedCommand', 'failedTest', 'failureDetail']);
 const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage'];
+const REQUIRED_LOCAL_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
   ['pnpm', ['test']],
@@ -33,6 +34,10 @@ export function aggregateReleaseRecords(records, candidateCommit) {
   return REQUIRED_RELEASE_LANES.every((lane) => validateReleaseRecord(records[lane], lane, candidateCommit));
 }
 
+export function aggregateLocalReleaseRecords(records, candidateCommit) {
+  return REQUIRED_LOCAL_RELEASE_LANES.every((lane) => validateReleaseRecord(records[lane], lane, candidateCommit));
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   loadEnvFileFromArgs(process.argv.slice(2));
@@ -55,11 +60,8 @@ async function main() {
       if (records['high-risk']?.outcome === 'passed') records['local-browser'] = await runReleaseLane('local-browser', candidateCommit, [LOCAL_BROWSER_COMMAND], outputDir);
     }
     if (args.localOnly) {
-      const localProofPassed = ['candidate-quality', 'high-risk', 'local-browser'].every(
-        (lane) => validateReleaseRecord(records[lane], lane, candidateCommit),
-      );
-      if (!localProofPassed) {
-        throw new Error('Release rehearsal local proof is incomplete: every candidate-bound lane must pass before Preview proof.');
+      if (!aggregateLocalReleaseRecords(records, candidateCommit)) {
+        throw new Error('Local candidate rehearsal is incomplete: every required local lane must pass.');
       }
       return;
     }
@@ -125,7 +127,7 @@ export function parseSafeFailureDetail(output) {
 function buildReleaseSummary(records) { return ['# ScholarScout Candidate Release Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Required Proof Lanes', '', ...REQUIRED_RELEASE_LANES.map((lane) => `- ${records[lane]?.outcome ?? 'missing'}: ${lane}`), '', 'Records contain only candidate commit, UTC, command, pass/fail, safe category, and approved target/artifact identifiers or links. Preview evidence supplements and never replaces protected-main, production deployment, or post-deploy smoke evidence.', ''].join('\n'); }
 function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Steps', '', ...steps.map((step) => `- ${step.status}: ${step.name}${step.detail ? ` (${step.detail})` : ''}`), ''].join('\n'); }
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
-function runCommand(command, commandArgs) { return new Promise((resolve) => { const child = spawn(command, commandArgs, { cwd: process.cwd(), env: process.env }); let stdout = ''; let stderr = ''; child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
+function runCommand(command, commandArgs) { return new Promise((resolve) => { const useWindowsPnpmLauncher = process.platform === 'win32' && command === 'pnpm'; const executable = useWindowsPnpmLauncher ? 'pnpm.cmd' : command; let child; try { child = spawn(executable, commandArgs, { cwd: process.cwd(), env: process.env, shell: useWindowsPnpmLauncher }); } catch { resolve({ code: 1, stdout: '', stderr: '' }); return; } let stdout = ''; let stderr = ''; child.stdout?.on('data', (chunk) => { stdout += chunk; }); child.stderr?.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
 function hasSmokeTarget() { return Boolean(process.env.SCHOLARSCOUT_SMOKE_BASE_URL || process.env.NEXTAUTH_URL); }
 function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
 function childArgs(values, args) { return args.envFile ? [...values, '--env-file', args.envFile] : values; }

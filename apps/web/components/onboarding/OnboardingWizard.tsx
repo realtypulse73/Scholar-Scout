@@ -145,25 +145,27 @@ export default function OnboardingWizard() {
       return;
     }
 
+    if (typeof fetch === 'function') {
+      try {
+        const response = await fetch('/api/account/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+          throw new Error('Onboarding profile save failed.');
+        }
+      } catch {
+        setError('We could not save your profile. Please try again.');
+        return;
+      }
+    }
+
     window.localStorage.setItem(
       ONBOARDING_PROFILE_STORAGE_KEY,
       serializeOnboardingProfile(data),
     );
     window.localStorage.removeItem(ONBOARDING_DRAFT_STORAGE_KEY);
-
-    if (typeof fetch === 'function') {
-      const response = await fetch('/api/account/onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        setError('Your profile could not be saved. Please try again.');
-        return;
-      }
-    }
-
     setCompleted(true);
   }
 

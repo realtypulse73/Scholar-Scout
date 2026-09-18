@@ -28,6 +28,7 @@ jest.mock('@/lib/server/data-store', () => ({
   PersistenceConflictError: class PersistenceConflictError extends Error {},
 }));
 jest.mock('@/lib/server/rate-limit', () => ({
+  isPreviewCommunityOutageEnabled: jest.fn(() => false),
   reserveCommunitySubmission: jest.fn(),
   isPreviewCommunityOutageEnabled: jest.fn(),
 }));

@@ -1,3 +1,5 @@
+import { request as requestHttps } from 'node:https';
+
 const PROTOCOL = 'lifecycle-v1';
 
 const METHOD_STAGES = {
@@ -86,7 +88,7 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
   }
 }
 
-export function createLifecycleRequest(baseUrl, capability, protectionHeaders = {}, requestImpl = (...args) => fetch(...args)) {
+export function createLifecycleRequest(baseUrl, capability, protectionHeaders = {}, fetchImpl) {
   const endpoint = new URL('/api/internal/e2e-fixture', baseUrl);
   const normalizedCapability = typeof capability === 'string' ? capability.trim() : '';
   if (
@@ -98,7 +100,7 @@ export function createLifecycleRequest(baseUrl, capability, protectionHeaders = 
     throw new Error('E2E fixture lifecycle requires an HTTPS URL and runner capability.');
   }
 
-  return async (method) => requestImpl(endpoint, {
+  return async (method) => (fetchImpl ?? fetch)(endpoint, {
     method,
     // A protected Preview must answer from the lifecycle endpoint directly.
     // Following a Vercel login redirect could otherwise make an unrelated 2xx
@@ -109,5 +111,38 @@ export function createLifecycleRequest(baseUrl, capability, protectionHeaders = 
       'x-scholarscout-e2e-fixture-protocol': PROTOCOL,
       ...protectionHeaders,
     },
+  });
+}
+
+/**
+ * Makes an HTTPS lifecycle request to the runner's own loopback test server.
+ * The local server uses an ephemeral self-signed certificate, so this narrow
+ * helper accepts that certificate without relaxing trust for any other host.
+ */
+export function requestLoopbackHttps(url, options = {}) {
+  const endpoint = new URL(url);
+  if (endpoint.protocol !== 'https:' || endpoint.hostname !== '127.0.0.1' || options.body !== undefined) {
+    return Promise.reject(new Error('Owned E2E lifecycle requests require the loopback HTTPS server and no body.'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = requestHttps(endpoint, {
+      method: options.method,
+      headers: options.headers,
+      rejectUnauthorized: false,
+    }, (response) => {
+      const headers = new Headers();
+      for (const [name, value] of Object.entries(response.headers)) {
+        if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(', ') : String(value));
+      }
+      response.resume();
+      resolve({
+        ok: Boolean(response.statusCode && response.statusCode >= 200 && response.statusCode < 300),
+        status: response.statusCode ?? 0,
+        headers,
+      });
+    });
+    request.once('error', reject);
+    request.end();
   });
 }

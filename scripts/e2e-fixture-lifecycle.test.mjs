@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   classifyFixtureLifecycleFailure,
   createLifecycleRequest,
+  requestLoopbackHttps,
   runFixtureLifecycle,
 } from './e2e-fixture-lifecycle.mjs';
 
@@ -126,6 +127,17 @@ test('classifies lifecycle responses without retaining a raw status or response 
       },
     );
   }
+});
+
+test('limits self-signed HTTPS acceptance to the owned loopback lifecycle target', async () => {
+  await assert.rejects(
+    requestLoopbackHttps('https://localhost:4300/api/internal/e2e-fixture'),
+    /loopback HTTPS server/,
+  );
+  await assert.rejects(
+    requestLoopbackHttps('https://127.0.0.1:4300/api/internal/e2e-fixture', { body: 'unexpected' }),
+    /loopback HTTPS server/,
+  );
 });
 
 test('identifies a disabled fixture without recording the protected response body', async () => {
