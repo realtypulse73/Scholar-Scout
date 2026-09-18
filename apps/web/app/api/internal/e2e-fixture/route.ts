@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import {
+  assertE2eFixtureRuntimeConfiguration,
   cleanupE2eFixture,
   createAndVerifyE2eFixture,
   verifyE2eFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
 const PROTOCOL = 'lifecycle-v1';
+
+export async function HEAD(request: Request) {
+  if (!isAuthorizedLifecycleRequest(request)) return denied();
+  assertE2eFixtureRuntimeConfiguration();
+  return new Response(null, { status: 204 });
+}
 
 export async function POST(request: Request) {
   if (!isAuthorizedLifecycleRequest(request)) return denied(request);

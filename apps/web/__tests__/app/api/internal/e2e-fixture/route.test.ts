@@ -8,9 +8,18 @@ jest.mock('@/lib/server/e2e-programme-fixture', () => ({
 }));
 
 import { HEAD, POST } from '@/app/api/internal/e2e-fixture/route';
-import { assertE2eFixtureRuntimeConfiguration } from '@/lib/server/e2e-programme-fixture';
+import {
+  assertE2eFixtureRuntimeConfiguration,
+  cleanupE2eFixture,
+  createAndVerifyE2eFixture,
+  verifyE2eFixture,
+} from '@/lib/server/e2e-programme-fixture';
 
 describe('internal e2e fixture route', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('denies a request without the server-only lifecycle headers', async () => {
     const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
       method: 'POST',
@@ -186,6 +195,36 @@ describe('internal e2e fixture route', () => {
 
       expect(response.status).toBe(204);
       expect(assertE2eFixtureRuntimeConfiguration).toHaveBeenCalledTimes(1);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('does not call fixture operations when the HEAD configuration preflight rejects', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+    jest.mocked(assertE2eFixtureRuntimeConfiguration).mockImplementationOnce(() => {
+      throw new Error('E2E fixture lifecycle is unavailable.');
+    });
+
+    try {
+      await expect(HEAD(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'HEAD',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+          'Content-Length': '0',
+        },
+      }))).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
+      expect(createAndVerifyE2eFixture).not.toHaveBeenCalled();
+      expect(verifyE2eFixture).not.toHaveBeenCalled();
+      expect(cleanupE2eFixture).not.toHaveBeenCalled();
     } finally {
       if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
       else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;

@@ -156,9 +156,10 @@ describe('e2e programme fixture', () => {
   it.each([
     ['the default application path', 'scholarscout/data.json'],
     ['a blank path', ''],
-    ['an external path', 'other-application/preview/fixture-run-123456/data.json'],
     ['another fixture path', 'scholarscout/preview/another-fixture-123456/data.json'],
     ['a malformed path', 'scholarscout/preview/fixture-run-123456/other.json'],
+    ['an external storage path', 'other-application/preview/fixture-run-123456/data.json'],
+    ['an external path', 'https://storage.example.test/data.json'],
   ])('rejects %s before fixture data access', async (_label, blobPath) => {
     const store = new MemoryDataStore();
     const read = jest.spyOn(store, 'read');
@@ -167,6 +168,22 @@ describe('e2e programme fixture', () => {
     const writeVersioned = jest.spyOn(store, 'writeVersioned');
     setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_BLOB_DATA_PATH = blobPath;
+
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(readVersioned).not.toHaveBeenCalled();
+    expect(writeVersioned).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed fixture id before fixture data access', async () => {
+    const store = new MemoryDataStore();
+    const read = jest.spyOn(store, 'read');
+    const write = jest.spyOn(store, 'write');
+    const readVersioned = jest.spyOn(store, 'readVersioned');
+    const writeVersioned = jest.spyOn(store, 'writeVersioned');
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_ID = 'fixture/invalid';
 
     await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
     expect(read).not.toHaveBeenCalled();

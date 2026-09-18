@@ -3,6 +3,7 @@ import { request as requestHttps } from 'node:https';
 const PROTOCOL = 'lifecycle-v1';
 
 const METHOD_STAGES = {
+  HEAD: 'preflight',
   POST: 'provision',
   GET: 'verification',
   DELETE: 'cleanup',
@@ -30,6 +31,7 @@ export function classifyFixtureLifecycleFailure(error) {
   }
 
   return {
+    preflight: 'fixture-preflight-failed',
     provision: 'fixture-provision-failed',
     verification: 'fixture-verification-failed',
     cleanup: 'fixture-cleanup-failed',
@@ -70,9 +72,12 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
     cleanupStarted = true;
     await lifecycleRequest('DELETE');
   };
-  onCleanupReady?.(cleanup);
+  let preflightComplete = false;
   let lifecycleFailed = false;
   try {
+    await lifecycleRequest('HEAD');
+    preflightComplete = true;
+    onCleanupReady?.(cleanup);
     await lifecycleRequest('POST');
     await lifecycleRequest('GET');
     return await run();
@@ -80,10 +85,12 @@ export async function runFixtureLifecycle({ request, run, onCleanupReady }) {
     lifecycleFailed = true;
     throw error;
   } finally {
-    try {
-      await cleanup();
-    } catch (error) {
-      if (!lifecycleFailed) throw error;
+    if (preflightComplete) {
+      try {
+        await cleanup();
+      } catch (error) {
+        if (!lifecycleFailed) throw error;
+      }
     }
   }
 }

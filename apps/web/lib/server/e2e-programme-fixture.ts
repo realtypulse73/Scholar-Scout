@@ -73,7 +73,7 @@ export function getE2eFixtureProgrammes(fixtureId: string): Programme[] {
 }
 
 export async function createAndVerifyE2eFixture(): Promise<'verified'> {
-  const fixtureId = requireConfiguredFixtureId();
+  const fixtureId = assertE2eFixtureRuntimeConfiguration();
   const { getGovernedProgrammes } = await import('./programme-records');
   const records = createE2eProgrammeFixture(fixtureId);
   await writeFixtureRecords(fixtureActor(fixtureId), records);
@@ -82,7 +82,7 @@ export async function createAndVerifyE2eFixture(): Promise<'verified'> {
 }
 
 export async function verifyE2eFixture(): Promise<'verified'> {
-  const fixtureId = requireConfiguredFixtureId();
+  const fixtureId = assertE2eFixtureRuntimeConfiguration();
   const { getGovernedProgrammes } = await import('./programme-records');
   const expected = createE2eProgrammeFixture(fixtureId);
   await waitForFixtureRecords(getGovernedProgrammes, expected, 'verified');
@@ -90,7 +90,7 @@ export async function verifyE2eFixture(): Promise<'verified'> {
 }
 
 export async function cleanupE2eFixture(): Promise<'cleaned'> {
-  const fixtureId = requireConfiguredFixtureId();
+  const fixtureId = assertE2eFixtureRuntimeConfiguration();
   await deleteFixtureRecords(
     fixtureActor(fixtureId),
     createE2eProgrammeFixture(fixtureId),
@@ -98,9 +98,20 @@ export async function cleanupE2eFixture(): Promise<'cleaned'> {
   return 'cleaned';
 }
 
-function requireConfiguredFixtureId(): string {
+/**
+ * Ensures a lifecycle request can access only the fixture's isolated Preview Blob object.
+ */
+export function assertE2eFixtureRuntimeConfiguration(): string {
   const fixtureId = getConfiguredE2eFixtureId();
-  if (!fixtureId) {
+  const expectedBlobPath = fixtureId
+    ? `scholarscout/preview/${fixtureId}/data.json`
+    : null;
+  if (
+    !fixtureId ||
+    process.env.VERCEL_ENV !== 'preview' ||
+    process.env.SCHOLARSCOUT_DATA_ADAPTER !== 'vercel-blob' ||
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH !== expectedBlobPath
+  ) {
     throw new Error('E2E fixture lifecycle is unavailable.');
   }
   return fixtureId;
