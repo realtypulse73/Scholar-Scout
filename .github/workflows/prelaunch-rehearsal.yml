@@ -62,6 +62,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_commit }}
+
+      - name: Verify candidate checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ inputs.candidate_commit }}"
 
       - name: Set up Node
         uses: actions/setup-node@v4
