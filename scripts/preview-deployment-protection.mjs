@@ -1,23 +1,23 @@
 const BYPASS_ENV = 'SCHOLARSCOUT_VERCEL_BYPASS';
 
 /**
- * Validates that runner metadata names the exact Preview candidate before traffic.
+ * Validates the independent deployment attestation before any Preview traffic.
  */
-export function validatePreviewDeployment(metadata, candidateCommit) {
+export function validatePreviewDeployment(attestation, candidateCommit) {
   if (
-    !metadata ||
-    metadata.environment !== 'preview' ||
+    !attestation ||
+    attestation.environment !== 'preview' ||
     typeof candidateCommit !== 'string' ||
     candidateCommit.length === 0 ||
-    metadata.commit !== candidateCommit ||
-    typeof metadata.url !== 'string'
+    attestation.commit !== candidateCommit ||
+    typeof attestation.url !== 'string'
   ) {
-    throw new Error('Preview tracer requires metadata for the selected Preview candidate.');
+    throw new Error('Preview tracer requires an independently attested Preview candidate.');
   }
 
   let target;
   try {
-    target = new URL(metadata.url);
+    target = new URL(attestation.url);
   } catch {
     throw new Error('Preview tracer requires a valid HTTPS Preview URL.');
   }
@@ -30,8 +30,8 @@ export function validatePreviewDeployment(metadata, candidateCommit) {
 /**
  * Returns transient browser/context transport; it never logs or persists the secret.
  */
-export function createProtectedPreviewContextOptions({ metadata, candidateCommit, env = process.env }) {
-  const baseURL = validatePreviewDeployment(metadata, candidateCommit);
+export function createProtectedPreviewContextOptions({ attestation, candidateCommit, env = process.env }) {
+  const baseURL = validatePreviewDeployment(attestation, candidateCommit);
   const bypass = normalizeRunnerHeaderValue(env[BYPASS_ENV]);
   if (!bypass) {
     throw new Error('Preview tracer requires runner-only protection material.');
