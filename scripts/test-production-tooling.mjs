@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -448,9 +448,9 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
 test('local release rehearsal records and reports a failed local lane', async () => {
   const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-lane-failure-'));
   const commandLog = path.join(outputDir, 'pnpm-commands.log');
-  await writeFile(
-    path.join(outputDir, 'pnpm.cmd'),
-    [
+  const launcherPath = path.join(outputDir, isWindows ? 'pnpm.cmd' : 'pnpm');
+  const launcherContents = isWindows
+    ? [
       '@echo off',
       'echo %*>> "%SCHOLARSCOUT_TEST_COMMAND_LOG%"',
       ':next',
@@ -459,8 +459,16 @@ test('local release rehearsal records and reports a failed local lane', async ()
       'shift',
       'goto next',
       '',
-    ].join('\r\n'),
-  );
+    ].join('\r\n')
+    : [
+      '#!/usr/bin/env sh',
+      'echo "$*" >> "$SCHOLARSCOUT_TEST_COMMAND_LOG"',
+      'for arg in "$@"; do [ "$arg" = "test" ] && exit 1; done',
+      'exit 0',
+      '',
+    ].join('\n');
+  await writeFile(launcherPath, launcherContents);
+  if (!isWindows) await chmod(launcherPath, 0o755);
   const result = await runNode(
     [
       'scripts/prelaunch-rehearsal.mjs',
