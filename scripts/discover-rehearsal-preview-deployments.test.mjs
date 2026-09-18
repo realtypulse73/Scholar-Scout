@@ -26,7 +26,7 @@ const statuses = [
   },
 ];
 
-test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact Vercel inspection', async () => {
+test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact Vercel deployment reads', async () => {
   const result = await discoverRehearsalPreviewDeployments({
     candidateCommit: sha,
     baselineHostPrefix: 'scholar-scout-rehearsal-baseline-',
@@ -44,11 +44,11 @@ test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact
       assert.equal(token, githubToken);
       return statuses;
     },
-    inspectDeployment: async ({ deploymentId, accessToken }) => {
+    getDeployment: async ({ deploymentId, project, accessToken }) => {
       assert.equal(accessToken, deploymentId === baselineDeploymentId ? baselineToken : outageToken);
       return deploymentId === baselineDeploymentId
-        ? 'https://scholar-scout-rehearsal-baseline-abc-team.vercel.app\n'
-        : 'https://scholar-scout-rehearsal-outage-def-team.vercel.app\n';
+        ? `https://scholar-scout-rehearsal-baseline-abc-team.vercel.app\n`
+        : `https://scholar-scout-rehearsal-outage-def-team.vercel.app\n`;
     },
   });
   assert.deepEqual(result, {

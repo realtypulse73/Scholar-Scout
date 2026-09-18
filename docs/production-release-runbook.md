@@ -83,7 +83,7 @@ That local command creates its own temporary JSON file and an internal, local-on
 fixture flag. It cannot activate the lifecycle in a Vercel deployment; Preview
 rehearsal projects remain Blob-only and use their fixed fixture namespace.
 
-The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it reads the two Vercel Git statuses for that exact commit, inspects those two deployment IDs with their project-scoped Preview tokens, runs the normal journey and the outage proof, and cleans each fixture automatically.
+The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it reads the two Vercel Git statuses for that exact commit, reads those two deployment IDs through Vercel's deployment API with their project-scoped Preview tokens, runs the normal journey and the outage proof, and cleans each fixture automatically.
 
 The workflow needs only the two permanent runner capabilities plus its two static project-scoped Preview-environment Vercel tokens. It never receives production credentials, Vercel branch overrides, manually copied URLs, bypass cookies, or a temporary handoff file. It writes only candidate commit, generated Preview URL, UTC, pass/fail result, and safe error category.
 

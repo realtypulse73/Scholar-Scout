@@ -72,9 +72,6 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Install Vercel deployment reader
-        run: npm install --global vercel@58.10.0
-
       - name: Wait for the two isolated rehearsal deployments
         run: |
           for attempt in $(seq 1 40); do

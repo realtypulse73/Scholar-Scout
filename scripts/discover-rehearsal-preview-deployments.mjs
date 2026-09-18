@@ -1,14 +1,11 @@
 import { appendFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-
-const VERCEL_APP = process.platform === 'win32' ? 'vercel.cmd' : 'vercel';
 
 /**
  * GitHub commit statuses bind one Vercel deployment ID to the candidate. The
- * project-scoped Vercel tokens then inspect only that deployment, avoiding a
- * team-wide list that a deliberately restricted token cannot read.
+ * project-scoped Vercel tokens then read only that deployment through Vercel's
+ * deployment API, avoiding a team-wide list or a CLI-specific access issue.
  */
 export async function discoverRehearsalPreviewDeployments({
   candidateCommit,
@@ -22,7 +19,7 @@ export async function discoverRehearsalPreviewDeployments({
   githubRepository,
   githubToken,
   getCommitStatuses = getGitHubCommitStatuses,
-  inspectDeployment = inspectReadyVercelDeployment,
+  getDeployment = getReadyVercelDeployment,
 } = {}) {
   if (!isFullSha(candidateCommit)) throw new Error('Rehearsal deployment discovery requires a full candidate commit.');
   if (!isHostPrefix(baselineHostPrefix) || !isHostPrefix(outageHostPrefix) || baselineHostPrefix === outageHostPrefix) {
@@ -42,8 +39,8 @@ export async function discoverRehearsalPreviewDeployments({
   const baselineDeploymentId = selectReadyVercelDeploymentId(statuses, vercelScope, baselineProject);
   const outageDeploymentId = selectReadyVercelDeploymentId(statuses, vercelScope, outageProject);
   const [baselineOutput, outageOutput] = await Promise.all([
-    inspectDeployment({ deploymentId: baselineDeploymentId, vercelScope, accessToken: baselineToken }),
-    inspectDeployment({ deploymentId: outageDeploymentId, vercelScope, accessToken: outageToken }),
+    getDeployment({ deploymentId: baselineDeploymentId, project: baselineProject, vercelScope, accessToken: baselineToken }),
+    getDeployment({ deploymentId: outageDeploymentId, project: outageProject, vercelScope, accessToken: outageToken }),
   ]);
   const baselineUrl = selectReadyDeploymentUrl(baselineOutput, baselineHostPrefix);
   const outageUrl = selectReadyDeploymentUrl(outageOutput, outageHostPrefix);
@@ -70,14 +67,18 @@ async function getGitHubCommitStatuses({ candidateCommit, githubRepository, gith
   return payload.statuses;
 }
 
-async function inspectReadyVercelDeployment({ deploymentId, vercelScope, accessToken }) {
-  const result = await runCommand(VERCEL_APP, [
-    'inspect', deploymentId, '--scope', vercelScope, '--no-color',
-  ], { VERCEL_TOKEN: accessToken });
-  if (result.code !== 0) {
-    throw new Error('Vercel deployment discovery could not inspect the candidate deployment.');
+async function getReadyVercelDeployment({ deploymentId, project, vercelScope, accessToken }) {
+  const endpoint = new URL(`https://api.vercel.com/v13/deployments/${deploymentId}`);
+  endpoint.searchParams.set('slug', vercelScope);
+  const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!response.ok) {
+    throw new Error(`Vercel deployment discovery could not read ${project} candidate deployment (HTTP ${response.status}).`);
   }
-  return result.stdout;
+  const deployment = await response.json();
+  if (!deployment || deployment.id !== deploymentId || deployment.readyState !== 'READY' || deployment.target !== null || typeof deployment.url !== 'string') {
+    throw new Error(`Vercel deployment discovery received an invalid ${project} candidate deployment.`);
+  }
+  return `https://${deployment.url}\n`;
 }
 
 export function selectReadyVercelDeploymentId(statuses, scope, project) {
@@ -116,16 +117,6 @@ export function selectReadyDeploymentUrl(output, hostPrefix) {
   }
   if (urls.size !== 1) throw new Error(`No single ready rehearsal Preview deployment exists for ${hostPrefix}.`);
   return [...urls][0];
-}
-
-function runCommand(command, args, environment) {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, { env: { ...process.env, ...environment }, shell: process.platform === 'win32' });
-    let stdout = '';
-    child.stdout?.on('data', (chunk) => { stdout += chunk; });
-    child.on('error', () => resolve({ code: 1, stdout }));
-    child.on('close', (code) => resolve({ code, stdout }));
-  });
 }
 
 function normalizeExpectedUrl(value, prefix) {
