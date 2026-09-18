@@ -50,10 +50,16 @@ class MemoryDataStore implements ScholarScoutDataStore {
 describe('e2e programme fixture', () => {
   const originalFixture = process.env.SCHOLARSCOUT_E2E_FIXTURE;
   const originalFixtureId = process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
+  const originalVercelEnv = process.env.VERCEL_ENV;
+  const originalDataAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
+  const originalBlobPath = process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
 
   beforeEach(() => {
     process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
     process.env.SCHOLARSCOUT_E2E_FIXTURE_ID = 'fixture-run-123456';
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'scholarscout/preview/fixture-run-123456/data.json';
     setScholarScoutDataStoreForTests(new MemoryDataStore());
   });
 
@@ -61,6 +67,9 @@ describe('e2e programme fixture', () => {
     setScholarScoutDataStoreForTests(null);
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE', originalFixture);
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE_ID', originalFixtureId);
+    restoreEnvironment('VERCEL_ENV', originalVercelEnv);
+    restoreEnvironment('SCHOLARSCOUT_DATA_ADAPTER', originalDataAdapter);
+    restoreEnvironment('SCHOLARSCOUT_BLOB_DATA_PATH', originalBlobPath);
   });
 
   it('derives deterministic generated records from configured fixture state', () => {
@@ -88,6 +97,28 @@ describe('e2e programme fixture', () => {
       'e2e-fixture-run-123456-health',
     );
     expect(afterCleanup.map((programme) => programme.id)).toContain(programmes[0].id);
+  });
+
+  it.each([
+    ['a default path', 'scholarscout/data.json'],
+    ['another fixture path', 'scholarscout/preview/another-fixture-123456/data.json'],
+    ['a malformed path', 'scholarscout/preview/fixture-run-123456/other.json'],
+  ])('rejects %s before fixture data access', async (_label, blobPath) => {
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = blobPath;
+
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+    expect((await getGovernedProgrammes()).map((programme) => programme.id)).not.toContain(
+      'e2e-fixture-run-123456-health',
+    );
+  });
+
+  it('rejects non-Preview and non-Blob runtime configurations', async () => {
+    process.env.VERCEL_ENV = 'production';
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
   });
 });
 
