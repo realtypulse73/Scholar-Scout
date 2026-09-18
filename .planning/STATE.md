@@ -6,7 +6,7 @@ current_phase: 05
 current_phase_name: school-community-and-wny-release-slice
 status: blocked
 stopped_at: Plan 05-07 implementation complete; awaiting authorized Preview UAT Test 1
-last_updated: "2026-09-08T12:35:00.000Z"
+last_updated: "2026-09-18T15:52:49.368Z"
 last_activity: 2026-08-29
 last_activity_desc: Restored Phase 5/6 planning baseline; Plan 05-07 blocked on Preview UAT
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 Phase: 06 (end-to-end-hardening-and-release-readiness) — IN PROGRESS
 Plan: 7 of 7
 Status: Phase 5 complete; Phase 6 Plan 06-07 is blocked on the protected Preview lifecycle transport failure
-Last activity: 2026-09-16 — Resumed GSD workflow to diagnose and close the final prelaunch rehearsal blocker
+Last activity: 2026-09-18 — Completed safe Git cleanup and published the approved work
 
 Progress: [██████████] 100%
 
@@ -197,6 +197,7 @@ None yet.
 | 260916-u27 | Add rural and inner-city learning backdrops plus verified private AI, infrastructure, and trades training pathways | 2026-09-16 | Uncommitted | [260916-u27-add-rural-and-inner-city-learning-backdr](./quick/260916-u27-add-rural-and-inner-city-learning-backdr/) |
 | 260916-u7l | Replace stylized ambient imagery with photorealistic campus photo sequences and cinematic movement | 2026-09-16 | Uncommitted | [260916-u7l-replace-stylized-ambient-imagery-with-ph](./quick/260916-u7l-replace-stylized-ambient-imagery-with-ph/) |
 | 260916-uc9 | Add clear photoreal school and training-institute signage to life-transition campus imagery | 2026-09-16 | Uncommitted | [260916-uc9-add-clear-photoreal-school-and-training-](./quick/260916-uc9-add-clear-photoreal-school-and-training-/) |
+| 260918-gi0 | Apply approved safe Git cleanup: ignore confirmed local generated artifacts, commit only the inspected tracked work, and normally push the current branch. | 2026-09-18 | c791a73 | [260918-gi0-apply-approved-safe-git-cleanup-ignore-c](./quick/260918-gi0-apply-approved-safe-git-cleanup-ignore-c/) |
 
 ## Deferred Items
 
