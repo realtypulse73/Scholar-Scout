@@ -1,19 +1,26 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.SCHOLARSCOUT_E2E_BASE_URL;
+
+if (!baseURL?.startsWith('https://127.0.0.1:')) {
+  throw new Error('The release browser test requires the owned HTTPS fixture URL.');
+}
+
 export default defineConfig({
   testDir: './apps/web/e2e',
   fullyParallel: false,
   workers: 1,
-  forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   timeout: 45_000,
   expect: {
     timeout: 10_000,
   },
-  reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }]],
-  outputDir: 'test-results',
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+  ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    baseURL,
     ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

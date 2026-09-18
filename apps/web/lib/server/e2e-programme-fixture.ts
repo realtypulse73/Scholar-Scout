@@ -1,75 +1,142 @@
 import 'server-only';
 
 import type { Programme } from '@/lib/programmes';
-import {
-  deleteProgrammeRecord,
-  getGovernedProgrammes,
-  saveProgrammeRecord,
-} from '@/lib/server/programme-records';
+import { getConfiguredE2eFixtureId } from './e2e-fixture-config';
 
-const FIXTURE_ACTOR_ID = 'e2e-fixture';
+export {
+  getConfiguredE2eFixtureId,
+  isE2eFixtureEnabled,
+} from './e2e-fixture-config';
 
-function getFixtureId(): string {
-  if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED !== 'true') {
-    throw new Error('E2E fixture mode is disabled.');
-  }
-  const fixtureId = process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
-  if (!fixtureId) throw new Error('E2E fixture identifier is unavailable.');
-  return fixtureId;
-}
+const FIXTURE_ACTOR_PREFIX = 'e2e-fixture:';
+const FIXTURE_VERIFICATION_ATTEMPTS = 5;
+const FIXTURE_VERIFICATION_DELAY_MS = 250;
 
-/** Server-owned generated descriptors; callers cannot select catalogue records. */
-export function getE2eProgrammeFixtureRecords(): Programme[] {
-  const fixtureId = getFixtureId();
+export function createE2eProgrammeFixture(fixtureId: string): Programme[] {
+  const prefix = `e2e-${fixtureId}`;
   return [
     {
-      id: `e2e-${fixtureId}-technology`, name: 'Generated Technology Pathway',
-      school: 'Scholar Scout Fixture Institute', city: 'Fixture City', state: 'CA',
-      delivery: 'Online', pathway: 'certificate-program', interests: ['technology'],
-      support: ['tutoring', 'career-counseling'], annualTuition: 2400,
-      acceptanceRate: 100, matchScore: 90, duration: '9 months',
-      credential: 'Generated certificate', overview: 'Generated non-personal programme fixture.',
-      highlights: ['Generated support'], nextSteps: ['Confirm fixture details'],
-      publicationStatus: 'published', sourceName: 'E2E fixture',
-      sourceUrl: 'https://example.invalid/e2e-fixture', sourceConfidence: 'verified',
-      sourceNotes: 'Generated local-only record used to validate the owned E2E fixture.',
+      id: `${prefix}-health`,
+      name: 'E2E Applied Health Pathway',
+      school: 'Scholar Scout Fixture College',
+      city: 'Fixture City',
+      state: 'NY',
+      delivery: 'Campus',
+      pathway: '2-year-community-college',
+      interests: ['healthcare', 'stem'],
+      support: ['tutoring', 'financial-aid'],
+      annualTuition: 4200,
+      acceptanceRate: 100,
+      matchScore: 92,
+      duration: '2 years',
+      credential: 'Fixture associate pathway',
+      overview: 'Generated non-personal record used only by the isolated browser fixture.',
+      highlights: ['Generated fixture', 'Tutoring support'],
+      nextSteps: ['Review the generated pathway'],
+      publicationStatus: 'published',
+      sourceName: 'Generated fixture',
+      sourceConfidence: 'verified',
+      sourceNotes: 'Generated fixture record for isolated Preview rehearsal.',
       sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
       lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
     {
-      id: `e2e-${fixtureId}-health`, name: 'Generated Health Transfer Pathway',
-      school: 'Scholar Scout Fixture Institute', city: 'Fixture City', state: 'CA',
-      delivery: 'Campus', pathway: '2-year-community-college', interests: ['healthcare'],
-      support: ['tutoring', 'financial-aid'], annualTuition: 3200,
-      acceptanceRate: 100, matchScore: 88, duration: '2 years',
-      credential: 'Generated transfer pathway', overview: 'Generated non-personal programme fixture.',
-      highlights: ['Generated transfer support'], nextSteps: ['Confirm fixture details'],
-      publicationStatus: 'published', sourceName: 'E2E fixture',
-      sourceUrl: 'https://example.invalid/e2e-fixture', sourceConfidence: 'verified',
-      sourceNotes: 'Generated local-only record used to validate the owned E2E fixture.',
+      id: `${prefix}-technology`,
+      name: 'E2E Technology Certificate',
+      school: 'Scholar Scout Fixture College',
+      city: 'Fixture City',
+      state: 'NY',
+      delivery: 'Hybrid',
+      pathway: 'certificate-program',
+      interests: ['technology', 'stem'],
+      support: ['career-counseling', 'financial-aid'],
+      annualTuition: 3600,
+      acceptanceRate: 100,
+      matchScore: 89,
+      duration: '10 months',
+      credential: 'Fixture career certificate',
+      overview: 'Generated non-personal record used only by the isolated browser fixture.',
+      highlights: ['Generated fixture', 'Career guidance'],
+      nextSteps: ['Compare the generated certificate'],
+      publicationStatus: 'published',
+      sourceName: 'Generated fixture',
+      sourceConfidence: 'verified',
+      sourceNotes: 'Generated fixture record for isolated Preview rehearsal.',
       sourceChecks: ['tuition', 'credential', 'duration', 'delivery', 'support', 'next-steps'],
       lastVerifiedAt: '2026-01-01T00:00:00.000Z',
     },
   ];
 }
 
-export async function createE2eProgrammeFixture(): Promise<void> {
-  for (const record of getE2eProgrammeFixtureRecords()) {
-    await saveProgrammeRecord(FIXTURE_ACTOR_ID, record);
+export function getE2eFixtureProgrammes(fixtureId: string): Programme[] {
+  return createE2eProgrammeFixture(fixtureId);
+}
+
+export async function createAndVerifyE2eFixture(): Promise<'verified'> {
+  const fixtureId = requireConfiguredFixtureId();
+  const { getGovernedProgrammes } = await import('./programme-records');
+  const records = createE2eProgrammeFixture(fixtureId);
+  await writeFixtureRecords(fixtureActor(fixtureId), records);
+  await waitForFixtureRecords(getGovernedProgrammes, records, 'available');
+  return 'verified';
+}
+
+export async function verifyE2eFixture(): Promise<'verified'> {
+  const fixtureId = requireConfiguredFixtureId();
+  const { getGovernedProgrammes } = await import('./programme-records');
+  const expected = createE2eProgrammeFixture(fixtureId);
+  await waitForFixtureRecords(getGovernedProgrammes, expected, 'verified');
+  return 'verified';
+}
+
+export async function cleanupE2eFixture(): Promise<'cleaned'> {
+  const fixtureId = requireConfiguredFixtureId();
+  await deleteFixtureRecords(
+    fixtureActor(fixtureId),
+    createE2eProgrammeFixture(fixtureId),
+  );
+  return 'cleaned';
+}
+
+function requireConfiguredFixtureId(): string {
+  const fixtureId = getConfiguredE2eFixtureId();
+  if (!fixtureId) {
+    throw new Error('E2E fixture lifecycle is unavailable.');
+  }
+  return fixtureId;
+}
+
+function fixtureActor(fixtureId: string): string {
+  return `${FIXTURE_ACTOR_PREFIX}${fixtureId}`;
+}
+
+async function writeFixtureRecords(actor: string, records: Programme[]): Promise<void> {
+  const { saveProgrammeRecord } = await import('./programme-records');
+
+  for (const record of records) {
+    await saveProgrammeRecord(actor, record);
   }
 }
 
-export async function verifyE2eProgrammeFixture(): Promise<string[]> {
-  const expectedIds = getE2eProgrammeFixtureRecords().map(({ id }) => id);
-  const actualIds = new Set((await getGovernedProgrammes()).map(({ id }) => id));
-  if (!expectedIds.every((id) => actualIds.has(id))) {
-    throw new Error('Generated E2E programme fixture is incomplete.');
+async function deleteFixtureRecords(actor: string, records: Programme[]): Promise<void> {
+  const { deleteProgrammeRecord } = await import('./programme-records');
+
+  for (const record of records) {
+    await deleteProgrammeRecord(actor, record.id);
   }
-  return expectedIds;
 }
 
-export async function cleanupE2eProgrammeFixture(): Promise<void> {
-  for (const { id } of getE2eProgrammeFixtureRecords()) {
-    await deleteProgrammeRecord(FIXTURE_ACTOR_ID, id);
+async function waitForFixtureRecords(
+  getGovernedProgrammes: () => Promise<Programme[]>,
+  expected: Programme[],
+  phase: 'available' | 'verified',
+): Promise<void> {
+  for (let attempt = 1; attempt <= FIXTURE_VERIFICATION_ATTEMPTS; attempt += 1) {
+    const governed = await getGovernedProgrammes();
+    if (expected.every((record) => governed.some((item) => item.id === record.id))) return;
+    if (attempt < FIXTURE_VERIFICATION_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, FIXTURE_VERIFICATION_DELAY_MS));
+    }
   }
+  throw new Error(`E2E fixture records were not ${phase} through the governed catalogue.`);
 }

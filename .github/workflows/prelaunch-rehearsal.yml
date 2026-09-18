@@ -4,8 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Production or preview URL to rehearse
-        required: false
+        description: Protected baseline Preview URL; paste from Vercel, never a secret
+        required: true
+        type: string
+      outage_base_url:
+        description: Separate protected outage Preview URL; paste from Vercel, never a secret
+        required: true
+        type: string
+      candidate_commit:
+        description: Immutable candidate commit to rehearse
+        required: true
         type: string
 
 permissions:
@@ -22,6 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
+      # GitHub reserves GITHUB_SHA for the workflow revision. Keep the
+      # independently selected Preview candidate under our own name.
+      SCHOLARSCOUT_CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
       NEXTAUTH_URL: ${{ inputs.base_url || secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -30,7 +41,6 @@ jobs:
       GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
       SCHOLARSCOUT_STAFF_EMAILS: ${{ secrets.SCHOLARSCOUT_STAFF_EMAILS }}
       SCHOLARSCOUT_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_HEALTH_TOKEN }}
-      SCHOLARSCOUT_DATA_ADAPTER: ${{ secrets.SCHOLARSCOUT_DATA_ADAPTER }}
       SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
       SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
@@ -43,9 +53,20 @@ jobs:
       SCHOLARSCOUT_SMOKE_TIMEOUT_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_TIMEOUT_MS }}
       SCHOLARSCOUT_SMOKE_RETRIES: ${{ secrets.SCHOLARSCOUT_SMOKE_RETRIES }}
       SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS: ${{ secrets.SCHOLARSCOUT_SMOKE_MAX_LATENCY_MS }}
+      SCHOLARSCOUT_VERCEL_BYPASS: ${{ secrets.SCHOLARSCOUT_VERCEL_BYPASS }}
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY }}
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY }}
+      SCHOLARSCOUT_PREVIEW_URL: ${{ inputs.base_url }}
+      SCHOLARSCOUT_PREVIEW_OUTAGE_URL: ${{ inputs.outage_base_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_commit }}
+
+      - name: Verify candidate checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ inputs.candidate_commit }}"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -58,8 +79,36 @@ jobs:
       - name: Install without postinstall scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Run prelaunch rehearsal
-        run: pnpm run rehearse:prelaunch
+      - name: Install Chromium for Preview browser proof
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run candidate quality, high-risk, and local browser proof
+        run: |
+          pnpm run rehearse:prelaunch -- --release-gate --local-only --candidate-commit "${{ inputs.candidate_commit }}"
+
+      - name: Report safe local candidate result
+        if: always()
+        run: |
+          if test -f reports/prelaunch-rehearsal/candidate-quality.json; then
+            cat reports/prelaunch-rehearsal/candidate-quality.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Protected Preview browser proof (maintainer-owned runner)
+        run: |
+          test -n "${{ inputs.base_url }}"
+          test "${{ inputs.base_url }}" != "${{ secrets.NEXTAUTH_URL }}"
+          node scripts/run-preview-release-tracer.mjs --output reports/prelaunch-rehearsal/preview-browser.json
+          test -f reports/prelaunch-rehearsal/preview-browser.json
+
+      - name: Separate Preview outage and restoration proof (maintainer-owned runner)
+        run: |
+          node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
+          test -f reports/prelaunch-rehearsal/preview-outage.json
+
+      - name: Aggregate candidate release rehearsal
+        run: |
+          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json
+          test -f reports/prelaunch-rehearsal/release-records.json
 
       - name: Summarize prelaunch rehearsal
         if: always()

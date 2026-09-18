@@ -57,6 +57,10 @@ describe('admin data API routes', () => {
   const originalRecoverySecret = process.env.SCHOLARSCOUT_RECOVERY_SIGNING_SECRET;
   const originalDataAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
 
+  beforeEach(() => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
+  });
+
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
     getSessionMock.mockReset();

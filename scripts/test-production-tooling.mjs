@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -419,6 +419,132 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and Preview records', async () => {
+  const rehearsal = await readFile(
+    path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
+    'utf8',
+  );
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  assert.match(rehearsal, /candidate-quality/);
+  assert.match(rehearsal, /high-risk/);
+  assert.match(rehearsal, /local-browser/);
+  assert.match(rehearsal, /preview-browser/);
+  assert.match(rehearsal, /preview-outage/);
+  assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
+  assert.match(rehearsal, /run-e2e-fixture\.mjs/);
+  assert.match(rehearsal, /data-adapter-empty/);
+  assert.match(rehearsal, /CANDIDATE_QUALITY_ENV/);
+  assert.match(rehearsal, /HIGH_RISK_UNSET_ENV/);
+  assert.match(workflow, /run-preview-release-tracer/);
+  assert.match(workflow, /preview-outage/);
+  assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
+  assert.match(rehearsal, /aggregateLocalReleaseRecords/);
+});
+
+test('local release rehearsal records and reports a failed local lane', async () => {
+  const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-lane-failure-'));
+  const commandLog = path.join(outputDir, 'pnpm-commands.log');
+  const launcherPath = path.join(outputDir, isWindows ? 'pnpm.cmd' : 'pnpm');
+  const launcherContents = isWindows
+    ? [
+      '@echo off',
+      'echo %*>> "%SCHOLARSCOUT_TEST_COMMAND_LOG%"',
+      ':next',
+      'if "%~1"=="" exit /b 0',
+      'if /I "%~1"=="test" exit /b 1',
+      'shift',
+      'goto next',
+      '',
+    ].join('\r\n')
+    : [
+      '#!/bin/sh',
+      'echo "$*" >> "$SCHOLARSCOUT_TEST_COMMAND_LOG"',
+      'for arg in "$@"; do [ "$arg" = "test" ] && exit 1; done',
+      'exit 0',
+      '',
+    ].join('\n');
+  await writeFile(launcherPath, launcherContents);
+  if (!isWindows) await chmod(launcherPath, 0o755);
+  const result = await runNode(
+    [
+      'scripts/prelaunch-rehearsal.mjs',
+      '--release-gate',
+      '--local-only',
+      '--candidate-commit',
+      'candidate-commit',
+      '--output-dir',
+      outputDir,
+    ],
+    {
+      PATH: outputDir,
+      Path: outputDir,
+      SCHOLARSCOUT_TEST_COMMAND_LOG: commandLog,
+    },
+  );
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /Local candidate rehearsal is incomplete/);
+  const record = JSON.parse(
+    await readFile(path.join(outputDir, 'candidate-quality.json'), 'utf8'),
+  );
+  assert.deepEqual(record, {
+    candidateCommit: 'candidate-commit',
+    recordedAt: record.recordedAt,
+    commands: [
+      'pnpm install --frozen-lockfile --ignore-scripts',
+      'pnpm test',
+      'pnpm run lint',
+      'pnpm run typecheck',
+      'pnpm run build',
+    ],
+    outcome: 'failed',
+    errorCategory: 'command-failed',
+    failedCommand: 'pnpm test',
+  });
+  assert.deepEqual(
+    (await readFile(commandLog, 'utf8')).trim().split(/\r?\n/),
+    [
+      'install --frozen-lockfile --ignore-scripts',
+      'test',
+    ],
+  );
+  await assert.rejects(readFile(path.join(outputDir, 'high-risk.json'), 'utf8'));
+  await assert.rejects(readFile(path.join(outputDir, 'local-browser.json'), 'utf8'));
+});
+
+test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
+  const workflow = await readFile(
+    path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
+    'utf8',
+  );
+
+  const chromiumInstall = workflow.indexOf('Install Chromium for Preview browser proof');
+  const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
+  const localReport = workflow.indexOf('Report safe local candidate result');
+  const previewBrowser = workflow.indexOf('Protected Preview browser proof');
+  const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
+  const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
+  const candidateCheckout = workflow.indexOf('Verify candidate checkout');
+
+  assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
+  assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$\{\{ inputs\.candidate_commit \}\}"/);
+  assert.ok(candidateCheckout >= 0);
+  assert.ok(candidateCheckout < chromiumInstall);
+  assert.ok(chromiumInstall >= 0);
+  assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
+  assert.ok(localProof > chromiumInstall);
+  assert.ok(localReport > localProof);
+  assert.match(workflow, /cat reports\/prelaunch-rehearsal\/candidate-quality\.json >> "\$GITHUB_STEP_SUMMARY"/);
+  assert.ok(previewBrowser > localProof);
+  assert.ok(previewOutage > previewBrowser);
+  assert.ok(aggregate > previewOutage);
+  assert.doesNotMatch(workflow, /--prod|promote|alias/);
+});
+
 test('prelaunch rehearsal can load readiness values from an env file', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-rehearsal-env-'));
   const outputDir = path.join(tempDir, 'reports');
@@ -519,6 +645,32 @@ test('production value provisioning writes generated secrets and provider checkl
     /pnpm run rehearse:prelaunch -- --env-file .env.production.local/,
   );
   assert.doesNotMatch(report, /\bnpm run/);
+});
+
+test('Preview rehearsal provisioning creates distinct ignored lifecycle scopes without disclosing them in its report', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-provision-'));
+  const localFile = path.join(tempDir, '.env.preview-rehearsal.local');
+  const reportFile = path.join(tempDir, 'preview-rehearsal-provisioning.md');
+  const result = await runNode([
+    'scripts/provision-preview-rehearsal.mjs',
+    '--local-file',
+    localFile,
+    '--report-file',
+    reportFile,
+  ]);
+
+  assert.equal(result.code, 0, result.stderr);
+  const handoff = await readFile(localFile, 'utf8');
+  const report = await readFile(reportFile, 'utf8');
+  const baseline = handoff.match(/BASELINE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
+  const outage = handoff.match(/OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY=(.+)/)?.[1];
+
+  assert.match(handoff, /BASELINE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
+  assert.match(handoff, /OUTAGE_SCHOLARSCOUT_E2E_FIXTURE_ID=[a-f0-9-]{36}/);
+  assert.ok(baseline && outage && baseline !== outage);
+  assert.match(report, /SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY/);
+  assert.doesNotMatch(report, new RegExp(baseline));
+  assert.doesNotMatch(report, new RegExp(outage));
 });
 
 test('portable Corepack pnpm wrapper accepts direct pnpm arguments', { skip: !isWindows }, async () => {

@@ -1,85 +1,104 @@
 import { NextResponse } from 'next/server';
-
 import {
-  cleanupE2eProgrammeFixture,
-  createE2eProgrammeFixture,
-  verifyE2eProgrammeFixture,
+  cleanupE2eFixture,
+  createAndVerifyE2eFixture,
+  verifyE2eFixture,
 } from '@/lib/server/e2e-programme-fixture';
 
 const PROTOCOL = 'lifecycle-v1';
 
-type DenialReason =
-  | 'browser-shaped'
-  | 'capability-mismatch'
-  | 'fixture-disabled'
-  | 'non-empty-transport'
-  | 'production'
-  | 'protocol-mismatch'
-  | 'query-present';
-
-function deny(reason: DenialReason): NextResponse {
-  if (process.env.VERCEL_ENV !== 'production') {
-    console.warn('E2E fixture lifecycle denied.', { reason });
-  }
-  return NextResponse.json({ error: 'Fixture lifecycle unavailable.' }, { status: 403 });
+export async function POST(request: Request) {
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
+  await createAndVerifyE2eFixture();
+  return NextResponse.json({ ok: true, phase: 'verified' });
 }
 
-function hasBrowserShape(request: Request): boolean {
-  return Boolean(
-    request.headers.get('origin') || request.headers.get('referer') || request.headers.get('cookie') ||
-    request.headers.get('sec-fetch-site') || request.headers.get('sec-fetch-mode') ||
-    request.headers.get('sec-fetch-dest') || request.headers.get('sec-fetch-user') ||
-    request.headers.get('sec-ch-ua'),
+export async function GET(request: Request) {
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
+  await verifyE2eFixture();
+  return NextResponse.json({ ok: true, phase: 'verified' });
+}
+
+export async function DELETE(request: Request) {
+  if (!isAuthorizedLifecycleRequest(request)) return denied(request);
+  await cleanupE2eFixture();
+  return NextResponse.json({ ok: true, phase: 'cleaned' });
+}
+
+function isAuthorizedLifecycleRequest(request: Request): boolean {
+  const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+  const url = new URL(request.url);
+  if (
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.SCHOLARSCOUT_E2E_FIXTURE !== 'true' ||
+    !capability ||
+    url.search ||
+    request.headers.get('authorization') !== `Bearer ${capability}` ||
+    request.headers.get('x-scholarscout-e2e-fixture-protocol') !== PROTOCOL ||
+    (request.headers.get('content-length') && request.headers.get('content-length') !== '0') ||
+    request.headers.get('content-type') ||
+    request.headers.get('transfer-encoding') ||
+    request.headers.get('origin') ||
+    request.headers.get('referer') ||
+    request.headers.get('cookie') ||
+    request.headers.get('sec-fetch-site') ||
+    isBrowserNavigationRequest(request) ||
+    request.headers.get('sec-fetch-dest') ||
+    request.headers.get('sec-fetch-user') ||
+    request.headers.get('sec-ch-ua')
+  ) return false;
+  return true;
+}
+
+/**
+ * Node's built-in fetch sends Sec-Fetch-Mode: cors without browser origin,
+ * site, cookie, or client-hint metadata. That is the protected Preview
+ * server-runner shape; browser navigations remain denied.
+ */
+function isBrowserNavigationRequest(request: Request): boolean {
+  const mode = request.headers.get('sec-fetch-mode');
+  return Boolean(mode && mode !== 'cors');
+}
+
+function denied(request: Request) {
+  const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+  const hasFixtureCapability = Boolean(capability) &&
+    request.headers.get('authorization') === `Bearer ${capability}`;
+  const lifecycleEnabled = process.env.VERCEL_ENV !== 'production' &&
+    process.env.SCHOLARSCOUT_E2E_FIXTURE === 'true';
+  const denial = !hasFixtureCapability
+    ? undefined
+    : !lifecycleEnabled
+      ? 'not-enabled'
+      : getRejectedRequestShape(request);
+
+  return NextResponse.json(
+    { error: 'Not found' },
+    {
+      status: 403,
+      headers: denial
+        ? { 'x-scholarscout-e2e-fixture-denial': denial }
+        : undefined,
+    },
   );
 }
 
-function hasNoBodyTransport(request: Request): boolean {
-  const contentLength = request.headers.get('content-length');
-  if (request.headers.has('transfer-encoding')) return false;
-  if (request.body === null) return contentLength === null || contentLength === '0';
-  // Next's Node adapter can expose a zero-byte POST as an empty stream.
-  return contentLength === '0';
-}
-
-function getDenialReason(request: Request): DenialReason | null {
-  const capability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
-  if (process.env.VERCEL_ENV === 'production') return 'production';
-  if (process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED !== 'true') return 'fixture-disabled';
-  if (!capability || request.headers.get('x-scholarscout-e2e-fixture-capability') !== capability) {
-    return 'capability-mismatch';
+function getRejectedRequestShape(request: Request): string | undefined {
+  if (request.headers.get('content-length') && request.headers.get('content-length') !== '0') {
+    return 'content-length';
   }
-  if (request.headers.get('x-scholarscout-e2e-fixture-protocol') !== PROTOCOL) {
-    return 'protocol-mismatch';
+  if (request.headers.get('content-type') || request.headers.get('transfer-encoding')) {
+    return 'content-metadata';
   }
-  if (new URL(request.url).search !== '') return 'query-present';
-  if (!hasNoBodyTransport(request)) return 'non-empty-transport';
-  if (hasBrowserShape(request)) return 'browser-shaped';
-  return null;
-}
-
-async function guard(request: Request): Promise<NextResponse | null> {
-  const reason = getDenialReason(request);
-  return reason ? deny(reason) : null;
-}
-
-export async function POST(request: Request): Promise<NextResponse> {
-  const rejected = await guard(request);
-  if (rejected) return rejected;
-  await createE2eProgrammeFixture();
-  await verifyE2eProgrammeFixture();
-  return NextResponse.json({ ok: true, phase: 'verified' });
-}
-
-export async function GET(request: Request): Promise<NextResponse> {
-  const rejected = await guard(request);
-  if (rejected) return rejected;
-  await verifyE2eProgrammeFixture();
-  return NextResponse.json({ ok: true, phase: 'verified' });
-}
-
-export async function DELETE(request: Request): Promise<NextResponse> {
-  const rejected = await guard(request);
-  if (rejected) return rejected;
-  await cleanupE2eProgrammeFixture();
-  return NextResponse.json({ ok: true, phase: 'cleaned' });
+  if (
+    request.headers.get('origin') ||
+    request.headers.get('referer') ||
+    request.headers.get('cookie') ||
+    request.headers.get('sec-fetch-site') ||
+    isBrowserNavigationRequest(request) ||
+    request.headers.get('sec-fetch-dest') ||
+    request.headers.get('sec-fetch-user') ||
+    request.headers.get('sec-ch-ua')
+  ) return 'browser-metadata';
+  return undefined;
 }

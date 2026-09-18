@@ -1,79 +1,72 @@
 /** @jest-environment node */
 
-import { getServerSession } from 'next-auth';
 import { POST } from '@/app/api/campus-notes/route';
-import { createCampusNote } from '@/lib/server/data-store';
-import { setAtomicReservationLimiterForTests } from '@/lib/server/rate-limit';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }));
-jest.mock('@/lib/platform', () => ({ creatorProfiles: [] }));
-jest.mock('@/lib/server/data-store', () => ({ createCampusNote: jest.fn() }));
+jest.mock('@/lib/server/data-store', () => ({ createCampusNote: jest.fn(), getCampusNotes: jest.fn() }));
+jest.mock('@/lib/server/rate-limit', () => ({
+  isPreviewCommunityOutageEnabled: jest.fn(),
+  reserveCommunitySubmission: jest.fn(),
+}));
 
-const originalEnvironment = {
-  outage: process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE,
-  vercel: process.env.VERCEL_ENV,
-};
+const getServerSessionMock = jest.requireMock('next-auth').getServerSession as jest.Mock;
+const createCampusNoteMock = jest.requireMock('@/lib/server/data-store').createCampusNote as jest.Mock;
+const reserveCommunitySubmissionMock = jest.requireMock('@/lib/server/rate-limit')
+  .reserveCommunitySubmission as jest.Mock;
+const isPreviewCommunityOutageEnabledMock = jest.requireMock('@/lib/server/rate-limit')
+  .isPreviewCommunityOutageEnabled as jest.Mock;
 
-function campusNoteRequest(): Request {
-  return new Request('https://scholar-scout.test/api/campus-notes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      school_slug: 'buffalo-state',
-      uploader_username: null,
-      program_id: null,
-      body: 'What helped you find your first campus resources?',
-    }),
-  });
-}
+describe('campus note submission outage boundary', () => {
+  const originalVercelEnvironment = process.env.VERCEL_ENV;
+  const originalOutage = process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
 
-describe('campus-note Preview community outage boundary', () => {
   beforeEach(() => {
     jest.resetAllMocks();
-    jest.mocked(getServerSession).mockResolvedValue({ user: { id: 'student-session-id' } } as never);
-    setAtomicReservationLimiterForTests({
-      reserve: jest.fn().mockResolvedValue({
-        allowed: true,
-        resetAt: new Date('2026-09-01T00:00:00.000Z'),
-        retryAfterSeconds: 0,
-      }),
-    });
+    getServerSessionMock.mockResolvedValue({ user: { id: 'student-one' } });
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(false);
+    reserveCommunitySubmissionMock.mockResolvedValue({ status: 'allowed' });
+    delete process.env.VERCEL_ENV;
+    delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
   });
 
   afterEach(() => {
-    setAtomicReservationLimiterForTests(null);
-    if (originalEnvironment.vercel === undefined) delete process.env.VERCEL_ENV;
-    else process.env.VERCEL_ENV = originalEnvironment.vercel;
-    if (originalEnvironment.outage === undefined) delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
-    else process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = originalEnvironment.outage;
+    if (originalVercelEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalVercelEnvironment;
+    if (originalOutage === undefined) delete process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE;
+    else process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = originalOutage;
   });
 
-  it('returns the safe Preview outage category before a campus-note write', async () => {
+  it('fails closed before creating a note for the Preview-only provider outage rehearsal', async () => {
     process.env.VERCEL_ENV = 'preview';
     process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
+    isPreviewCommunityOutageEnabledMock.mockReturnValue(true);
+    getServerSessionMock.mockResolvedValue(null);
 
-    const response = await POST(campusNoteRequest());
-    const body = await response.json();
+    const response = await POST(new Request('https://scholar-scout.test/api/campus-notes', {
+      method: 'POST',
+    }));
 
     expect(response.status).toBe(503);
-    expect(body).toEqual({ error: 'Community submissions are temporarily unavailable.' });
-    expect(JSON.stringify(body)).not.toMatch(/limit|provider|remaining|upstash/i);
-    expect(createCampusNote).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toEqual({
+      error: 'Community submissions are not available right now. Please try again shortly.',
+    });
+    expect(getServerSessionMock).not.toHaveBeenCalled();
+    expect(reserveCommunitySubmissionMock).not.toHaveBeenCalled();
+    expect(createCampusNoteMock).not.toHaveBeenCalled();
   });
 
-  it('ignores the isolated outage switch outside Preview', async () => {
-    process.env.VERCEL_ENV = 'development';
+  it('does not activate the Preview-only outage switch outside Preview', async () => {
+    process.env.VERCEL_ENV = 'production';
     process.env.SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE = '1';
-    jest.mocked(createCampusNote).mockResolvedValue({
-      id: 'note-1', author_id: 'student-session-id', school_slug: 'buffalo-state',
-      uploader_username: null, program_id: null, body: 'What helped you find your first campus resources?',
-      created_at: '2026-09-01T00:00:00.000Z',
-    } as never);
+    createCampusNoteMock.mockResolvedValue({ id: 'note-one' });
 
-    const response = await POST(campusNoteRequest());
+    const response = await POST(new Request('https://scholar-scout.test/api/campus-notes', {
+      method: 'POST',
+      body: JSON.stringify({ school_slug: 'north-valley-college', uploader_username: null, program_id: null, body: 'Can anyone share a study tip?' }),
+    }));
 
     expect(response.status).toBe(201);
-    expect(createCampusNote).toHaveBeenCalledWith('student-session-id', expect.any(Object));
+    expect(createCampusNoteMock).toHaveBeenCalledWith('student-one', expect.any(Object));
   });
 });

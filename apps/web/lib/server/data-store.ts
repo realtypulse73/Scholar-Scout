@@ -466,15 +466,29 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
       }
 
       if (!blob.stream) {
+        if (isIsolatedPreviewBlobPath(this.pathname)) {
+          return { data: createInitialData(), version: null };
+        }
         throw new ScholarScoutDataStoreReadError('invalid-data');
       }
 
       const body = await readStreamText(blob.stream);
       const metadata = await head(this.pathname, { token: this.token });
-      return {
-        data: parseStoredScholarScoutData(JSON.parse(body)),
-        version: metadata.etag,
-      };
+      try {
+        return {
+          data: parseStoredScholarScoutData(JSON.parse(body)),
+          version: metadata.etag,
+        };
+      } catch (error) {
+        if (
+          isIsolatedPreviewBlobPath(this.pathname) &&
+          error instanceof ScholarScoutDataStoreReadError &&
+          error.category === 'invalid-data'
+        ) {
+          return { data: createInitialData(), version: metadata.etag };
+        }
+        throw error;
+      }
     } catch (error) {
       if (error instanceof ScholarScoutDataStoreReadError) {
         throw error;
@@ -530,6 +544,10 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
   }
 }
 
+function isIsolatedPreviewBlobPath(pathname: string): boolean {
+  return process.env.VERCEL_ENV === 'preview' && pathname.startsWith('scholarscout/preview/');
+}
+
 let activeDataStore: ScholarScoutDataStore | null = null;
 
 export function getDataStoreAdapterName() {
@@ -577,6 +595,7 @@ export function getDataStoreConfigurationSummary() {
       process.env.BLOB_READ_WRITE_TOKEN;
     return {
       adapter,
+      // Preview branches may point here at isolated rehearsal data in Blob.
       backingStore:
         process.env.SCHOLARSCOUT_BLOB_DATA_PATH ?? 'scholarscout/data.json',
       isDurable: Boolean(token),
