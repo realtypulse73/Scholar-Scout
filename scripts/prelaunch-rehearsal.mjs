@@ -15,6 +15,11 @@ const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['run', 'typecheck']],
   ['pnpm', ['run', 'build']],
 ];
+const CANDIDATE_QUALITY_ENV = {
+  // Candidate quality uses an owned local adapter. Deployment credentials are
+  // intentionally not part of the local build or browser proof.
+  SCHOLARSCOUT_DATA_ADAPTER: 'json',
+};
 const HIGH_RISK_COMMANDS = [
   ['pnpm', ['--filter', '@scholar-scout/web', 'test', '--runInBand', '__tests__/api/advisor-chat.test.ts', '__tests__/api/account-guest-routes.test.ts', '__tests__/api/campus-notes.test.ts', '__tests__/api/peer-connections.test.ts']],
   ['pnpm', ['--filter', '@scholar-scout/codex-webhook-runner', 'test']],
@@ -55,7 +60,7 @@ async function main() {
         }
       : {};
     if (!args.aggregateOnly) {
-      records['candidate-quality'] = await runReleaseLane('candidate-quality', candidateCommit, CANDIDATE_QUALITY_COMMANDS, outputDir);
+      records['candidate-quality'] = await runReleaseLane('candidate-quality', candidateCommit, CANDIDATE_QUALITY_COMMANDS, outputDir, CANDIDATE_QUALITY_ENV);
       if (records['candidate-quality'].outcome === 'passed') records['high-risk'] = await runReleaseLane('high-risk', candidateCommit, HIGH_RISK_COMMANDS, outputDir);
       if (records['high-risk']?.outcome === 'passed') records['local-browser'] = await runReleaseLane('local-browser', candidateCommit, [LOCAL_BROWSER_COMMAND], outputDir);
     }
@@ -86,12 +91,12 @@ async function main() {
   if (steps.some((step) => step.status === 'failed')) process.exitCode = 1;
 }
 
-async function runReleaseLane(lane, candidateCommit, commands, outputDir) {
+async function runReleaseLane(lane, candidateCommit, commands, outputDir, childEnvironment = {}) {
   const recordedAt = new Date().toISOString();
   const commandList = commands.map(formatCommand);
   const record = { candidateCommit, recordedAt, commands: commandList, outcome: 'passed' };
   for (const [command, commandArgs] of commands) {
-    const result = await runCommand(command, commandArgs);
+    const result = await runCommand(command, commandArgs, childEnvironment);
     if (result.code !== 0) {
       record.outcome = 'failed';
       record.errorCategory = 'command-failed';
@@ -142,7 +147,7 @@ export function parseSafeFailureDetail(output) {
 function buildReleaseSummary(records) { return ['# ScholarScout Candidate Release Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Required Proof Lanes', '', ...REQUIRED_RELEASE_LANES.map((lane) => `- ${records[lane]?.outcome ?? 'missing'}: ${lane}`), '', 'Records contain only candidate commit, UTC, command, pass/fail, safe category, and approved target/artifact identifiers or links. Preview evidence supplements and never replaces protected-main, production deployment, or post-deploy smoke evidence.', ''].join('\n'); }
 function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal', '', `Generated: ${new Date().toISOString()}`, '', '## Steps', '', ...steps.map((step) => `- ${step.status}: ${step.name}${step.detail ? ` (${step.detail})` : ''}`), ''].join('\n'); }
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
-function runCommand(command, commandArgs) { return new Promise((resolve) => { const useWindowsPnpmLauncher = process.platform === 'win32' && command === 'pnpm'; const executable = useWindowsPnpmLauncher ? 'pnpm.cmd' : command; let child; try { child = spawn(executable, commandArgs, { cwd: process.cwd(), env: process.env, shell: useWindowsPnpmLauncher }); } catch { resolve({ code: 1, stdout: '', stderr: '' }); return; } let stdout = ''; let stderr = ''; child.stdout?.on('data', (chunk) => { stdout += chunk; }); child.stderr?.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
+function runCommand(command, commandArgs, childEnvironment = {}) { return new Promise((resolve) => { const useWindowsPnpmLauncher = process.platform === 'win32' && command === 'pnpm'; const executable = useWindowsPnpmLauncher ? 'pnpm.cmd' : command; let child; try { child = spawn(executable, commandArgs, { cwd: process.cwd(), env: { ...process.env, ...childEnvironment }, shell: useWindowsPnpmLauncher }); } catch { resolve({ code: 1, stdout: '', stderr: '' }); return; } let stdout = ''; let stderr = ''; child.stdout?.on('data', (chunk) => { stdout += chunk; }); child.stderr?.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
 function hasSmokeTarget() { return Boolean(process.env.SCHOLARSCOUT_SMOKE_BASE_URL || process.env.NEXTAUTH_URL); }
 function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
 function childArgs(values, args) { return args.envFile ? [...values, '--env-file', args.envFile] : values; }

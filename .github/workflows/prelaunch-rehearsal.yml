@@ -41,10 +41,6 @@ jobs:
       GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
       SCHOLARSCOUT_STAFF_EMAILS: ${{ secrets.SCHOLARSCOUT_STAFF_EMAILS }}
       SCHOLARSCOUT_HEALTH_TOKEN: ${{ secrets.SCHOLARSCOUT_HEALTH_TOKEN }}
-      # This runner owns only local test data. A missing GitHub secret expands
-      # to an empty string, which is not a valid adapter; keep the fallback
-      # explicit so the build and owned browser fixture use local JSON data.
-      SCHOLARSCOUT_DATA_ADAPTER: ${{ secrets.SCHOLARSCOUT_DATA_ADAPTER || 'json' }}
       SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN: ${{ secrets.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN || secrets.BLOB_READ_WRITE_TOKEN }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
       SCHOLARSCOUT_BLOB_DATA_PATH: ${{ secrets.SCHOLARSCOUT_BLOB_DATA_PATH }}
