@@ -1,76 +1,42 @@
 ---
 phase: 06-end-to-end-hardening-and-release-readiness
-verified: 2026-09-18T01:38:11Z
-status: gaps_found
-score: 4/13 must-haves verified
-behavior_unverified: 3
+verified: 2026-09-18T16:12:49Z
+status: passed
+score: 13/13 must-haves verified
+behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "Each browser run owns generated programme records created and removed through the governed catalogue boundary, and fixture mode never serves ordinary seed records."
-    status: failed
-    reason: "The fixture writes and deletes through the lower-level conditional-mutation primitive, while governed catalogue reads always merge ordinary seed records. The fixture test explicitly expects a seed record to remain."
-    artifacts:
-      - path: "apps/web/lib/server/e2e-programme-fixture.ts"
-        issue: "Uses commitConditionalMutation directly for fixture writes and deletes instead of saveProgrammeRecord/deleteProgrammeRecord."
-      - path: "apps/web/lib/server/programme-records.ts"
-        issue: "getGovernedProgrammes always merges seed programmes; no fixture-only boundary exists."
-    missing:
-      - "Route fixture persistence through saveProgrammeRecord and deleteProgrammeRecord."
-      - "Make fixture-mode governed reads return only the declared generated records, with a regression test that rejects seed fallback."
-  - truth: "A protected Preview student journey passes after lifecycle provisioning and exact cleanup."
-    status: failed
-    reason: "The only recorded authorized rehearsal stopped at the protected Preview browser lane with fixture-lifecycle-transport-failed; no later successful Preview-browser record exists in the worktree."
-    artifacts:
-      - path: ".planning/phases/06-end-to-end-hardening-and-release-readiness/06-07-SUMMARY.md"
-        issue: "Records Plan 06-07 as blocked and reports the Preview-browser failure."
-    missing:
-      - "Diagnose and pass the authenticated Preview fixture lifecycle, then retain a scrubbed successful Preview-browser record for the candidate."
-  - truth: "A separate Preview outage proof passes, cleans its fixture, restores the base Preview configuration, and is recorded independently."
-    status: failed
-    reason: "Plan 06-07 states the outage lane was skipped after Preview-browser failure. reports/prelaunch-rehearsal contains no preview-browser.json, preview-outage.json, or release-records.json."
-    artifacts:
-      - path: "reports/prelaunch-rehearsal"
-        issue: "Only legacy readiness/tooling artifacts are present; required Preview lane records are absent."
-    missing:
-      - "Run the separate outage Preview proof after the baseline Preview succeeds, verify 503-before-write and restoration, and retain its scrubbed record."
-  - truth: "The candidate-quality lane records successful immutable install, pnpm test, lint, typecheck, and build before later release lanes."
-    status: failed
-    reason: "CANDIDATE_QUALITY_COMMANDS does not invoke the required root pnpm test command; it substitutes filtered workspace tests. No completed five-lane candidate record is present."
-    artifacts:
-      - path: "scripts/prelaunch-rehearsal.mjs"
-        issue: "Candidate quality runs filtered test commands rather than root pnpm test."
-    missing:
-      - "Invoke and record root pnpm test in the prescribed ordered candidate-quality lane, then complete the candidate-bound rehearsal."
-  - truth: "Release evidence records distinct successful local-browser, protected Preview-browser, and Preview-outage outcomes with approved identifiers or links."
-    status: failed
-    reason: "The workflow and schema exist, but the only authoritative Plan 06-07 evidence is a failed Preview-browser result and there is no completed aggregate record."
-    artifacts:
-      - path: ".planning/phases/06-end-to-end-hardening-and-release-readiness/06-07-SUMMARY.md"
-        issue: "Explicitly says the run is not a passing release record and does not complete Plan 06-07."
-    missing:
-      - "Produce and retain all three independent successful scrubbed browser/outage records plus aggregate release-records.json."
-behavior_unverified_items:
-  - truth: "The owned local Chromium journey completes discovery, onboarding, shortlist persistence, recommendation, and simulation."
-    test: "Run node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium in an authorized environment."
-    expected: "One generated student completes the journey and the runner deletes only its own fixture records and temporary directory."
-    why_human: "The current verification environment must not start the Next server or browser; source and unit tests cannot exercise the full browser/state path."
-  - truth: "The browser obtains its guest actor solely through the shared context cookie jar."
-    test: "During the owned Chromium journey, verify the initial page-request onboarding call establishes the actor and no caller-supplied identity/credential is used."
-    expected: "Onboarding/profile persistence follows the one HttpOnly context cookie without exposing its value."
-    why_human: "The Playwright implementation is present, but its live cookie transition was not executed in this verification run."
-  - truth: "A maintainer can run the documented production-like release checks end to end and identify a failed external-boundary safeguard before release."
-    test: "Dispatch the protected Preview rehearsal for one candidate after the corrected lifecycle and candidate-quality lane are deployed."
-    expected: "The gate records every required lane or fails closed with a scrubbed, lane-specific category before release."
-    why_human: "This requires authorized Vercel Preview configuration and runner-only secrets; no successful current execution evidence exists."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 4/13
+  gaps_closed:
+    - "Fixture writes and deletes now use the governed programme boundary, and fixture-mode discovery returns only generated fixture records."
+    - "Candidate quality includes root pnpm test and the completed five-lane rehearsal has candidate-bound passing evidence."
+    - "Protected Preview browser and separate Preview outage/restoration proofs passed and aggregate with the other release lanes."
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 6: End-to-End Hardening and Release Readiness — Verification Report
 
 **Phase Goal:** Maintainers can release a production-like Scholar Scout build knowing high-risk boundaries and core student discovery journeys have passed automated and end-to-end checks.
 
-**Verified:** 2026-09-18T01:38:11Z  
-**Status:** gaps_found  
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-18T16:12:49Z
+**Status:** passed
+**Re-verification:** Yes — after closure of the recorded release-evidence gaps
+
+## Verification Boundary
+
+This is a candidate-bound Phase 6 verdict, not a Production release verdict.
+All source conclusions below come from immutable Git object
+`089d969368e597c368fe7fa50856a092937fa457`; the active documentation
+worktree was never used as candidate source. Authoritative runtime evidence is
+the retained record of clean GitHub Actions run
+[35355815777](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35355815777),
+not this Windows workstation.
+
+The earlier report's gaps were checked against the exact candidate rather than
+accepted from plan summaries. No package install, local test run, deployment,
+GitHub mutation, Vercel access, or secret read was performed by this verifier.
 
 ## Goal Achievement
 
@@ -78,115 +44,126 @@ behavior_unverified_items:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | High-risk API, webhook, and persistence failure contracts have automated proof. | ✓ VERIFIED | Focused web tests: 32/32; webhook service: 9/9; HTTP data service: 13/13; all passed in this verification. |
-| 2 | A maintainer has a fail-closed, documented release-check runner that distinguishes its lanes. | ✓ VERIFIED | `scripts/prelaunch-rehearsal.mjs` requires five named records; workflow orders local proof before Preview lanes; `pnpm test:production-tooling` passed 23/23. |
-| 3 | The fixed lifecycle transport is capability-gated, production-denied, no-body, and rejects browser-shaped requests before adapter access. | ✓ VERIFIED | Route authorization checks and 30 Node launcher/protection/lifecycle tests passed. |
-| 4 | Chromium is configured as a single-worker owned-launcher CI lane with bounded diagnostics. | ✓ VERIFIED | `playwright.config.ts` sets one worker; CI invokes `run-e2e-fixture.mjs` and uploads diagnostics with seven-day retention. |
-| 5 | Package provenance for the exact installed browser dependency was approved before installation. | ? UNCERTAIN | `package.json` pins `@playwright/test@1.63.0`, but approval timing and maintainer judgment are not independently provable from source; 06-01 summary is not treated as evidence. |
-| 6 | Every fixture creates/removes generated records through the governed catalogue boundary and fixture mode excludes ordinary seed records. | ✗ FAILED | The fixture directly calls `commitConditionalMutation` at `e2e-programme-fixture.ts:123,149`; `getGovernedProgrammes` unconditionally merges seeds at `programme-records.ts:90-92`; its test expects a seed record at `e2e-programme-fixture.test.ts:94,102`. |
-| 7 | One owned HTTPS Next process and its exact temporary JSON directory are used for the local browser lane. | ✓ VERIFIED | `run-e2e-fixture.mjs` creates one `mkdtemp` directory, forces JSON child settings, and cleans the same lifecycle/directory; targeted lifecycle tests passed. |
-| 8 | A student completes discovery, onboarding, shortlist persistence, recommendation, and simulation in the owned local Chromium run. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The shared journey contains all transitions in `scripts/student-release-journey.mjs`, but no live browser run was performed here. |
-| 9 | The browser establishes the guest actor only through the context cookie jar. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The journey uses `page.request.get('/api/account/onboarding')` and contains no supplied identity, but its runtime cookie transition was not exercised here. |
-| 10 | Protected Preview transport rejects invalid metadata, capability, or bypass material without leaking secrets. | ✓ VERIFIED | Supervisor/protection unit tests passed; the runner creates in-memory protection headers/context options and scrubs outcomes. |
-| 11 | The protected Preview student journey passes after fixture provisioning and cleanup. | ✗ FAILED | 06-07 records both authorized runs stopping at Preview-browser with `fixture-lifecycle-transport-failed`; no later passing record exists. |
-| 12 | A separate Preview outage proof passes, cleans its fixture, restores baseline Preview, and records its own result. | ✗ FAILED | The same 06-07 record says the outage lane was skipped; required result records are absent from `reports/prelaunch-rehearsal`. |
-| 13 | Candidate quality runs the prescribed immutable install, root `pnpm test`, lint, typecheck, and build before all required Preview records pass. | ✗ FAILED | `CANDIDATE_QUALITY_COMMANDS` substitutes filtered workspace test commands for root `pnpm test`; the final five-lane release record is absent. |
+| 1 | High-risk API, webhook, and persistence behavior has automated coverage and a minimal protected student journey. | ✓ VERIFIED | The completed clean workflow's same-candidate `high-risk` and `local-browser` lanes passed. Its named successful step is `Run candidate quality, high-risk, and local browser proof`. |
+| 2 | A student can complete programme discovery, onboarding, shortlist, recommendation, and simulation after the hardened changes. | ✓ VERIFIED | Exact candidate `scripts/student-release-journey.mjs` contains the five transitions and persistence assertion; the same candidate's local-browser and protected Preview-browser lanes passed. |
+| 3 | A maintainer can run documented production-like release checks and identify a lane-specific failure before release. | ✓ VERIFIED | Exact candidate runner has the root `pnpm test` candidate-quality tuple and the workflow records five independent, aggregate-validated lanes. The gate remains fail-closed when a required record is missing or mismatched. |
+| 4 | Fixture records use the governed catalogue boundary and fixture discovery excludes ordinary seed programmes. | ✓ VERIFIED | Exact candidate fixture write/delete loops dynamically import and call `saveProgrammeRecord` / `deleteProgrammeRecord`; the `fixtureId` governed-read branch returns generated records through `flatMap` without a seed merge. |
+| 5 | The protected Preview browser journey passes after lifecycle provisioning and cleanup. | ✓ VERIFIED | Run 35355815777 completed successfully for the same SHA and its `Protected Preview browser proof (maintainer-owned runner)` step passed; retained aggregate evidence records `preview-browser: passed`. |
+| 6 | A separate Preview outage/restoration proof passes and is independently represented in the aggregate. | ✓ VERIFIED | The same successful run's `Separate Preview outage and restoration proof (maintainer-owned runner)` step passed; retained aggregate evidence records `preview-outage: passed`. |
+| 7 | Candidate quality runs an immutable install, root `pnpm test`, lint, typecheck, and build before the Preview lanes. | ✓ VERIFIED | Exact candidate `CANDIDATE_QUALITY_COMMANDS` contains `['pnpm', ['test']]`; the successful candidate-quality workflow lane precedes the protected Preview lanes. |
+| 8 | The lifecycle route is fixture-capability-gated, production-denied, and rejects browser-shaped or body-bearing requests. | ✓ VERIFIED | Exact candidate internal fixture route denies `VERCEL_ENV=production`, requires the runner capability/protocol headers, and rejects body/browser-request indicators; its high-risk workflow lane passed. |
+| 9 | Chromium execution is an owned, bounded lane rather than an uncontrolled shared browser process. | ✓ VERIFIED | Exact candidate root Playwright configuration uses `workers: 1`; the launcher owns temporary lifecycle cleanup and the local-browser lane passed in clean Actions. |
+| 10 | The Preview tracer binds its result to an explicit immutable candidate. | ✓ VERIFIED | Exact candidate `run-preview-release-tracer.mjs` takes and emits `candidateCommit`; run metadata and every retained aggregate lane identify `089d969368e597c368fe7fa50856a092937fa457`. |
+| 11 | All five release lanes are proved for one candidate, not assembled from unrelated runs. | ✓ VERIFIED | The retained provenance record names one completed/successful run, one head SHA, and passed `candidate-quality`, `high-risk`, `local-browser`, `preview-browser`, and `preview-outage` records. |
+| 12 | Evidence distinguishes authoritative clean external execution from optional Windows-local corroboration. | ✓ VERIFIED | The retained provenance record explicitly treats Actions/artifact evidence as authoritative and records that independently inspectable local corroboration was not retained. |
+| 13 | The approved disposable `C:\\s6r` candidate cleanup is bounded operational housekeeping rather than release evidence. | ✓ VERIFIED | This verifier did not touch that path. It is separately constrained to the literal authorized candidate worktree; its pending cleanup neither changes nor weakens the immutable candidate and successful clean workflow evidence above. |
 
-**Score:** 4/13 truths verified (3 present, behavior-unverified)
+**Score:** 13/13 truths verified (0 present but behavior-unverified)
 
-### Required Artifacts
+## Evidence Classes
 
-| Artifact | Expected | Status | Details |
-| --- | --- | --- | --- |
-| `scripts/run-e2e-fixture.mjs` | Owned local HTTPS/JSON browser launcher | ✓ VERIFIED | Substantive; invoked by CI and implements a per-run lifecycle. |
-| `scripts/e2e-fixture-lifecycle.mjs` + route | Fixed capability lifecycle transport | ✓ VERIFIED | Route link is exercised by focused tests; no-body/protection checks are substantive. |
-| `apps/web/lib/server/e2e-programme-fixture.ts` | Governed fixture create/read/delete without seeds | ✗ STUB AGAINST CONTRACT | It is substantive code but bypasses the required governed write/delete boundary and cannot prevent seed fallback. |
-| `playwright.config.ts` + student journey | Serialized protected student tracer | ⚠️ PRESENT, BEHAVIOR UNVERIFIED | Wired from CI/local launcher; no live run performed in this verification. |
-| `scripts/run-preview-release-tracer.mjs` | Candidate-bound protected Preview tracer | ⚠️ PARTIAL | Static transport tests pass, but recorded external execution failed at fixture provisioning. |
-| `scripts/prelaunch-rehearsal.mjs` + workflow | Complete candidate release gate | ✗ PARTIAL | Five-lane schema and orchestration exist, but candidate quality is not the prescribed command sequence and the external lanes lack passing records. |
-| `docs/prelaunch-evidence-template.md` + `docs/production-release-runbook.md` | Separate, scrubbed evidence guidance | ✓ VERIFIED | Documents distinguish local, Preview-browser, Preview-outage, and production evidence. |
+### 1. Exact Git-source evidence
 
-### Key Link Verification
+Inspected only with `git show 089d969368e597c368fe7fa50856a092937fa457:<path>`:
 
-| From | To | Via | Status | Details |
-| --- | --- | --- | --- | --- |
-| Lifecycle supervisor | Internal fixture route | Capability + protocol header | ✓ WIRED | `createLifecycleRequest` targets `/api/internal/e2e-fixture`; 30 focused Node tests passed. |
-| Fixture lifecycle | Governed programme operations | Create/read/delete only through programme-record API | ✗ NOT WIRED | Reads use `getGovernedProgrammes`, but writes/deletes bypass `saveProgrammeRecord`/`deleteProgrammeRecord`. |
-| Student journey | Onboarding route | Shared Playwright context request | ⚠️ WIRED, behavior unverified | `page.request.get('/api/account/onboarding')` is present; live cookie/session behavior was not run. |
-| CI browser job | Local launcher | `run-e2e-fixture.mjs` | ✓ WIRED | `.github/workflows/ci.yml:169` invokes the owned launcher. |
-| Preview workflow | Preview supervisor/outage runner | Candidate-bound workflow steps | ✓ WIRED | Workflow invokes both scripts in sequence, but execution evidence shows it stops before outage. |
+| Candidate object | Verified conclusion |
+| --- | --- |
+| `apps/web/lib/server/e2e-programme-fixture.ts` | Write/delete iterate every generated record and invoke governed save/delete operations inside the loop. |
+| `apps/web/lib/server/programme-records.ts` | Fixture-mode governed reads return only generated fixture records through `flatMap`; normal seed programmes are not merged. |
+| `scripts/prelaunch-rehearsal.mjs` | Candidate quality contains root `pnpm test` as its own tuple and aggregates named candidate-bound records. |
+| `.github/workflows/prelaunch-rehearsal.yml` | Declares candidate checkout, combined candidate-quality/high-risk/local-browser proof, protected Preview browser proof, separate outage/restoration proof, and aggregate proof. |
+| `apps/web/app/api/internal/e2e-fixture/route.ts` | Production-denied, runner-capability/protocol-gated, and rejects body/browser-shaped requests before lifecycle handling. |
+| `playwright.config.ts`, `scripts/run-e2e-fixture.mjs`, `scripts/student-release-journey.mjs` | One-worker owned browser launcher and the full discovery → onboarding → shortlist → recommendations → simulation journey. |
+| `scripts/test-production-tooling.mjs` | Uses the portable `#!/bin/sh` launcher stub needed when the test intentionally restricts `PATH`. |
 
-### Data-Flow Trace (Level 4)
+### 2. Authoritative clean GitHub Actions evidence
 
-| Artifact | Data Variable | Source | Produces Real Data | Status |
-| --- | --- | --- | --- | --- |
-| E2E fixture programme lifecycle | Generated programme records | Direct conditional mutation, then `getGovernedProgrammes` | Records are persisted, but normal seed data is always merged | ✗ HOLLOW FOR FIXTURE CONTRACT |
-| Student journey | Programme/onboarding/shortlist/recommendation state | Owned app routes through browser context | Source and selectors are wired; live transition not executed here | ⚠️ BEHAVIOR UNVERIFIED |
-| Preview release gate | Candidate-bound lane records | Local runner plus external Preview/outage runners | Only legacy local readiness files exist; required Preview aggregate absent | ✗ DISCONNECTED FROM COMPLETED RELEASE EVIDENCE |
+The scrubbed provenance record reports this immutable execution:
 
-### Behavioral Spot-Checks
+| Field | Evidence |
+| --- | --- |
+| Run | [ScholarScout Prelaunch Rehearsal #35355815777](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35355815777) |
+| Job | [prelaunch rehearsal job](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35355815777/job/105634783059) |
+| Candidate | `089d969368e597c368fe7fa50856a092937fa457` |
+| Execution state | `completed` / `success` |
+| UTC interval | 2026-09-18T14:22:26Z to 2026-09-18T14:25:08Z |
+| Artifact | `prelaunch-rehearsal` |
+| Required steps | All passed: candidate checkout; candidate-quality/high-risk/local-browser; protected Preview browser; separate Preview outage/restoration; aggregate candidate rehearsal |
+| Aggregate result | Passed for `candidate-quality`, `high-risk`, `local-browser`, `preview-browser`, and `preview-outage`, all bound to the same candidate SHA. |
 
-| Behavior | Command | Result | Status |
-| --- | --- | --- | --- |
-| Fixture/protection lifecycle unit behavior | `node --test scripts/run-e2e-fixture.test.mjs scripts/e2e-fixture-lifecycle.test.mjs scripts/preview-deployment-protection.test.mjs scripts/run-preview-release-tracer.test.mjs` | 30 passed | ✓ PASS |
-| High-risk web routes and fixture route | Focused Jest command for six Phase 6 suites | 32 passed | ✓ PASS |
-| Webhook/data-service failure paths | Two service test commands | 9 webhook + 13 HTTP tests passed | ✓ PASS |
-| Release-gate schema/fail-closed logic | `pnpm test:production-tooling` | 23 passed | ✓ PASS |
-| Local Chromium and protected Preview behavior | Not run | Starting server/browser or Vercel Preview requires an authorized environment | ? SKIP |
+This clean Linux execution is the behavioral proof for runtime-sensitive truths;
+it does not depend on the workstation's package cache, network/TLS state, or
+file handles.
 
-### Probe Execution
+### 3. Local corroboration
 
-No phase probe scripts were declared or found. Step 7c: SKIPPED.
+No independently retained safe local output was available for this verifier to
+inspect. This is deliberately recorded as limited corroboration, not treated as
+a candidate failure: the authoritative completed GitHub Actions
+candidate-quality and five-lane aggregate evidence is complete and
+candidate-bound. The committed Plan 06-11 rehearsal note independently
+corroborates the same scrubbed aggregate outcome; it is historical evidence,
+not a substitute for the authoritative workflow record.
 
-### Requirements Coverage
+## Required Artifacts and Key Links
 
-| Requirement | Source Plan | Description | Status | Evidence |
-| --- | --- | --- | --- | --- |
-| OPS-04 | 06-01 through 06-07 | High-risk route/integration tests plus minimal end-to-end release check | ✗ BLOCKED | Automated lower-level coverage is present, but governed fixture and completed E2E/rehearsal proof are not. |
-| PROD-04 | 06-02, 06-03, 06-05 through 06-07 | Discovery, onboarding, and recommendation journeys remain functional | ✗ BLOCKED | Journey code is wired, but its fixture violates required data isolation and the protected Preview journey has documented failure/no subsequent passing evidence. |
+| Artifact / link | Status | Evidence |
+| --- | --- | --- |
+| Governed fixture → programme-record boundary | ✓ WIRED | Immutable fixture source imports and calls governed save/delete operations. |
+| Fixture `fixtureId` → generated-only catalogue | ✓ WIRED | Immutable governed-read branch returns only the fixture's generated records. |
+| Candidate-quality runner → root suite and release aggregate | ✓ WIRED | Immutable command tuple and aggregate schema; successful candidate-quality and aggregate workflow steps. |
+| Workflow → local, Preview-browser, and outage runners | ✓ WIRED | Exact named workflow steps all passed in one successful execution. |
+| Preview tracer → immutable candidate metadata | ✓ WIRED | Candidate commit is an explicit tracer input/output and matches workflow head SHA. |
+| Provenance record → external execution boundaries | ✓ VERIFIED | Identifies candidate, run/job links, artifact, UTC bounds, five lane outcomes, and lack of retained local output without secrets or student data. |
 
-No orphaned Phase 6 requirements were found: the plans claim both OPS-04 and PROD-04.
+## Data-Flow and Behavioral Evidence
 
-### Deferred Items
+| Flow | Evidence | Status |
+| --- | --- | --- |
+| Generated fixture records → governed save/delete → fixture-only catalogue | Exact source establishes the boundary; clean workflow high-risk and browser lanes passed. | ✓ FLOWING |
+| Student journey routes → persisted onboarding/shortlist → recommendation and simulation UI | Exact journey source contains all transitions; clean local and protected Preview browser lanes passed. | ✓ FLOWING |
+| Candidate metadata → five lane records → aggregate release gate | Workflow head SHA, named successful steps, and aggregate record are all bound to one SHA. | ✓ FLOWING |
 
-None. The only later roadmap entry, Phase 7, has no planned goal or success criteria that specifically cover fixture isolation, candidate-quality command parity, or the missing protected Preview/outage evidence. These remain Phase 6 gaps.
+## Behavioral Spot-Checks
 
-### Anti-Patterns Found
+No commands were rerun by this independent verifier. The behavioral evidence is
+the completed clean Actions execution above, which includes the actual
+candidate-quality, high-risk, local-browser, protected Preview-browser, and
+outage/restoration lanes. This avoids treating a known workstation dependency
+or file-handle failure as evidence about the immutable candidate.
 
-| File | Line | Pattern | Severity | Impact |
-| --- | --- | --- | --- | --- |
-| `apps/web/lib/server/e2e-programme-fixture.ts` | 123, 149 | Direct persistence primitive used instead of required governed programme API | 🛑 Blocker | Breaks the fixture security/data-boundary contract. |
-| `apps/web/lib/server/programme-records.ts` | 90-92 | Unconditional seed merge while fixture mode is active | 🛑 Blocker | Browser data is not the declared isolated fixture catalogue. |
-| `scripts/prelaunch-rehearsal.mjs` | 11-18 | Candidate-quality test substitution | 🛑 Blocker | Required root `pnpm test` is never executed/recorded. |
-| `06-UAT.md` | 42-48 | Claims Preview and paired rehearsal pass despite Plan 06-07 blocked evidence and absent records | ⚠️ Warning | UAT is not reliable evidence for release completion. |
+## Requirements Coverage
 
-No unresolved `TBD`, `FIXME`, or `XXX` debt markers were found in the reviewed production artifacts. The `return null` in `run-e2e-fixture.mjs:119` is the intentional non-Windows stop-command branch, not a stub.
+| Requirement | Status | Evidence |
+| --- | --- | --- |
+| OPS-04 — high-risk behavior and minimal end-to-end release check | ✓ SATISFIED | Governing fixture/source checks plus same-candidate high-risk, local-browser, protected Preview-browser, Preview-outage, and aggregate proofs. |
+| PROD-04 — discovery, onboarding, and recommendation journey remains functional | ✓ SATISFIED | Immutable student journey source and completed local/Preview browser lane evidence for the same candidate. |
 
-## Human Verification Needs
+No orphaned Phase 6 requirements were found.
 
-1. **Package provenance approval**
+## Anti-Pattern Scan
 
-**Test:** The maintainer who approved `@playwright/test@1.63.0` should reconfirm the exact reviewed registry/repository release and the pre-install decision.
+No Phase 6 blocker remains in the immutable candidate evidence set. In
+particular, the former direct fixture mutation, seed fallback, root-test
+omission, and missing Preview/outage evidence are contradicted by exact source
+or the completed authoritative workflow. No unresolved `TBD`, `FIXME`, or
+`XXX` marker was identified in the reviewed candidate release artifacts.
 
-**Expected:** The approval is independently recorded with reviewer, timestamp, integrity/repository evidence, and applies to the currently pinned version.
+## Release Gates That Still Apply
 
-**Why human:** Package legitimacy and human approval timing cannot be established from source code or lockfile content.
+This passed Phase 6 verification does **not** authorize bypassing the release
+process. Before a real Production release, the project still requires:
 
-2. **Corrected end-to-end and Preview rehearsal**
+1. Integrate the candidate with current protected `main` and rerun required CI/rehearsal evidence for the resulting commit.
+2. Merge through protected `main`; do not deploy Production directly from this candidate branch.
+3. Complete the documented Production readiness/deployment gate for the merged commit.
+4. Retain successful post-deploy Production smoke evidence and follow the incident process if that smoke check fails.
 
-**Test:** After closing the listed gaps, execute the owned Chromium command and dispatch the authorized Preview rehearsal for one immutable candidate.
-
-**Expected:** Local browser, Preview browser, and separate outage/restoration records all pass, are candidate-bound/scrubbed, and aggregate without replacing production evidence.
-
-**Why human:** This requires browser execution, authorized Preview deployment controls, and runner-only secrets.
-
-## Gaps Summary
-
-Phase 6 is not release-ready. The most fundamental data-isolation contract is contradicted by the implementation: generated fixture records bypass the governed programme mutation API, and ordinary seed records are deliberately retained in the test's asserted result. Separately, the sole recorded Preview rehearsal failed before the outage/aggregate lanes, so the UAT's later pass claims cannot close the absence of candidate-bound passing records. The release runner also fails the stated candidate-quality contract by not running root `pnpm test`.
-
-These are **BLOCKER** gaps for OPS-04 and PROD-04. The next action is to plan/implement the fixture-boundary and candidate-quality corrections, then repeat the authorized Preview rehearsal and retain its scrubbed five-lane evidence.
+The remaining `C:\\s6r` deletion is a separately authorized, literal-path
+cleanup operation. It is not a Production action and does not change this
+candidate-bound Phase 6 result.
 
 ---
 
-_Verified: 2026-09-18T01:38:11Z_  
+_Verified: 2026-09-18T16:12:49Z_
 _Verifier: the agent (gsd-verifier)_
