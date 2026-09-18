@@ -43,7 +43,14 @@ SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX=scholar-scout-rehearsal-baseline-
 SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX=scholar-scout-rehearsal-outage-
 ```
 
-In the GitHub **Preview** environment, retain a `VERCEL_TOKEN` secret with read access to the `scholar-scout` Vercel team. The workflow uses Vercel's CLI to find one `READY` deployment in each rehearsal project whose Git commit metadata exactly matches the candidate SHA. It does not print the token, accept pasted URLs, or copy a Vercel value into GitHub for an individual rehearsal.
+In the GitHub **Preview** environment, add these two secrets:
+
+```text
+SCHOLARSCOUT_VERCEL_BASELINE_TOKEN
+SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN
+```
+
+Create each Vercel access token with a 90-day expiry and scope it to only its matching rehearsal project. Vercel access tokens can manage resources in their scope, so do not use an account-wide or all-project token. The workflow uses each token only with Vercel's CLI to find one `READY` deployment whose Git commit metadata exactly matches the candidate SHA. It never prints a token, accepts pasted URLs, or copies a Vercel value into GitHub for an individual rehearsal.
 
 ## Run a rehearsal
 
@@ -52,4 +59,4 @@ In the GitHub **Preview** environment, retain a `VERCEL_TOKEN` secret with read 
 3. In GitHub Actions, run **ScholarScout Prelaunch Rehearsal** and paste that full commit SHA.
 4. Read the uploaded `prelaunch-rehearsal` artifact. A pass means both fixture lifecycles were created, checked, and cleaned; a failure gives a safe category without exposing data or credentials.
 
-The projects, their two fixture capabilities, and the Preview environment's read-only Vercel token remain in place. No branches, branch-specific variables, generated handoff files, pasted URLs, or per-run secret changes are needed.
+The projects, their two fixture capabilities, and their two project-scoped Vercel tokens remain in place. Rotate each token before its 90-day expiry. No branches, branch-specific variables, generated handoff files, pasted URLs, or per-run secret changes are needed.

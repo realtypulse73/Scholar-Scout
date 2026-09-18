@@ -17,6 +17,8 @@ export async function discoverRehearsalPreviewDeployments({
   baselineProject,
   outageProject,
   vercelScope,
+  baselineToken,
+  outageToken,
   listDeployments = listReadyVercelDeployments,
 } = {}) {
   if (!isFullSha(candidateCommit)) {
@@ -28,10 +30,13 @@ export async function discoverRehearsalPreviewDeployments({
   if (!isProjectName(baselineProject) || !isProjectName(outageProject) || baselineProject === outageProject || !isScope(vercelScope)) {
     throw new Error('Rehearsal deployment discovery requires two Vercel projects and a scope.');
   }
+  if (!isToken(baselineToken) || !isToken(outageToken)) {
+    throw new Error('Rehearsal deployment discovery requires a separate Vercel token for each rehearsal project.');
+  }
 
   const [baselineOutput, outageOutput] = await Promise.all([
-    listDeployments({ project: baselineProject, candidateCommit, vercelScope }),
-    listDeployments({ project: outageProject, candidateCommit, vercelScope }),
+    listDeployments({ project: baselineProject, candidateCommit, vercelScope, accessToken: baselineToken }),
+    listDeployments({ project: outageProject, candidateCommit, vercelScope, accessToken: outageToken }),
   ]);
   const baselineUrl = selectReadyDeploymentUrl(baselineOutput, baselineHostPrefix);
   const outageUrl = selectReadyDeploymentUrl(outageOutput, outageHostPrefix);
@@ -39,11 +44,11 @@ export async function discoverRehearsalPreviewDeployments({
   return { baselineUrl, outageUrl };
 }
 
-async function listReadyVercelDeployments({ project, candidateCommit, vercelScope }) {
+async function listReadyVercelDeployments({ project, candidateCommit, vercelScope, accessToken }) {
   const result = await runCommand(VERCEL_APP, [
     'ls', project, '--meta', `githubCommitSha=${candidateCommit}`,
     '--status', 'READY', '--scope', vercelScope, '--no-color',
-  ]);
+  ], { VERCEL_TOKEN: accessToken });
   if (result.code !== 0) {
     throw new Error(`Vercel deployment discovery could not list ${project}.`);
   }
@@ -65,9 +70,12 @@ export function selectReadyDeploymentUrl(output, hostPrefix) {
   return [...urls][0];
 }
 
-function runCommand(command, args) {
+function runCommand(command, args, environment) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { env: process.env, shell: process.platform === 'win32' });
+    const child = spawn(command, args, {
+      env: { ...process.env, ...environment },
+      shell: process.platform === 'win32',
+    });
     let stdout = '';
     child.stdout?.on('data', (chunk) => { stdout += chunk; });
     child.on('error', () => resolve({ code: 1, stdout }));
@@ -89,10 +97,15 @@ function isFullSha(value) { return typeof value === 'string' && /^[a-f0-9]{40}$/
 function isHostPrefix(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
 function isProjectName(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
 function isScope(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
+function isToken(value) { return typeof value === 'string' && value.trim().length >= 20; }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const discovered = await discoverRehearsalPreviewDeployments(args);
+  const discovered = await discoverRehearsalPreviewDeployments({
+    ...args,
+    baselineToken: process.env.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN,
+    outageToken: process.env.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN,
+  });
   const output = `${JSON.stringify(discovered, null, 2)}\n`;
   if (args.output) await writeFile(path.resolve(args.output), output);
   if (args.githubEnv) await appendFile(path.resolve(args.githubEnv), `SCHOLARSCOUT_PREVIEW_URL=${discovered.baselineUrl}\nSCHOLARSCOUT_PREVIEW_OUTAGE_URL=${discovered.outageUrl}\n`);

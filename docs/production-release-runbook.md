@@ -79,9 +79,9 @@ Then run the high-risk route, webhook, and HTTP-data-service suites, followed by
 node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spec.ts --project chromium
 ```
 
-The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it waits for the two Vercel Git deployments, uses Vercel's CLI and the Preview environment's read-only `VERCEL_TOKEN` to find the one ready URL in each project that is tagged with that exact SHA, runs the normal journey and the outage proof, and cleans each fixture automatically.
+The permanent baseline and outage rehearsal projects deploy that pull request automatically. Each has a separate Blob store and only generated data. Dispatch **ScholarScout Prelaunch Rehearsal** with the full candidate SHA; it waits for the two Vercel Git deployments, uses Vercel's CLI and two project-scoped Preview environment tokens to find the one ready URL in each project that is tagged with that exact SHA, runs the normal journey and the outage proof, and cleans each fixture automatically.
 
-The workflow needs only the two permanent runner capabilities plus its static Preview-environment Vercel read token. It never receives production credentials, Vercel branch overrides, manually copied URLs, bypass cookies, or a temporary handoff file. It writes only candidate commit, generated Preview URL, UTC, pass/fail result, and safe error category.
+The workflow needs only the two permanent runner capabilities plus its two static project-scoped Preview-environment Vercel tokens. It never receives production credentials, Vercel branch overrides, manually copied URLs, bypass cookies, or a temporary handoff file. It writes only candidate commit, generated Preview URL, UTC, pass/fail result, and safe error category.
 
 For the one-time rehearsal-project configuration, follow [the rehearsal environment runbook](rehearsal-environment-runbook.md). Preview rehearsal evidence supplements—but never replaces—protected-main CI, the real production build log, post-deploy smoke, and incident evidence.
 
