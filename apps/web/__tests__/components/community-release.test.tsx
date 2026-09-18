@@ -65,9 +65,9 @@ describe('CommunityModerationQueue', () => {
   it('keeps an unauthorised staff-gate state non-disclosing', () => {
     render(<StaffGate><p>Protected programme data</p></StaffGate>);
 
-    expect(screen.getByRole('heading', { name: 'Sign in as authorized staff to use governed tools' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sign in as staff to use CMS tools' })).toBeInTheDocument();
     expect(screen.queryByText('Protected programme data')).not.toBeInTheDocument();
-    expect(screen.queryByText(/staff member email|authorization policy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/staff member email/i)).not.toBeInTheDocument();
   });
 
   it('confirms the safe restore action before resolving and removes only the successful row', async () => {

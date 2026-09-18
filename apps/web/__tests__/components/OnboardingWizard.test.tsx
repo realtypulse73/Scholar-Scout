@@ -10,8 +10,13 @@ const clickSave = () =>
   fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
 
 describe('OnboardingWizard 4-step flow', () => {
+  const fetchMock = jest.fn();
+
   beforeEach(() => {
     window.localStorage.clear();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as typeof fetch;
   });
 
   it('starts with interests and pathway choices', () => {
@@ -56,6 +61,9 @@ describe('OnboardingWizard 4-step flow', () => {
     });
     expect(window.localStorage.getItem('scholarscout.onboarding-profile')).toContain('stem');
     expect(window.localStorage.getItem('scholarscout.onboarding-draft')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith('/api/account/onboarding', expect.objectContaining({
+      method: 'POST',
+    }));
   });
 
   it('can go back and persists draft data', () => {

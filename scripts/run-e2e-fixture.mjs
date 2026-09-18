@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
-import { createLifecycleRequest, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
+import { createLifecycleRequest, requestLoopbackHttps, runFixtureLifecycle } from './e2e-fixture-lifecycle.mjs';
 
 export function parseLauncherOptions(args) {
   const options = { spec: undefined, project: undefined };
@@ -26,7 +26,11 @@ export function validateE2eFixtureEnvironment(env = process.env) {
   }
 }
 
-export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchImpl = fetch } = {}) {
+export function buildFixtureProcessEnv(overrides, env = process.env) {
+  return { ...env, ...overrides };
+}
+
+export async function runE2eFixture({ runPlaywright, spawnChild = spawn } = {}) {
   validateE2eFixtureEnvironment();
   const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-e2e-'));
   const dataFile = path.join(directory, 'scholarscout-data.json');
@@ -47,22 +51,21 @@ export async function runE2eFixture({ runPlaywright, spawnChild = spawn, fetchIm
     const pnpm = getPnpmInvocation();
     child = spawnChild(pnpm.command, [...pnpm.args, '--filter', '@scholar-scout/web', 'exec', 'next', 'dev', '--experimental-https', '--port', String(port)], {
       cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
+      env: buildFixtureProcessEnv({
         SCHOLARSCOUT_DATA_ADAPTER: 'json',
         SCHOLARSCOUT_DATA_FILE: dataFile,
         SCHOLARSCOUT_E2E_FIXTURE: 'true',
         SCHOLARSCOUT_E2E_FIXTURE_ID: fixtureId,
         SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: capability,
-      },
+      }),
     });
     child.once('error', (error) => { terminalError = error; });
     child.once('exit', (code) => {
       if (code && !child.killed) terminalError = new Error('Owned E2E application process exited unexpectedly.');
     });
     const baseUrl = `https://127.0.0.1:${port}`;
-    const request = createLifecycleRequest(baseUrl, capability);
-    await waitForReady(baseUrl, fetchImpl);
+    const request = createLifecycleRequest(baseUrl, capability, {}, requestLoopbackHttps);
+    await waitForReady(baseUrl, requestLoopbackHttps);
     if (terminalError) throw terminalError;
     await runFixtureLifecycle({
       request,
@@ -85,7 +88,7 @@ export function createPlaywrightRunner(options, spawnProcess = spawn) {
     if (options.project) args.push('--project', options.project);
     const child = spawnProcess(pnpm.command, args, {
       cwd: process.cwd(),
-      env: { PATH: process.env.PATH, SCHOLARSCOUT_E2E_BASE_URL: baseUrl },
+      env: buildFixtureProcessEnv({ SCHOLARSCOUT_E2E_BASE_URL: baseUrl }),
       stdio: 'inherit',
     });
     child.once('error', reject);

@@ -3,6 +3,7 @@ import test from 'node:test';
 import path from 'node:path';
 
 import {
+  buildFixtureProcessEnv,
   getPnpmInvocation,
   getFixtureStopCommand,
   getPnpmCommand,
@@ -24,6 +25,20 @@ test('rejects production and caller-selected fixture targets', () => {
 
 test('accepts an unset local environment', () => {
   assert.doesNotThrow(() => validateE2eFixtureEnvironment({}));
+});
+
+test('keeps required host environment values while applying owned fixture settings', () => {
+  assert.deepEqual(
+    buildFixtureProcessEnv(
+      { SCHOLARSCOUT_DATA_ADAPTER: 'json' },
+      { PATH: 'fixture-path', SystemRoot: 'system-root' },
+    ),
+    {
+      PATH: 'fixture-path',
+      SystemRoot: 'system-root',
+      SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    },
+  );
 });
 
 test('accepts only a selected browser spec and project', () => {

@@ -438,6 +438,46 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
+  assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
+  assert.match(rehearsal, /aggregateLocalReleaseRecords/);
+});
+
+test('local release rehearsal records and reports a failed local lane', async () => {
+  const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-lane-failure-'));
+  const result = await runNode(
+    [
+      'scripts/prelaunch-rehearsal.mjs',
+      '--release-gate',
+      '--local-only',
+      '--candidate-commit',
+      'candidate-commit',
+      '--output-dir',
+      outputDir,
+    ],
+    {
+      PATH: path.join(outputDir, 'missing-command-directory'),
+      Path: path.join(outputDir, 'missing-command-directory'),
+    },
+  );
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /Local candidate rehearsal is incomplete/);
+  const record = JSON.parse(
+    await readFile(path.join(outputDir, 'candidate-quality.json'), 'utf8'),
+  );
+  assert.deepEqual(record, {
+    candidateCommit: 'candidate-commit',
+    recordedAt: record.recordedAt,
+    commands: [
+      'pnpm install --frozen-lockfile --ignore-scripts',
+      'pnpm test',
+      'pnpm run lint',
+      'pnpm run typecheck',
+      'pnpm run build',
+    ],
+    outcome: 'failed',
+    errorCategory: 'command-failed',
+  });
 });
 
 test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {

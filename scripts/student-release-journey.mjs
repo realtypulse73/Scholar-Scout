@@ -38,12 +38,12 @@ export async function runStudentReleaseJourney(
     await page.goto('/onboarding');
     await page.getByRole('button', { name: 'Technology & IT' }).click();
     await page.getByRole('button', { name: 'Certificate Program' }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await page.getByRole('button', { name: '3.0 – 3.4' }).click();
     await page.getByRole('button', { name: 'Close to Home (< 30 mi)' }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await page.getByRole('button', { name: 'Financial Aid & Scholarships' }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await page.getByRole('button', { name: 'Save profile' }).click();
     await page.getByRole('heading', { name: STUDENT_RELEASE_JOURNEY_COMPLETE_HEADING }).waitFor();
 
@@ -78,7 +78,7 @@ export async function runStudentReleaseJourney(
         await finish.click();
         break;
       }
-      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     }
     await page.getByText('Simulation complete').waitFor();
   } catch (cause) {
