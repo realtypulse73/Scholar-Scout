@@ -18,7 +18,7 @@
 - [x] **OPS-01**: Every pull request receives a relevant Scholar Scout build, typecheck, lint, and test result; no unrelated CrimClock job can fail the pipeline.
 - [x] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
 - [x] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
-- [ ] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
+- [x] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
 - [x] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
 
 ### Data Foundation
@@ -32,7 +32,7 @@
 - [x] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
 - [x] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
 - [x] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
-- [ ] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
+- [x] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
 
 ## User Stories
 
@@ -89,7 +89,7 @@
 | OPS-01 | Phase 1 | Complete |
 | OPS-02 | Phase 3 | Complete |
 | OPS-03 | Phase 3 | Complete |
-| OPS-04 | Phase 6 | Pending |
+| OPS-04 | Phase 6 | Complete |
 | OPS-05 | Phase 1 | Complete |
 | DATA-01 | Phase 4 | Complete |
 | DATA-02 | Phase 4 | Complete |
@@ -97,7 +97,7 @@
 | PROD-01 | Phase 5 | Complete |
 | PROD-02 | Phase 5 | Complete |
 | PROD-03 | Phase 5 | Complete |
-| PROD-04 | Phase 6 | Pending |
+| PROD-04 | Phase 6 | Complete |
 
 **Coverage:**
 

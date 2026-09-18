@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 06
 current_phase_name: End-to-End Hardening and Release Readiness
 status: executing
-stopped_at: Completed 06-08-PLAN.md; Plan 06-09 is next.
-last_updated: "2026-09-18T18:45:29.000Z"
+stopped_at: Completed 06-09-PLAN.md; Plan 06-10 is next.
+last_updated: "2026-09-18T19:00:40.280Z"
 last_activity: 2026-09-18
-last_activity_desc: Completed Phase 06 Plan 08 Preview attestation discovery
+last_activity_desc: Completed Phase 6 Plan 09 trusted Preview deployment attestation
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 5
   total_plans: 48
-  completed_plans: 45
+  completed_plans: 46
 ---
 
 # Project State
@@ -28,16 +28,16 @@ See: .planning/PROJECT.md (updated 2026-09-18)
 ## Current Position
 
 Phase: 06 — End-to-End Hardening and Release Readiness
-Plan: 06-09 through 06-11 planned
+Plan: 06-10 through 06-11 planned
 Status: Ready to execute
-Last activity: 2026-09-18 — Phase 6 Plan 08 Preview attestation discovery completed
+Last activity: 2026-09-18 — Phase 6 Plan 09 trusted Preview deployment attestation completed
 
-Progress: [██████████] 100%
+Progress: [██████████] 96%
 
 ## Session Continuity
 
-Last session: 2026-09-18
-Stopped at: Completed 06-08-PLAN.md; execute Plan 06-09 next.
+Last session: 2026-09-18T19:00:40.224Z
+Stopped at: Completed 06-09-PLAN.md; Plan 06-10 is next.
 Resume file: None
 
 ## Performance Metrics
@@ -97,6 +97,7 @@ Resume file: None
 | Phase 04 P04 | 25min | 2 tasks | 6 files |
 | Phase 04 P05 | 42min | 2 tasks | 3 files |
 | Phase 06 P08 | 13min | 1 task | 2 files |
+| Phase 06 P09 | 39min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,8 @@ Resume file: None
 - [Phase ?]: Use recovery-state-changed for both digest staleness and provider CAS conflict.
 - [Phase ?]: Phase 4 evidence distinguishes mocked Blob contract validation from live-provider and production validation.
 - [Phase ?]: CAS child-process fixtures are excluded from Jest discovery but remain compiled and exercised by the owning datastore suite.
+- [Phase ?]: Use the newest unique fresh Vercel GitHub Deployment/status match as the Preview trust boundary.
+- [Phase ?]: Scope github.token to only the baseline and outage Preview attestation steps with deployments read permission.
 
 ### Roadmap Evolution
 
