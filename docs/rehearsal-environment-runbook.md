@@ -36,12 +36,10 @@ SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY
 SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY
 ```
 
-Add repository variables containing the deployment hostname beginnings created by Vercel, including the trailing hyphen:
-
-```text
-SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX=scholar-scout-rehearsal-baseline-
-SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX=scholar-scout-rehearsal-outage-
-```
+The workflow owns the two permanent deployment hostname prefixes. Do not add
+GitHub variables for them: `scholar-scout-rehearsal-baseline-` and
+`scholar-scout-rehearsal-outage-` are committed workflow configuration so a
+missing dashboard value cannot stall a rehearsal.
 
 In the GitHub **Preview** environment, add these two secrets:
 

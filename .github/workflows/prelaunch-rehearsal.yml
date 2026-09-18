@@ -29,8 +29,11 @@ jobs:
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: ${{ secrets.SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY }}
       SCHOLARSCOUT_VERCEL_BASELINE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN }}
       SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN: ${{ secrets.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN }}
-      SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX: ${{ vars.SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX }}
-      SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX: ${{ vars.SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX }}
+      # These permanent project slugs are part of the rehearsal infrastructure,
+      # not per-environment deployment settings. Keeping them here prevents a
+      # missing GitHub variable from turning the deployment wait into retries.
+      SCHOLARSCOUT_REHEARSAL_BASELINE_HOST_PREFIX: scholar-scout-rehearsal-baseline-
+      SCHOLARSCOUT_REHEARSAL_OUTAGE_HOST_PREFIX: scholar-scout-rehearsal-outage-
     steps:
       - name: Require an open candidate pull request to main
         uses: actions/github-script@v7
