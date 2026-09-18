@@ -444,6 +444,20 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
 
 test('local release rehearsal records and reports a failed local lane', async () => {
   const outputDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-release-lane-failure-'));
+  const commandLog = path.join(outputDir, 'pnpm-commands.log');
+  await writeFile(
+    path.join(outputDir, 'pnpm.cmd'),
+    [
+      '@echo off',
+      'echo %*>> "%SCHOLARSCOUT_TEST_COMMAND_LOG%"',
+      ':next',
+      'if "%~1"=="" exit /b 0',
+      'if /I "%~1"=="test" exit /b 1',
+      'shift',
+      'goto next',
+      '',
+    ].join('\r\n'),
+  );
   const result = await runNode(
     [
       'scripts/prelaunch-rehearsal.mjs',
@@ -455,8 +469,9 @@ test('local release rehearsal records and reports a failed local lane', async ()
       outputDir,
     ],
     {
-      PATH: path.join(outputDir, 'missing-command-directory'),
-      Path: path.join(outputDir, 'missing-command-directory'),
+      PATH: outputDir,
+      Path: outputDir,
+      SCHOLARSCOUT_TEST_COMMAND_LOG: commandLog,
     },
   );
 
@@ -470,17 +485,24 @@ test('local release rehearsal records and reports a failed local lane', async ()
     recordedAt: record.recordedAt,
     commands: [
       'pnpm install --frozen-lockfile --ignore-scripts',
-      'pnpm --filter @scholar-scout/web test -- --runInBand --json --outputFile ../../reports/prelaunch-rehearsal/web-test-results.json',
-      'pnpm --filter @scholar-scout/http-data-service test',
-      'pnpm --filter @scholar-scout/codex-webhook-runner test',
+      'pnpm test',
       'pnpm run lint',
       'pnpm run typecheck',
       'pnpm run build',
     ],
     outcome: 'failed',
     errorCategory: 'command-failed',
-    failedCommand: 'pnpm install --frozen-lockfile --ignore-scripts',
+    failedCommand: 'pnpm test',
   });
+  assert.deepEqual(
+    (await readFile(commandLog, 'utf8')).trim().split(/\r?\n/),
+    [
+      'install --frozen-lockfile --ignore-scripts',
+      'test',
+    ],
+  );
+  await assert.rejects(readFile(path.join(outputDir, 'high-risk.json'), 'utf8'));
+  await assert.rejects(readFile(path.join(outputDir, 'local-browser.json'), 'utf8'));
 });
 
 test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
@@ -495,7 +517,12 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   const previewBrowser = workflow.indexOf('Protected Preview browser proof');
   const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
   const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
+  const candidateCheckout = workflow.indexOf('Verify candidate checkout');
 
+  assert.match(workflow, /uses: actions\/checkout@v4\s+with:\s+ref: \$\{\{ inputs\.candidate_commit \}\}/);
+  assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$\{\{ inputs\.candidate_commit \}\}"/);
+  assert.ok(candidateCheckout >= 0);
+  assert.ok(candidateCheckout < chromiumInstall);
   assert.ok(chromiumInstall >= 0);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
   assert.ok(localProof > chromiumInstall);
