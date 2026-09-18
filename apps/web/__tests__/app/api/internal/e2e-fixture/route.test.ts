@@ -1,12 +1,14 @@
 /** @jest-environment node */
 
 jest.mock('@/lib/server/e2e-programme-fixture', () => ({
+  assertE2eFixtureRuntimeConfiguration: jest.fn(),
   cleanupE2eFixture: jest.fn(),
   createAndVerifyE2eFixture: jest.fn(),
   verifyE2eFixture: jest.fn(),
 }));
 
-import { POST } from '@/app/api/internal/e2e-fixture/route';
+import { HEAD, POST } from '@/app/api/internal/e2e-fixture/route';
+import { assertE2eFixtureRuntimeConfiguration } from '@/lib/server/e2e-programme-fixture';
 
 describe('internal e2e fixture route', () => {
   it('denies a request without the server-only lifecycle headers', async () => {
@@ -158,6 +160,32 @@ describe('internal e2e fixture route', () => {
       const response = await POST(proxyRequest);
 
       expect(response.status).toBe(200);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('performs an authorized no-write HEAD preflight without fixture access', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await HEAD(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'HEAD',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+          'Content-Length': '0',
+        },
+      }));
+
+      expect(response.status).toBe(204);
+      expect(assertE2eFixtureRuntimeConfiguration).toHaveBeenCalledTimes(1);
     } finally {
       if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
       else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;

@@ -17,7 +17,7 @@ test('creates, verifies, and cleans a fixture with no request body', async () =>
     },
     run: async () => undefined,
   });
-  assert.deepEqual(phases.map(({ method }) => method), ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases.map(({ method }) => method), ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.ok(phases.every(({ options }) => options.body === undefined));
 });
 
@@ -30,7 +30,7 @@ test('cleans exactly once after a failing browser run', async () => {
     },
     run: async () => { throw new Error('test failed'); },
   }));
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
 });
 
 test('exposes the same awaited cleanup for a child crash or signal handler', async () => {
@@ -44,7 +44,7 @@ test('exposes the same awaited cleanup for a child crash or signal handler', asy
     onCleanupReady: (value) => { cleanup = value; },
     run: async () => cleanup(),
   });
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
 });
 
 test('fails closed before navigation when lifecycle configuration is absent or unsafe', () => {
@@ -104,7 +104,23 @@ test('does not begin the browser run when create or verify is rejected', async (
     run: async () => { ranBrowser = true; },
   }));
 
-  assert.deepEqual(phases, ['POST', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'DELETE']);
+  assert.equal(ranBrowser, false);
+});
+
+test('does not provision or clean a fixture when the no-write preflight is rejected', async () => {
+  const phases = [];
+  let ranBrowser = false;
+
+  await assert.rejects(() => runFixtureLifecycle({
+    request: async (method) => {
+      phases.push(method);
+      return { ok: false, status: 403 };
+    },
+    run: async () => { ranBrowser = true; },
+  }));
+
+  assert.deepEqual(phases, ['HEAD']);
   assert.equal(ranBrowser, false);
 });
 

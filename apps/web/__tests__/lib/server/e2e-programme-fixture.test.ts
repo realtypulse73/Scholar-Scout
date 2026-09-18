@@ -56,10 +56,15 @@ describe('e2e programme fixture', () => {
   const originalFixture = process.env.SCHOLARSCOUT_E2E_FIXTURE;
   const originalFixtureId = process.env.SCHOLARSCOUT_E2E_FIXTURE_ID;
   const originalVercelEnvironment = process.env.VERCEL_ENV;
+  const originalDataAdapter = process.env.SCHOLARSCOUT_DATA_ADAPTER;
+  const originalBlobPath = process.env.SCHOLARSCOUT_BLOB_DATA_PATH;
 
   beforeEach(() => {
     process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
     process.env.SCHOLARSCOUT_E2E_FIXTURE_ID = 'fixture-run-123456';
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = 'scholarscout/preview/fixture-run-123456/data.json';
     setScholarScoutDataStoreForTests(new MemoryDataStore());
   });
 
@@ -68,6 +73,8 @@ describe('e2e programme fixture', () => {
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE', originalFixture);
     restoreEnvironment('SCHOLARSCOUT_E2E_FIXTURE_ID', originalFixtureId);
     restoreEnvironment('VERCEL_ENV', originalVercelEnvironment);
+    restoreEnvironment('SCHOLARSCOUT_DATA_ADAPTER', originalDataAdapter);
+    restoreEnvironment('SCHOLARSCOUT_BLOB_DATA_PATH', originalBlobPath);
   });
 
   it('derives deterministic generated records from configured fixture state', () => {
@@ -144,6 +151,45 @@ describe('e2e programme fixture', () => {
     await expect(readScholarScoutData()).resolves.toEqual(
       expect.objectContaining({ programmeRecords: [], auditEvents: [] }),
     );
+  });
+
+  it.each([
+    ['the default application path', 'scholarscout/data.json'],
+    ['a blank path', ''],
+    ['an external path', 'other-application/preview/fixture-run-123456/data.json'],
+    ['another fixture path', 'scholarscout/preview/another-fixture-123456/data.json'],
+    ['a malformed path', 'scholarscout/preview/fixture-run-123456/other.json'],
+  ])('rejects %s before fixture data access', async (_label, blobPath) => {
+    const store = new MemoryDataStore();
+    const read = jest.spyOn(store, 'read');
+    const write = jest.spyOn(store, 'write');
+    const readVersioned = jest.spyOn(store, 'readVersioned');
+    const writeVersioned = jest.spyOn(store, 'writeVersioned');
+    setScholarScoutDataStoreForTests(store);
+    process.env.SCHOLARSCOUT_BLOB_DATA_PATH = blobPath;
+
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(readVersioned).not.toHaveBeenCalled();
+    expect(writeVersioned).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-Preview and non-Blob runtime configurations before fixture data access', async () => {
+    const store = new MemoryDataStore();
+    const read = jest.spyOn(store, 'read');
+    const write = jest.spyOn(store, 'write');
+    setScholarScoutDataStoreForTests(store);
+
+    process.env.VERCEL_ENV = 'production';
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'json';
+    await expect(createAndVerifyE2eFixture()).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
   });
 });
 
