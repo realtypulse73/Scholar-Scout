@@ -1,6 +1,6 @@
 ---
 phase: 06-end-to-end-hardening-and-release-readiness
-verified: 2026-09-18T16:12:49Z
+verified: 2026-09-20T04:41:00Z
 status: passed
 score: 13/13 must-haves verified
 behavior_unverified: 0
@@ -20,7 +20,7 @@ re_verification:
 
 **Phase Goal:** Maintainers can release a production-like Scholar Scout build knowing high-risk boundaries and core student discovery journeys have passed automated and end-to-end checks.
 
-**Verified:** 2026-09-18T16:12:49Z
+**Verified:** 2026-09-20T04:41:00Z
 **Status:** passed
 **Re-verification:** Yes — after closure of the recorded release-evidence gaps
 
@@ -33,6 +33,14 @@ worktree was never used as candidate source. Authoritative runtime evidence is
 the retained record of clean GitHub Actions run
 [35355815777](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35355815777),
 not this Windows workstation.
+
+The permanent isolated rehearsal infrastructure was subsequently exercised by
+current candidate `5af38998ba43320b71aed47d54a0fe415fb0de0f` in successful
+[GitHub Actions run #110](https://github.com/realtypulse73/Scholar-Scout/actions/runs/35500148139).
+That run completed candidate-quality, high-risk, local-browser, baseline
+Preview, outage/restoration, and aggregate evidence steps successfully. The
+baseline and outage targets are the dedicated generated-data rehearsal
+projects, not the primary Scholar Scout project or Production.
 
 The earlier report's gaps were checked against the exact candidate rather than
 accepted from plan summaries. No package install, local test run, deployment,
@@ -165,5 +173,5 @@ candidate-bound Phase 6 result.
 
 ---
 
-_Verified: 2026-09-18T16:12:49Z_
+_Verified: 2026-09-20T04:41:00Z_
 _Verifier: the agent (gsd-verifier)_

@@ -13,7 +13,7 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 - [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
 - [x] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations. (completed 2026-08-29)
 - [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
-- [ ] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks.
+- [x] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks. (completed 2026-09-20)
 
 ## Phase Details
 
@@ -184,6 +184,7 @@ Plans:
 - [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
 - [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
 - [x] 05-07-PLAN.md — Close the SUNY Erie source-link gap and record the completed Preview UAT.
+
 **UI hint**: yes
 **Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
 
@@ -208,7 +209,8 @@ Plans:
 - [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
 - [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
 - [x] 06-06-PLAN.md — Supervise the protected Preview tracer
-- [ ] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+- [x] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
 ## Progress
@@ -222,7 +224,7 @@ Plans:
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
-| 6. End-to-End Hardening and Release Readiness | 6/7 | Blocked on protected Preview verification | - |
+| 6. End-to-End Hardening and Release Readiness | 13/13 | Complete    | 2026-09-20 |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
