@@ -140,10 +140,9 @@ The workflow at `.github/workflows/production-readiness.yml` runs the production
 
 ## 9. Node Runtime Lifecycle Checkpoint
 
-Phase 1 retains Node 20 as a bounded compatibility baseline. The accepted
-[Node 24 LTS runtime-upgrade ADR](adr/0001-node-runtime-upgrade.md) assigns the
-Scholar Scout release maintainer as owner and requires the governed upgrade
-decision before the next long-lived release policy approval.
+Node 24 LTS is the active runtime contract. The accepted
+[Node 24 LTS runtime-upgrade ADR](adr/0001-node-runtime-upgrade.md) records the
+release maintainer's validation responsibilities for future runtime upgrades.
 
 ## 10. Rotation Checklist
 

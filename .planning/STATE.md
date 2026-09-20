@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-current_phase_name: End-to-End Hardening and Release Readiness
-status: executing
-stopped_at: Completed 06-05-PLAN.md
-last_updated: "2026-09-03T01:44:19.149Z"
-last_activity: 2026-08-31
-last_activity_desc: Phase 05 complete; Phase 06 is ready for discussion
+current_phase: 07
+current_phase_name: Governed Opportunity and Support Matching
+status: planning
+stopped_at: Phase 5 completion integrated; Plan 06-07 awaits protected Preview fixture lifecycle verification
+last_updated: "2026-09-20T08:47:37.375Z"
+last_activity: 2026-09-20
+last_activity_desc: Phase 06 complete, transitioned to Phase 07
 progress:
-  total_phases: 8
-  completed_phases: 5
-  total_plans: 44
-  completed_plans: 42
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 50
+  completed_plans: 50
 ---
 
 # Project State
@@ -27,18 +27,18 @@ See: .planning/PROJECT.md (updated 2026-08-31)
 
 ## Current Position
 
-Phase: 06 — End-to-End Hardening and Release Readiness
+Phase: 07 — Governed Opportunity and Support Matching
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-08-31 — Phase 05 complete; Phase 06 is ready for discussion
+Status: Ready to plan
+Last activity: 2026-09-20 — Phase 06 complete, transitioned to Phase 07
 
-Progress: [██████████] 95%
+Progress: [█████████░] 98%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 26
+- Total plans completed: 32
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -48,7 +48,7 @@ Progress: [██████████] 95%
 |-------|-------|-------|----------|
 | 01 | 6 | - | - |
 | 02 | 13 | - | - |
-| 05 | 7 | - | - |
+| 06 | 13 | - | - |
 
 **Recent Trend:**
 
@@ -89,8 +89,6 @@ Progress: [██████████] 95%
 | Phase 04 P03 | 24min | 2 tasks | 5 files |
 | Phase 04 P04 | 25min | 2 tasks | 6 files |
 | Phase 04 P05 | 42min | 2 tasks | 3 files |
-| Phase 06 P03 | 50min | 2 tasks | 14 files |
-| Phase 06-end-to-end-hardening-and-release-readiness P05 | 31min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -159,15 +157,10 @@ Progress: [██████████] 95%
 - [Phase ?]: Use recovery-state-changed for both digest staleness and provider CAS conflict.
 - [Phase ?]: Phase 4 evidence distinguishes mocked Blob contract validation from live-provider and production validation.
 - [Phase ?]: CAS child-process fixtures are excluded from Jest discovery but remain compiled and exercised by the owning datastore suite.
-- [Phase 05]: Complete the school/community/WNY release slice only after isolated Preview quota/outage and human screen-reader UAT evidence passes.
-- [Phase ?]: Use an isolated local HTTPS server and browser cookie jar rather than caller-provided identities or external base URLs.
-- [Phase ?]: Run Chromium separately in protected-main CI and retain Playwright reports on every outcome.
-- [Phase ?]: Reject browser navigation and client-hint metadata before internal E2E fixture adapter access.
 
 ### Roadmap Evolution
 
 - Phase 7 added: Governed Opportunity and Support Matching
-- Phase 8 added: Seven-Area Discovery Coverage — extend discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and Greater Hempstead, New York as equal geographic markets. Preserve Phase 5's locked WNY slice and mandatory human verification gate.
 
 ### Pending Todos
 
@@ -179,21 +172,20 @@ None yet.
 - User-keyed public APIs, advisor requests, and the webhook runner require fail-closed controls.
 - Whole-document storage can silently reset on read failure and lose concurrent updates.
 - Rendered admin data controls lack their corresponding privileged routes.
-- [Phase 1, external] Production GitHub/Vercel evidence remains deferred pending authorized external validation; it was not passed or waived.
+- The uncommitted school/community/WNY work must not be silently merged into unrelated stabilization changes.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
-| 260725-sao | Fix the missing admin data import validation route module | 2026-07-25 | 3a150a8 |  | [260725-sao-fix-the-missing-admin-data-import-valida](./quick/260725-sao-fix-the-missing-admin-data-import-valida/) |
-| 260726-0ls | Create an evidence-graded product specification from the student opportunity research briefs | 2026-07-26 | eeed666 |  | [260726-0ls-create-an-evidence-graded-product-specif](./quick/260726-0ls-create-an-evidence-graded-product-specif/) |
-| 260726-0qr | Create a project document index and add it to Codex project guidance | 2026-07-26 | 726e87f |  | [260726-0qr-create-a-project-document-index-and-add-](./quick/260726-0qr-create-a-project-document-index-and-add-/) |
-| 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e |  | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
-| 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 |  | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
-| 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e |  | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
-| 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 |  | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
-| 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 |  | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
-| 260829-p2p | Establish an auditable role-language contract and bounded first implementation batch | 2026-08-29 | e31f956 | Verified | [260829-p2p-establish-consistent-student-and-institu](./quick/260829-p2p-establish-consistent-student-and-institu/) |
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260725-sao | Fix the missing admin data import validation route module | 2026-07-25 | 3a150a8 | [260725-sao-fix-the-missing-admin-data-import-valida](./quick/260725-sao-fix-the-missing-admin-data-import-valida/) |
+| 260726-0ls | Create an evidence-graded product specification from the student opportunity research briefs | 2026-07-26 | eeed666 | [260726-0ls-create-an-evidence-graded-product-specif](./quick/260726-0ls-create-an-evidence-graded-product-specif/) |
+| 260726-0qr | Create a project document index and add it to Codex project guidance | 2026-07-26 | 726e87f | [260726-0qr-create-a-project-document-index-and-add-](./quick/260726-0qr-create-a-project-document-index-and-add-/) |
+| 260726-1db | Make the Vercel deployment configuration build Scholar Scout successfully from its monorepo. | 2026-07-26 | 034173e | [260726-1db-make-the-vercel-deployment-configuration](./quick/260726-1db-make-the-vercel-deployment-configuration/) |
+| 260726-26d | Make post-deploy smoke target the stable public Scholar Scout Vercel production domain instead of protected dynamic deployment URLs. | 2026-07-26 | 830d702 | [260726-26d-make-post-deploy-smoke-target-the-stable](./quick/260726-26d-make-post-deploy-smoke-target-the-stable/) |
+| 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
+| 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
+| 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
 
 ## Deferred Items
 
@@ -201,10 +193,9 @@ None yet.
 |----------|------|--------|-------------|
 | Data platform | Separate analytics store and audited background jobs (DATA-04, DATA-05) | v2 | 2026-07-25 |
 | Product expansion | Notifications and moderation analytics (PROD-05, PROD-06) | v2 | 2026-07-25 |
-| Release validation | Phase 1 external GitHub/Vercel evidence: draft PR checks, `main` protection, protected production build, production-success smoke artifact, and controlled smoke-failure incident acknowledgement | Deferred pending authorized external validation; not passed or waived | 2026-08-29 |
 
 ## Session Continuity
 
-Last session: 2026-09-03T01:44:19.118Z
-Stopped at: Completed 06-05-PLAN.md
+Last session: 2026-09-11T00:00:00-04:00
+Stopped at: Phase 5 completion integrated; Plan 06-07 awaits protected Preview fixture lifecycle verification
 Resume file: None

@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "engines": {
-    "node": "20.x",
+    "node": "24.x",
     "pnpm": "10.34.5"
   },
   "workspaces": [
@@ -27,12 +27,12 @@
     "rehearse:prelaunch": "node scripts/prelaunch-rehearsal.mjs",
     "report:production": "node scripts/production-report-summary.mjs",
     "smoke:production": "node scripts/production-smoke.mjs",
-    "test:production-tooling": "node --test scripts/test-production-tooling.mjs",
+    "test:production-tooling": "node --test scripts/test-production-tooling.mjs scripts/discover-rehearsal-preview-deployments.test.mjs",
     "test": "pnpm --recursive --if-present run test",
     "typecheck": "pnpm --recursive --if-present run typecheck"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.0",
+    "@playwright/test": "1.63.0",
     "ts-node": "^10.9.2"
   }
 }

@@ -22,9 +22,9 @@ The supported runtime-upgrade target is **Node 24 LTS**. The Scholar Scout
 release maintainer is accountable for governing the upgrade and for confirming
 the validation evidence before the next long-lived release policy approval.
 
-This ADR records the target and accountability only. It does not change the
-current Node 20 compatibility boundary, package manifests, CI runtime,
-portable runtime helper, or Vercel configuration.
+This ADR records the target and accountability. The governed Node 24 upgrade
+has now been applied to the manifests, CI workflows, portable runtime helper,
+and Vercel deployment contract.
 
 ## Required Governed Upgrade Scope
 
@@ -48,7 +48,6 @@ ADR does not represent those dashboard or hosted-runtime checks as complete.
 
 ## Consequences
 
-Node 20 remains available solely for the documented Phase 1 compatibility
-boundary until the governed Node 24 LTS change lands. Future release-policy
-approval must use this ADR's owner, target, and validation scope rather than
-silently extending the Node 20 baseline.
+Node 24 LTS is the active Scholar Scout runtime. Future release-policy approval
+must use this ADR's owner, target, and validation scope rather than silently
+extending an unsupported runtime baseline.

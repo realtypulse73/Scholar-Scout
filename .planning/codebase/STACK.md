@@ -16,7 +16,7 @@
 ## Runtime
 
 **Environment:**
-- Node.js 20.x - required by the root workspace and both standalone services in `package.json`, `services/http-data-service/package.json`, and `services/codex-webhook-runner/package.json`.
+- Node.js 24.x - required by the root workspace and both standalone services in `package.json`, `services/http-data-service/package.json`, and `services/codex-webhook-runner/package.json`.
 - Browser/Edge-facing runtime - Next.js App Router pages and route handlers in `apps/web/app/` run through the Next.js server build configured by `apps/web/next.config.mjs`.
 
 **Package Manager:**
@@ -73,7 +73,7 @@
 ## Platform Requirements
 
 **Development:**
-- Node.js 20.x and npm 10.x are required by `package.json`; install dependencies from the root and use `npm run dev` for the web workspace.
+- Node.js 24.x and Corepack-selected pnpm 10.34.5 are required by `package.json`; install dependencies from the root with `pnpm install --frozen-lockfile --ignore-scripts` and use `pnpm run dev` for the web workspace.
 - To exercise the HTTP data contract locally, run `npm run dev --workspace @scholar-scout/http-data-service`; its documented local endpoint is described in `docs/http-data-adapter-runbook.md`.
 - No Docker dependency is required for current development or the Vercel build path; the supported Docker-free commands are documented in `docs/docker-free-development.md`.
 

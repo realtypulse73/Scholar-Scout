@@ -1,17 +1,17 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$nodeDir = Join-Path $repoRoot '.tools\node-v20.20.2-win-x64'
+$nodeDir = Join-Path $repoRoot '.tools\node-v24.21.0-win-x64'
 $nodeExe = Join-Path $nodeDir 'node.exe'
 $corepackCmd = Join-Path $nodeDir 'corepack.cmd'
 $pnpmCmd = Join-Path $nodeDir 'pnpm.cmd'
 
 if (-not (Test-Path -LiteralPath $nodeExe)) {
-  throw "Portable Node was not found at $nodeExe. Download and extract Node.js 20.x into .tools first."
+  throw "Portable Node was not found at $nodeExe. Download and extract Node.js 24.x into .tools first."
 }
 
 if (-not (Test-Path -LiteralPath $corepackCmd)) {
-  throw "Portable Corepack was not found at $corepackCmd. Reinstall the portable Node.js 20.x runtime."
+  throw "Portable Corepack was not found at $corepackCmd. Reinstall the portable Node.js 24.x runtime."
 }
 
 $env:Path = "$nodeDir;$env:Path"
@@ -25,7 +25,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not (Test-Path -LiteralPath $pnpmCmd)) {
-  throw "Corepack did not create the pnpm shim at $pnpmCmd. Reinstall the portable Node.js 20.x runtime."
+  throw "Corepack did not create the pnpm shim at $pnpmCmd. Reinstall the portable Node.js 24.x runtime."
 }
 
 $pnpmArgs = @($args)

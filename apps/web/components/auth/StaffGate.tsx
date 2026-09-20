@@ -23,10 +23,11 @@ export default function StaffGate({ children }: StaffGateProps) {
           Staff access
         </Badge>
         <h1 className="text-2xl font-extrabold text-ink-900">
-          Sign in as authorized staff to use governed tools
+          Sign in as staff to use CMS tools
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          This area is available only to an authorized staff account. If you need access, sign in with the account assigned by your organization.
+          Staff tools now require an authenticated staff account. Production
+          deployments should pair this with provider-based authorization policy.
         </p>
         <Link
           href="/auth/sign-in"

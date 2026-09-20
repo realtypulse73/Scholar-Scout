@@ -1,84 +1,65 @@
-const PREVIEW_HOST_SUFFIX = '.vercel.app';
+const BYPASS_ENV = 'SCHOLARSCOUT_VERCEL_BYPASS';
 
-export const VERCEL_BYPASS_HEADER = 'x-vercel-protection-bypass';
-export const VERCEL_BYPASS_COOKIE_HEADER = 'x-vercel-set-bypass-cookie';
+/**
+ * Validates the independent deployment attestation before any Preview traffic.
+ */
+export function validatePreviewDeployment(attestation, candidateCommit) {
+  if (
+    !attestation ||
+    attestation.environment !== 'preview' ||
+    typeof candidateCommit !== 'string' ||
+    candidateCommit.length === 0 ||
+    attestation.commit !== candidateCommit ||
+    typeof attestation.url !== 'string'
+  ) {
+    throw new Error('Preview tracer requires an independently attested Preview candidate.');
+  }
 
-function isExactCandidateCommit(value, candidateCommit) {
-  return typeof value === 'string'
-    && /^[0-9a-f]{40}$/i.test(value)
-    && value === candidateCommit;
-}
-
-function isProtectedPreviewUrl(value) {
+  let target;
   try {
-    const url = new URL(value);
-    return url.protocol === 'https:'
-      && url.hostname.endsWith(PREVIEW_HOST_SUFFIX)
-      && url.hostname.includes('-git-')
-      && !url.username
-      && !url.password
-      && !url.search
-      && !url.hash
-      && (url.pathname === '/' || url.pathname === '');
+    target = new URL(attestation.url);
   } catch {
-    return false;
+    throw new Error('Preview tracer requires a valid HTTPS Preview URL.');
   }
+  if (target.protocol !== 'https:' || target.username || target.password || target.search || target.hash) {
+    throw new Error('Preview tracer requires a clean HTTPS Preview URL.');
+  }
+  return target.toString().replace(/\/$/, '');
 }
 
 /**
- * Reads only the runner's candidate-bound Preview metadata. A generic error
- * avoids turning a malformed URL or deployment identifier into diagnostics.
+ * Returns transient browser/context transport. Rehearsal projects contain only
+ * generated data and may deliberately be unprotected; production-like Preview
+ * projects still receive the bypass header when the runner owns one.
  */
-export function getVerifiedPreviewMetadata(environment, candidateCommit) {
-  const metadata = {
-    environment: environment.VERCEL_ENV,
-    url: environment.SCHOLARSCOUT_PREVIEW_URL,
-    deploymentId: environment.SCHOLARSCOUT_PREVIEW_DEPLOYMENT_ID,
-    commitSha: environment.SCHOLARSCOUT_PREVIEW_COMMIT_SHA,
-  };
-
-  if (metadata.environment !== 'preview'
-    || !isProtectedPreviewUrl(metadata.url)
-    || typeof metadata.deploymentId !== 'string'
-    || !metadata.deploymentId
-    || !isExactCandidateCommit(metadata.commitSha, candidateCommit)) {
-    throw new Error('A verified candidate Preview is required before tracer traffic.');
-  }
-
-  return metadata;
-}
-
-/**
- * Returns only in-memory browser-context options. The caller must not put this
- * value in a child command, environment, report, or generated artifact.
- */
-export function createPreviewContextOptions(metadata, environment) {
-  const bypass = environment.SCHOLARSCOUT_VERCEL_PROTECTION_BYPASS;
-  if (typeof bypass !== 'string' || !bypass) {
-    throw new Error('Preview protection material is required before browser creation.');
-  }
-
+export function createProtectedPreviewContextOptions({ attestation, candidateCommit, env = process.env }) {
+  const baseURL = validatePreviewDeployment(attestation, candidateCommit);
+  const bypass = normalizeRunnerHeaderValue(env[BYPASS_ENV]);
+  if (!bypass) return { baseURL, extraHTTPHeaders: {} };
   return {
-    baseURL: metadata.url,
+    baseURL,
     extraHTTPHeaders: {
-      [VERCEL_BYPASS_HEADER]: bypass,
-      [VERCEL_BYPASS_COOKIE_HEADER]: 'true',
+      'x-vercel-protection-bypass': bypass,
+      'x-vercel-set-bypass-cookie': 'true',
     },
-    ignoreHTTPSErrors: false,
-    trace: 'off',
-    screenshot: 'off',
-    video: 'off',
   };
 }
 
 /**
- * Candidate-bound evidence intentionally excludes URLs, raw errors, cookies,
- * request headers, capabilities, fixture data, and browser diagnostics.
+ * Server-side lifecycle requests authenticate directly. They must not request
+ * the browser bypass cookie because Vercel responds to that request with a
+ * redirect, which the lifecycle transport intentionally rejects.
  */
-export function scrubPreviewTracerOutcome({ category, metadata }) {
-  return {
-    category,
-    candidateCommit: metadata.commitSha,
-    deploymentId: metadata.deploymentId,
-  };
+export function createLifecycleProtectionHeaders(headers) {
+  const { 'x-vercel-set-bypass-cookie': _cookieHeader, ...lifecycleHeaders } = headers;
+  return lifecycleHeaders;
+}
+
+/**
+ * GitHub and provider secret CLIs can preserve a final line ending when a
+ * runner-only header value is copied from a handoff file. Normalize that
+ * boundary whitespace before use, without ever exposing the value.
+ */
+function normalizeRunnerHeaderValue(value) {
+  return typeof value === 'string' ? value.trim() : '';
 }

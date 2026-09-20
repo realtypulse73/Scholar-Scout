@@ -1,73 +1,102 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import path from 'node:path';
 
 import {
-  assertFixtureEnvironment,
-  createFixtureDirectory,
-  createOwnedServerEnvironment,
-  getChildStopInvocation,
+  buildFixtureProcessEnv,
+  buildOwnedFixtureEnvironment,
   getPnpmInvocation,
-  normalizePlaywrightArgs,
+  getFixtureStopCommand,
+  getPnpmCommand,
+  isCliEntrypoint,
+  parseLauncherOptions,
+  validateE2eFixtureEnvironment,
 } from './run-e2e-fixture.mjs';
 
-test('rejects unsafe externally selected fixture targets before spawning', () => {
-  assert.throws(() => assertFixtureEnvironment({ VERCEL_ENV: 'production' }));
-  assert.throws(() => assertFixtureEnvironment({ SCHOLARSCOUT_E2E_BASE_URL: 'https://example.com' }));
-  assert.throws(() => assertFixtureEnvironment({ SCHOLARSCOUT_DATA_FILE: '/tmp/data.json' }));
-  assert.throws(() => assertFixtureEnvironment({ SCHOLARSCOUT_DATA_ADAPTER: 'http' }));
-  assert.doesNotThrow(() => assertFixtureEnvironment({}));
-});
-
-test('creates one data file path inside its generated temporary directory', async () => {
-  const fixture = await createFixtureDirectory();
-  try {
-    assert.match(fixture.directory, /scholarscout-e2e-/);
-    assert.equal(fixture.dataFile.startsWith(fixture.directory), true);
-    assert.equal(fixture.dataFile.endsWith('scholarscout-data.json'), true);
-  } finally {
-    await fixture.cleanup();
+test('rejects production and caller-selected fixture targets', () => {
+  for (const env of [
+    { VERCEL_ENV: 'production' },
+    { SCHOLARSCOUT_E2E_BASE_URL: 'https://example.test' },
+    { SCHOLARSCOUT_DATA_FILE: 'data.json' },
+    { SCHOLARSCOUT_DATA_ADAPTER: 'http' },
+  ]) {
+    assert.throws(() => validateE2eFixtureEnvironment(env));
   }
 });
 
-test('preserves Windows command resolution for the owned server process', () => {
-  const environment = createOwnedServerEnvironment({
-    dataFile: '/tmp/scholarscout-data.json',
-    fixtureId: 'fixture',
-    capability: 'capability',
-  }, {
-    PATH: '/test/bin',
-    SYSTEMROOT: 'C:\\Windows',
-    USERPROFILE: 'C:\\Users\\student',
-    LOCALAPPDATA: 'C:\\Users\\student\\AppData\\Local',
-    PATHEXT: '.COM;.EXE;.BAT;.CMD',
-  });
-
-  assert.equal(environment.PATH, '/test/bin');
-  assert.equal(environment.SYSTEMROOT, 'C:\\Windows');
-  assert.equal(environment.USERPROFILE, 'C:\\Users\\student');
-  assert.equal(environment.LOCALAPPDATA, 'C:\\Users\\student\\AppData\\Local');
-  assert.equal(environment.PATHEXT, '.COM;.EXE;.BAT;.CMD');
-  assert.deepEqual(getPnpmInvocation(['--version'], {
-    platform: 'linux',
-    execPath: '/node/bin/node',
-  }), { command: 'pnpm', args: ['--version'] });
-  assert.deepEqual(getPnpmInvocation(['--version'], {
-    platform: 'win32',
-    execPath: 'C:\\node\\node.exe',
-  }), {
-    command: 'C:\\node\\node.exe',
-    args: ['C:\\node\\node_modules\\corepack\\dist\\pnpm.js', '--version'],
-  });
-  assert.deepEqual(getChildStopInvocation(42, { platform: 'win32' }), {
-    command: 'taskkill',
-    args: ['/pid', '42', '/t', '/f'],
-  });
-  assert.equal(getChildStopInvocation(42, { platform: 'linux' }), null);
+test('accepts an unset local environment', () => {
+  assert.doesNotThrow(() => validateE2eFixtureEnvironment({}));
 });
 
-test('maps the owned runner spec flag to Playwright positional file syntax', () => {
-  assert.deepEqual(normalizePlaywrightArgs([
-    '--spec', 'apps/web/e2e/student-release-journey.spec.ts', '--project', 'chromium',
-  ]), ['apps/web/e2e/student-release-journey.spec.ts', '--project', 'chromium']);
-  assert.throws(() => normalizePlaywrightArgs(['--spec']), /requires a test path/);
+test('keeps required host environment values while applying owned fixture settings', () => {
+  assert.deepEqual(
+    buildFixtureProcessEnv(
+      { SCHOLARSCOUT_DATA_ADAPTER: 'json' },
+      { PATH: 'fixture-path', SystemRoot: 'system-root' },
+    ),
+    {
+      PATH: 'fixture-path',
+      SystemRoot: 'system-root',
+      SCHOLARSCOUT_DATA_ADAPTER: 'json',
+    },
+  );
+});
+
+test('enables the owned local fixture through the same Preview rehearsal contract', () => {
+  assert.deepEqual(
+    buildOwnedFixtureEnvironment({
+      dataFile: '/tmp/scholarscout-data.json',
+      fixtureId: 'fixture-run-123456',
+      capability: 'fixture-capability',
+    }),
+    {
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_REHEARSAL_MODE: 'true',
+      SCHOLARSCOUT_DATA_ADAPTER: 'json',
+      SCHOLARSCOUT_DATA_FILE: '/tmp/scholarscout-data.json',
+      SCHOLARSCOUT_E2E_LOCAL_FIXTURE: 'true',
+      SCHOLARSCOUT_E2E_FIXTURE: 'true',
+      SCHOLARSCOUT_E2E_FIXTURE_ID: 'fixture-run-123456',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'fixture-capability',
+    },
+  );
+});
+
+test('accepts only a selected browser spec and project', () => {
+  assert.deepEqual(
+    parseLauncherOptions(['--spec', 'apps/web/e2e/student.spec.ts', '--project', 'chromium']),
+    { spec: 'apps/web/e2e/student.spec.ts', project: 'chromium' },
+  );
+  assert.throws(() => parseLauncherOptions(['--base-url', 'https://example.test']));
+  assert.throws(() => parseLauncherOptions(['--fixture-id', 'caller-selected']));
+});
+
+test('recognizes the launcher entrypoint from a Windows path', () => {
+  const scriptPath = path.resolve('scripts/run-e2e-fixture.mjs');
+  const scriptUrl = new URL('./run-e2e-fixture.mjs', import.meta.url).href;
+
+  assert.equal(isCliEntrypoint(scriptPath, scriptUrl), true);
+});
+
+test('uses the executable pnpm shim on Windows', () => {
+  assert.equal(getPnpmCommand('win32'), 'pnpm.cmd');
+  assert.equal(getPnpmCommand('linux'), 'pnpm');
+});
+
+test('uses the Corepack JavaScript entrypoint on Windows without a shell', () => {
+  assert.deepEqual(
+    getPnpmInvocation('win32', 'C:/node/node.exe'),
+    {
+      command: 'C:/node/node.exe',
+      args: [path.join('C:/node', 'node_modules', 'corepack', 'dist', 'corepack.js'), 'pnpm'],
+    },
+  );
+});
+
+test('uses taskkill to stop a Windows fixture process tree', () => {
+  assert.deepEqual(getFixtureStopCommand('win32', 1234), {
+    command: 'taskkill.exe',
+    args: ['/pid', '1234', '/t', '/f'],
+  });
+  assert.equal(getFixtureStopCommand('linux', 1234), null);
 });

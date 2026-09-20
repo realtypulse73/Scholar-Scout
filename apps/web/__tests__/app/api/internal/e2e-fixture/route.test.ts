@@ -1,128 +1,240 @@
 /** @jest-environment node */
 
-import { DELETE, GET, POST } from '@/app/api/internal/e2e-fixture/route';
-import {
-  cleanupE2eProgrammeFixture,
-  createE2eProgrammeFixture,
-  verifyE2eProgrammeFixture,
-} from '@/lib/server/e2e-programme-fixture';
-
 jest.mock('@/lib/server/e2e-programme-fixture', () => ({
-  cleanupE2eProgrammeFixture: jest.fn(),
-  createE2eProgrammeFixture: jest.fn(),
-  verifyE2eProgrammeFixture: jest.fn(),
+  assertE2eFixtureRuntimeConfiguration: jest.fn(),
+  cleanupE2eFixture: jest.fn(),
+  createAndVerifyE2eFixture: jest.fn(),
+  verifyE2eFixture: jest.fn(),
 }));
 
-const url = 'https://localhost/api/internal/e2e-fixture';
-const headers = {
-  'x-scholarscout-e2e-fixture-capability': 'capability',
-  'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
-};
-let warn: jest.SpyInstance;
+import { HEAD, POST } from '@/app/api/internal/e2e-fixture/route';
+import {
+  assertE2eFixtureRuntimeConfiguration,
+  cleanupE2eFixture,
+  createAndVerifyE2eFixture,
+  verifyE2eFixture,
+} from '@/lib/server/e2e-programme-fixture';
 
-describe('e2e fixture route', () => {
+describe('internal e2e fixture route', () => {
   beforeEach(() => {
-    warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED = 'true';
-    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'capability';
-    jest.mocked(verifyE2eProgrammeFixture).mockResolvedValue(['generated-a']);
+    jest.clearAllMocks();
+    process.env.SCHOLARSCOUT_REHEARSAL_MODE = 'true';
   });
 
   afterEach(() => {
-    delete process.env.SCHOLARSCOUT_E2E_FIXTURE_ENABLED;
-    delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
-    delete process.env.VERCEL_ENV;
-    warn.mockRestore();
-    jest.resetAllMocks();
+    delete process.env.SCHOLARSCOUT_REHEARSAL_MODE;
   });
 
-  it('logs only a fixed denial category while preserving the generic client response', async () => {
-    const response = await GET(new Request(url, {
+  it('denies a request without the server-only lifecycle headers', async () => {
+    const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+      method: 'POST',
+    }));
+    expect(response.status).toBe(403);
+  });
+
+  it('denies browser-shaped and selector-bearing requests before fixture access', async () => {
+    const response = await POST(new Request('https://localhost/api/internal/e2e-fixture?source=seed', {
+      method: 'POST',
       headers: {
-        ...headers,
-        'x-scholarscout-e2e-fixture-capability': 'wrong-capability',
+        Origin: 'https://localhost',
+        Authorization: 'Bearer browser-value',
+        'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
       },
     }));
-
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'Fixture lifecycle unavailable.' });
-    expect(warn).toHaveBeenCalledWith('E2E fixture lifecycle denied.', {
-      reason: 'capability-mismatch',
-    });
-    expect(JSON.stringify(warn.mock.calls)).not.toContain('wrong-capability');
-  });
-
-  it('creates then verifies only with its server capability', async () => {
-    const response = await POST(new Request(url, { method: 'POST', headers }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, phase: 'verified' });
-    expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
-    expect(verifyE2eProgrammeFixture).toHaveBeenCalledTimes(1);
-  });
-
-  it('accepts a transport-level empty POST stream from the owned Node launcher', async () => {
-    const response = await POST(new Request(url, {
-      method: 'POST',
-      headers: { ...headers, 'content-length': '0' },
-      body: new ReadableStream({
-        start(controller) {
-          controller.close();
-        },
-      }),
-      // The Fetch standard requires this when supplying a request stream in Node.
-      duplex: 'half',
-    } as RequestInit));
-
-    expect(response.status).toBe(200);
-    expect(createE2eProgrammeFixture).toHaveBeenCalledTimes(1);
-  });
-
-  it('rejects browser-shaped and caller-selected input before lifecycle access', async () => {
-    const response = await GET(new Request(`${url}?fixtureId=attacker`, {
-      headers: { ...headers, origin: 'https://localhost' },
-    }));
-    expect(response.status).toBe(403);
-    expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual({ error: 'Not found' });
   });
 
   it.each([
     ['referer', 'https://localhost/programmes'],
+    ['sec-fetch-site', 'same-origin'],
+    ['sec-fetch-mode', 'navigate'],
     ['sec-fetch-user', '?1'],
     ['sec-ch-ua', '"Chromium"'],
-  ])('rejects browser navigation metadata (%s) before lifecycle access', async (name, value) => {
-    const response = await GET(new Request(url, {
-      headers: { ...headers, [name]: value },
-    }));
-
-    expect(response.status).toBe(403);
-    expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
-  });
-
-  it('denies the lifecycle in production before lifecycle access', async () => {
-    process.env.VERCEL_ENV = 'production';
-
-    const response = await GET(new Request(url, { headers }));
-
-    expect(response.status).toBe(403);
-    expect(verifyE2eProgrammeFixture).not.toHaveBeenCalled();
-    delete process.env.VERCEL_ENV;
-  });
-
-  it('rejects a non-empty lifecycle request even with the server capability', async () => {
-    const response = await POST(new Request(url, {
+  ])('denies browser navigation metadata (%s)', async (name, value) => {
+    const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
       method: 'POST',
-      headers,
-      body: 'caller-selected-input',
+      headers: {
+        Authorization: 'Bearer browser-value',
+        'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        [name]: value,
+      },
     }));
 
     expect(response.status).toBe(403);
-    expect(createE2eProgrammeFixture).not.toHaveBeenCalled();
   });
 
-  it('cleans through the bounded server lifecycle', async () => {
-    const response = await DELETE(new Request(url, { method: 'DELETE', headers }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, phase: 'cleaned' });
-    expect(cleanupE2eProgrammeFixture).toHaveBeenCalledTimes(1);
+  it('denies a body even when the caller has the protocol-shaped headers', async () => {
+    const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test',
+        'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    }));
+    expect(response.status).toBe(403);
+  });
+
+  it('reports a disabled fixture only to a caller that already holds its capability', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'false';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        },
+      }));
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get('x-scholarscout-e2e-fixture-denial')).toBe('not-enabled');
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('reports a rejected request shape only to a caller that already holds its capability', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          Origin: 'https://localhost',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        },
+      }));
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get('x-scholarscout-e2e-fixture-denial')).toBe('browser-metadata');
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('accepts a no-body Node fetch request with Content-Length: 0', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await POST(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+          'Content-Length': '0',
+          'Sec-Fetch-Mode': 'cors',
+        },
+      }));
+
+      expect(response.status).toBe(200);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('accepts an empty proxy request stream when the headers prove it has no content', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const proxyRequest = {
+        url: 'https://localhost/api/internal/e2e-fixture',
+        body: new ReadableStream(),
+        headers: new Headers({
+          Authorization: 'Bearer runner-capability',
+          'Content-Length': '0',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+        }),
+      } as unknown as Request;
+
+      const response = await POST(proxyRequest);
+
+      expect(response.status).toBe(200);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('performs an authorized no-write HEAD preflight without fixture access', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+
+    try {
+      const response = await HEAD(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'HEAD',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+          'Content-Length': '0',
+        },
+      }));
+
+      expect(response.status).toBe(204);
+      expect(assertE2eFixtureRuntimeConfiguration).toHaveBeenCalledTimes(1);
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
+  });
+
+  it('does not call fixture operations when the HEAD configuration preflight rejects', async () => {
+    const originalEnabled = process.env.SCHOLARSCOUT_E2E_FIXTURE;
+    const originalCapability = process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+    process.env.SCHOLARSCOUT_E2E_FIXTURE = 'true';
+    process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = 'runner-capability';
+    jest.mocked(assertE2eFixtureRuntimeConfiguration).mockImplementationOnce(() => {
+      throw new Error('E2E fixture lifecycle is unavailable.');
+    });
+
+    try {
+      await expect(HEAD(new Request('https://localhost/api/internal/e2e-fixture', {
+        method: 'HEAD',
+        headers: {
+          Authorization: 'Bearer runner-capability',
+          'x-scholarscout-e2e-fixture-protocol': 'lifecycle-v1',
+          'Content-Length': '0',
+        },
+      }))).rejects.toThrow('E2E fixture lifecycle is unavailable.');
+
+      expect(createAndVerifyE2eFixture).not.toHaveBeenCalled();
+      expect(verifyE2eFixture).not.toHaveBeenCalled();
+      expect(cleanupE2eFixture).not.toHaveBeenCalled();
+    } finally {
+      if (originalEnabled === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE = originalEnabled;
+      if (originalCapability === undefined) delete process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY;
+      else process.env.SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY = originalCapability;
+    }
   });
 });

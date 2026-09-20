@@ -9,7 +9,10 @@ import {
 } from '@/lib/campus-community';
 import { creatorProfiles } from '@/lib/platform';
 import { createCampusNote, getCampusNotes } from '@/lib/server/data-store';
-import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
+import {
+  isPreviewCommunityOutageEnabled,
+  reserveCommunitySubmission,
+} from '@/lib/server/rate-limit';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -21,6 +24,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (isPreviewCommunityOutageEnabled()) {
+    return communityUnavailableResponse();
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Sign in to post a note.' }, { status: 401 });
   const input = await parseCampusNoteDraft(request);
@@ -41,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Please wait before sending another community submission.' }, { status: 429 });
   }
   if (reservation.status === 'unavailable') {
-    return NextResponse.json({ error: 'Community submissions are temporarily unavailable.' }, { status: 503 });
+    return communityUnavailableResponse();
   }
 
   try {
@@ -50,6 +57,13 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to post note.' }, { status: 400 });
   }
+}
+
+function communityUnavailableResponse(): NextResponse {
+  return NextResponse.json(
+    { error: 'Community submissions are not available right now. Please try again shortly.' },
+    { status: 503 },
+  );
 }
 
 async function parseCampusNoteDraft(request: Request): Promise<CampusNoteDraft | null> {

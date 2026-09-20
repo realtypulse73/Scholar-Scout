@@ -1,19 +1,26 @@
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/auth';
-import { creatorProfiles } from '@/lib/platform';
-import {
-  createUploaderInboxRequest,
-  PersistenceConflictError,
-} from '@/lib/server/data-store';
-import { reserveCommunitySubmission } from '@/lib/server/rate-limit';
 import {
   isUploaderInboxRequestDraft,
   toPublicUploaderInboxRequest,
   validateUploaderInboxRequest,
 } from '@/lib/campus-community';
+import { creatorProfiles } from '@/lib/platform';
+import {
+  createUploaderInboxRequest,
+  PersistenceConflictError,
+} from '@/lib/server/data-store';
+import {
+  isPreviewCommunityOutageEnabled,
+  reserveCommunitySubmission,
+} from '@/lib/server/rate-limit';
 
 export async function POST(request: Request) {
+  if (isPreviewCommunityOutageEnabled()) {
+    return communityUnavailableResponse();
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Sign in to request a peer connection.' }, { status: 401 });
@@ -55,10 +62,7 @@ export async function POST(request: Request) {
 
   const reservation = await reserveCommunitySubmission(session.user.id);
   if (reservation.status === 'unavailable') {
-    return NextResponse.json(
-      { error: 'Inbox requests are temporarily unavailable. Please try again later.' },
-      { status: 503 },
-    );
+    return communityUnavailableResponse();
   }
 
   if (reservation.status === 'denied') {
@@ -84,4 +88,11 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+}
+
+function communityUnavailableResponse(): NextResponse {
+  return NextResponse.json(
+    { error: 'Community submissions are not available right now. Please try again shortly.' },
+    { status: 503 },
+  );
 }

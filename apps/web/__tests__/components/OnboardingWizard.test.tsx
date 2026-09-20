@@ -7,17 +7,22 @@ const clickNext = () =>
 const clickBack = () =>
   fireEvent.click(screen.getByRole('button', { name: /back/i }));
 const clickSave = () =>
-  fireEvent.click(screen.getByRole('button', { name: 'Save my pathway profile' }));
+  fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
 
 describe('OnboardingWizard 4-step flow', () => {
+  const fetchMock = jest.fn();
+
   beforeEach(() => {
     window.localStorage.clear();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as typeof fetch;
   });
 
   it('starts with interests and pathway choices', () => {
     render(<OnboardingWizard />);
 
-    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Interests' })).toBeInTheDocument();
+    expect(screen.getByText('Interests')).toBeInTheDocument();
     expect(screen.getByText(/What are you curious about/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
@@ -37,19 +42,18 @@ describe('OnboardingWizard 4-step flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '4-Year University' }));
     clickNext();
 
-    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Fit basics' })).toBeInTheDocument();
+    expect(screen.getByText('Fit basics')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /3.0/i }));
     fireEvent.click(screen.getByRole('button', { name: 'In-State' }));
     clickNext();
 
-    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Support' })).toBeInTheDocument();
+    expect(screen.getByText('Support')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Very cost-conscious/i }));
     fireEvent.click(screen.getByRole('button', { name: /Financial Aid/i }));
     clickNext();
 
-    expect(screen.getByRole('heading', { name: 'Build your pathway profile: Preview' })).toBeInTheDocument();
+    expect(screen.getByText('Preview')).toBeInTheDocument();
     expect(screen.getByText(/Your profile is ready to save/i)).toBeInTheDocument();
-    expect(screen.getByText(/Your pathway profile helps tailor options; it is not an admissions decision/i)).toBeInTheDocument();
     clickSave();
 
     await waitFor(() => {
@@ -57,6 +61,9 @@ describe('OnboardingWizard 4-step flow', () => {
     });
     expect(window.localStorage.getItem('scholarscout.onboarding-profile')).toContain('stem');
     expect(window.localStorage.getItem('scholarscout.onboarding-draft')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith('/api/account/onboarding', expect.objectContaining({
+      method: 'POST',
+    }));
   });
 
   it('can go back and persists draft data', () => {

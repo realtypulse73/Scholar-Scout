@@ -17,7 +17,8 @@ export default function SignUpPage() {
         <Card className="p-6">
           <h1 className="text-2xl font-extrabold">Create account</h1>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Create a student account to save exploration choices and return to them later.
+            Create an account backed by Auth.js credentials. Staff accounts can
+            access governed programme record tools.
           </p>
           <div className="mt-6">
             <AuthForm mode="sign-up" />

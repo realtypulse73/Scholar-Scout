@@ -34,7 +34,7 @@ Use these settings when creating or correcting the Vercel project:
 | Install Command | `pnpm install --frozen-lockfile --ignore-scripts` |
 | Build Command | `pnpm build:vercel` |
 | Output Directory | `apps/web/.next` |
-| Node Version | 20.x |
+| Node Version | 24.x |
 | Production environment variable | `ENABLE_EXPERIMENTAL_COREPACK=1` |
 | Production Branch | `main` |
 
@@ -80,7 +80,7 @@ The project should use:
 - Install Command: pnpm install --frozen-lockfile --ignore-scripts
 - Build Command: pnpm build:vercel
 - Output Directory: apps/web/.next
-- Node Version: 20.x
+- Node Version: 24.x
 - Production environment variable: ENABLE_EXPERIMENTAL_COREPACK=1
 - Production Branch: main
 

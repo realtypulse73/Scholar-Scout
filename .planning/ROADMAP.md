@@ -12,8 +12,8 @@ Scholar Scout will move from a fragile Next.js monolith with whole-document pers
 - [x] **Phase 2: Authentication, API, AI, and Webhook Controls** - Protect student data, privileged actions, and cost-bearing integrations at their server boundaries. (completed 2026-08-28)
 - [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
 - [x] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations. (completed 2026-08-29)
-- [x] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections. (completed 2026-08-31)
-- [ ] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks.
+- [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
+- [x] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks. (completed 2026-09-20)
 
 ## Phase Details
 
@@ -173,22 +173,17 @@ Plans:
   2. A student can participate in peer and campus-community experiences without unnecessary exposure of author identity or contact details.
   3. Community submissions are server-validated and rate-limited, publish an author-safe representation, and provide a usable report and authorized removal path for harmful or spam content.
 
-**Plans**: 5/5 plans executed
-
-**Execution waves**:
-
-- **Wave 1**: 05-01
-- **Wave 2**: 05-02, 05-05 (both depend on 05-01)
-- **Wave 3**: 05-03 (depends on 05-02)
-- **Wave 4**: 05-04 (depends on 05-01, 05-02, 05-03, and 05-05)
+**Plans**: 7/7 executed and verified
 
 Plans:
 
-- [x] 05-01-PLAN.md — Establish safe community persistence, public DTOs, reporting transitions, and the shared submission reservation boundary.
-- [x] 05-02-PLAN.md — Add the fresh-staff-gated moderation queue and restore/remove actions.
-- [x] 05-03-PLAN.md — Harden school and Western New York discovery data, decision logic, source links, and accessible empty states.
-- [x] 05-04-PLAN.md — Deliver peer matching and community UI that consumes the protected APIs and locked interaction states.
-- [x] 05-05-PLAN.md — Extend the protected community boundary to inbox writes and the shared sliding-window quota.
+- [x] 05-01-PLAN.md — Establish safe community persistence, public DTOs, reporting transitions, and submission reservation
+- [x] 05-02-PLAN.md — Add fresh-staff-gated moderation queue and restore/remove actions
+- [x] 05-03-PLAN.md — Harden school and Western New York discovery data, decision logic, source links, and empty states
+- [x] 05-04-PLAN.md — Deliver peer matching and community UI with protected interaction states
+- [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
+- [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
+- [x] 05-07-PLAN.md — Close the SUNY Erie source-link gap and record the completed Preview UAT.
 
 **UI hint**: yes
 **Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
@@ -204,15 +199,17 @@ Plans:
   2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
   3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
 
-**Plans**: 5/7 plans executed
+**Plans**: 6/7 complete; Plan 06-07 is blocked on protected Preview verification
 
-- [x] 06-01-PLAN.md
-- [x] 06-02-PLAN.md
-- [x] 06-03-PLAN.md
-- [x] 06-04-PLAN.md
-- [x] 06-05-PLAN.md
-- [ ] 06-06-PLAN.md
-- [ ] 06-07-PLAN.md
+Plans:
+
+- [x] 06-01-PLAN.md — Establish the protected student-journey release tracer
+- [x] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
+- [x] 06-03-PLAN.md — Run the owned local browser journey
+- [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
+- [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
+- [x] 06-06-PLAN.md — Supervise the protected Preview tracer
+- [x] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
 
 **Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
 
@@ -226,8 +223,8 @@ Plans:
 | 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
 | 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
-| 5. School, Community, and WNY Release Slice | 7/7 | Complete    | 2026-08-31 |
-| 6. End-to-End Hardening and Release Readiness | 5/7 | In Progress|  |
+| 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
+| 6. End-to-End Hardening and Release Readiness | 13/13 | Complete    | 2026-09-20 |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
@@ -239,34 +236,3 @@ Plans:
 Plans:
 
 - [ ] TBD (run /gsd-plan-phase 7 to break down)
-
-### Phase 8: Seven-Area Discovery Coverage
-
-**Goal:** Extend governed discovery coverage to Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Preserve source verification, privacy, accessible location behavior, student-centered advisor/simulation guidance, validation, deployment readiness, and final verification traceability.
-**Requirements**: PROD-07
-**Depends on:** Phase 7
-**Plans:** 0 plans
-
-**Success Criteria** (what must be TRUE):
-
-  1. Students can select and browse a source-linked discovery experience for each of the seven named coverage areas without an inferred home location or an admissions recommendation claim.
-  2. Every displayed institution, programme, and official regional-resource link has a reviewed first-party source; all seven areas use the same geographic discovery model without an area-specific workflow or source exception.
-  3. Advisor/simulation guidance helps a student compare and verify options in their explicitly selected area using only purpose-limited, knowingly volunteered data with consent and deletion controls; it never requires highly sensitive data or credentials or asserts admission/eligibility. Location UI, data validation, automated tests, Preview deployment checks, and final human verification make the seven-area coverage observable and preserve the deferred Phase 1 GitHub/Vercel release-evidence gate.
-
-Plans:
-
-- [ ] TBD (run /gsd-spec-phase 8, then /gsd-discuss-phase 8 and /gsd-plan-phase 8 to break down)
-
-## Backlog
-
-### Phase 999.1: Direct school search and opening (BACKLOG)
-
-**Goal:** Let a student directly find and open a school without manually navigating the feed.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-**Captured rationale:** During Phase 5 UAT, the current feed did not provide school search, so the tester could not efficiently locate Metro Technical Institute. Evaluate an accessible search entry point and result-to-school navigation in Phase 6-or-later planning; preserve current discovery, privacy, source-validation, and accessibility safeguards.
-
-Plans:
-
-- [ ] TBD (promote with $gsd-review-backlog when ready)
