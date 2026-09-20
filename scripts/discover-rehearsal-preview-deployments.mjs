@@ -68,13 +68,30 @@ async function getGitHubCommitStatuses({ candidateCommit, githubRepository, gith
   return payload.statuses;
 }
 
-async function getReadyVercelDeployment({ candidateCommit, project, vercelScope, accessToken }) {
+export async function getReadyVercelDeployment({
+  candidateCommit,
+  project,
+  vercelScope,
+  accessToken,
+  fetchImplementation = fetch,
+}) {
+  const projectEndpoint = new URL(`https://api.vercel.com/v9/projects/${encodeURIComponent(project)}`);
+  projectEndpoint.searchParams.set('slug', vercelScope);
+  const projectResponse = await fetchImplementation(projectEndpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!projectResponse.ok) {
+    throw new Error(`Vercel deployment discovery could not resolve ${project} (HTTP ${projectResponse.status}).`);
+  }
+  const projectPayload = await projectResponse.json();
+  if (!projectPayload || typeof projectPayload.id !== 'string' || !projectPayload.id) {
+    throw new Error(`Vercel deployment discovery received an invalid ${project} project.`);
+  }
+
   const endpoint = new URL('https://api.vercel.com/v6/deployments');
   endpoint.searchParams.set('slug', vercelScope);
-  endpoint.searchParams.set('projectId', project);
+  endpoint.searchParams.set('projectId', projectPayload.id);
   endpoint.searchParams.set('meta-githubCommitSha', candidateCommit);
   endpoint.searchParams.set('state', 'READY');
-  const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const response = await fetchImplementation(endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!response.ok) {
     throw new Error(`Vercel deployment discovery could not list ${project} candidate deployments (HTTP ${response.status}).`);
   }

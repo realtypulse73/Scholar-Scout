@@ -48,7 +48,7 @@ SCHOLARSCOUT_VERCEL_BASELINE_TOKEN
 SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN
 ```
 
-Create each Vercel access token with a 90-day expiry and scope it to only its matching rehearsal project. Vercel access tokens can manage resources in their scope, so do not use an account-wide or all-project token. The workflow confirms the candidate commit's successful GitHub status for each rehearsal project, then uses that project's token only to list its Ready Preview deployment filtered by the exact Git commit. It never performs a team-wide deployment list, prints a token, accepts pasted URLs, or copies a Vercel value into GitHub for an individual rehearsal.
+Create each Vercel access token with a 90-day expiry and scope it to only its matching rehearsal project. Vercel access tokens can manage resources in their scope, so do not use an account-wide or all-project token. The workflow confirms the candidate commit's successful GitHub status for each rehearsal project, resolves that project's immutable Vercel project ID, then uses that project's token only to list its Ready Preview deployment filtered by the exact Git commit. It never performs a team-wide deployment list, prints a token, accepts pasted URLs, or copies a Vercel value into GitHub for an individual rehearsal.
 
 ## Run a rehearsal
 

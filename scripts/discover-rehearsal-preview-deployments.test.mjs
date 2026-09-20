@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   discoverRehearsalPreviewDeployments,
+  getReadyVercelDeployment,
   selectReadyDeploymentUrl,
   selectReadyVercelDeploymentStatus,
 } from './discover-rehearsal-preview-deployments.mjs';
@@ -71,6 +72,52 @@ test('requires separate Vercel tokens and candidate GitHub status access', async
   };
   await assert.rejects(() => discoverRehearsalPreviewDeployments(input), /separate Vercel token/);
   await assert.rejects(() => discoverRehearsalPreviewDeployments({ ...input, outageToken, githubToken: '' }), /GitHub status access/);
+});
+
+test('resolves the immutable Vercel project ID before listing the candidate deployment', async () => {
+  const requests = [];
+  const output = await getReadyVercelDeployment({
+    candidateCommit: sha,
+    project: 'scholar-scout-rehearsal-baseline',
+    vercelScope: 'scholar-scout',
+    accessToken: baselineToken,
+    fetchImplementation: async (url) => {
+      requests.push(url);
+      if (url.pathname === '/v9/projects/scholar-scout-rehearsal-baseline') {
+        return { ok: true, json: async () => ({ id: 'prj_baseline' }) };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          deployments: [{
+            name: 'scholar-scout-rehearsal-baseline',
+            readyState: 'READY',
+            target: null,
+            meta: { githubCommitSha: sha },
+            url: 'scholar-scout-rehearsal-baseline-abc-team.vercel.app',
+          }],
+        }),
+      };
+    },
+  });
+  assert.equal(output, 'https://scholar-scout-rehearsal-baseline-abc-team.vercel.app\n');
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].searchParams.get('slug'), 'scholar-scout');
+  assert.equal(requests[1].searchParams.get('projectId'), 'prj_baseline');
+  assert.equal(requests[1].searchParams.get('meta-githubCommitSha'), sha);
+});
+
+test('fails safely when Vercel cannot resolve a rehearsal project', async () => {
+  await assert.rejects(
+    () => getReadyVercelDeployment({
+      candidateCommit: sha,
+      project: 'scholar-scout-rehearsal-baseline',
+      vercelScope: 'scholar-scout',
+      accessToken: baselineToken,
+      fetchImplementation: async () => ({ ok: false, status: 404 }),
+    }),
+    /could not resolve scholar-scout-rehearsal-baseline \(HTTP 404\)/,
+  );
 });
 
 test('fails closed for missing, pending, or ambiguous candidate deployment statuses without parsing dashboard URLs', () => {
