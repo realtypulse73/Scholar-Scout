@@ -4,29 +4,27 @@ import test from 'node:test';
 import {
   discoverRehearsalPreviewDeployments,
   selectReadyDeploymentUrl,
-  selectReadyVercelDeploymentId,
+  selectReadyVercelDeploymentStatus,
 } from './discover-rehearsal-preview-deployments.mjs';
 
 const sha = 'a'.repeat(40);
 const githubToken = 'github-token-which-is-long-enough';
 const baselineToken = 'baseline-token-which-is-long-enough';
 const outageToken = 'outage-token-which-is-long-enough';
-const baselineDeploymentId = 'A'.repeat(28);
-const outageDeploymentId = 'B'.repeat(28);
 const statuses = [
   {
     context: 'Vercel – scholar-scout-rehearsal-baseline',
     state: 'success',
-    target_url: `https://vercel.com/scholar-scout/scholar-scout-rehearsal-baseline/${baselineDeploymentId}`,
+    target_url: 'https://vercel.com/scholar-scout/scholar-scout-rehearsal-baseline/opaque-dashboard-link',
   },
   {
     context: 'Vercel – scholar-scout-rehearsal-outage',
     state: 'success',
-    target_url: `https://vercel.com/scholar-scout/scholar-scout-rehearsal-outage/${outageDeploymentId}`,
+    target_url: 'https://vercel.com/scholar-scout/scholar-scout-rehearsal-outage/opaque-dashboard-link',
   },
 ];
 
-test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact Vercel deployment reads', async () => {
+test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact Vercel project queries', async () => {
   const result = await discoverRehearsalPreviewDeployments({
     candidateCommit: sha,
     baselineHostPrefix: 'scholar-scout-rehearsal-baseline-',
@@ -44,9 +42,10 @@ test('discovers candidate-bound rehearsal URLs through GitHub statuses and exact
       assert.equal(token, githubToken);
       return statuses;
     },
-    getDeployment: async ({ deploymentId, project, accessToken }) => {
-      assert.equal(accessToken, deploymentId === baselineDeploymentId ? baselineToken : outageToken);
-      return deploymentId === baselineDeploymentId
+    getDeployment: async ({ candidateCommit, project, accessToken }) => {
+      assert.equal(candidateCommit, sha);
+      assert.equal(accessToken, project === 'scholar-scout-rehearsal-baseline' ? baselineToken : outageToken);
+      return project === 'scholar-scout-rehearsal-baseline'
         ? `https://scholar-scout-rehearsal-baseline-abc-team.vercel.app\n`
         : `https://scholar-scout-rehearsal-outage-def-team.vercel.app\n`;
     },
@@ -74,10 +73,13 @@ test('requires separate Vercel tokens and candidate GitHub status access', async
   await assert.rejects(() => discoverRehearsalPreviewDeployments({ ...input, outageToken, githubToken: '' }), /GitHub status access/);
 });
 
-test('fails closed for missing, malformed, or ambiguous candidate deployment statuses', () => {
-  assert.throws(() => selectReadyVercelDeploymentId([], 'scholar-scout', 'scholar-scout-rehearsal-baseline'), /No single successful/);
-  assert.throws(() => selectReadyVercelDeploymentId([{ ...statuses[0], state: 'pending' }], 'scholar-scout', 'scholar-scout-rehearsal-baseline'), /No single successful/);
-  assert.throws(() => selectReadyVercelDeploymentId([{ ...statuses[0], target_url: 'https://example.test/deployment' }], 'scholar-scout', 'scholar-scout-rehearsal-baseline'), /does not identify/);
-  assert.throws(() => selectReadyVercelDeploymentId([statuses[0], statuses[0]], 'scholar-scout', 'scholar-scout-rehearsal-baseline'), /No single successful/);
+test('fails closed for missing, pending, or ambiguous candidate deployment statuses without parsing dashboard URLs', () => {
+  assert.throws(() => selectReadyVercelDeploymentStatus([], 'scholar-scout-rehearsal-baseline'), /No single successful/);
+  assert.throws(() => selectReadyVercelDeploymentStatus([{ ...statuses[0], state: 'pending' }], 'scholar-scout-rehearsal-baseline'), /No single successful/);
+  assert.deepEqual(
+    selectReadyVercelDeploymentStatus([{ ...statuses[0], target_url: 'https://example.test/opaque-link' }], 'scholar-scout-rehearsal-baseline'),
+    { ...statuses[0], target_url: 'https://example.test/opaque-link' },
+  );
+  assert.throws(() => selectReadyVercelDeploymentStatus([statuses[0], statuses[0]], 'scholar-scout-rehearsal-baseline'), /No single successful/);
   assert.throws(() => selectReadyDeploymentUrl('', 'scholar-scout-rehearsal-baseline-'), /No single ready/);
 });

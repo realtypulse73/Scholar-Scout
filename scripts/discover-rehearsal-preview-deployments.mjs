@@ -3,9 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * GitHub commit statuses bind one Vercel deployment ID to the candidate. The
- * project-scoped Vercel tokens then read only that deployment through Vercel's
- * deployment API, avoiding a team-wide list or a CLI-specific access issue.
+ * GitHub commit statuses attest that Vercel built both projects for the
+ * candidate. Each project-scoped token then lists only that project's Ready
+ * deployment for the exact Git commit, avoiding dashboard-only deployment IDs
+ * and team-wide deployment access.
  */
 export async function discoverRehearsalPreviewDeployments({
   candidateCommit,
@@ -36,11 +37,11 @@ export async function discoverRehearsalPreviewDeployments({
   }
 
   const statuses = await getCommitStatuses({ candidateCommit, githubRepository, githubToken });
-  const baselineDeploymentId = selectReadyVercelDeploymentId(statuses, vercelScope, baselineProject);
-  const outageDeploymentId = selectReadyVercelDeploymentId(statuses, vercelScope, outageProject);
+  selectReadyVercelDeploymentStatus(statuses, baselineProject);
+  selectReadyVercelDeploymentStatus(statuses, outageProject);
   const [baselineOutput, outageOutput] = await Promise.all([
-    getDeployment({ deploymentId: baselineDeploymentId, project: baselineProject, vercelScope, accessToken: baselineToken }),
-    getDeployment({ deploymentId: outageDeploymentId, project: outageProject, vercelScope, accessToken: outageToken }),
+    getDeployment({ candidateCommit, project: baselineProject, vercelScope, accessToken: baselineToken }),
+    getDeployment({ candidateCommit, project: outageProject, vercelScope, accessToken: outageToken }),
   ]);
   const baselineUrl = selectReadyDeploymentUrl(baselineOutput, baselineHostPrefix);
   const outageUrl = selectReadyDeploymentUrl(outageOutput, outageHostPrefix);
@@ -67,22 +68,35 @@ async function getGitHubCommitStatuses({ candidateCommit, githubRepository, gith
   return payload.statuses;
 }
 
-async function getReadyVercelDeployment({ deploymentId, project, vercelScope, accessToken }) {
-  const endpoint = new URL(`https://api.vercel.com/v13/deployments/${deploymentId}`);
+async function getReadyVercelDeployment({ candidateCommit, project, vercelScope, accessToken }) {
+  const endpoint = new URL('https://api.vercel.com/v6/deployments');
   endpoint.searchParams.set('slug', vercelScope);
+  endpoint.searchParams.set('projectId', project);
+  endpoint.searchParams.set('meta-githubCommitSha', candidateCommit);
+  endpoint.searchParams.set('state', 'READY');
   const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!response.ok) {
-    throw new Error(`Vercel deployment discovery could not read ${project} candidate deployment (HTTP ${response.status}).`);
+    throw new Error(`Vercel deployment discovery could not list ${project} candidate deployments (HTTP ${response.status}).`);
   }
-  const deployment = await response.json();
-  if (!deployment || deployment.id !== deploymentId || deployment.readyState !== 'READY' || deployment.target !== null || typeof deployment.url !== 'string') {
-    throw new Error(`Vercel deployment discovery received an invalid ${project} candidate deployment.`);
+  const payload = await response.json();
+  const matches = Array.isArray(payload?.deployments)
+    ? payload.deployments.filter((deployment) =>
+      deployment
+      && deployment.name === project
+      && deployment.readyState === 'READY'
+      && deployment.target === null
+      && deployment.meta?.githubCommitSha === candidateCommit
+      && typeof deployment.url === 'string',
+    )
+    : [];
+  if (matches.length !== 1) {
+    throw new Error(`Vercel deployment discovery found no single ready ${project} candidate deployment.`);
   }
-  return `https://${deployment.url}\n`;
+  return `https://${matches[0].url}\n`;
 }
 
-export function selectReadyVercelDeploymentId(statuses, scope, project) {
-  if (!Array.isArray(statuses) || !isScope(scope) || !isProjectName(project)) {
+export function selectReadyVercelDeploymentStatus(statuses, project) {
+  if (!Array.isArray(statuses) || !isProjectName(project)) {
     throw new Error('Candidate Vercel status records are invalid.');
   }
   const expectedContext = `Vercel – ${project}`;
@@ -92,20 +106,7 @@ export function selectReadyVercelDeploymentId(statuses, scope, project) {
   if (matches.length !== 1) {
     throw new Error(`No single successful candidate Vercel status exists for ${project}.`);
   }
-  const targetUrl = typeof matches[0].target_url === 'string' ? matches[0].target_url : '';
-  try {
-    const url = new URL(targetUrl);
-    const expectedPath = `/${scope}/${project}/`;
-    const deploymentId = url.pathname.startsWith(expectedPath)
-      ? url.pathname.slice(expectedPath.length)
-      : '';
-    if (url.protocol !== 'https:' || url.hostname !== 'vercel.com' || !/^[A-Za-z0-9]{20,64}$/.test(deploymentId)) {
-      throw new Error('invalid deployment status target');
-    }
-    return deploymentId;
-  } catch {
-    throw new Error(`Candidate Vercel status does not identify one deployment for ${project}.`);
-  }
+  return matches[0];
 }
 
 export function selectReadyDeploymentUrl(output, hostPrefix) {
