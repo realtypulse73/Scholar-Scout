@@ -41,6 +41,12 @@ GitHub variables for them: `scholar-scout-rehearsal-baseline-` and
 `scholar-scout-rehearsal-outage-` are committed workflow configuration so a
 missing dashboard value cannot stall a rehearsal.
 
+Keep the GitHub deployment environment names created by Vercel unchanged:
+`Preview – scholar-scout-rehearsal-baseline` and
+`Preview – scholar-scout-rehearsal-outage`. The workflow uses those exact
+names, together with the candidate commit and URL, to avoid accepting a
+deployment from the main Scholar Scout project.
+
 The workflow confirms the candidate commit's successful GitHub status for each rehearsal project, then reads GitHub's deployment-status records to identify exactly one Ready Preview URL for each matching candidate deployment. The built-in GitHub Actions token has read-only deployment access; the workflow does not call Vercel's REST API, print a credential, accept pasted URLs, or copy a Vercel value into GitHub for an individual rehearsal. Existing Vercel token secrets are no longer used by this workflow. Keep or revoke them only through a separate, explicit maintainer credential-rotation decision.
 
 ## Run a rehearsal

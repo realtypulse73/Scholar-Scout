@@ -4,7 +4,10 @@ const DEPLOYMENTS_PER_PAGE = 100;
 const MAX_PAGES = 10;
 const APPROVED_CREATOR_LOGIN = 'vercel[bot]';
 const APPROVED_CREATOR_TYPE = 'Bot';
-const APPROVED_ENVIRONMENT = 'Preview';
+const APPROVED_REHEARSAL_ENVIRONMENTS = new Set([
+  'Preview – scholar-scout-rehearsal-baseline',
+  'Preview – scholar-scout-rehearsal-outage',
+]);
 const ATTESTATION_ERROR = 'Preview deployment attestation failed.';
 
 /**
@@ -16,6 +19,7 @@ export async function attestPreviewDeployment({
   repo,
   candidateCommit,
   submittedUrl,
+  expectedEnvironment,
   githubToken,
   fetchImpl = fetch,
   nowUtcMs = Date.now(),
@@ -26,6 +30,7 @@ export async function attestPreviewDeployment({
     !isRepositoryPart(repo) ||
     !isFullSha(candidateCommit) ||
     !normalizedSubmittedUrl ||
+    !isApprovedRehearsalEnvironment(expectedEnvironment) ||
     typeof githubToken !== 'string' ||
     githubToken.trim().length === 0 ||
     typeof nowUtcMs !== 'number' ||
@@ -44,7 +49,7 @@ export async function attestPreviewDeployment({
   const matchingDeployments = deployments.filter((deployment) => (
     deployment &&
     deployment.sha === candidateCommit &&
-    deployment.environment === APPROVED_ENVIRONMENT &&
+    deployment.environment === expectedEnvironment &&
     deployment.creator?.login === APPROVED_CREATOR_LOGIN &&
     deployment.creator?.type === APPROVED_CREATOR_TYPE &&
     Number.isInteger(deployment.id)
@@ -62,6 +67,7 @@ export async function attestPreviewDeployment({
     const newestFreshStatusAtMs = findNewestFreshMatchingStatus({
       statuses,
       normalizedSubmittedUrl,
+      expectedEnvironment,
       nowUtcMs,
     });
     if (newestFreshStatusAtMs !== null) {
@@ -86,14 +92,19 @@ export async function attestPreviewDeployment({
   };
 }
 
-function findNewestFreshMatchingStatus({ statuses, normalizedSubmittedUrl, nowUtcMs }) {
+function findNewestFreshMatchingStatus({
+  statuses,
+  normalizedSubmittedUrl,
+  expectedEnvironment,
+  nowUtcMs,
+}) {
   let newestFreshStatusAtMs = null;
 
   for (const status of statuses) {
     if (
       !status ||
       status.state !== 'success' ||
-      status.environment !== APPROVED_ENVIRONMENT ||
+      status.environment !== expectedEnvironment ||
       normalizeHttpsUrl(status.environment_url) !== normalizedSubmittedUrl
     ) {
       continue;
@@ -165,6 +176,10 @@ function isFullSha(value) {
 
 function isRepositoryPart(value) {
   return typeof value === 'string' && /^[A-Za-z0-9_.-]+$/.test(value);
+}
+
+function isApprovedRehearsalEnvironment(value) {
+  return typeof value === 'string' && APPROVED_REHEARSAL_ENVIRONMENTS.has(value);
 }
 
 function throwAttestationError() {

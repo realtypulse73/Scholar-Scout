@@ -27,6 +27,7 @@ const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
 const WORKFLOW_TOKEN_ENV = 'GITHUB_TOKEN';
 const GITHUB_OWNER = 'realtypulse73';
 const GITHUB_REPOSITORY = 'Scholar-Scout';
+const BASELINE_REHEARSAL_ENVIRONMENT = 'Preview – scholar-scout-rehearsal-baseline';
 
 function getLifecycleCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -106,6 +107,7 @@ export async function runPreviewReleaseTracer({
       repo: GITHUB_REPOSITORY,
       candidateCommit,
       submittedUrl: previewUrl ?? metadata?.url,
+      expectedEnvironment: BASELINE_REHEARSAL_ENVIRONMENT,
       githubToken: getDeploymentReadToken(env),
     });
   } catch {

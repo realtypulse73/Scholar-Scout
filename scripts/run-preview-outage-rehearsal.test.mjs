@@ -114,8 +114,9 @@ test('uses the workflow GitHub token for outage attestation when no dedicated to
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
     },
-    attestPreviewDeployment: async ({ githubToken }) => {
+    attestPreviewDeployment: async ({ githubToken, expectedEnvironment }) => {
       assert.equal(githubToken, 'workflow-read-token');
+      assert.equal(expectedEnvironment, 'Preview – scholar-scout-rehearsal-outage');
       return metadata;
     },
     createLifecycle: () => async () => ({ ok: true }),
@@ -186,10 +187,11 @@ test('stops before the outage POST when the isolated fixture preflight is denied
       SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
       SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
     },
-    attestPreviewDeployment: async ({ githubToken, submittedUrl }) => {
+    attestPreviewDeployment: async ({ githubToken, submittedUrl, expectedEnvironment }) => {
       phases.push('attestation');
       assert.equal(githubToken, 'deployment-read-token');
       assert.equal(submittedUrl, metadata.url);
+      assert.equal(expectedEnvironment, 'Preview – scholar-scout-rehearsal-outage');
       return metadata;
     },
     createLifecycle: () => async (method) => {

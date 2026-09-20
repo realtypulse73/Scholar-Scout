@@ -9,12 +9,13 @@ import {
 const candidateCommit = 'bb252ef3e9bfc19ef4d8c701babefb8b8722fcc5';
 const submittedUrl = 'https://scholar-scout-preview.vercel.app';
 const nowUtcMs = Date.parse('2026-09-18T22:00:00Z');
+const expectedEnvironment = 'Preview – scholar-scout-rehearsal-baseline';
 
 function deployment(id, overrides = {}) {
   return {
     id,
     sha: candidateCommit,
-    environment: 'Preview',
+    environment: expectedEnvironment,
     creator: { login: 'vercel[bot]', type: 'Bot' },
     ...overrides,
   };
@@ -24,7 +25,7 @@ function status(id, createdAtMs, overrides = {}) {
   return {
     id,
     state: 'success',
-    environment: 'Preview',
+    environment: expectedEnvironment,
     environment_url: submittedUrl,
     created_at: new Date(createdAtMs).toISOString(),
     ...overrides,
@@ -56,6 +57,7 @@ function attestationOptions(fetchImpl) {
     repo: 'Scholar-Scout',
     candidateCommit,
     submittedUrl,
+    expectedEnvironment,
     githubToken: 'read-only-token',
     nowUtcMs,
     fetchImpl,
@@ -101,6 +103,14 @@ test('rejects equal-newest deployment statuses, stale or malformed timestamps, a
       [deploymentPage(), [deployment(101)]],
       [statusPage(101), [status(1, nowUtcMs - 1, { environment_url: 'https://wrong.example.test' })]],
     ]),
+    new Map([
+      [deploymentPage(), [deployment(101, { environment: 'Preview' })]],
+      [statusPage(101), [status(1, nowUtcMs - 1)]],
+    ]),
+    new Map([
+      [deploymentPage(), [deployment(101)]],
+      [statusPage(101), [status(1, nowUtcMs - 1, { environment: 'Preview' })]],
+    ]),
   ];
 
   for (const pages of scenarios) {
@@ -109,6 +119,21 @@ test('rejects equal-newest deployment statuses, stale or malformed timestamps, a
       /Preview deployment attestation failed\./,
     );
   }
+});
+
+test('rejects a broad or unknown environment before contacting GitHub', async () => {
+  let requested = false;
+  await assert.rejects(
+    () => attestPreviewDeployment({
+      ...attestationOptions(async () => {
+        requested = true;
+        return { ok: true, json: async () => [] };
+      }),
+      expectedEnvironment: 'Preview',
+    }),
+    /Preview deployment attestation failed\./,
+  );
+  assert.equal(requested, false);
 });
 
 test('paginates deployments and statuses, while allowing older history beside a fresh match', async () => {

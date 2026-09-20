@@ -29,6 +29,7 @@ const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
 const WORKFLOW_TOKEN_ENV = 'GITHUB_TOKEN';
 const GITHUB_OWNER = 'realtypulse73';
 const GITHUB_REPOSITORY = 'Scholar-Scout';
+const OUTAGE_REHEARSAL_ENVIRONMENT = 'Preview – scholar-scout-rehearsal-outage';
 
 function getCapability(env) {
   const capability = env[CAPABILITY_ENV];
@@ -61,6 +62,7 @@ export async function runPreviewOutageRehearsal({
       repo: GITHUB_REPOSITORY,
       candidateCommit,
       submittedUrl: previewUrl ?? metadata?.url,
+      expectedEnvironment: OUTAGE_REHEARSAL_ENVIRONMENT,
       githubToken: getDeploymentReadToken(env),
     });
   } catch {

@@ -198,8 +198,9 @@ test('uses the workflow GitHub token for deployment attestation when no dedicate
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
     },
-    attestPreviewDeployment: async ({ githubToken }) => {
+    attestPreviewDeployment: async ({ githubToken, expectedEnvironment }) => {
       assert.equal(githubToken, 'workflow-read-token');
+      assert.equal(expectedEnvironment, 'Preview – scholar-scout-rehearsal-baseline');
       return metadata;
     },
     createLifecycleRequest: () => async () => ({ ok: true }),
@@ -245,10 +246,11 @@ test('stops before the browser or fixture POST when the isolated fixture preflig
       SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
       SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
     },
-    attestPreviewDeployment: async ({ githubToken, submittedUrl }) => {
+    attestPreviewDeployment: async ({ githubToken, submittedUrl, expectedEnvironment }) => {
       phases.push('attestation');
       assert.equal(githubToken, 'deployment-read-token');
       assert.equal(submittedUrl, metadata.url);
+      assert.equal(expectedEnvironment, 'Preview – scholar-scout-rehearsal-baseline');
       return metadata;
     },
     createLifecycleRequest: () => async (method) => {
