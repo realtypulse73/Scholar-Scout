@@ -26,6 +26,7 @@ export function createPreviewOutageMetadata(url, candidateCommit) {
   return { environment: 'preview', url: normalizedUrl, commit: candidateCommit };
 }
 const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const WORKFLOW_TOKEN_ENV = 'GITHUB_TOKEN';
 const GITHUB_OWNER = 'realtypulse73';
 const GITHUB_REPOSITORY = 'Scholar-Scout';
 
@@ -35,6 +36,13 @@ function getCapability(env) {
     throw new Error('Preview outage rehearsal requires a runner-owned lifecycle capability.');
   }
   return capability;
+}
+
+function getDeploymentReadToken(env) {
+  const dedicatedToken = env[DEPLOYMENTS_TOKEN_ENV];
+  return typeof dedicatedToken === 'string' && dedicatedToken.length > 0
+    ? dedicatedToken
+    : env[WORKFLOW_TOKEN_ENV];
 }
 
 export async function runPreviewOutageRehearsal({
@@ -53,7 +61,7 @@ export async function runPreviewOutageRehearsal({
       repo: GITHUB_REPOSITORY,
       candidateCommit,
       submittedUrl: previewUrl ?? metadata?.url,
-      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+      githubToken: getDeploymentReadToken(env),
     });
   } catch {
     return {

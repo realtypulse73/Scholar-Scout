@@ -105,6 +105,29 @@ test('records a scrubbed transport failure instead of dropping the outage record
   assert.equal(attestationTraffic, false);
 });
 
+test('uses the workflow GitHub token for outage attestation when no dedicated token is configured', async () => {
+  const result = await runPreviewOutageRehearsal({
+    candidateCommit: 'candidate-commit',
+    previewUrl: metadata.url,
+    env: {
+      GITHUB_TOKEN: 'workflow-read-token',
+      SCHOLARSCOUT_VERCEL_BYPASS: 'bypass-value',
+      SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY: 'capability-value',
+    },
+    attestPreviewDeployment: async ({ githubToken }) => {
+      assert.equal(githubToken, 'workflow-read-token');
+      return metadata;
+    },
+    createLifecycle: () => async () => ({ ok: true }),
+    fetchImpl: async () => ({
+      status: 503,
+      text: async () => JSON.stringify({ error: 'Community submissions are unavailable.' }),
+    }),
+  });
+
+  assert.equal(result.outcome, 'passed');
+});
+
 test('fails closed when the outage result discloses sensitive material', async () => {
   const result = await runPreviewOutageRehearsal({
     candidateCommit: 'candidate-commit',

@@ -87,25 +87,29 @@ test('provisions, verifies, runs with protected page and API transport, and clea
 
 test('fails before lifecycle or browser traffic when the attested target or runner guards are invalid', async () => {
   for (const input of [
-    { attestation: { ...metadata, environment: 'production' } },
-    { candidateCommit: 'other-commit' },
-    { env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass' } },
-    { env: { SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability' } },
+    {
+      attestation: { ...metadata, environment: 'production' },
+      candidateCommit: 'candidate-commit',
+      env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass', SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability' },
+    },
+    {
+      candidateCommit: 'other-commit',
+      env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass', SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability' },
+    },
+    {
+      candidateCommit: 'candidate-commit',
+      env: { SCHOLARSCOUT_VERCEL_BYPASS: 'bypass' },
+    },
   ]) {
     let traffic = false;
     await assert.rejects(() => runPreviewReleaseTracer({
-      candidateCommit: 'candidate-commit',
+      candidateCommit: input.candidateCommit,
       previewUrl: metadata.url,
       attestPreviewDeployment: async () => input.attestation ?? metadata,
-      env: {
-        SCHOLARSCOUT_VERCEL_BYPASS: 'bypass',
-        SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'capability',
-        ...input.env,
-      },
+      env: input.env,
       createLifecycleRequest: () => { traffic = true; },
       createBrowser: async () => { traffic = true; },
       runStudentSpec: async () => { traffic = true; },
-      ...input,
     }));
     assert.equal(traffic, false);
   }
@@ -183,6 +187,27 @@ test('records a safe programme-visibility category without browser diagnostics',
     errorCategory: 'preview-attestation-failed',
   });
   assert.equal(attestationTraffic, false);
+});
+
+test('uses the workflow GitHub token for deployment attestation when no dedicated token is configured', async () => {
+  const result = await runPreviewReleaseTracer({
+    candidateCommit: 'candidate-commit',
+    previewUrl: metadata.url,
+    env: {
+      GITHUB_TOKEN: 'workflow-read-token',
+      SCHOLARSCOUT_VERCEL_BYPASS: 'sensitive-bypass',
+      SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY: 'runner-capability',
+    },
+    attestPreviewDeployment: async ({ githubToken }) => {
+      assert.equal(githubToken, 'workflow-read-token');
+      return metadata;
+    },
+    createLifecycleRequest: () => async () => ({ ok: true }),
+    createBrowser: async () => ({ close: async () => undefined }),
+    runStudentSpec: async () => undefined,
+  });
+
+  assert.equal(result.outcome, 'passed');
 });
 
 test('records a scrubbed lifecycle failure when Preview fixture preflight is denied', async () => {

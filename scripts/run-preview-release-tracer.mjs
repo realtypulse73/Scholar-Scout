@@ -24,6 +24,7 @@ const CAPABILITY_ENV = 'SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY';
 const CANDIDATE_COMMIT_ENV = 'SCHOLARSCOUT_CANDIDATE_COMMIT';
 const PREVIEW_URL_ENV = 'SCHOLARSCOUT_PREVIEW_URL';
 const DEPLOYMENTS_TOKEN_ENV = 'SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN';
+const WORKFLOW_TOKEN_ENV = 'GITHUB_TOKEN';
 const GITHUB_OWNER = 'realtypulse73';
 const GITHUB_REPOSITORY = 'Scholar-Scout';
 
@@ -33,6 +34,13 @@ function getLifecycleCapability(env) {
     throw new Error('Preview tracer requires a runner-owned fixture lifecycle capability.');
   }
   return capability;
+}
+
+function getDeploymentReadToken(env) {
+  const dedicatedToken = env[DEPLOYMENTS_TOKEN_ENV];
+  return typeof dedicatedToken === 'string' && dedicatedToken.length > 0
+    ? dedicatedToken
+    : env[WORKFLOW_TOKEN_ENV];
 }
 
 function createSafeOutcome(outcome, baseURL, candidateCommit, errorCategory) {
@@ -98,7 +106,7 @@ export async function runPreviewReleaseTracer({
       repo: GITHUB_REPOSITORY,
       candidateCommit,
       submittedUrl: previewUrl ?? metadata?.url,
-      githubToken: env[DEPLOYMENTS_TOKEN_ENV],
+      githubToken: getDeploymentReadToken(env),
     });
   } catch {
     return createSafeOutcome('failed', undefined, candidateCommit, 'preview-attestation-failed');
