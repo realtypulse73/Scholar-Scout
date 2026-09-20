@@ -444,6 +444,7 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
   assert.match(workflow, /discover-rehearsal-preview-deployments/);
   assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY/);
   assert.match(workflow, /SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY/);
+  assert.match(workflow, /SCHOLARSCOUT_VERCEL_BYPASS/);
   assert.match(rehearsal, /Local candidate rehearsal is incomplete/);
   assert.match(rehearsal, /aggregateLocalReleaseRecords/);
 });

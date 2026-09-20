@@ -36,6 +36,11 @@ SCHOLARSCOUT_REHEARSAL_BASELINE_CAPABILITY
 SCHOLARSCOUT_REHEARSAL_OUTAGE_CAPABILITY
 ```
 
+If Vercel Deployment Protection is enabled for either rehearsal project, also
+keep the existing `SCHOLARSCOUT_VERCEL_BYPASS` secret in GitHub's **Preview**
+environment. The workflow sends it only as a request header from the runner;
+it is never written to reports or passed to the app.
+
 The workflow owns the two permanent deployment hostname prefixes. Do not add
 GitHub variables for them: `scholar-scout-rehearsal-baseline-` and
 `scholar-scout-rehearsal-outage-` are committed workflow configuration so a
