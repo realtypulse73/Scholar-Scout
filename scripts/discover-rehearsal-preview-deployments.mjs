@@ -3,10 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * GitHub commit statuses attest that Vercel built both projects for the
- * candidate. Each project-scoped token then lists only that project's Ready
- * deployment for the exact Git commit, avoiding dashboard-only deployment IDs
- * and team-wide deployment access.
+ * GitHub records Vercel's deployment statuses against the candidate commit.
+ * Reading those records avoids requiring Vercel REST API access during a
+ * rehearsal while preserving an exact candidate-to-Preview URL binding.
  */
 export async function discoverRehearsalPreviewDeployments({
   candidateCommit,
@@ -14,102 +13,83 @@ export async function discoverRehearsalPreviewDeployments({
   outageHostPrefix,
   baselineProject,
   outageProject,
-  vercelScope,
-  baselineToken,
-  outageToken,
   githubRepository,
   githubToken,
   getCommitStatuses = getGitHubCommitStatuses,
-  getDeployment = getReadyVercelDeployment,
+  getDeploymentStatuses = getGitHubDeploymentStatuses,
 } = {}) {
   if (!isFullSha(candidateCommit)) throw new Error('Rehearsal deployment discovery requires a full candidate commit.');
   if (!isHostPrefix(baselineHostPrefix) || !isHostPrefix(outageHostPrefix) || baselineHostPrefix === outageHostPrefix) {
     throw new Error('Rehearsal deployment discovery requires two distinct Vercel host prefixes.');
   }
-  if (!isProjectName(baselineProject) || !isProjectName(outageProject) || baselineProject === outageProject || !isScope(vercelScope)) {
-    throw new Error('Rehearsal deployment discovery requires two Vercel projects and a scope.');
-  }
-  if (!isToken(baselineToken) || !isToken(outageToken)) {
-    throw new Error('Rehearsal deployment discovery requires a separate Vercel token for each rehearsal project.');
+  if (!isProjectName(baselineProject) || !isProjectName(outageProject) || baselineProject === outageProject) {
+    throw new Error('Rehearsal deployment discovery requires two Vercel projects.');
   }
   if (!isRepository(githubRepository) || !isToken(githubToken)) {
-    throw new Error('Rehearsal deployment discovery requires GitHub status access for the candidate commit.');
+    throw new Error('Rehearsal deployment discovery requires GitHub deployment-status access for the candidate commit.');
   }
 
-  const statuses = await getCommitStatuses({ candidateCommit, githubRepository, githubToken });
-  selectReadyVercelDeploymentStatus(statuses, baselineProject);
-  selectReadyVercelDeploymentStatus(statuses, outageProject);
-  const [baselineOutput, outageOutput] = await Promise.all([
-    getDeployment({ candidateCommit, project: baselineProject, vercelScope, accessToken: baselineToken }),
-    getDeployment({ candidateCommit, project: outageProject, vercelScope, accessToken: outageToken }),
+  const [commitStatuses, deploymentStatuses] = await Promise.all([
+    getCommitStatuses({ candidateCommit, githubRepository, githubToken }),
+    getDeploymentStatuses({ candidateCommit, githubRepository, githubToken }),
   ]);
-  const baselineUrl = selectReadyDeploymentUrl(baselineOutput, baselineHostPrefix);
-  const outageUrl = selectReadyDeploymentUrl(outageOutput, outageHostPrefix);
+  selectReadyVercelDeploymentStatus(commitStatuses, baselineProject);
+  selectReadyVercelDeploymentStatus(commitStatuses, outageProject);
+  const baselineUrl = selectReadyGitHubDeploymentUrl(deploymentStatuses, candidateCommit, baselineHostPrefix);
+  const outageUrl = selectReadyGitHubDeploymentUrl(deploymentStatuses, candidateCommit, outageHostPrefix);
   if (baselineUrl === outageUrl) throw new Error('Rehearsal deployment URLs must be distinct.');
   return { baselineUrl, outageUrl };
 }
 
 async function getGitHubCommitStatuses({ candidateCommit, githubRepository, githubToken }) {
-  const response = await fetch(
-    `https://api.github.com/repos/${githubRepository}/commits/${candidateCommit}/status`,
-    {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${githubToken}`,
-        'User-Agent': 'ScholarScout-Rehearsal',
-      },
-    },
-  );
-  if (!response.ok) throw new Error('Rehearsal deployment discovery could not read candidate GitHub statuses.');
-  const payload = await response.json();
+  const payload = await githubRequest({
+    endpoint: `/repos/${githubRepository}/commits/${candidateCommit}/status`,
+    githubToken,
+    failureMessage: 'Rehearsal deployment discovery could not read candidate GitHub statuses.',
+  });
   if (!payload || !Array.isArray(payload.statuses)) {
     throw new Error('Rehearsal deployment discovery received invalid candidate GitHub statuses.');
   }
   return payload.statuses;
 }
 
-export async function getReadyVercelDeployment({
-  candidateCommit,
-  project,
-  vercelScope,
-  accessToken,
-  fetchImplementation = fetch,
-}) {
-  const projectEndpoint = new URL(`https://api.vercel.com/v9/projects/${encodeURIComponent(project)}`);
-  projectEndpoint.searchParams.set('slug', vercelScope);
-  const projectResponse = await fetchImplementation(projectEndpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!projectResponse.ok) {
-    throw new Error(`Vercel deployment discovery could not resolve ${project} (HTTP ${projectResponse.status}).`);
+async function getGitHubDeploymentStatuses({ candidateCommit, githubRepository, githubToken }) {
+  const deployments = await githubRequest({
+    endpoint: `/repos/${githubRepository}/deployments?sha=${encodeURIComponent(candidateCommit)}&per_page=100`,
+    githubToken,
+    failureMessage: 'Rehearsal deployment discovery could not read candidate GitHub deployments.',
+  });
+  if (!Array.isArray(deployments)) {
+    throw new Error('Rehearsal deployment discovery received invalid candidate GitHub deployments.');
   }
-  const projectPayload = await projectResponse.json();
-  if (!projectPayload || typeof projectPayload.id !== 'string' || !projectPayload.id) {
-    throw new Error(`Vercel deployment discovery received an invalid ${project} project.`);
-  }
+  const candidateDeployments = deployments.filter((deployment) =>
+    deployment && deployment.sha === candidateCommit && Number.isInteger(deployment.id),
+  );
+  const statusGroups = await Promise.all(candidateDeployments.map(async (deployment) => {
+    const statuses = await githubRequest({
+      endpoint: `/repos/${githubRepository}/deployments/${deployment.id}/statuses?per_page=100`,
+      githubToken,
+      failureMessage: 'Rehearsal deployment discovery could not read candidate GitHub deployment statuses.',
+    });
+    if (!Array.isArray(statuses)) {
+      throw new Error('Rehearsal deployment discovery received invalid candidate GitHub deployment statuses.');
+    }
+    return statuses.map((status) => ({ deploymentSha: deployment.sha, status }));
+  }));
+  return statusGroups.flat();
+}
 
-  const endpoint = new URL('https://api.vercel.com/v6/deployments');
-  endpoint.searchParams.set('slug', vercelScope);
-  endpoint.searchParams.set('projectId', projectPayload.id);
-  endpoint.searchParams.set('meta-githubCommitSha', candidateCommit);
-  endpoint.searchParams.set('state', 'READY');
-  const response = await fetchImplementation(endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!response.ok) {
-    throw new Error(`Vercel deployment discovery could not list ${project} candidate deployments (HTTP ${response.status}).`);
-  }
-  const payload = await response.json();
-  const matches = Array.isArray(payload?.deployments)
-    ? payload.deployments.filter((deployment) =>
-      deployment
-      && deployment.name === project
-      && deployment.readyState === 'READY'
-      && deployment.target === null
-      && deployment.meta?.githubCommitSha === candidateCommit
-      && typeof deployment.url === 'string',
-    )
-    : [];
-  if (matches.length !== 1) {
-    throw new Error(`Vercel deployment discovery found no single ready ${project} candidate deployment.`);
-  }
-  return `https://${matches[0].url}\n`;
+async function githubRequest({ endpoint, githubToken, failureMessage }) {
+  const response = await fetch(`https://api.github.com${endpoint}`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${githubToken}`,
+      'User-Agent': 'ScholarScout-Rehearsal',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  if (!response.ok) throw new Error(failureMessage);
+  return response.json();
 }
 
 export function selectReadyVercelDeploymentStatus(statuses, project) {
@@ -126,11 +106,14 @@ export function selectReadyVercelDeploymentStatus(statuses, project) {
   return matches[0];
 }
 
-export function selectReadyDeploymentUrl(output, hostPrefix) {
-  if (typeof output !== 'string' || !isHostPrefix(hostPrefix)) throw new Error('Vercel deployment output is invalid.');
+export function selectReadyGitHubDeploymentUrl(records, candidateCommit, hostPrefix) {
+  if (!Array.isArray(records) || !isFullSha(candidateCommit) || !isHostPrefix(hostPrefix)) {
+    throw new Error('Candidate GitHub deployment status records are invalid.');
+  }
   const urls = new Set();
-  for (const value of output.match(/https:\/\/[^\s]+\.vercel\.app\/?/g) ?? []) {
-    const normalized = normalizeExpectedUrl(value, hostPrefix);
+  for (const record of records) {
+    if (record?.deploymentSha !== candidateCommit || record.status?.state !== 'success') continue;
+    const normalized = normalizeExpectedUrl(record.status.environment_url, hostPrefix);
     if (normalized) urls.add(normalized);
   }
   if (urls.size !== 1) throw new Error(`No single ready rehearsal Preview deployment exists for ${hostPrefix}.`);
@@ -150,7 +133,6 @@ function normalizeExpectedUrl(value, prefix) {
 function isFullSha(value) { return typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value); }
 function isHostPrefix(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
 function isProjectName(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
-function isScope(value) { return typeof value === 'string' && /^[a-z0-9-]{3,100}$/i.test(value); }
 function isRepository(value) { return typeof value === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value); }
 function isToken(value) { return typeof value === 'string' && value.trim().length >= 20; }
 
@@ -158,8 +140,6 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const discovered = await discoverRehearsalPreviewDeployments({
     ...args,
-    baselineToken: process.env.SCHOLARSCOUT_VERCEL_BASELINE_TOKEN,
-    outageToken: process.env.SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN,
     githubRepository: process.env.GITHUB_REPOSITORY,
     githubToken: process.env.GITHUB_TOKEN,
   });
@@ -170,8 +150,8 @@ async function main() {
 }
 
 function parseArgs(values) {
-  const args = { candidateCommit: '', baselineHostPrefix: '', outageHostPrefix: '', baselineProject: '', outageProject: '', vercelScope: '', output: '', githubEnv: '' };
-  const map = { '--candidate-commit': 'candidateCommit', '--baseline-host-prefix': 'baselineHostPrefix', '--outage-host-prefix': 'outageHostPrefix', '--baseline-project': 'baselineProject', '--outage-project': 'outageProject', '--vercel-scope': 'vercelScope', '--output': 'output', '--github-env': 'githubEnv' };
+  const args = { candidateCommit: '', baselineHostPrefix: '', outageHostPrefix: '', baselineProject: '', outageProject: '', output: '', githubEnv: '' };
+  const map = { '--candidate-commit': 'candidateCommit', '--baseline-host-prefix': 'baselineHostPrefix', '--outage-host-prefix': 'outageHostPrefix', '--baseline-project': 'baselineProject', '--outage-project': 'outageProject', '--output': 'output', '--github-env': 'githubEnv' };
   for (let index = 0; index < values.length; index += 1) {
     const key = values[index];
     const value = values[index + 1];

@@ -41,14 +41,7 @@ GitHub variables for them: `scholar-scout-rehearsal-baseline-` and
 `scholar-scout-rehearsal-outage-` are committed workflow configuration so a
 missing dashboard value cannot stall a rehearsal.
 
-In the GitHub **Preview** environment, add these two secrets:
-
-```text
-SCHOLARSCOUT_VERCEL_BASELINE_TOKEN
-SCHOLARSCOUT_VERCEL_OUTAGE_TOKEN
-```
-
-Create each Vercel access token with a 90-day expiry and scope it to only its matching rehearsal project. Vercel access tokens can manage resources in their scope, so do not use an account-wide or all-project token. The workflow confirms the candidate commit's successful GitHub status for each rehearsal project, resolves that project's immutable Vercel project ID, then uses that project's token only to list its Ready Preview deployment filtered by the exact Git commit. It never performs a team-wide deployment list, prints a token, accepts pasted URLs, or copies a Vercel value into GitHub for an individual rehearsal.
+The workflow confirms the candidate commit's successful GitHub status for each rehearsal project, then reads GitHub's deployment-status records to identify exactly one Ready Preview URL for each matching candidate deployment. The built-in GitHub Actions token has read-only deployment access; the workflow does not call Vercel's REST API, print a credential, accept pasted URLs, or copy a Vercel value into GitHub for an individual rehearsal. Existing Vercel token secrets are no longer used by this workflow. Keep or revoke them only through a separate, explicit maintainer credential-rotation decision.
 
 ## Run a rehearsal
 
@@ -57,7 +50,7 @@ Create each Vercel access token with a 90-day expiry and scope it to only its ma
 3. In GitHub Actions, run **ScholarScout Prelaunch Rehearsal** and paste that full commit SHA.
 4. Read the uploaded `prelaunch-rehearsal` artifact. A pass means both fixture lifecycles were created, checked, and cleaned; a failure gives a safe category without exposing data or credentials.
 
-The projects, their two fixture capabilities, and their two project-scoped Vercel tokens remain in place. Rotate each token before its 90-day expiry. No branches, branch-specific variables, generated handoff files, pasted URLs, or per-run secret changes are needed.
+The projects and their two fixture capabilities remain in place. No branches, branch-specific variables, generated handoff files, pasted URLs, per-run secret changes, or Vercel access tokens are needed.
 
 ## Rotating a fixture capability
 
