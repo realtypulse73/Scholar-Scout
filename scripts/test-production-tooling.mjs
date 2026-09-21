@@ -709,6 +709,71 @@ test('portable Corepack helpers target the supported Node 24 runtime', async () 
   assert.match(activation, /Node\.js 24\.x/);
 });
 
+test('public referral release evidence is required while Phase 07 fixtures remain allowlisted HTTPS .invalid hosts', async () => {
+  const gate = await readFile(
+    path.join(
+      process.cwd(),
+      '.planning/phases/07-governed-opportunity-and-support-matching/07-PRELAUNCH-REFERRAL-RELEASE-GATE.md',
+    ),
+    'utf8',
+  );
+  const readiness = await readFile(
+    path.join(process.cwd(), 'docs/production-readiness-checklist.md'),
+    'utf8',
+  );
+  const runbook = await readFile(
+    path.join(process.cwd(), 'docs/production-release-runbook.md'),
+    'utf8',
+  );
+  const evidenceTemplate = await readFile(
+    path.join(process.cwd(), 'docs/prelaunch-evidence-template.md'),
+    'utf8',
+  );
+  const fixtureDirectory = await readFile(
+    path.join(process.cwd(), 'apps/web/lib/sensitive-referral-directory.ts'),
+    'utf8',
+  );
+
+  [
+    /source/i,
+    /displayed label/i,
+    /accountable content owner/i,
+    /availability.*jurisdiction/i,
+    /review date/i,
+    /accessibility.*contact-path review/i,
+    /consent-copy review/i,
+    /human.*sign-off/i,
+  ].forEach((field) => assert.match(gate, field));
+
+  [readiness, runbook, evidenceTemplate].forEach((document) => {
+    assert.match(document, /PRELAUNCH-REFERRAL-RELEASE-GATE/);
+  });
+
+  const allowedFixtureHosts = new Set([
+    'disability-support.invalid',
+    'housing-support.invalid',
+    'mental-health-support.invalid',
+    'immigration-support.invalid',
+    'financial-guidance.invalid',
+    'childcare-support.invalid',
+    'language-support.invalid',
+  ]);
+  const urls = Array.from(
+    fixtureDirectory.matchAll(/url:\s*'([^']+)'/g),
+    (match) => match[1],
+  );
+
+  assert.ok(urls.length > 0, 'Expected Phase 07 referral fixture URLs.');
+  urls.forEach((value) => {
+    const fixtureUrl = new URL(value);
+    assert.equal(fixtureUrl.protocol, 'https:');
+    assert.ok(
+      allowedFixtureHosts.has(fixtureUrl.hostname),
+      `Fixture host must be allowlisted: ${fixtureUrl.hostname}`,
+    );
+  });
+});
+
 function runNode(args, env = {}) {
   return runCommand(nodeBin, args, { ...validRecoverySigning, ...env });
 }
