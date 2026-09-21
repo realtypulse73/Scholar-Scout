@@ -1,31 +1,26 @@
 ---
 phase: 07-governed-opportunity-and-support-matching
-verified: 2026-09-21T07:13:07Z
-status: gaps_found
-score: 6/7 must-haves verified
+verified: 2026-09-21T12:01:49Z
+status: passed
+score: 7/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "Programme discovery, fit panel, recommendations, and pathway recommendations consume the shared governed contract and use only normalized ordinary preferences."
-    status: failed
-    reason: "The recommendation dashboard still builds and renders an active legacy pathway recommendation that ranks by a confidence score. That scorer calls the legacy fit implementation and falls back to programme matchScore and acceptanceRate, so pathway content is not governed by rankOpportunityMatches()."
-    artifacts:
-      - path: apps/web/components/recommendations/RecommendationDashboard.tsx
-        issue: "Imports and invokes buildPathwayRecommendations(), then renders the separately ranked 'Best pathway' and its confidence percentage."
-      - path: apps/web/lib/pathway-recommendations.ts
-        issue: "Calls explainProgrammeFit(), uses confidenceScore, programme.matchScore, and programme.acceptanceRate, and sorts pathway recommendations by confidenceScore."
-    missing:
-      - "Remove or migrate the active legacy pathway recommendation flow to the governed opportunity-match view model."
-      - "Remove the confidence-ranked 'Best pathway' presentation and add a regression proving GPA, access, matchScore, and acceptanceRate cannot affect any visible matching or pathway order."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 6/7
+  gaps_closed:
+    - "Programme discovery, fit panel, recommendations, and pathway recommendations consume the shared governed contract and use only normalized ordinary preferences."
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 7: Governed Opportunity and Support Matching Verification Report
 
 **Phase Goal:** Students can compare visible programme and pathway opportunities through evidence-grounded, choice-preserving support explanations, while sensitive support uses a non-persisting referral path and never becomes a ranking or profile signal.
 
-**Verified:** 2026-09-21T07:13:07Z  
-**Status:** gaps_found  
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-21T12:01:49Z
+**Status:** passed
+**Re-verification:** Yes — after dashboard-pathway scoring repair
 
 ## Goal Achievement
 
@@ -33,83 +28,84 @@ gaps:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | Governed programmes carry attributable support/material-fact evidence; legacy evidence remains visible as unknown, stale, or conflicting with verification guidance. | VERIFIED | `programmes.ts` normalizes every material fact/support bundle to a finite evidence state; `programme-records.ts` applies that normalization at `getGovernedProgrammes()`. Admin and API regression tests passed. |
-| 2 | Requested ordinary support that is undocumented lowers rank but does not hide a programme. | VERIFIED | `rankOpportunityMatches()` applies a caution and negative rank delta without filtering. Its named test passed with documented and undocumented programmes both present. |
-| 3 | Only ordinary preferences persist; referral-only input is rejected and removed from legacy records. | VERIFIED | The account route rejects referral-only values before `saveOnboardingProfile`; `data-store.ts` and `student-records.ts` normalize stored support values. Route and persistence tests passed. |
-| 4 | Sensitive referral selection is local-only, consent-gated, and does not change storage, network, URL, profile, or ranking. | VERIFIED | `SensitiveReferralPanel` has component-local state only; `RecommendationDashboard` mounts it only after the labelled disclosure. Its named component/integration tests passed. |
-| 5 | Phase 7 exposes only test-only HTTPS `.invalid` referral fixtures, and a release record blocks public enablement. | VERIFIED | The allowlisted fixture directory contains only labelled `.invalid` URLs. The committed gate is referenced by the readiness checklist, release runbook, and evidence template; the production-tooling regression passed. |
-| 6 | Every matching surface, including pathway recommendations, uses the shared ordinary-preference, evidence-grounded card contract. | FAILED | `RecommendationDashboard.tsx` still calls `buildPathwayRecommendations()` and renders “Best pathway” plus `Confidence: …%`; that legacy function uses `explainProgrammeFit`, `matchScore`, and `acceptanceRate`, rather than the governed match contract. |
-| 7 | Students can reach confidential support from the recommendation verification area without treating it as an ordinary profile field. | VERIFIED | The accessible “Need confidential support?” disclosure conditionally renders `SensitiveReferralPanel`; its keyboard/open/decline non-side-effect test passed. |
+| 1 | Every programme or pathway remains visible and shows documented support evidence or an explicit unknown/verify state; undocumented ordinary support lowers rank but never hides a choice. | VERIFIED | `rankOpportunityMatches()` maps every supplied programme, normalizes evidence, and deducts for undocumented requested ordinary support without filtering. Its named regression retained both documented and undocumented programmes and passed. |
+| 2 | Only editable ordinary preferences can affect matching. Referral-only sensitive needs require purpose-specific local consent, cannot persist or transfer automatically, and do not affect matching. | VERIFIED | The account route validates ordinary profiles before saving; read/write normalization removes legacy referral-only values. `SensitiveReferralPanel` retains selection in component state only. Passing route, storage, panel, dashboard, and matcher tests cover the boundary. |
+| 3 | Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions. | VERIFIED | Discovery, fit, and dashboard each invoke `rankOpportunityMatches()` and render `OpportunityMatchCard`. The repaired dashboard maps its only visible programme/pathway sequence from `governedMatches`; the card supplies reasons, evidence, cautions, save, compare, source, and alternate-pathway actions. |
+| 4 | Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off. | VERIFIED | `sensitive-referral-directory.ts` declares only labelled HTTPS `.invalid` fixtures. The release gate is linked by the readiness checklist, release runbook, and evidence template; the production-tooling test passed. |
+| 5 | Governed programmes carry attributable support/material-fact evidence; legacy evidence remains visible as unknown, stale, or conflicting with verification guidance. | VERIFIED | `getGovernedProgrammes()` returns `mergeProgrammes(...)`, which normalizes every record through `normalizeProgrammeForGovernance()`. Staff evidence validation and governed catalogue test coverage passed. |
+| 6 | Requested ordinary support that is undocumented lowers rank but does not hide a programme. | VERIFIED | `opportunity-matching.ts` adds an explicit caution and negative rank delta while keeping the match in the returned array. `opportunity-matching.test.ts` passed with both programmes present in governed order. |
+| 7 | Students can reach confidential support from the recommendation verification area without treating it as an ordinary profile field. | VERIFIED | The dashboard's labelled disclosure conditionally mounts `SensitiveReferralPanel`. Its keyboard/open/decline test proves no local-storage write, request, or navigation mutation; no referral-only value enters the matcher's normalized ordinary preferences. |
 
-**Score:** 6/7 truths verified.
+**Score:** 7/7 truths verified (0 present-but-behavior-unverified).
 
 ## Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `apps/web/lib/programmes.ts` | Source-aware evidence model and legacy-safe normalization | VERIFIED | Substantive finite evidence model and normalization. |
-| `apps/web/lib/server/programme-records.ts` | Governed catalogue boundary | VERIFIED | `getGovernedProgrammes()` normalizes the merged catalogue. |
-| `apps/web/lib/admin-programmes.ts` | Evidence validation for staff publication | VERIFIED | Rejects documented evidence without public source information. |
-| `apps/web/lib/onboarding-types.ts` | Ordinary/referral-only taxonomy | VERIFIED | Explicit allowlists and safe ordinary-profile normalization. |
-| `apps/web/app/api/account/onboarding/route.ts` | Server-side referral-only rejection | VERIFIED | Validates before persistence call. |
-| `apps/web/lib/server/data-store.ts` | Legacy persisted-profile normalization | VERIFIED | Normalizes onboarding profiles on data read. |
-| `apps/web/components/support/SensitiveReferralPanel.tsx` | Local-only consent UI | VERIFIED | No persistence/network implementation; consent only reveals fixture. |
-| `apps/web/lib/opportunity-matching.ts` | Governed ordering/reasons/evidence contract | VERIFIED | Uses ordinary preferences and documented support evidence only. |
-| `apps/web/components/opportunities/OpportunityMatchCard.tsx` | Shared reason/evidence/action rendering | VERIFIED | Renders reasons, evidence, cautions, save, compare, source, and alternate-path actions. |
-| `apps/web/components/recommendations/RecommendationDashboard.tsx` | Governed recommendation and pathway surface | FAILED | Governs programme cards, but still renders the legacy confidence-ranked pathway flow. |
-| `07-PRELAUNCH-REFERRAL-RELEASE-GATE.md` | Public-referral release precondition | VERIFIED | Specifies source, owner, availability/jurisdiction, review, privacy, and human sign-off requirements. |
-| `docs/production-release-runbook.md` | Authoritative public-release linkage | VERIFIED | Makes a completed per-destination record a release-evidence prerequisite. |
+| `apps/web/lib/programmes.ts` | Source-aware evidence model and legacy-safe normalization | VERIFIED | Substantive finite evidence model; `normalizeProgrammeForGovernance()` retains unknown/stale/conflicting evidence with guidance. |
+| `apps/web/lib/server/programme-records.ts` | Governed catalogue boundary | VERIFIED | `getGovernedProgrammes()` merges records and seeds through governed normalization. |
+| `apps/web/lib/admin-programmes.ts` | Evidence validation for staff publication | VERIFIED | Publication validation rejects documented evidence without public attribution. |
+| `apps/web/lib/onboarding-types.ts` and account/data-store boundaries | Ordinary/referral-only persistence boundary | VERIFIED | Finite taxonomy plus server and persistence normalization prevent referral-only values from becoming profile data. |
+| `apps/web/lib/opportunity-matching.ts` | Governed ordering, reasons, evidence, and cautions | VERIFIED | Pure `rankOpportunityMatches()` consumes only ordinary preferences and normalized programme evidence. |
+| `apps/web/components/opportunities/OpportunityMatchCard.tsx` | Shared accessible visible-card contract | VERIFIED | Rendered reasons, source/review/guidance, cautions, and all four choice-preserving actions are substantive and reused. |
+| `apps/web/components/recommendations/RecommendationDashboard.tsx` | Governed recommendation and pathway surface | VERIFIED | Imports `rankOpportunityMatches()`, derives metrics from `governedMatches`, and renders every visible programme/pathway card from that same collection. No legacy pathway scorer import or confidence-ranked presentation remains. |
+| `apps/web/lib/pathway-recommendations.ts` | Retired alternate legacy pathway scorer | VERIFIED (absent by design) | Deleted in `d9cd1d0`; repository scan found no production import or invocation. |
+| `apps/web/components/support/SensitiveReferralPanel.tsx` | Local-only consent UI | VERIFIED | Component-local state reveals only a fixture after student action; no storage, fetch, or navigation call exists. |
+| `07-PRELAUNCH-REFERRAL-RELEASE-GATE.md` and release documents | Public-referral release precondition | VERIFIED | The gate names source, owner, availability/jurisdiction, review, accessibility/contact-path, consent copy, and human sign-off requirements. |
 
 ## Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| `programme-records.ts` | `programmes.ts` | Governed catalogue normalization | WIRED | `getGovernedProgrammes()` returns `mergeProgrammes(...).map(normalizeProgrammeForGovernance)`. |
-| `account/onboarding/route.ts` | `data-store.ts` | Validated ordinary payload save | WIRED | `validateOnboardingProfile()` returns `OrdinaryOnboardingProfile` before `saveOnboardingProfile()`. |
-| `SensitiveReferralPanel.tsx` | `sensitive-referral-directory.ts` | Local fixture lookup after consent | WIRED | Only `getSensitiveReferralFixture()` supplies the revealed link. |
-| `OpportunityMatchCard.tsx` | discovery / fit / recommendation cards | Shared rendering | PARTIAL | Discovery and fit are migrated, but the dashboard retains a separately calculated, confidence-ranked pathway presentation. |
-| `RecommendationDashboard.tsx` | `SensitiveReferralPanel.tsx` | Student-action disclosure | WIRED | Labelled button conditionally mounts the panel in the verification/support area. |
-| Release runbook | Referral release gate | Public-release precondition | WIRED | Runbook, readiness checklist, and evidence template link the same gate; CI runs the tooling test that checks it. |
+| `programme-records.ts` | `programmes.ts` | Governed catalogue normalization | WIRED | `mergeProgrammes()` returns `...map(normalizeProgrammeForGovernance)`. |
+| `account/onboarding/route.ts` | `data-store.ts` | Validated ordinary profile save | WIRED | `validateOnboardingProfile()` completes before the saved payload is passed onward. |
+| `programme-records.ts` → recommendation page | `RecommendationDashboard.tsx` | Governed server catalogue prop | WIRED | `app/recommendations/page.tsx` awaits `getGovernedProgrammes()` and passes it as `programmes`. |
+| `RecommendationDashboard.tsx` | `opportunity-matching.ts` → `OpportunityMatchCard.tsx` | One governed visible sequence | WIRED | `useMemo` creates `governedMatches` with `rankOpportunityMatches()`, and the only card map is `governedMatches.map(...)`. |
+| `OpportunityMatchCard.tsx` | Discovery, fit, and dashboard surfaces | Shared rendering contract | WIRED | All three surfaces import the card and pass match objects from `rankOpportunityMatches()`. |
+| `SensitiveReferralPanel.tsx` | `sensitive-referral-directory.ts` | Local fixture lookup after consent | WIRED | `getSensitiveReferralFixture()` supplies the selected `.invalid` URL only after component-local consent. |
+| Release documents | Referral release gate | Public-release precondition | WIRED | The readiness checklist, release runbook, and prelaunch evidence template all reference the same required gate. |
 
 ## Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | --- | --- | --- | --- | --- |
-| `ProgrammeResults.tsx` | `rankedMatches` | Server `getGovernedProgrammes()` → client `rankOpportunityMatches()` | Governed programme evidence and normalized profile | FLOWING |
-| `ProgrammeFitPanel.tsx` | `match` | Profile from local/account source → `rankOpportunityMatches()` | Governed single-programme match | FLOWING |
-| `RecommendationDashboard.tsx` | `governedMatches` | Server governed programmes + account/local profile → `rankOpportunityMatches()` | Governed programme cards | FLOWING |
-| `RecommendationDashboard.tsx` | `bestPathway` | `buildPathwayRecommendations()` | Legacy score path uses `explainProgrammeFit`, `matchScore`, and `acceptanceRate` | FAILED |
+| `RecommendationDashboard.tsx` | `programmes` | Server `getGovernedProgrammes()` from the recommendation page | Governed catalogue records with normalized evidence | FLOWING |
+| `RecommendationDashboard.tsx` | `governedMatches` | `rankOpportunityMatches(programmes, profile)` | Deterministic ordinary-preference/evidence view models | FLOWING |
+| `RecommendationDashboard.tsx` | Card order, reasons, evidence, cautions, verification count | `governedMatches` only | The legacy-metadata regression mutates GPA, acceptance rate, and `matchScore` while asserting the complete visible card snapshot and count remain unchanged | FLOWING |
+| `SensitiveReferralPanel.tsx` | Selected referral fixture | Component-local selected category → fixture directory | One test-only `.invalid` destination; no persistence or network source | FLOWING |
 
 ## Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Evidence, privacy, matching, card, and dashboard regressions | `corepack pnpm --filter @scholar-scout/web test -- --runInBand` with 13 Phase-07 suites | 13 suites, 90 tests passed | PASS |
-| Referral-gate operational regression | `node --test scripts/test-production-tooling.mjs` | 24 tests passed | PASS |
-| TypeScript and lint | `corepack pnpm --filter @scholar-scout/web run lint` and `... run typecheck` | Both exited 0 | PASS |
+| Dashboard has no active legacy pathway scorer and legacy metadata cannot change visible governed cards | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath __tests__/components/RecommendationDashboard.test.tsx __tests__/app/matching-surfaces.test.tsx __tests__/lib/opportunity-matching.test.ts` | 3 suites, 5 tests passed | PASS |
+| All Phase 7 evidence, privacy, matching, card, and dashboard regressions | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath` with 13 Phase 7 suites | 13 suites, 99 tests passed | PASS |
+| Referral release-gate and fixture allowlist | `node --test scripts/test-production-tooling.mjs` | 24 tests passed | PASS |
+| TypeScript and lint | `corepack pnpm --filter @scholar-scout/web run typecheck` and `... run lint` | Both exited 0 | PASS |
+| Retired scorer wiring | `rg "pathway-recommendations|buildPathwayRecommendation|buildPathwayRecommendations" .` excluding generated files | No production reference; only a historical documentation branch-name mention remains | PASS |
+
+## Probe Execution
+
+No Phase 7 probe was declared in its plans or summaries, and no `scripts/**/probe-*.sh` file exists. **SKIPPED (no phase probe).**
 
 ## Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
-| --- | --- | --- | --- | --- |
-| No Phase 7 milestone requirement ID | 07-01 through 07-04 | Approved governance-only, pre-launch hardening slice | SATISFIED | All plans correctly declare `requirements: []`. |
-| `PROD-07` | Roadmap / requirements traceability | Source-verified area resources and advice | NOT CLAIMED BY PHASE 7 | `REQUIREMENTS.md` maps `PROD-07` exclusively to Phase 8; Phase 7 uses only `.invalid` fixtures. |
+| --- | --- | --- | --- |
+| No Phase 7 milestone requirement ID | 07-01 through 07-04 | Approved governance-only, pre-launch hardening slice | SATISFIED | Every Phase 7 plan declares `requirements: []`; the ROADMAP explicitly preserves Phase 8 ownership for `PROD-07`. |
+| `PROD-07` | ROADMAP / REQUIREMENTS traceability | Source-verified area resources and advice | NOT CLAIMED BY PHASE 7 | `REQUIREMENTS.md` maps it exclusively to Phase 8; Phase 7 supplies only `.invalid` fixtures and a release gate. |
 
 ## Anti-Patterns Found
 
-| File | Line | Pattern | Severity | Impact |
-| --- | --- | --- | --- | --- |
-| `apps/web/lib/pathway-recommendations.ts` | 30–31, 65 | Legacy fit/confidence scoring uses `explainProgrammeFit`, `matchScore`, `acceptanceRate`, and confidence sort | BLOCKER | Bypasses the governed ordinary-preference evidence contract for a still-visible pathway output. |
-| `apps/web/components/recommendations/RecommendationDashboard.tsx` | 97, 222–229 | Renders “Best pathway” and a confidence percentage from the legacy flow | BLOCKER | Gives the user a separate predictive ranking in the governed recommendation screen. |
-| `.planning/ROADMAP.md` | Phase 7 plan list | Still reports `1/4 plans executed` although four summaries and their commits exist | WARNING | Planning state is stale; correct it when the Phase 7 repair is completed. |
+No blocker or warning anti-patterns were found in the Phase 7 production artifacts. The retired confidence-based scorer was deliberately deleted after its last active dashboard consumer was migrated; the scan confirmed it is not orphaned production code.
 
-## Gaps Summary
+## Re-verification Result
 
-Phase 7’s evidence model, local-only sensitive referral boundary, test fixtures, and future public-release documentation are substantively implemented and covered by passing focused tests. The goal is still not achieved because the active dashboard retains an alternate pathway scorer. It can rank and describe a “best pathway” from legacy fit/confidence inputs instead of the governed opportunity match model.
+The original blocker was real: the dashboard retained a separately confidence-ranked pathway flow whose fallbacks considered legacy `matchScore` and `acceptanceRate`. Commit `d9cd1d0` removes that module and presentation. The repaired dashboard now has exactly one visible programme/pathway collection, derived from `rankOpportunityMatches()`. The rendered-card regression alters GPA, acceptance rate, and match-score metadata, then proves its order, reasons, evidence, cautions, and verification total do not change.
 
-Repair the dashboard/pathway flow first, add a regression that changes GPA, acceptance rate, and `matchScore` without changing any visible pathway order or explanation, then re-run this verification. Update the roadmap plan count as part of the same closure.
+The Phase 7 plan count is also accurate: all four plans are marked complete and the roadmap reports `4/4 executed` pending this re-verification.
 
 ---
 
-_Verified: 2026-09-21T07:13:07Z_  
+_Verified: 2026-09-21T12:01:49Z_
 _Verifier: gsd-verifier_
