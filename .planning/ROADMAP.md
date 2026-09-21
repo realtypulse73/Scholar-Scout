@@ -228,11 +228,31 @@ Plans:
 
 ### Phase 7: Governed Opportunity and Support Matching
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Students can compare visible programme and pathway opportunities through evidence-grounded, choice-preserving support explanations, while sensitive support uses a non-persisting referral path and never becomes a ranking or profile signal.
+**Requirements**: No milestone requirement ID — approved governance-only, pre-launch hardening slice. `PROD-07` remains exclusively mapped to Phase 8.
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+
+  1. Every programme or pathway remains visible and shows documented support evidence or an explicit unknown/verify state; undocumented ordinary support lowers rank but never hides a choice.
+  2. Only editable ordinary preferences can affect matching. Referral-only sensitive needs require purpose-specific local consent, cannot persist or transfer automatically, and do not affect matching.
+  3. Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions.
+  4. Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off.
+
+**Plans:** 4 plans
 
 Plans:
+**Wave 1**
 
-- [ ] TBD (run /gsd-plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — Governed programme evidence boundary
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 07-02-PLAN.md — Ordinary-profile boundary and fixture-only sensitive referral interaction
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 07-03-PLAN.md — Shared matching surfaces and governed card contract
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 07-04-PLAN.md — Reachable sensitive-referral entry point, authoritative release-gate wiring, and final validation

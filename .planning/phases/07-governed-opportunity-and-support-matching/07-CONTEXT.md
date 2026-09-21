@@ -36,6 +36,13 @@ This phase may personalize ordinary opportunity matches only with a student's ed
 
 - Choose the exact accessible layout, wording, source-evidence schema, deterministic weighting, and test fixtures, provided the decisions above and the recommendation-governance constraints remain intact.
 
+### Approved pre-launch authority resolution
+
+- **Phase authority:** Phase 7 is an approved governance-only pre-launch hardening slice. It intentionally has no new milestone requirement ID; `PROD-07` remains Phase 8 work and must not be claimed by this phase.
+- **Ordinary taxonomy:** `financial-aid`, `first-gen`, `tutoring`, and `career-counseling` are the finite, editable ordinary support preferences. `none` is a UI-only clear choice. They can affect matching only when the programme or a linked provider documents support evidence.
+- **Referral-only taxonomy:** disability access, housing, mental health, immigration, complex financial help, childcare, and language support are sensitive/referral-only. They never enter rank reasons, profiles, persistence, URLs, analytics, or provider requests.
+- **Destination policy:** Phase 7 may use only clearly labelled `*.invalid` fixture destinations. It does not claim an available real provider or publish a live referral. Before any public referral destination is enabled, the authoritative release workflow must record a reviewed source, accountable owner, availability or jurisdiction, review date, and human sign-off for that individual destination.
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**

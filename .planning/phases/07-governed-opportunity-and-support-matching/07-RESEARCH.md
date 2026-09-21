@@ -296,22 +296,15 @@ The component must receive only public referral metadata and must not write a ca
 | A1 | A static, vetted referral directory can supply at least one appropriate destination for every referral-only category without a provider API. | Architecture Patterns | A category may need an explicitly maintained human-contact fallback before the UI can claim a referral is available. |
 | A2 | `first-gen` is an ordinary, student-controlled support preference, while childcare and language support are referral-only. | Architecture Patterns | The product owner/privacy reviewer may require a stricter taxonomy; ranking rules and migration allowlist must follow the approved classification. |
 
-## Open Questions
+## Resolved Planning Decisions
 
-1. **What are the actual maintained human/provider destinations for each sensitive category?**
-   - What we know: The phase must source-link a human advisor or qualified provider and never transfer student data. [CITED: 07-CONTEXT.md]
-   - What's unclear: No current referral directory or owner/freshness policy was found in the selected phase sources. [VERIFIED: codebase grep]
-   - Recommendation: Make this a human checkpoint before execution: product/advisor owner supplies allowlisted HTTPS URLs, displayed labels, jurisdiction/availability notes, and a review date. Do not invent provider facts.
+The phase owner approved the following pre-launch resolution on 2026-09-21; it supersedes the open planning questions above without creating a new product requirement.
 
-2. **Which exact support categories are ordinary?**
-   - What we know: Governance expressly makes disability, mental health, housing, childcare, language, and immigration referral-only for ranking; D-05 permits non-sensitive support preferences. [CITED: docs/product-recommendation-governance.md] [CITED: 07-CONTEXT.md]
-   - What's unclear: `first-gen` is not explicitly classified in the phase context, and “complex financial help” must be kept distinct from ordinary published financial-aid information.
-   - Recommendation: Record the approved allowlist in an ADR-like phase decision or context amendment before implementation; use the provisional classification in A2 only after approval.
+1. **Provider destinations:** Phase 7 contains no maintained real provider destination. Each referral UI fixture uses an explicitly labelled `*.invalid` destination and makes no availability claim. A future public release is blocked until the authoritative release workflow contains a per-destination record with a source, accountable owner, availability or jurisdiction note, review date, and human sign-off. No student identity or answers transfer automatically. [CITED: 07-CONTEXT.md]
 
-3. **Where are Phase 07 requirements recorded?**
-   - What we know: `ROADMAP.md` lists Phase 07 with goal `[To be planned]` and `Requirements: TBD`; `REQUIREMENTS.md` maps all current v1 IDs and reserves `PROD-07` for Phase 8. [VERIFIED: codebase grep]
-   - What's unclear: There is no requirement ID for governed opportunity-and-support matching.
-   - Recommendation: Before a planner claims requirements coverage, the roadmap owner must add a Phase 07 goal/success criteria and either approve a new requirement ID plus traceability entry or explicitly mark the phase as a non-requirement governance hardening slice. Do not map or invent an ID in PLAN files.
+2. **Taxonomy:** The approved ordinary, editable, matchable allowlist is `financial-aid`, `first-gen`, `tutoring`, and `career-counseling`; `none` clears the ordinary selection. Disability access, housing, mental health, immigration, complex financial help, childcare, and language support are referral-only. Referral-only values never enter matching, persistent profiles, browser storage, URLs, analytics, or provider requests. [CITED: 07-CONTEXT.md]
+
+3. **Phase authority:** Phase 7 is a governance-only pre-launch hardening slice with no new milestone requirement ID. The roadmap now provides its goal and success criteria. `PROD-07` remains exclusively mapped to Phase 8 and must not be relabelled as Phase 7 coverage. [CITED: ROADMAP.md] [CITED: REQUIREMENTS.md]
 
 ## Environment Availability
 
