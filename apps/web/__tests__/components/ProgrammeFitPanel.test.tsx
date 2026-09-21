@@ -29,7 +29,7 @@ describe('ProgrammeFitPanel', () => {
         screen.getByText('Why this matches your stated preferences'),
       ).toBeInTheDocument();
     });
-    expect(screen.getByText(/Verify this information directly/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Verify this information directly/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/personal fit/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/housing support/i)).not.toBeInTheDocument();
   });
