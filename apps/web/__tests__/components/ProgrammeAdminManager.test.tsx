@@ -59,6 +59,18 @@ describe('ProgrammeAdminManager recovery state contract', () => {
     expect(screen.queryByRole('button', { name: 'Validate import package' })).not.toBeInTheDocument();
   });
 
+  it('lets staff enter bounded, attributable evidence for material facts and listed supports', async () => {
+    installFetch();
+    render(<ProgrammeAdminManager baseProgrammes={[]} />);
+
+    const evidence = screen.getByRole('group', { name: 'Programme evidence' });
+    expect(within(evidence).getByLabelText('Tuition evidence state')).toHaveValue('unknown');
+    expect(within(evidence).getByLabelText('Tuition source label')).toBeInTheDocument();
+    expect(within(evidence).getByLabelText('Tuition source URL')).toBeInTheDocument();
+    expect(within(evidence).getByLabelText('Tuition verification guidance')).toBeInTheDocument();
+    expect(within(evidence).getByText('Support evidence appears for the support services selected above.')).toBeInTheDocument();
+  });
+
   it('renders a verified zero-backup state separately from a failed read', async () => {
     installFetch({ backups: response({ backups: [], empty: true }) });
     render(<ProgrammeAdminManager baseProgrammes={[]} />);
