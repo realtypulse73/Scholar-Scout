@@ -238,12 +238,12 @@ Plans:
   3. Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions.
   4. Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Governed programme evidence boundary
+- [x] 07-01-PLAN.md — Governed programme evidence boundary
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
