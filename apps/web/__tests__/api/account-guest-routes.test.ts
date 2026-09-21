@@ -140,6 +140,31 @@ describe('account guest routes', () => {
     expect(saveOnboardingProfileMock).toHaveBeenCalledWith(account.storageKey, completeProfile);
   });
 
+  it('rejects referral-only support values before they reach persistence', async () => {
+    const account = {
+      kind: 'account' as const,
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    };
+    resolveStudentActorMock.mockResolvedValue(account);
+
+    const response = await postOnboarding(
+      new Request('https://scholar-scout.test/api/account/onboarding', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...completeProfile,
+          supportNeeds: ['housing'],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Invalid onboarding profile.',
+    });
+    expect(saveOnboardingProfileMock).not.toHaveBeenCalled();
+  });
+
   it('reads migrated profile through the account actor and rejects the invalidated guest', async () => {
     const account = {
       kind: 'account' as const,

@@ -50,6 +50,15 @@ describe('validateStep', () => {
     expect(validateStep(3, INITIAL_ONBOARDING_DATA)).toBeNull();
   });
 
+  it('rejects referral-only support values from the ordinary profile', () => {
+    expect(
+      validateStep(3, {
+        ...FULL_DATA,
+        supportNeeds: ['disability-services'] as never,
+      }),
+    ).toMatch(/ordinary support/i);
+  });
+
   it('requires all required fields on final review step', () => {
     expect(validateStep(4, INITIAL_ONBOARDING_DATA)).not.toBeNull();
     expect(validateStep(4, FULL_DATA)).toBeNull();
