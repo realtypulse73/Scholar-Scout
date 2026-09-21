@@ -11,6 +11,13 @@ describe('StepSupportNeeds', () => {
     });
   });
 
+  it('does not present referral-only choices as ordinary profile preferences', () => {
+    render(<StepSupportNeeds value={[]} onChange={jest.fn()} />);
+
+    expect(screen.queryByText(SUPPORT_NEED_LABELS.housing)).not.toBeInTheDocument();
+    expect(screen.queryByText(SUPPORT_NEED_LABELS['mental-health'])).not.toBeInTheDocument();
+  });
+
   it('adds a support need when unselected item is clicked', () => {
     const onChange = jest.fn();
     render(<StepSupportNeeds value={[]} onChange={onChange} />);
