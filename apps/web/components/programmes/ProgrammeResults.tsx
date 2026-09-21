@@ -3,18 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import ShortlistButton from '@/components/shortlist/ShortlistButton';
-import { Badge, Card } from '@/components/ui';
+import OpportunityMatchCard from '@/components/opportunities/OpportunityMatchCard';
+import { Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
-  explainProgrammeFit,
   parseOnboardingProfile,
-  rankProgrammesForProfile,
 } from '@/lib/preference-matching';
-import {
-  PROGRAMME_PATHWAY_LABELS,
-  type Programme,
-} from '@/lib/programmes';
+import { rankOpportunityMatches } from '@/lib/opportunity-matching';
+import type { Programme } from '@/lib/programmes';
 import {
   PROGRAMME_PAGE_SIZE,
   buildPageSearchParams,
@@ -64,11 +60,11 @@ export default function ProgrammeResults({
     void loadProfile();
   }, [initialProfile, session]);
 
-  const rankedProgrammes = useMemo(
-    () => rankProgrammesForProfile(programmes, profile),
+  const rankedMatches = useMemo(
+    () => rankOpportunityMatches(programmes, profile),
     [programmes, profile],
   );
-  const paginated = paginateItems(rankedProgrammes, page, PROGRAMME_PAGE_SIZE);
+  const paginated = paginateItems(rankedMatches, page, PROGRAMME_PAGE_SIZE);
 
   return (
     <section aria-label="Programme results" className="space-y-4">
@@ -81,85 +77,9 @@ export default function ProgrammeResults({
       </div>
 
       {paginated.items.length > 0 ? (
-        paginated.items.map((programme) => {
-          const fit = profile ? explainProgrammeFit(programme, profile) : null;
-          const reason = fit?.reasons[0] ?? programme.highlights[0];
-
-          return (
-            <Card key={programme.id} className="p-5">
-              <div className="grid gap-5 md:grid-cols-[1fr_auto]">
-                <div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge tone="success">
-                      {fit ? `${fit.score}% personal fit` : `${programme.matchScore}% fit`}
-                    </Badge>
-                    <Badge>{PROGRAMME_PATHWAY_LABELS[programme.pathway]}</Badge>
-                    <Badge>{programme.delivery}</Badge>
-                  </div>
-                  <h2 className="mt-4 text-xl font-extrabold text-ink-900">
-                    <Link
-                      href={`/programmes/${programme.id}`}
-                      className="hover:text-brand-700"
-                    >
-                      {programme.name}
-                    </Link>
-                  </h2>
-                  <p className="mt-1 text-sm font-semibold text-ink-600">
-                    {programme.school} - {programme.city}, {programme.state}
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-ink-600">
-                    {reason}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {programme.highlights.map((highlight) => (
-                      <Badge key={highlight} tone="brand">
-                        {highlight}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <dl className="grid grid-cols-3 gap-3 text-sm md:w-72">
-                  <div>
-                    <dt className="text-xs font-semibold uppercase text-ink-500">
-                      Tuition
-                    </dt>
-                    <dd className="mt-1 font-extrabold">
-                      ${programme.annualTuition.toLocaleString()}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-semibold uppercase text-ink-500">
-                      Entry flexibility
-                    </dt>
-                    <dd className="mt-1 font-extrabold">
-                      {programme.acceptanceRate}%
-                    </dd>
-                    <dd className="mt-1 text-xs font-medium leading-4 text-ink-500">
-                      Not an admission prediction
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-semibold uppercase text-ink-500">
-                      Time
-                    </dt>
-                    <dd className="mt-1 font-extrabold">
-                      {programme.duration}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <ShortlistButton programmeId={programme.id} />
-                <Link
-                  href={`/programmes/${programme.id}`}
-                  className="inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                >
-                  View details
-                </Link>
-              </div>
-            </Card>
-          );
-        })
+        paginated.items.map((match) => (
+          <OpportunityMatchCard key={match.programme.id} match={match} />
+        ))
       ) : (
         <Card className="p-8 text-center">
           <h2 className="text-xl font-extrabold">No matches yet</h2>
@@ -169,7 +89,7 @@ export default function ProgrammeResults({
         </Card>
       )}
 
-      {rankedProgrammes.length > PROGRAMME_PAGE_SIZE ? (
+      {rankedMatches.length > PROGRAMME_PAGE_SIZE ? (
         <div className="flex items-center justify-between pt-2">
           <PageLink
             label="Previous"

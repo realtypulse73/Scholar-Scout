@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { SessionProvider } from 'next-auth/react';
 import OpportunityMatchCard from '@/components/opportunities/OpportunityMatchCard';
 import { rankOpportunityMatches } from '@/lib/opportunity-matching';
 import type { OnboardingData } from '@/lib/onboarding-types';
@@ -48,7 +49,11 @@ const profile: OnboardingData = {
 describe('OpportunityMatchCard', () => {
   it('renders governed evidence, verification guidance, and choice actions without an application action', () => {
     const match = rankOpportunityMatches([programme], profile)[0];
-    render(<OpportunityMatchCard match={match} />);
+    render(
+      <SessionProvider session={null}>
+        <OpportunityMatchCard match={match} />
+      </SessionProvider>,
+    );
 
     expect(screen.getByText('Why this matches your stated preferences')).toBeInTheDocument();
     expect(screen.getByText(/Example catalogue/i)).toBeInTheDocument();
