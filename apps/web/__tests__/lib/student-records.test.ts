@@ -146,6 +146,21 @@ describe('bounded student records', () => {
     });
   });
 
+  it('normalizes referral-only legacy values before a profile replacement is stored', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+
+    await saveOnboardingProfile('account:student-one', {
+      ...profile,
+      supportNeeds: ['financial-aid', 'housing'] as never,
+    });
+
+    expect(store.data.onboardingProfiles['account:student-one']).toMatchObject({
+      supportNeeds: ['financial-aid'],
+    });
+    expect(JSON.stringify(store.data.auditEvents)).not.toContain('housing');
+  });
+
   it('commits shortlist IDs and plans atomically for one student', async () => {
     const store = new MemoryDataStore();
     store.data.shortlists['account:student-two'] = ['existing-programme'];

@@ -17,6 +17,7 @@ import {
   hashGuestCredential,
   getAccountRoleForEmail,
   getDataStoreConfigurationSummary,
+  getOnboardingProfile,
   getScholarScoutDataStore,
   getScholarScoutDataStoreStatus,
   JsonScholarScoutDataStore,
@@ -90,6 +91,23 @@ function cloneData(data: ScholarScoutData) {
 }
 
 describe('ScholarScout data store adapter', () => {
+  it('removes referral-only values when reading a legacy onboarding profile', async () => {
+    const store = new MemoryDataStore();
+    store.data.onboardingProfiles['student-one'] = {
+      gpaBand: '3.0-3.4',
+      interests: ['technology'],
+      locationPreference: 'in-state',
+      pathwayPreference: '4-year-university',
+      affordabilitySensitivity: 3,
+      supportNeeds: ['financial-aid', 'housing'],
+    } as never;
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(getOnboardingProfile('student-one')).resolves.toMatchObject({
+      supportNeeds: ['financial-aid'],
+    });
+  });
+
   it('normalizes legacy campus notes to public status and preserves moderation fields in versioned snapshots', async () => {
     const store = new MemoryDataStore();
     store.data.campusNotes = [{
