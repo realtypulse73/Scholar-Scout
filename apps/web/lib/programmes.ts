@@ -23,6 +23,32 @@ export type ProgrammeSourceCheck =
   | 'support'
   | 'next-steps';
 
+export type ProgrammeEvidenceState =
+  | 'documented'
+  | 'unknown'
+  | 'stale'
+  | 'conflicting';
+
+export interface ProgrammeFieldEvidence {
+  state: ProgrammeEvidenceState;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  lastVerifiedAt?: string;
+  verificationGuidance?: string;
+}
+
+export interface ProgrammeSupportEvidence {
+  support: Exclude<SupportNeed, 'none'>;
+  evidence: ProgrammeFieldEvidence;
+}
+
+export interface ProgrammeEvidence {
+  materialFacts: Partial<
+    Record<ProgrammeSourceCheck, ProgrammeFieldEvidence>
+  >;
+  supportBundle: ProgrammeSupportEvidence[];
+}
+
 export interface Programme {
   id: string;
   name: string;
@@ -47,11 +73,84 @@ export interface Programme {
   sourceConfidence?: ProgrammeSourceConfidence;
   sourceNotes?: string;
   sourceChecks?: ProgrammeSourceCheck[];
+  programmeEvidence?: ProgrammeEvidence;
   lastVerifiedAt?: string;
   reviewAssignee?: string;
   reviewNotes?: string;
   revision?: number;
 }
+
+const programmeEvidenceStates: ProgrammeEvidenceState[] = [
+  'documented',
+  'unknown',
+  'stale',
+  'conflicting',
+];
+
+/**
+ * Makes inherited or incomplete records safe for governed catalogue readers.
+ * Unknown evidence remains visible for students to verify; it is never promoted
+ * to documented merely because a legacy record lists a support.
+ */
+export function normalizeProgrammeForGovernance(programme: Programme): Programme {
+  const rawEvidence = programme.programmeEvidence;
+  const materialFacts = Object.fromEntries(
+    programmeSourceChecks.map((fact) => [
+      fact,
+      normalizeProgrammeFieldEvidence(rawEvidence?.materialFacts?.[fact]),
+    ]),
+  ) as Record<ProgrammeSourceCheck, ProgrammeFieldEvidence>;
+  const supportBundle = Array.from(
+    new Set(programme.support.filter((support) => support !== 'none')),
+  ).map((support) => {
+    const existing = rawEvidence?.supportBundle.find(
+      (item) => item.support === support,
+    );
+
+    return {
+      support,
+      evidence: normalizeProgrammeFieldEvidence(existing?.evidence),
+    };
+  });
+
+  return {
+    ...programme,
+    programmeEvidence: {
+      materialFacts,
+      supportBundle,
+    },
+  };
+}
+
+function normalizeProgrammeFieldEvidence(
+  evidence: ProgrammeFieldEvidence | undefined,
+): ProgrammeFieldEvidence {
+  if (!evidence || !programmeEvidenceStates.includes(evidence.state)) {
+    return {
+      state: 'unknown',
+      verificationGuidance: 'Verify this information directly with the programme.',
+    };
+  }
+
+  return {
+    state: evidence.state,
+    sourceLabel: evidence.sourceLabel?.trim() || undefined,
+    sourceUrl: evidence.sourceUrl?.trim() || undefined,
+    lastVerifiedAt: evidence.lastVerifiedAt?.trim() || undefined,
+    verificationGuidance:
+      evidence.verificationGuidance?.trim() ||
+      'Verify this information directly with the programme.',
+  };
+}
+
+const programmeSourceChecks: ProgrammeSourceCheck[] = [
+  'tuition',
+  'credential',
+  'duration',
+  'delivery',
+  'support',
+  'next-steps',
+];
 
 export interface ProgrammeFilters {
   query?: string;

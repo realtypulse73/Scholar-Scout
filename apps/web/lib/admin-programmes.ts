@@ -5,6 +5,9 @@ import type {
 import {
   PROGRAMME_PATHWAY_LABELS,
   type Programme,
+  type ProgrammeEvidence,
+  type ProgrammeEvidenceState,
+  type ProgrammeFieldEvidence,
   type ProgrammePathway,
   type ProgrammeSourceCheck,
   type ProgrammeSourceConfidence,
@@ -449,6 +452,7 @@ export function prepareProgrammeDraft(draft: ProgrammeDraft) {
     sourceConfidence: draft.sourceConfidence ?? 'unverified',
     sourceNotes: draft.sourceNotes?.trim() ?? '',
     sourceChecks: normalizeSourceChecks(draft.sourceChecks ?? []),
+    programmeEvidence: prepareProgrammeEvidence(draft.programmeEvidence),
     lastVerifiedAt: draft.lastVerifiedAt?.trim() ?? '',
     reviewAssignee: draft.reviewAssignee?.trim() ?? '',
     reviewNotes: draft.reviewNotes?.trim() ?? '',
@@ -574,6 +578,8 @@ export function validateProgrammeDraft(draft: Partial<ProgrammeDraft>) {
     errors.push('Support services must use supported ScholarScout options.');
   }
 
+  errors.push(...validateProgrammeEvidence(draft.programmeEvidence, support));
+
   if (!Number.isFinite(draft.annualTuition) || Number(draft.annualTuition) < 0) {
     errors.push('Annual tuition must be zero or higher.');
   }
@@ -609,6 +615,107 @@ export function validateProgrammeDraft(draft: Partial<ProgrammeDraft>) {
   return errors;
 }
 
+function prepareProgrammeEvidence(
+  evidence: ProgrammeEvidence | undefined,
+): ProgrammeEvidence | undefined {
+  if (!evidence) {
+    return undefined;
+  }
+
+  const materialFacts = Object.fromEntries(
+    Object.entries(evidence.materialFacts ?? {}).map(([fact, value]) => [
+      fact,
+      prepareProgrammeFieldEvidence(value),
+    ]),
+  ) as ProgrammeEvidence['materialFacts'];
+  const supportBundle = (evidence.supportBundle ?? []).map((item) => ({
+    support: item.support,
+    evidence: prepareProgrammeFieldEvidence(item.evidence),
+  }));
+
+  return { materialFacts, supportBundle };
+}
+
+function prepareProgrammeFieldEvidence(
+  evidence: ProgrammeFieldEvidence,
+): ProgrammeFieldEvidence {
+  return {
+    state: evidence.state,
+    sourceLabel: evidence.sourceLabel?.trim() ?? '',
+    sourceUrl: evidence.sourceUrl?.trim() ?? '',
+    lastVerifiedAt: evidence.lastVerifiedAt?.trim() ?? '',
+    verificationGuidance: evidence.verificationGuidance?.trim() ?? '',
+  };
+}
+
+function validateProgrammeEvidence(
+  evidence: ProgrammeEvidence | undefined,
+  support: SupportNeed[],
+): string[] {
+  if (!evidence) {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const materialFacts = evidence.materialFacts ?? {};
+  const supportBundle = evidence.supportBundle ?? [];
+
+  for (const [fact, fieldEvidence] of Object.entries(materialFacts)) {
+    if (!sourceCheckOptions.includes(fact as ProgrammeSourceCheck)) {
+      errors.push('Material evidence must use supported ScholarScout facts.');
+      continue;
+    }
+    errors.push(...validateProgrammeFieldEvidence(fieldEvidence, 'material'));
+  }
+
+  const seenSupports = new Set<SupportNeed>();
+  for (const item of supportBundle) {
+    if (!item || !supportOptions.includes(item.support) || item.support === 'none') {
+      errors.push('Support evidence must use a supported ordinary support.');
+      continue;
+    }
+    if (!support.includes(item.support)) {
+      errors.push('Support evidence must match a support listed by the programme.');
+    }
+    if (seenSupports.has(item.support)) {
+      errors.push('Support evidence may list each support only once.');
+    }
+    seenSupports.add(item.support);
+    errors.push(...validateProgrammeFieldEvidence(item.evidence, 'support'));
+  }
+
+  return Array.from(new Set(errors));
+}
+
+function validateProgrammeFieldEvidence(
+  evidence: ProgrammeFieldEvidence | undefined,
+  kind: 'material' | 'support',
+): string[] {
+  const label = kind === 'support' ? 'support' : 'material fact';
+  if (!evidence || !programmeEvidenceStateOptions.includes(evidence.state)) {
+    return [`${label[0].toUpperCase()}${label.slice(1)} evidence needs a supported state.`];
+  }
+
+  if (evidence.state !== 'documented') {
+    return [];
+  }
+
+  const errors: string[] = [];
+  if (!evidence.sourceLabel?.trim()) {
+    errors.push(`Documented ${label} evidence needs a public source label.`);
+  }
+  if (!evidence.sourceUrl?.trim() || !isHttpUrl(evidence.sourceUrl)) {
+    errors.push(`Documented ${label} evidence needs a public source URL.`);
+  }
+  if (!evidence.verificationGuidance?.trim()) {
+    errors.push(`Documented ${label} evidence needs verification guidance.`);
+  }
+  if (evidence.lastVerifiedAt && !isIsoDate(evidence.lastVerifiedAt)) {
+    errors.push(`Documented ${label} evidence needs a valid verification date.`);
+  }
+  return errors;
+}
+
 function clampPercent(value: number) {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
@@ -633,6 +740,10 @@ function isHttpUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function isIsoDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function compareText(
@@ -803,6 +914,13 @@ export const sourceConfidenceOptions: ProgrammeSourceConfidence[] = [
   'unverified',
   'needs-review',
   'verified',
+];
+
+export const programmeEvidenceStateOptions: ProgrammeEvidenceState[] = [
+  'documented',
+  'unknown',
+  'stale',
+  'conflicting',
 ];
 
 export const sourceConfidenceLabels: Record<ProgrammeSourceConfidence, string> = {

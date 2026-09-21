@@ -1,7 +1,11 @@
 import 'server-only';
 
 import { getPublishedProgrammeRecords } from '@/lib/admin-programmes';
-import { programmes, type Programme } from '@/lib/programmes';
+import {
+  normalizeProgrammeForGovernance,
+  programmes,
+  type Programme,
+} from '@/lib/programmes';
 import {
   createAuditEvent,
   getProgrammeRecords,
@@ -111,5 +115,5 @@ export function mergeProgrammes(seedProgrammes: Programme[], records: Programme[
   return [
     ...records,
     ...seedProgrammes.filter((programme) => !recordIds.has(programme.id)),
-  ];
+  ].map(normalizeProgrammeForGovernance);
 }
