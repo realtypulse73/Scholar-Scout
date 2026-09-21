@@ -11,6 +11,7 @@ import { getSensitiveReferralFixture } from '@/lib/sensitive-referral-directory'
 export default function SensitiveReferralPanel() {
   const [category, setCategory] = useState<ReferralOnlySupportCategory | ''>('');
   const [hasConsented, setHasConsented] = useState(false);
+  const [hasDeclined, setHasDeclined] = useState(false);
   const fixture = category ? getSensitiveReferralFixture(category) : null;
 
   function selectCategory(value: string) {
@@ -19,7 +20,14 @@ export default function SensitiveReferralPanel() {
     ) {
       setCategory(value as ReferralOnlySupportCategory);
       setHasConsented(false);
+      setHasDeclined(false);
     }
+  }
+
+  function declineConsent() {
+    setCategory('');
+    setHasConsented(false);
+    setHasDeclined(true);
   }
 
   return (
@@ -56,11 +64,28 @@ export default function SensitiveReferralPanel() {
       <button
         type="button"
         disabled={!fixture}
-        onClick={() => setHasConsented(true)}
+        onClick={() => {
+          setHasConsented(true);
+          setHasDeclined(false);
+        }}
         className="mt-4 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         Show test-only contact information
       </button>
+      <button
+        type="button"
+        disabled={!fixture}
+        onClick={declineConsent}
+        className="ml-3 mt-4 rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      >
+        Decline and keep this local
+      </button>
+
+      {hasDeclined ? (
+        <p className="mt-4 text-sm text-slate-700" role="status">
+          No support information was opened.
+        </p>
+      ) : null}
 
       {hasConsented && fixture ? (
         <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-slate-800">

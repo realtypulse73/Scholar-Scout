@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import OpportunityMatchCard from '@/components/opportunities/OpportunityMatchCard';
+import SensitiveReferralPanel from '@/components/support/SensitiveReferralPanel';
 import { Badge, Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
@@ -29,6 +30,7 @@ export default function RecommendationDashboard({
   const [profile, setProfile] = useState<OnboardingData | null>(null);
   const [shortlistIds, setShortlistIds] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [isSensitiveReferralOpen, setIsSensitiveReferralOpen] = useState(false);
 
   useEffect(() => {
     function loadLocalRecommendationContext() {
@@ -183,6 +185,34 @@ export default function RecommendationDashboard({
         <MetricCard label="Evidence review" value="Included" />
         <MetricCard label="Items to verify" value={`${verificationCount}`} />
       </section>
+
+      <Card className="p-5" aria-labelledby="verification-support-heading">
+        <h2
+          id="verification-support-heading"
+          className="text-xl font-extrabold text-ink-900"
+        >
+          Verify options and find support
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-600">
+          Review each option&apos;s documented details before acting. If you need
+          confidential support, you can use a private, current-action option
+          that does not change your profile or recommendation order.
+        </p>
+        <button
+          type="button"
+          aria-controls="sensitive-referral-panel"
+          aria-expanded={isSensitiveReferralOpen}
+          className="mt-4 inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-white px-4 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          onClick={() => setIsSensitiveReferralOpen((open) => !open)}
+        >
+          Need confidential support?
+        </button>
+        {isSensitiveReferralOpen ? (
+          <div id="sensitive-referral-panel" className="mt-4">
+            <SensitiveReferralPanel />
+          </div>
+        ) : null}
+      </Card>
 
       {bestPathway ? (
         <section className="rounded-card border border-success-100 bg-white p-5 shadow-card">
