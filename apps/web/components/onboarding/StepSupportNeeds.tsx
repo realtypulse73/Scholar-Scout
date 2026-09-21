@@ -1,19 +1,25 @@
 'use client';
 
 import {
+  ORDINARY_SUPPORT_CATEGORIES,
   SUPPORT_NEED_LABELS,
-  type SupportNeed,
+  type OrdinarySupportCategory,
 } from '@/lib/onboarding-types';
 
+type OrdinarySupportSelection = OrdinarySupportCategory | 'none';
+
 interface Props {
-  value: SupportNeed[];
-  onChange: (value: SupportNeed[]) => void;
+  value: OrdinarySupportSelection[];
+  onChange: (value: OrdinarySupportSelection[]) => void;
 }
 
-const SUPPORT_NEEDS = Object.keys(SUPPORT_NEED_LABELS) as SupportNeed[];
+const SUPPORT_NEEDS: readonly OrdinarySupportSelection[] = [
+  ...ORDINARY_SUPPORT_CATEGORIES,
+  'none',
+];
 
 export default function StepSupportNeeds({ value, onChange }: Props) {
-  const toggle = (need: SupportNeed) => {
+  const toggle = (need: OrdinarySupportSelection) => {
     if (need === 'none') {
       // Selecting "none" clears all others
       if (value.includes('none')) {

@@ -1,13 +1,21 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import StepSupportNeeds from '@/components/onboarding/StepSupportNeeds';
-import { SUPPORT_NEED_LABELS } from '@/lib/onboarding-types';
+import {
+  ORDINARY_SUPPORT_CATEGORIES,
+  SUPPORT_NEED_LABELS,
+} from '@/lib/onboarding-types';
+
+const ORDINARY_SUPPORT_OPTIONS = [
+  ...ORDINARY_SUPPORT_CATEGORIES,
+  'none',
+] as const;
 
 describe('StepSupportNeeds', () => {
-  it('renders all support need options', () => {
+  it('renders ordinary support preference options', () => {
     render(<StepSupportNeeds value={[]} onChange={jest.fn()} />);
-    Object.values(SUPPORT_NEED_LABELS).forEach((label) => {
-      expect(screen.getByText(label)).toBeInTheDocument();
+    ORDINARY_SUPPORT_OPTIONS.forEach((support) => {
+      expect(screen.getByText(SUPPORT_NEED_LABELS[support])).toBeInTheDocument();
     });
   });
 

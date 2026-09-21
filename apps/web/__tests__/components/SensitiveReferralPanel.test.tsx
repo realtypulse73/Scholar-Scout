@@ -3,7 +3,12 @@ import SensitiveReferralPanel from '@/components/support/SensitiveReferralPanel'
 
 describe('SensitiveReferralPanel', () => {
   it('keeps a referral selection in component memory and reveals a test-only link only after consent', () => {
-    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    const originalFetch = globalThis.fetch;
+    const fetchMock = jest.fn();
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      value: fetchMock,
+    });
     const storageSpy = jest.spyOn(Storage.prototype, 'setItem');
     const historySpy = jest.spyOn(window.history, 'pushState');
 
@@ -22,7 +27,14 @@ describe('SensitiveReferralPanel', () => {
     expect(storageSpy).not.toHaveBeenCalled();
     expect(historySpy).not.toHaveBeenCalled();
 
-    fetchMock.mockRestore();
+    if (originalFetch) {
+      Object.defineProperty(globalThis, 'fetch', {
+        configurable: true,
+        value: originalFetch,
+      });
+    } else {
+      delete (globalThis as { fetch?: typeof globalThis.fetch }).fetch;
+    }
     storageSpy.mockRestore();
     historySpy.mockRestore();
   });

@@ -9,6 +9,8 @@ import {
   INITIAL_ONBOARDING_DATA,
   INTEREST_LABELS,
   LOCATION_LABELS,
+  normalizeOrdinarySupportPreferences,
+  ORDINARY_SUPPORT_CATEGORIES,
   PATHWAY_LABELS,
   SUPPORT_NEED_LABELS,
   TOTAL_STEPS,
@@ -17,8 +19,8 @@ import {
   type Interest,
   type LocationPreference,
   type OnboardingData,
+  type OrdinarySupportCategory,
   type PathwayPreference,
-  type SupportNeed,
 } from '@/lib/onboarding-types';
 import { validateStep } from '@/lib/onboarding-validation';
 import {
@@ -52,7 +54,7 @@ const interests = Object.keys(INTEREST_LABELS) as Interest[];
 const pathways = Object.keys(PATHWAY_LABELS) as PathwayPreference[];
 const gpaBands = Object.keys(GPA_BAND_LABELS) as GpaBand[];
 const locations = Object.keys(LOCATION_LABELS) as LocationPreference[];
-const supportNeeds = Object.keys(SUPPORT_NEED_LABELS) as SupportNeed[];
+const supportNeeds = [...ORDINARY_SUPPORT_CATEGORIES, 'none'] as const;
 const affordabilityValues = [1, 2, 3, 4, 5] as AffordabilitySensitivity[];
 
 export default function OnboardingWizard() {
@@ -78,7 +80,7 @@ export default function OnboardingWizard() {
         ...parsed,
         interests: Array.isArray(parsed.interests) ? parsed.interests : [],
         supportNeeds: Array.isArray(parsed.supportNeeds)
-          ? parsed.supportNeeds
+          ? normalizeOrdinarySupportPreferences(parsed.supportNeeds)
           : [],
         affordabilitySensitivity: isAffordabilitySensitivity(
           parsed.affordabilitySensitivity,
@@ -115,7 +117,7 @@ export default function OnboardingWizard() {
     );
   }
 
-  function toggleSupport(need: SupportNeed) {
+  function toggleSupport(need: OrdinarySupportCategory | 'none') {
     if (need === 'none') {
       updateData('supportNeeds', data.supportNeeds.includes('none') ? [] : ['none']);
       return;
@@ -404,7 +406,7 @@ function StepThree({
 }: {
   data: OnboardingData;
   onAffordability: (value: AffordabilitySensitivity) => void;
-  onSupport: (value: SupportNeed) => void;
+  onSupport: (value: OrdinarySupportCategory | 'none') => void;
 }) {
   return (
     <div className="space-y-6">
