@@ -6,14 +6,14 @@ current_phase: 07
 current_phase_name: Governed Opportunity and Support Matching
 status: executing
 stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-09-21T05:54:03.245Z"
-last_activity: 2026-09-20
-last_activity_desc: Phase 06 complete, transitioned to Phase 07
+last_updated: "2026-09-21T11:54:15.748Z"
+last_activity: 2026-09-21
+last_activity_desc: Completed Plan 07-01 governed programme evidence boundary
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 54
-  completed_plans: 51
+  completed_plans: 54
 ---
 
 # Project State
@@ -189,6 +189,7 @@ None yet.
 | 260727-tc7 | Create a standalone HTML training module for using GSD effectively | 2026-07-27 | b02cc1e | [260727-tc7-gsd-effective-training](./quick/260727-tc7-gsd-effective-training/) |
 | 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
 | 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
+| 9 | Repair governed dashboard pathway scoring | 2026-09-21 | d9cd1d0 | — |
 
 ## Deferred Items
 
