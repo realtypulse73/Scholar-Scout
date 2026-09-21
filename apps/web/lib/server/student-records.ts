@@ -1,6 +1,9 @@
 import 'server-only';
 
-import type { OnboardingData } from '@/lib/onboarding-types';
+import {
+  normalizeOrdinarySupportPreferences,
+  type OrdinaryOnboardingProfile,
+} from '@/lib/onboarding-types';
 import {
   createAuditEvent,
   PersistenceConflictError,
@@ -67,10 +70,13 @@ export async function findOrCreateOAuthStudentRecord(
 
 export async function replaceStudentOnboardingProfile(
   studentKey: string,
-  profile: OnboardingData,
+  profile: OrdinaryOnboardingProfile,
 ): Promise<void> {
   const snapshot = await readVersionedScholarScoutData();
-  snapshot.data.onboardingProfiles[studentKey] = profile;
+  snapshot.data.onboardingProfiles[studentKey] = {
+    ...profile,
+    supportNeeds: normalizeOrdinarySupportPreferences(profile.supportNeeds),
+  };
   snapshot.data.auditEvents.push(
     createAuditEvent(studentKey, 'save', 'onboarding', studentKey),
   );

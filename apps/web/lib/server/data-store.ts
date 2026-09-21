@@ -17,7 +17,10 @@ import { mkdir, open, readFile, rename, unlink } from 'fs/promises';
 import path from 'path';
 import { TextDecoder } from 'util';
 import { validateProgrammeDraft } from '@/lib/admin-programmes';
-import type { OnboardingData } from '@/lib/onboarding-types';
+import {
+  normalizeOrdinarySupportPreferences,
+  type OrdinaryOnboardingProfile,
+} from '@/lib/onboarding-types';
 import {
   validatePeerConnectionRequest,
   type CreatePeerConnectionRequest,
@@ -113,7 +116,7 @@ export interface PrivilegedOperationAuditEvent {
 
 export interface ScholarScoutData {
   users: StoredUser[];
-  onboardingProfiles: Record<string, OnboardingData>;
+  onboardingProfiles: Record<string, OrdinaryOnboardingProfile>;
   shortlists: Record<string, string[]>;
   shortlistPlans?: Record<string, ShortlistPlanMap>;
   programmeRecords: Programme[];
@@ -1271,7 +1274,7 @@ export async function getUserById(userId: string) {
 
 export async function saveOnboardingProfile(
   userId: string,
-  profile: OnboardingData,
+  profile: OrdinaryOnboardingProfile,
 ) {
   const { replaceStudentOnboardingProfile } = await import(
     '@/lib/server/student-records'
@@ -1660,7 +1663,10 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
 
   return {
     users: data.users as StoredUser[],
-    onboardingProfiles: data.onboardingProfiles as Record<string, OnboardingData>,
+    onboardingProfiles: data.onboardingProfiles as Record<
+      string,
+      OrdinaryOnboardingProfile
+    >,
     shortlists: data.shortlists as Record<string, string[]>,
     shortlistPlans: isRecord(data.shortlistPlans)
       ? (data.shortlistPlans as Record<string, ShortlistPlanMap>)
@@ -1704,6 +1710,7 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
   return {
     ...INITIAL_DATA,
     ...data,
+    onboardingProfiles: normalizeOnboardingProfiles(data.onboardingProfiles),
     campusNotes: Array.isArray(data.campusNotes)
       ? data.campusNotes.map((note) => isCampusNote(note)
         ? { ...note, status: note.status ?? 'public' }
@@ -1729,6 +1736,24 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
       ? data.recoveryPlanOutcomes.filter(isRecoveryPlanOutcome)
       : [],
   };
+}
+
+function normalizeOnboardingProfiles(
+  profiles: Record<string, OrdinaryOnboardingProfile>,
+): Record<string, OrdinaryOnboardingProfile> {
+  return Object.fromEntries(
+    Object.entries(profiles)
+      .filter(([, profile]) => isPlainObject(profile))
+      .map(([studentKey, profile]) => [
+        studentKey,
+        {
+          ...profile,
+          supportNeeds: normalizeOrdinarySupportPreferences(
+            Array.isArray(profile.supportNeeds) ? profile.supportNeeds : [],
+          ),
+        } as OrdinaryOnboardingProfile,
+      ]),
+  );
 }
 
 function isRecoveryLifecycleEvent(value: unknown): value is RecoveryLifecycleEvent {

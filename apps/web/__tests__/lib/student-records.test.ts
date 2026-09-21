@@ -6,7 +6,7 @@ import {
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
 import { createStudentAccountRecord } from '@/lib/server/student-records';
-import type { OnboardingData } from '@/lib/onboarding-types';
+import type { OrdinaryOnboardingProfile } from '@/lib/onboarding-types';
 
 const initialData: ScholarScoutData = {
   users: [],
@@ -52,7 +52,7 @@ function cloneData(data: ScholarScoutData) {
   return JSON.parse(JSON.stringify(data)) as ScholarScoutData;
 }
 
-const profile: OnboardingData = {
+const profile: OrdinaryOnboardingProfile = {
   gpaBand: '3.0-3.4',
   interests: ['technology'],
   locationPreference: 'in-state',
@@ -116,7 +116,7 @@ describe('bounded student records', () => {
 
     const older = saveOnboardingProfile('account:student-one', profile);
     await firstWriteStarted;
-    const newerProfile: OnboardingData = {
+    const newerProfile: OrdinaryOnboardingProfile = {
       ...profile,
       affordabilitySensitivity: 5,
     };
