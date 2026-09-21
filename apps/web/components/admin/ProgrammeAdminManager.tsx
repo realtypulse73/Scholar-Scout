@@ -5,10 +5,15 @@ import { Badge, Button, Card, Input } from '@/components/ui';
 import {
   INTEREST_LABELS,
   SUPPORT_NEED_LABELS,
+  type SupportNeed,
 } from '@/lib/onboarding-types';
 import {
   PROGRAMME_PATHWAY_LABELS,
   type Programme,
+  type ProgrammeEvidence,
+  type ProgrammeEvidenceState,
+  type ProgrammeFieldEvidence,
+  type ProgrammeSourceCheck,
 } from '@/lib/programmes';
 import {
   ADMIN_PROGRAMMES_STORAGE_KEY,
@@ -155,6 +160,20 @@ interface PlannedRecovery {
 }
 
 const RESTORE_CONFIRMATION = 'RESTORE SCHOLARSCOUT DATA';
+
+const programmeEvidenceStateOptions: ProgrammeEvidenceState[] = [
+  'documented',
+  'unknown',
+  'stale',
+  'conflicting',
+];
+
+const programmeEvidenceStateLabels: Record<ProgrammeEvidenceState, string> = {
+  documented: 'Documented',
+  unknown: 'Unknown',
+  stale: 'Stale',
+  conflicting: 'Conflicting',
+};
 
 export default function ProgrammeAdminManager({
   baseProgrammes,
@@ -789,7 +808,27 @@ export default function ProgrammeAdminManager({
             values={supportOptions}
             selected={currentDraft.support}
             getLabel={(value) => SUPPORT_NEED_LABELS[value]}
-            onChange={(support) => setCurrentDraft({ ...currentDraft, support })}
+            onChange={(support) =>
+              setCurrentDraft({
+                ...currentDraft,
+                support,
+                programmeEvidence: currentDraft.programmeEvidence
+                  ? {
+                    ...currentDraft.programmeEvidence,
+                    supportBundle: currentDraft.programmeEvidence.supportBundle.filter(
+                      (item) => support.includes(item.support),
+                    ),
+                  }
+                  : undefined,
+              })
+            }
+          />
+          <ProgrammeEvidenceEditor
+            evidence={currentDraft.programmeEvidence}
+            support={currentDraft.support}
+            onChange={(programmeEvidence) =>
+              setCurrentDraft({ ...currentDraft, programmeEvidence })
+            }
           />
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -1643,6 +1682,147 @@ function formatCountDelta(value: number) {
 
 function getRecoveryClaims(token: PlannedRecovery['planToken']) {
   return 'recoveryToken' in token ? token.recoveryToken.claims : token.claims;
+}
+
+function ProgrammeEvidenceEditor({
+  evidence,
+  support,
+  onChange,
+}: {
+  evidence: ProgrammeEvidence | undefined;
+  support: SupportNeed[];
+  onChange: (evidence: ProgrammeEvidence) => void;
+}) {
+  const materialFacts = evidence?.materialFacts ?? {};
+  const supportBundle = evidence?.supportBundle ?? [];
+  const ordinarySupport = support.filter(isOrdinarySupportNeed);
+
+  function updateMaterialFact(
+    fact: ProgrammeSourceCheck,
+    nextEvidence: ProgrammeFieldEvidence,
+  ) {
+    onChange({
+      materialFacts: { ...materialFacts, [fact]: nextEvidence },
+      supportBundle,
+    });
+  }
+
+  function updateSupport(
+    supportNeed: Exclude<SupportNeed, 'none'>,
+    nextEvidence: ProgrammeFieldEvidence,
+  ) {
+    const nextBundle = supportBundle.some((item) => item.support === supportNeed)
+      ? supportBundle.map((item) =>
+        item.support === supportNeed
+          ? { ...item, evidence: nextEvidence }
+          : item,
+      )
+      : [...supportBundle, { support: supportNeed, evidence: nextEvidence }];
+
+    onChange({ materialFacts, supportBundle: nextBundle });
+  }
+
+  return (
+    <fieldset className="space-y-4 rounded-card border border-ink-200 bg-ink-50 p-4">
+      <legend className="px-1 text-sm font-bold text-ink-800">Programme evidence</legend>
+      <p className="text-sm leading-6 text-ink-600">
+        Mark information as documented only when the public source and a clear
+        verification step are recorded. Unknown, stale, and conflicting facts stay visible for review.
+      </p>
+      <div className="space-y-4">
+        {sourceCheckOptions.map((fact) => (
+          <EvidenceFields
+            key={fact}
+            label={sourceCheckLabels[fact]}
+            evidence={materialFacts[fact] ?? createUnknownEvidence()}
+            onChange={(nextEvidence) => updateMaterialFact(fact, nextEvidence)}
+          />
+        ))}
+      </div>
+      <div className="border-t border-ink-200 pt-4">
+        <p className="text-sm font-bold text-ink-800">Support evidence</p>
+        <p className="mt-1 text-sm text-ink-600">
+          Support evidence appears for the support services selected above.
+        </p>
+        {ordinarySupport.length > 0 ? (
+          <div className="mt-4 space-y-4">
+            {ordinarySupport.map((supportNeed) => {
+              const existing = supportBundle.find(
+                (item) => item.support === supportNeed,
+              );
+              return (
+                <EvidenceFields
+                  key={supportNeed}
+                  label={SUPPORT_NEED_LABELS[supportNeed]}
+                  evidence={existing?.evidence ?? createUnknownEvidence()}
+                  onChange={(nextEvidence) => updateSupport(supportNeed, nextEvidence)}
+                />
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </fieldset>
+  );
+}
+
+function EvidenceFields({
+  label,
+  evidence,
+  onChange,
+}: {
+  label: string;
+  evidence: ProgrammeFieldEvidence;
+  onChange: (evidence: ProgrammeFieldEvidence) => void;
+}) {
+  return (
+    <div className="rounded-card border border-ink-200 bg-white p-3">
+      <p className="text-sm font-bold text-ink-800">{label}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <SelectField
+          label={`${label} evidence state`}
+          value={evidence.state}
+          options={programmeEvidenceStateOptions}
+          getLabel={(state) => programmeEvidenceStateLabels[state]}
+          onChange={(state) => onChange({ ...evidence, state })}
+        />
+        <TextField
+          label={`${label} source label`}
+          value={evidence.sourceLabel ?? ''}
+          onChange={(sourceLabel) => onChange({ ...evidence, sourceLabel })}
+        />
+        <TextField
+          label={`${label} source URL`}
+          value={evidence.sourceUrl ?? ''}
+          onChange={(sourceUrl) => onChange({ ...evidence, sourceUrl })}
+        />
+        <TextField
+          label={`${label} verification date`}
+          value={evidence.lastVerifiedAt ?? ''}
+          onChange={(lastVerifiedAt) => onChange({ ...evidence, lastVerifiedAt })}
+        />
+      </div>
+      <div className="mt-3">
+        <TextAreaField
+          label={`${label} verification guidance`}
+          value={evidence.verificationGuidance ?? ''}
+          onChange={(verificationGuidance) =>
+            onChange({ ...evidence, verificationGuidance })
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+function createUnknownEvidence(): ProgrammeFieldEvidence {
+  return { state: 'unknown', verificationGuidance: '' };
+}
+
+function isOrdinarySupportNeed(
+  support: SupportNeed,
+): support is Exclude<SupportNeed, 'none'> {
+  return support !== 'none';
 }
 
 function DataMetric({

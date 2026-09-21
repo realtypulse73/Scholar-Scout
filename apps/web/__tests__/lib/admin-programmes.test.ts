@@ -186,6 +186,26 @@ describe('admin programme helpers', () => {
     );
   });
 
+  it('keeps legacy programme facts and supports visible as unknown evidence', () => {
+    const governed = normalizeProgrammeForGovernance(programmes[0]);
+
+    expect(governed.programmeEvidence?.materialFacts.tuition).toEqual({
+      state: 'unknown',
+      verificationGuidance: 'Verify this information directly with the programme.',
+    });
+    expect(governed.programmeEvidence?.supportBundle).toEqual(
+      expect.arrayContaining([
+        {
+          support: programmes[0].support[0],
+          evidence: {
+            state: 'unknown',
+            verificationGuidance: 'Verify this information directly with the programme.',
+          },
+        },
+      ]),
+    );
+  });
+
   it('requires source metadata before governed records can publish', () => {
     const draft = prepareProgrammeDraft({
       ...createProgrammeDraft(),
