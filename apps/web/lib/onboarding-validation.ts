@@ -1,5 +1,8 @@
 import type { OnboardingData } from './onboarding-types';
-import { TOTAL_STEPS } from './onboarding-types';
+import {
+  isOrdinarySupportCategory,
+  TOTAL_STEPS,
+} from './onboarding-types';
 
 export type ValidationError = string;
 
@@ -31,8 +34,9 @@ export function validateStep(
       return null;
 
     case 3:
-      // Cost sensitivity always has a value and support needs are optional.
-      return null;
+      return hasOnlyOrdinarySupportPreferences(data)
+        ? null
+        : 'Only ordinary support preferences can be saved in your profile.';
 
     case 4:
       return validateAllRequired(data);
@@ -59,7 +63,19 @@ function validateAllRequired(data: OnboardingData): ValidationError | null {
     return 'Choose a location preference before finishing.';
   }
 
+  if (!hasOnlyOrdinarySupportPreferences(data)) {
+    return 'Only ordinary support preferences can be saved in your profile.';
+  }
+
   return null;
+}
+
+export function hasOnlyOrdinarySupportPreferences(
+  data: Pick<OnboardingData, 'supportNeeds'>,
+): boolean {
+  return data.supportNeeds.every(
+    (support) => support === 'none' || isOrdinarySupportCategory(support),
+  );
 }
 
 /**

@@ -1,16 +1,29 @@
 import { NextResponse } from 'next/server';
 import { isExactObject, parseJsonRequest } from '@/lib/api-request';
-import { validateAll } from '@/lib/onboarding-validation';
+import {
+  hasOnlyOrdinarySupportPreferences,
+  validateAll,
+} from '@/lib/onboarding-validation';
 import {
   getOnboardingProfile,
   PersistenceConflictError,
   saveOnboardingProfile,
 } from '@/lib/server/data-store';
 import { resolveStudentActor } from '@/lib/server/student-actor';
-import type { OnboardingData } from '@/lib/onboarding-types';
+import {
+  normalizeOrdinarySupportPreferences,
+  SUPPORT_NEEDS,
+  type AffordabilitySensitivity,
+  type GpaBand,
+  type Interest,
+  type LocationPreference,
+  type OnboardingData,
+  type OrdinaryOnboardingProfile,
+  type PathwayPreference,
+} from '@/lib/onboarding-types';
 
 const MAX_ONBOARDING_REQUEST_BYTES = 4 * 1024;
-const GPA_BANDS = new Set([
+const GPA_BANDS: Set<GpaBand> = new Set([
   'below-2.0',
   '2.0-2.4',
   '2.5-2.9',
@@ -18,7 +31,7 @@ const GPA_BANDS = new Set([
   '3.5-4.0',
   'no-gpa',
 ]);
-const INTERESTS = new Set([
+const INTERESTS: Set<Interest> = new Set([
   'stem',
   'arts',
   'business',
@@ -32,7 +45,7 @@ const INTERESTS = new Set([
   'environment',
   'undecided',
 ]);
-const LOCATION_PREFERENCES = new Set([
+const LOCATION_PREFERENCES: Set<LocationPreference> = new Set([
   'local',
   'in-state',
   'out-of-state',
@@ -40,7 +53,7 @@ const LOCATION_PREFERENCES = new Set([
   'online-only',
   'no-preference',
 ]);
-const PATHWAY_PREFERENCES = new Set([
+const PATHWAY_PREFERENCES: Set<PathwayPreference> = new Set([
   '4-year-university',
   '2-year-community-college',
   'trade-vocational',
@@ -49,18 +62,7 @@ const PATHWAY_PREFERENCES = new Set([
   'online-degree',
   'undecided',
 ]);
-const SUPPORT_NEEDS = new Set([
-  'financial-aid',
-  'first-gen',
-  'disability-services',
-  'mental-health',
-  'tutoring',
-  'career-counseling',
-  'housing',
-  'childcare',
-  'language-support',
-  'none',
-]);
+const SUPPORT_NEED_VALUES = new Set(SUPPORT_NEEDS);
 
 export async function GET() {
   const actor = await resolveActor();
@@ -129,7 +131,9 @@ async function resolveActor() {
   }
 }
 
-function validateOnboardingProfile(value: unknown): OnboardingData | null {
+function validateOnboardingProfile(
+  value: unknown,
+): OrdinaryOnboardingProfile | null {
   if (
     !isExactObject(value, [
       'gpaBand',
@@ -147,7 +151,11 @@ function validateOnboardingProfile(value: unknown): OnboardingData | null {
   const interests = readEnumList(value.interests, INTERESTS, INTERESTS.size);
   const locationPreference = readEnum(value.locationPreference, LOCATION_PREFERENCES);
   const pathwayPreference = readEnum(value.pathwayPreference, PATHWAY_PREFERENCES);
-  const supportNeeds = readEnumList(value.supportNeeds, SUPPORT_NEEDS, SUPPORT_NEEDS.size);
+  const supportNeeds = readEnumList(
+    value.supportNeeds,
+    SUPPORT_NEED_VALUES,
+    SUPPORT_NEED_VALUES.size,
+  );
   const affordabilitySensitivity = value.affordabilitySensitivity;
 
   if (
@@ -163,20 +171,27 @@ function validateOnboardingProfile(value: unknown): OnboardingData | null {
     return null;
   }
 
-  const profile = {
+  const profile: OnboardingData = {
     gpaBand,
     interests,
     locationPreference,
     pathwayPreference,
-    affordabilitySensitivity,
+    affordabilitySensitivity: affordabilitySensitivity as AffordabilitySensitivity,
     supportNeeds,
-  } as OnboardingData;
+  };
+
+  if (!hasOnlyOrdinarySupportPreferences(profile)) {
+    return null;
+  }
 
   if (validateAll(profile).length > 0) {
     return null;
   }
 
-  return profile;
+  return {
+    ...profile,
+    supportNeeds: normalizeOrdinarySupportPreferences(supportNeeds),
+  };
 }
 
 function readEnum<T extends string>(value: unknown, values: Set<T>): T | null {

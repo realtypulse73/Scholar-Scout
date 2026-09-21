@@ -670,7 +670,7 @@ function validateProgrammeEvidence(
 
   const seenSupports = new Set<SupportNeed>();
   for (const item of supportBundle) {
-    if (!item || !supportOptions.includes(item.support) || item.support === 'none') {
+    if (!item || !supportOptions.includes(item.support)) {
       errors.push('Support evidence must use a supported ordinary support.');
       continue;
     }

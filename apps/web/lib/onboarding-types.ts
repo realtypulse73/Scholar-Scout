@@ -51,7 +51,70 @@ export type SupportNeed =
   | 'housing'
   | 'childcare'
   | 'language-support'
+  | 'immigration'
+  | 'complex-financial-help'
   | 'none';
+
+export const ORDINARY_SUPPORT_CATEGORIES = [
+  'financial-aid',
+  'first-gen',
+  'tutoring',
+  'career-counseling',
+] as const;
+
+export type OrdinarySupportCategory =
+  (typeof ORDINARY_SUPPORT_CATEGORIES)[number];
+
+export const REFERRAL_ONLY_SUPPORT_CATEGORIES = [
+  'disability-services',
+  'housing',
+  'mental-health',
+  'immigration',
+  'complex-financial-help',
+  'childcare',
+  'language-support',
+] as const;
+
+export type ReferralOnlySupportCategory =
+  (typeof REFERRAL_ONLY_SUPPORT_CATEGORIES)[number];
+
+export const SUPPORT_NEEDS = [
+  ...ORDINARY_SUPPORT_CATEGORIES,
+  ...REFERRAL_ONLY_SUPPORT_CATEGORIES,
+  'none',
+] as const satisfies readonly SupportNeed[];
+
+export type OrdinaryOnboardingProfile = Omit<OnboardingData, 'supportNeeds'> & {
+  supportNeeds: OrdinarySupportCategory[];
+};
+
+export function isOrdinarySupportCategory(
+  value: unknown,
+): value is OrdinarySupportCategory {
+  return (ORDINARY_SUPPORT_CATEGORIES as readonly string[]).includes(
+    value as string,
+  );
+}
+
+export function isReferralOnlySupportCategory(
+  value: unknown,
+): value is ReferralOnlySupportCategory {
+  return (REFERRAL_ONLY_SUPPORT_CATEGORIES as readonly string[]).includes(
+    value as string,
+  );
+}
+
+/**
+ * Keeps only ordinary, student-editable support preferences for profile storage.
+ * A UI-only `none` selection and every referral-only value normalize to no value.
+ */
+export function normalizeOrdinarySupportPreferences(
+  values: readonly unknown[],
+): OrdinarySupportCategory[] {
+  return Array.from(
+    new Set(values.filter(isOrdinarySupportCategory)),
+  );
+}
 
 export interface OnboardingData {
   gpaBand: GpaBand | null;
@@ -134,5 +197,7 @@ export const SUPPORT_NEED_LABELS: Record<SupportNeed, string> = {
   housing: 'Housing Assistance',
   childcare: 'Childcare',
   'language-support': 'ESL / Language Support',
+  immigration: 'Immigration Support',
+  'complex-financial-help': 'Complex Financial Guidance',
   none: 'No specific needs',
 };
