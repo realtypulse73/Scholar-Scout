@@ -225,6 +225,7 @@ Plans:
 | 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
 | 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
 | 6. End-to-End Hardening and Release Readiness | 13/13 | Complete    | 2026-09-20 |
+| 7. Governed Opportunity and Support Matching | 4/4 | Complete | 2026-09-21 |
 
 ### Phase 7: Governed Opportunity and Support Matching
 
@@ -238,7 +239,7 @@ Plans:
   3. Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions.
   4. Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off.
 
-**Plans:** 4/4 executed; dashboard-pathway scoring repair pending verification
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
