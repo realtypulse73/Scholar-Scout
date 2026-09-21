@@ -86,4 +86,20 @@ describe('OnboardingWizard 4-step flow', () => {
 
     expect(screen.getAllByText(/step 1 of 4/i)).toHaveLength(2);
   });
+
+  it('keeps only ordinary support preferences in the editable support step', () => {
+    render(<OnboardingWizard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'STEM' }));
+    fireEvent.click(screen.getByRole('button', { name: '4-Year University' }));
+    clickNext();
+    fireEvent.click(screen.getByRole('button', { name: /3.0/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'In-State' }));
+    clickNext();
+
+    expect(screen.getByRole('button', { name: /Financial Aid/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Career Counseling/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Housing/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Disability Services/i })).not.toBeInTheDocument();
+  });
 });
