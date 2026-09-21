@@ -41,6 +41,22 @@ Record each result against the same immutable candidate commit:
 | Preview outage/restoration | | | | | | | |
 | Preview cleanup/recovery | | Generated Preview lanes only | | | | | |
 
+## Referral Destination Release Gate
+
+Phase 07 uses only test-only `.invalid` fixtures. Before a public referral
+destination is enabled, complete one per-destination record in
+[`07-PRELAUNCH-REFERRAL-RELEASE-GATE.md`](../.planning/phases/07-governed-opportunity-and-support-matching/07-PRELAUNCH-REFERRAL-RELEASE-GATE.md).
+Do not add a real destination to this evidence note until the gate is complete.
+
+| Destination label | Approved evidence identifier or link | Owner role | Review date | Gate result (pass/fail) |
+| --- | --- | --- | --- | --- |
+| | | | | |
+
+The complete gate record remains the source of truth for source, availability or
+jurisdiction, accessibility/contact-path review, consent-copy review, and human
+sign-off. Do not record student information, provider credentials, or copied
+support selections here.
+
 ## Results
 
 - Production env readiness:

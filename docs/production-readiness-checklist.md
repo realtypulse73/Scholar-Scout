@@ -138,13 +138,24 @@ The workflow at `.github/workflows/production-monitor.yml` runs every six hours 
 
 The workflow at `.github/workflows/production-readiness.yml` runs the production environment checker manually against repository or environment secrets and uploads a JSON readiness report artifact. The workflow at `.github/workflows/prelaunch-rehearsal.yml` runs the broader prelaunch rehearsal and uploads the full rehearsal folder.
 
-## 9. Node Runtime Lifecycle Checkpoint
+## 9. Complete The Referral Destination Release Gate
+
+Before enabling a public referral destination, complete the per-destination record in
+[`07-PRELAUNCH-REFERRAL-RELEASE-GATE.md`](../.planning/phases/07-governed-opportunity-and-support-matching/07-PRELAUNCH-REFERRAL-RELEASE-GATE.md).
+The record must identify the source, displayed label, accountable owner,
+availability or jurisdiction, review date, accessibility/contact-path review,
+consent-copy review, and human sign-off. Put only the approved evidence identifier
+or link, owner role, review date, and pass/fail result in the release evidence; do
+not record student information. Do not replace an `.invalid` fixture or enable a
+public referral destination until the record is complete.
+
+## 10. Node Runtime Lifecycle Checkpoint
 
 Node 24 LTS is the active runtime contract. The accepted
 [Node 24 LTS runtime-upgrade ADR](adr/0001-node-runtime-upgrade.md) records the
 release maintainer's validation responsibilities for future runtime upgrades.
 
-## 10. Rotation Checklist
+## 11. Rotation Checklist
 
 When rotating secrets:
 

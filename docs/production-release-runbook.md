@@ -89,6 +89,19 @@ The workflow needs only the two permanent runner capabilities plus its two stati
 
 For the one-time rehearsal-project configuration, follow [the rehearsal environment runbook](rehearsal-environment-runbook.md). Preview rehearsal evidence supplements—but never replaces—protected-main CI, the real production build log, post-deploy smoke, and incident evidence.
 
+### Referral Destination Release Gate
+
+Phase 07 referral links are test-only `.invalid` fixtures, not public destinations.
+Before replacing a fixture or enabling any public referral destination, complete one
+per-destination record in
+[`07-PRELAUNCH-REFERRAL-RELEASE-GATE.md`](../.planning/phases/07-governed-opportunity-and-support-matching/07-PRELAUNCH-REFERRAL-RELEASE-GATE.md).
+The release owner must confirm the source, displayed label, accountable owner,
+availability or jurisdiction, review date, accessibility/contact-path review,
+consent-copy review, and human sign-off. A missing, stale, or failed record blocks
+public referral enablement. Record only the approved evidence identifier or link,
+owner role, review date, and pass/fail result in the launch evidence; never include
+student information or a provider credential.
+
 ## 3. Deploy
 
 Deploy from the repository root with the Docker-free path:
@@ -161,6 +174,9 @@ Production releases reach Vercel only from a protected `main` merge. Before cons
 2. The Vercel production deployment/build-log URL.
 3. The **ScholarScout Post-deploy Smoke** workflow run triggered by the successful production deployment and its retained `production-smoke-report` artifact.
 4. If smoke fails, the created-or-updated maintainer incident issue, its run/artifact links, and the acknowledgement that [`production-incident-response.md`](production-incident-response.md) was reviewed.
+5. For each public referral destination, the completed
+   [`07-PRELAUNCH-REFERRAL-RELEASE-GATE.md`](../.planning/phases/07-governed-opportunity-and-support-matching/07-PRELAUNCH-REFERRAL-RELEASE-GATE.md)
+   review record and its approved evidence identifier or link.
 
 The post-deploy workflow runs only for successful production deployment events. A smoke failure alerts maintainers and preserves evidence; it never triggers an automatic rollback. Follow the human, data-safe rollback decision process in the incident runbook.
 
