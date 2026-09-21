@@ -73,7 +73,7 @@ describe('rankOpportunityMatches', () => {
     expect(matches[1].evidence.state).toBe('stale');
   });
 
-  it('does not use GPA, access, referral-only values, fixture metadata, or matchScore', () => {
+  it('does not use GPA, acceptance-rate, referral-only values, fixture metadata, or matchScore', () => {
     const first = programme('a', true);
     const second = programme('b', true);
     second.matchScore = 1;
@@ -83,7 +83,7 @@ describe('rankOpportunityMatches', () => {
     const firstResult = rankOpportunityMatches([first, second], profile);
     const changedProfile: OnboardingData = {
       ...profile,
-      gpaBand: '3.5-4.0',
+      gpaBand: 'below-2.0',
       supportNeeds: ['financial-aid', 'housing'],
     };
     const secondResult = rankOpportunityMatches([first, second], changedProfile);

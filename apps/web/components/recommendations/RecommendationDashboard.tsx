@@ -10,7 +10,6 @@ import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   parseOnboardingProfile,
 } from '@/lib/preference-matching';
-import { buildPathwayRecommendations } from '@/lib/pathway-recommendations';
 import {
   SHORTLIST_STORAGE_KEY,
   parseShortlist,
@@ -96,24 +95,10 @@ export default function RecommendationDashboard({
     () => (profile ? rankOpportunityMatches(programmes, profile) : []),
     [programmes, profile],
   );
-  const pathwayRecommendations = useMemo(
-    () =>
-      buildPathwayRecommendations(
-        governedMatches.slice(0, 5).map((match) => match.programme),
-        profile,
-      ),
-    [governedMatches, profile],
-  );
-  const topMatch = governedMatches[0];
-  const bestPathway = pathwayRecommendations[0];
-  const verificationCount = pathwayRecommendations.reduce(
-    (count, recommendation) =>
-      count +
-      recommendation.phases
-        .filter((phase) => phase.type === 'verify')
-        .flatMap((phase) => phase.actions).length,
-    0,
-  );
+  const verificationCount = governedMatches.filter(
+    (match) =>
+      match.cautions.length > 0 || match.evidence.state !== 'documented',
+  ).length;
 
   if (!loaded) {
     return (
@@ -138,9 +123,9 @@ export default function RecommendationDashboard({
           Complete onboarding to unlock recommendations
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          ScholarScout needs your interests, pathway preference, location,
-          affordability sensitivity, GPA band, and support needs before it can
-          produce a practical next-move dashboard.
+          ScholarScout uses your interests, pathway preference, location,
+          affordability sensitivity, and ordinary support preferences to show
+          options you can compare.
         </p>
         <Link
           href="/onboarding"
@@ -158,20 +143,14 @@ export default function RecommendationDashboard({
         <Badge tone="brand" className="mb-4">
           Governed recommendation dashboard
         </Badge>
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-          <div>
-            <h1 className="text-3xl font-extrabold text-ink-900">
-              Your best next move
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
-              These options use the preferences you chose and programme details
-              that are documented or clearly marked for verification.
-            </p>
-          </div>
-          {topMatch ? (
-            <OpportunityMatchCard match={topMatch} compact />
-          ) : null}
-        </div>
+        <h1 className="text-3xl font-extrabold text-ink-900">
+          Options to compare
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
+          These options reflect the ordinary preferences you selected and
+          programme details that are documented or clearly marked for
+          verification.
+        </p>
       </section>
 
       <section
@@ -183,7 +162,7 @@ export default function RecommendationDashboard({
         <MetricCard label="Shortlisted" value={`${shortlistIds.length}`} />
         <MetricCard label="Preference reasons" value="2–4" />
         <MetricCard label="Evidence review" value="Included" />
-        <MetricCard label="Items to verify" value={`${verificationCount}`} />
+        <MetricCard label="Options to verify" value={`${verificationCount}`} />
       </section>
 
       <Card className="p-5" aria-labelledby="verification-support-heading">
@@ -214,62 +193,20 @@ export default function RecommendationDashboard({
         ) : null}
       </Card>
 
-      {bestPathway ? (
-        <section className="rounded-card border border-success-100 bg-white p-5 shadow-card">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <Badge tone="success" className="mb-4">
-                Best pathway
-              </Badge>
-              <h2 className="text-2xl font-extrabold text-ink-900">
-                {bestPathway.headline}
-              </h2>
-              <p className="mt-2 text-sm font-semibold text-ink-600">
-                Priority: {bestPathway.priority} - Confidence:{' '}
-                {bestPathway.confidenceScore}%
-              </p>
-            </div>
-            <Link
-              href="/shortlist"
-              className="inline-flex min-h-10 items-center justify-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700"
-            >
-              Compare shortlist
-            </Link>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card className="p-5">
-          <h2 className="text-xl font-extrabold text-ink-900">
-            Ranked recommendations
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            These are ordered from your stated ordinary preferences and the
-            documented programme details available for review.
-          </p>
-          <div className="mt-5 space-y-3">
-            {governedMatches.slice(0, 5).map((match) => (
-              <OpportunityMatchCard key={match.programme.id} match={match} compact />
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <h2 className="text-xl font-extrabold text-ink-900">
-            Pathways side-by-side
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            Each pathway translates a programme into what the student should do
-            first, what it leads to, and what must be verified.
-          </p>
-          <div className="mt-5 space-y-3">
-            {governedMatches.slice(0, 4).map((match) => (
-              <OpportunityMatchCard key={match.programme.id} match={match} compact />
-            ))}
-          </div>
-        </Card>
-      </section>
+      <Card className="p-5">
+        <h2 className="text-xl font-extrabold text-ink-900">
+          Programme and pathway options
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-ink-600">
+          Each option explains the ordinary preferences and documented details
+          behind it, including what to verify before you act.
+        </p>
+        <div className="mt-5 space-y-3">
+          {governedMatches.map((match) => (
+            <OpportunityMatchCard key={match.programme.id} match={match} compact />
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

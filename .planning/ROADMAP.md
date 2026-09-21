@@ -238,7 +238,7 @@ Plans:
   3. Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions.
   4. Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off.
 
-**Plans:** 1/4 plans executed
+**Plans:** 4/4 executed; dashboard-pathway scoring repair pending verification
 
 Plans:
 **Wave 1**
@@ -247,12 +247,12 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md — Ordinary-profile boundary and fixture-only sensitive referral interaction
+- [x] 07-02-PLAN.md — Ordinary-profile boundary and fixture-only sensitive referral interaction
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 07-03-PLAN.md — Shared matching surfaces and governed card contract
+- [x] 07-03-PLAN.md — Shared matching surfaces and governed card contract
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 07-04-PLAN.md — Reachable sensitive-referral entry point, authoritative release-gate wiring, and final validation
+- [x] 07-04-PLAN.md — Reachable sensitive-referral entry point, authoritative release-gate wiring, and final validation
