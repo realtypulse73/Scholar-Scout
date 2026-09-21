@@ -81,7 +81,11 @@ describe('rankOpportunityMatches', () => {
     second.support = ['financial-aid', 'housing'];
 
     const firstResult = rankOpportunityMatches([first, second], profile);
-    const changedProfile = { ...profile, gpaBand: '4.0', supportNeeds: ['financial-aid', 'housing'] as never };
+    const changedProfile: OnboardingData = {
+      ...profile,
+      gpaBand: '3.5-4.0',
+      supportNeeds: ['financial-aid', 'housing'],
+    };
     const secondResult = rankOpportunityMatches([first, second], changedProfile);
 
     expect(secondResult).toEqual(firstResult);

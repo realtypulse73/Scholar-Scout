@@ -58,8 +58,9 @@ function createOpportunityMatch(
   let sortKey = 0;
   const selectedInterests =
     profile?.interests.filter((interest) => interest !== 'undecided') ?? [];
-  const matchingInterests = programme.interests.filter((interest) =>
-    selectedInterests.includes(interest),
+  const matchingInterests = programme.interests.filter(
+    (interest): interest is Exclude<typeof interest, 'undecided'> =>
+      interest !== 'undecided' && selectedInterests.includes(interest),
   );
 
   if (matchingInterests.length > 0) {
