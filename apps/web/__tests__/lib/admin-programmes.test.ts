@@ -23,7 +23,10 @@ import {
   upsertProgrammeDraft,
   validateProgrammeDraft,
 } from '@/lib/admin-programmes';
-import { programmes } from '@/lib/programmes';
+import {
+  normalizeProgrammeForGovernance,
+  programmes,
+} from '@/lib/programmes';
 
 describe('admin programme helpers', () => {
   it('creates stable slugs from school and programme names', () => {
@@ -91,6 +94,96 @@ describe('admin programme helpers', () => {
     });
 
     expect(validateProgrammeDraft(draft)).toEqual([]);
+  });
+
+  it('keeps documented material facts and ordinary supports attributable at the catalogue boundary', () => {
+    const draft = prepareProgrammeDraft({
+      ...createProgrammeDraft(),
+      name: 'Design Certificate',
+      school: 'Metro Arts',
+      city: 'Austin',
+      state: 'tx',
+      duration: '9 months',
+      credential: 'Certificate',
+      overview: 'A practical design certificate with portfolio support.',
+      interests: ['arts'],
+      support: ['career-counseling'],
+      highlights: ['Portfolio coaching'],
+      nextSteps: ['Compare portfolio requirements'],
+      programmeEvidence: {
+        materialFacts: {
+          tuition: {
+            state: 'documented',
+            sourceLabel: 'Metro Arts tuition page',
+            sourceUrl: 'https://example.edu/tuition',
+            verificationGuidance: 'Confirm this year\'s tuition directly with Metro Arts.',
+          },
+        },
+        supportBundle: [
+          {
+            support: 'career-counseling',
+            evidence: {
+              state: 'documented',
+              sourceLabel: 'Metro Arts student services',
+              sourceUrl: 'https://example.edu/student-services',
+              verificationGuidance: 'Confirm current advising availability with Metro Arts.',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(validateProgrammeDraft(draft)).toEqual([]);
+    expect(normalizeProgrammeForGovernance(draft).programmeEvidence).toMatchObject({
+      materialFacts: {
+        tuition: {
+          state: 'documented',
+          sourceLabel: 'Metro Arts tuition page',
+        },
+      },
+      supportBundle: [
+        {
+          support: 'career-counseling',
+          evidence: { state: 'documented' },
+        },
+      ],
+    });
+  });
+
+  it('rejects a documented support claim without attributable public evidence', () => {
+    const draft = prepareProgrammeDraft({
+      ...createProgrammeDraft(),
+      name: 'Design Certificate',
+      school: 'Metro Arts',
+      city: 'Austin',
+      state: 'tx',
+      duration: '9 months',
+      credential: 'Certificate',
+      overview: 'A practical design certificate with portfolio support.',
+      interests: ['arts'],
+      support: ['career-counseling'],
+      highlights: ['Portfolio coaching'],
+      nextSteps: ['Compare portfolio requirements'],
+      programmeEvidence: {
+        materialFacts: {},
+        supportBundle: [
+          {
+            support: 'career-counseling',
+            evidence: {
+              state: 'documented',
+              sourceLabel: 'Metro Arts student services',
+              verificationGuidance: 'Confirm current advising availability with Metro Arts.',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(validateProgrammeDraft(draft)).toEqual(
+      expect.arrayContaining([
+        'Documented support evidence needs a public source URL.',
+      ]),
+    );
   });
 
   it('requires source metadata before governed records can publish', () => {

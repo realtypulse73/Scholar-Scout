@@ -24,6 +24,41 @@ jest.mock('@/lib/server/programme-records', () => ({
 }));
 
 describe('admin programme CAS conflicts', () => {
+  it('rejects undocumented staff publication evidence before saving a record', async () => {
+    jest.mocked(requireActiveStaff).mockResolvedValue({
+      ok: true,
+      actor: { id: 'staff-1', email: 'staff@example.com' },
+    } as never);
+    const response = await POST(new Request('http://localhost/api/admin/programmes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...programmes[0],
+        programmeEvidence: {
+          materialFacts: {},
+          supportBundle: [
+            {
+              support: 'tutoring',
+              evidence: {
+                state: 'documented',
+                sourceLabel: 'Student services',
+                verificationGuidance: 'Confirm tutoring availability directly.',
+              },
+            },
+          ],
+        },
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      errors: expect.arrayContaining([
+        'Documented support evidence needs a public source URL.',
+      ]),
+    });
+    expect(saveProgrammeRecord).not.toHaveBeenCalled();
+  });
+
   it('keeps the authorized stale-write response safe and free of provider tokens', async () => {
     jest.mocked(requireActiveStaff).mockResolvedValue({
       ok: true,
