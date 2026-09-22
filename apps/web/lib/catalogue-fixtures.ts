@@ -9,14 +9,36 @@ import type {
 } from './catalogue-contract';
 
 const CHECKED_AT = '2026-09-22';
-const UNAVAILABLE_SOURCE_DATE: SourceDate = { state: 'unavailable', value: null };
+
+type DeepReadonly<Value> = Value extends (...arguments_: never[]) => unknown
+  ? Value
+  : Value extends readonly (infer Item)[]
+    ? readonly DeepReadonly<Item>[]
+    : Value extends object
+      ? { readonly [Key in keyof Value]: DeepReadonly<Value[Key]> }
+      : Value;
+
+function unavailableSourceDate(): SourceDate {
+  return { state: 'unavailable', value: null };
+}
+
+function deepFreeze<Value>(value: Value): DeepReadonly<Value> {
+  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
+    for (const nestedValue of Object.values(value)) {
+      deepFreeze(nestedValue);
+    }
+    Object.freeze(value);
+  }
+
+  return value as DeepReadonly<Value>;
+}
 
 /**
  * Frozen regional scope records. Local-focus coordinates are one-time normalized
  * civic reference points for ten-mile straight-line classification, not commute
  * estimates or provider-availability claims.
  */
-export const catalogueRegions: readonly CatalogueRegion[] = [
+export const catalogueRegions = deepFreeze<CatalogueRegion[]>([
   {
     id: 'greater-houston',
     label: 'Greater Houston',
@@ -26,7 +48,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'OMB July 2023 delineation',
       sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
       sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -37,7 +59,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'City of Houston contact record',
       sourceUrl: 'https://houstontx.gov/contactus/',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
@@ -50,7 +72,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'OMB July 2023 delineation',
       sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
       sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -61,7 +83,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'City of Chicago 311 record',
       sourceUrl: 'https://311.chicago.gov/',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
@@ -74,7 +96,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'OMB July 2023 delineation',
       sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
       sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -85,7 +107,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'City of Buffalo department directory',
       sourceUrl: 'https://www.buffalony.gov/m/directory/department?did=114',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
@@ -98,7 +120,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'OMB July 2023 delineation',
       sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
       sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -109,7 +131,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'City of Atlanta City Hall record',
       sourceUrl: 'https://www.atlantaga.gov/residents/city-hall',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
@@ -122,7 +144,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'OMB July 2023 delineation',
       sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
       sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -133,7 +155,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'City of New Orleans contact record',
       sourceUrl: 'https://nola.gov/contact-us/',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
@@ -146,7 +168,7 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       boundaryVersion: 'STATIN KMA communities and population',
       sourceLabel: 'Statistical Institute of Jamaica KMA record',
       sourceUrl: 'https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
     localFocus: {
@@ -157,21 +179,21 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
       radiusMiles: 10,
       sourceLabel: 'Kingston & St. Andrew Municipal Corporation contact record',
       sourceUrl: 'https://www.ksamc.gov.jm/contact-us',
-      sourceDate: UNAVAILABLE_SOURCE_DATE,
+      sourceDate: unavailableSourceDate(),
       checkedAt: CHECKED_AT,
     },
   },
-];
+]);
 
 /**
  * Every controlled local-coverage cell is explicitly present. Phase 9 records
  * no reviewed opportunity inventory, so each cell remains not-yet-verified.
  */
-export const catalogueCoverage: readonly CatalogueCoverage[] = CATALOGUE_REGION_IDS.flatMap((regionId) => (
+export const catalogueCoverage = deepFreeze<CatalogueCoverage[]>(CATALOGUE_REGION_IDS.flatMap((regionId) => (
   CATALOGUE_PATHWAYS.map((pathway) => ({
     regionId,
     pathway,
     state: 'not-yet-verified' as const,
     reviewedAt: CHECKED_AT,
   }))
-));
+)));
