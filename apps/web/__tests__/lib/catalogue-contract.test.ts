@@ -587,6 +587,88 @@ describe('review regression contracts', () => {
     );
   });
 
+  it.each([
+    {
+      state: 'not-yet-verified' as const,
+      invalidRegion: 'forged official boundary',
+      regionalError: 'Official boundary authority and ID must match the declared region.',
+      mutateRegion: (houston: CatalogueRegion): CatalogueRegion => ({
+        ...houston,
+        officialBoundary: {
+          ...houston.officialBoundary,
+          authority: 'statin-kingston-metropolitan-area',
+          boundaryId: null,
+        },
+      }),
+    },
+    {
+      state: 'verified' as const,
+      invalidRegion: 'forged official boundary',
+      regionalError: 'Official boundary authority and ID must match the declared region.',
+      mutateRegion: (houston: CatalogueRegion): CatalogueRegion => ({
+        ...houston,
+        officialBoundary: {
+          ...houston.officialBoundary,
+          authority: 'statin-kingston-metropolitan-area',
+          boundaryId: null,
+        },
+      }),
+    },
+    {
+      state: 'not-yet-verified' as const,
+      invalidRegion: 'malformed local-focus provenance',
+      regionalError: 'Local focus: Source URL must use http:// or https://.',
+      mutateRegion: (houston: CatalogueRegion): CatalogueRegion => ({
+        ...houston,
+        localFocus: {
+          ...houston.localFocus,
+          sourceUrl: 'not-a-source-url',
+        },
+      }),
+    },
+    {
+      state: 'verified' as const,
+      invalidRegion: 'malformed local-focus provenance',
+      regionalError: 'Local focus: Source URL must use http:// or https://.',
+      mutateRegion: (houston: CatalogueRegion): CatalogueRegion => ({
+        ...houston,
+        localFocus: {
+          ...houston.localFocus,
+          sourceUrl: 'not-a-source-url',
+        },
+      }),
+    },
+  ])('rejects $state coverage authorized by $invalidRegion', ({
+    state,
+    regionalError,
+    mutateRegion,
+  }) => {
+    const houston: CatalogueRegion = {
+      ...region,
+      id: 'greater-houston',
+      label: 'Greater Houston',
+      officialBoundary: {
+        ...region.officialBoundary,
+        authority: 'us-census-omb-cbsa',
+        boundaryId: '26420',
+      },
+    };
+    const completeCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
+      ...coverage,
+      regionId: houston.id,
+      pathway,
+      state,
+      ...(state === 'verified' ? { evidence: factEvidence } : {}),
+    })) as unknown as CatalogueCoverage[];
+
+    expect(validateCoverageMatrix([mutateRegion(houston)], completeCoverage, FACT_NOW)).toEqual(
+      expect.arrayContaining([
+        regionalError,
+        'Coverage region is not declared: greater-houston.',
+      ]),
+    );
+  });
+
   it('requires current attributable evidence and a direct action for verified coverage', () => {
     const verifiedCoverage = {
       ...coverage,
