@@ -31,17 +31,19 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-white text-ink-900">
-      <header className="border-b border-ink-200 bg-ink-50">
+    <main className="min-h-screen bg-ink-50 text-ink-900">
+      <header className="border-b border-border bg-white">
         <div className="mx-auto max-w-6xl px-5 py-6">
           <Link href="/feed" className="text-sm font-semibold text-brand-700">
             Back to feed
           </Link>
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-5 py-8">
-        <CreatorProfileView creator={creator} />
-      </div>
+      <section className="border-y border-border bg-white">
+        <div className="mx-auto max-w-6xl px-5 py-8">
+          <CreatorProfileView creator={creator} />
+        </div>
+      </section>
     </main>
   );
 }
