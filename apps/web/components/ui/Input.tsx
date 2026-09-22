@@ -14,10 +14,10 @@ export default function Input({
   return (
     <input
       className={classNames(
-        'min-h-touch w-full rounded-card border bg-white px-3 text-sm text-ink-900 shadow-sm transition-colors placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2',
+        'min-h-touch w-full rounded-card border bg-white px-3 text-sm text-ink-900 shadow-sm transition-colors placeholder:text-ink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2',
         isInvalid
           ? 'border-danger-600'
-          : 'border-ink-200 hover:border-brand-300',
+          : 'border-border hover:border-brand-300',
         className,
       )}
       {...props}

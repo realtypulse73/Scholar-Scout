@@ -8,7 +8,7 @@ export default function Card({
   return (
     <div
       className={classNames(
-        'rounded-card border border-ink-200 bg-white shadow-panel',
+        'rounded-card border border-border bg-white shadow-panel',
         className,
       )}
       {...props}
