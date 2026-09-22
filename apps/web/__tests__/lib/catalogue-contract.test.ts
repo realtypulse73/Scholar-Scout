@@ -1,5 +1,6 @@
 import {
   CATALOGUE_PATHWAYS,
+  getOpportunityCardVerificationStatus,
   CATALOGUE_REGION_IDS,
   EARTH_RADIUS_MILES,
   calculateGreatCircleMiles,
@@ -10,9 +11,11 @@ import {
   validateCoverageMatrix,
   validateEmployerTrainingFacts,
   validateFactEvidence,
+  validateCatalogueOpportunityCardFacts,
   validateOccupationAreaWageContext,
   validateSourceMetadata,
   type CatalogueCoverage,
+  type CatalogueOpportunityCardFacts,
   type CatalogueRegion,
   type EmployerTrainingFacts,
   type FactEvidence,
@@ -89,6 +92,16 @@ const wageContext: OccupationAreaWageContext = {
     },
   },
   informationalLabel: 'Occupation-and-area wage context only — not an offer or forecast.',
+};
+
+const cardFacts: CatalogueOpportunityCardFacts = {
+  location: { value: 'Greater Houston', evidence: factEvidence },
+  pathway: { value: 'employer-linked-training', evidence: factEvidence },
+  skillTaught: { value: 'Industrial maintenance', evidence: factEvidence },
+  trainingPayer: { value: 'Employer', evidence: factEvidence },
+  costOrTuition: { value: 'No tuition published', evidence: factEvidence },
+  duration: { value: '12 weeks', evidence: factEvidence },
+  delivery: { value: 'hybrid', evidence: factEvidence },
 };
 
 describe('catalogue contract', () => {
@@ -354,6 +367,82 @@ describe('employer training and wage context', () => {
       'placement',
       'forecast',
       'ranking',
+    ]));
+  });
+});
+
+describe('opportunity card facts', () => {
+  it('accepts a complete sourced first-view card and derives a current status', () => {
+    expect(validateCatalogueOpportunityCardFacts(cardFacts, FACT_NOW)).toEqual([]);
+    expect(getOpportunityCardVerificationStatus(cardFacts, FACT_NOW)).toBe('current');
+  });
+
+  it('keeps an explicit needs-confirmation cost visible and supports every controlled delivery value', () => {
+    const cardWithCaution = {
+      ...cardFacts,
+      costOrTuition: {
+        value: 'Confirm current tuition',
+        evidence: { ...factEvidence, status: 'needs-confirmation' as const },
+      },
+    };
+
+    expect(validateCatalogueOpportunityCardFacts(cardWithCaution, FACT_NOW)).toEqual([]);
+    expect(getOpportunityCardVerificationStatus(cardWithCaution, FACT_NOW)).toBe('needs-confirmation');
+    for (const delivery of ['in-person', 'online', 'hybrid'] as const) {
+      expect(validateCatalogueOpportunityCardFacts({
+        ...cardFacts,
+        delivery: { value: delivery, evidence: factEvidence },
+      }, FACT_NOW)).toEqual([]);
+    }
+  });
+
+  it('derives every public verification state solely from constituent card facts', () => {
+    expect(getOpportunityCardVerificationStatus({
+      ...cardFacts,
+      duration: { value: 'Confirm duration', evidence: { ...factEvidence, status: 'needs-confirmation' } },
+    }, FACT_NOW)).toBe('needs-confirmation');
+    expect(getOpportunityCardVerificationStatus({
+      ...cardFacts,
+      duration: {
+        value: null,
+        state: 'unknown',
+        evidence: {
+          ...factEvidence,
+          status: 'unknown',
+          sourceDate: { state: 'unavailable', value: null },
+        },
+      },
+    }, FACT_NOW)).toBe('unknown');
+    expect(getOpportunityCardVerificationStatus({
+      ...cardFacts,
+      duration: { value: 'Duration sources conflict', evidence: { ...factEvidence, status: 'conflicting' } },
+    }, FACT_NOW)).toBe('conflicting');
+  });
+
+  it('rejects missing, bare, malformed, unsupported, and unresolved-without-action card facts', () => {
+    const missingLocation = { ...cardFacts } as Partial<CatalogueOpportunityCardFacts>;
+    delete missingLocation.location;
+
+    expect(validateCatalogueOpportunityCardFacts(missingLocation, FACT_NOW)).toContain(
+      'Location card fact is required.',
+    );
+    expect(validateCatalogueOpportunityCardFacts({
+      ...cardFacts,
+      location: 'Greater Houston',
+      pathway: { value: 'unapproved-pathway', evidence: factEvidence },
+      delivery: { value: 'mail', evidence: factEvidence },
+      skillTaught: { value: 'Industrial maintenance', evidence: { ...factEvidence, sourceDate: undefined } },
+      duration: {
+        value: null,
+        state: 'unknown',
+        evidence: { ...factEvidence, status: 'unknown', verificationAction: '' },
+      },
+    } as unknown as CatalogueOpportunityCardFacts, FACT_NOW)).toEqual(expect.arrayContaining([
+      'Location must be a sourced or explicitly unresolved card fact.',
+      'Pathway value is unsupported.',
+      'Delivery value is unsupported.',
+      'Skill taught: Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
+      'Duration: Fact verification action is required.',
     ]));
   });
 });
