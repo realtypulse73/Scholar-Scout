@@ -21,6 +21,8 @@ Open `index.html`. Select a variant, use **Next story**, save a pathway, toggle 
 ## Important content rules
 
 - The images are original AI-generated mockup art, not actual institutions, companies, learners, or training sites.
+- Scholar Scout's own home and journey screens use these transition stories. A chosen school's or provider's page switches to its verified offerings, approved campus media, videos, source links, dates, and student actions.
+- Before scenes show regular daily life and open possibility. They do not default to a book bag, school materials, adviser conversation, or an assumption that the person has already found a path.
 - The named Microsoft Datacenter Academy example is a real public program type, but a production card must verify local availability and review date before publishing.
 - The welding wage is shown as an illustrative, dated national BLS occupation statistic—not as a salary guarantee from a school, training company, or employer.
 - Do not portray people receiving re-entry support as deficient, criminalized, or obligated to choose a particular path.

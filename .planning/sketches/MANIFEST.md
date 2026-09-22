@@ -4,6 +4,8 @@
 
 Scholar Scout should feel vivid, hopeful, and human: an immersive discovery feed paired with transparent decision help. It shows transformation without promising an outcome—someone's current work or life context on one side, and a college, remote, trade, employer-linked, or community-based learning setting on the other.
 
+Scholar Scout-owned home and journey pages tell that transition-and-new-beginnings story. A selected provider or school page has a different job: it presents only that provider's verified offerings, approved campus media, source links, dates, and student actions.
+
 ## Reference Points
 
 TikTok's immediate visual interest, Realtor.com's readable compare-and-save decision structure, and student-controlled motion.
