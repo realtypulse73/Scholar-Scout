@@ -70,6 +70,36 @@ export interface SourcedFact<Value> {
   evidence: FactEvidence;
 }
 
+export type EmploymentCommitmentState =
+  | 'no-published-guarantee'
+  | 'published-provider-statement'
+  | 'unknown';
+
+/**
+ * Factual employer-paid training disclosures. This shape is intentionally
+ * limited to the controlled employer-linked pathway and does not infer a job
+ * or salary outcome from training-pay evidence.
+ */
+export interface EmployerTrainingFacts {
+  pathway: 'employer-linked-training';
+  taughtSkill: SourcedFact<string>;
+  trainingPayer: 'employer';
+  traineePay: SourcedFact<string>;
+  employmentCommitment: EmploymentCommitmentState;
+  employmentCommitmentEvidence: FactEvidence;
+}
+
+export const WAGE_CONTEXT_INFORMATIONAL_LABEL =
+  'Occupation-and-area wage context only — not an offer or forecast.';
+
+/** Dated public wage context, separate from a provider offer or learner outcome. */
+export interface OccupationAreaWageContext {
+  occupation: string;
+  area: string;
+  wage: SourcedFact<string>;
+  informationalLabel: typeof WAGE_CONTEXT_INFORMATIONAL_LABEL;
+}
+
 export interface OfficialBoundary extends SourceMetadata {
   authority: BoundaryAuthority;
   boundaryId: string | null;
@@ -206,6 +236,64 @@ export function validateFactEvidence(evidence: FactEvidence, now: Date): string[
         errors.push('Current facts require source evidence within the operational freshness window.');
       }
     }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates employer-paid training disclosures without turning a trainee-pay
+ * fact into a promise of employment or future compensation.
+ */
+export function validateEmployerTrainingFacts(
+  facts: EmployerTrainingFacts,
+  now: Date,
+): string[] {
+  const errors: string[] = [];
+
+  if (facts?.pathway !== 'employer-linked-training') {
+    errors.push('Employer training facts require the employer-linked-training pathway.');
+  }
+  if (facts?.trainingPayer !== 'employer') {
+    errors.push('Employer training facts require employer as the training payer.');
+  }
+  errors.push(...validateSourcedTextFact('Taught skill', facts?.taughtSkill, now));
+  errors.push(...validateSourcedTextFact('Trainee pay', facts?.traineePay, now));
+
+  if (!isEmploymentCommitmentState(facts?.employmentCommitment)) {
+    errors.push('Employment commitment state is unsupported.');
+  }
+  if (!facts?.employmentCommitmentEvidence) {
+    errors.push('Employment commitment evidence is required.');
+  } else {
+    errors.push(...prefixErrors(
+      'Employment commitment',
+      validateFactEvidence(facts.employmentCommitmentEvidence, now),
+    ));
+  }
+
+  return errors;
+}
+
+/**
+ * Validates independent occupation-and-area wage context. Its fixed label
+ * prevents consumers from treating it as an individual offer or forecast.
+ */
+export function validateOccupationAreaWageContext(
+  context: OccupationAreaWageContext,
+  now: Date,
+): string[] {
+  const errors: string[] = [];
+
+  if (!context?.occupation?.trim()) {
+    errors.push('Wage context occupation is required.');
+  }
+  if (!context?.area?.trim()) {
+    errors.push('Wage context area is required.');
+  }
+  errors.push(...validateSourcedTextFact('Wage context', context?.wage, now));
+  if (context?.informationalLabel !== WAGE_CONTEXT_INFORMATIONAL_LABEL) {
+    errors.push('Wage context must use the informational-only label.');
   }
 
   return errors;
@@ -386,6 +474,31 @@ function isFactAuthority(value: unknown): value is FactAuthority {
     || value === 'employer-official'
     || value === 'government-official'
     || value === 'workforce-authority';
+}
+
+function isEmploymentCommitmentState(value: unknown): value is EmploymentCommitmentState {
+  return value === 'no-published-guarantee'
+    || value === 'published-provider-statement'
+    || value === 'unknown';
+}
+
+function validateSourcedTextFact(
+  label: string,
+  fact: SourcedFact<string> | undefined,
+  now: Date,
+): string[] {
+  const errors: string[] = [];
+
+  if (!fact?.value?.trim()) {
+    errors.push(`${label} value is required.`);
+  }
+  if (!fact?.evidence) {
+    errors.push(`${label} evidence is required.`);
+  } else {
+    errors.push(...prefixErrors(label, validateFactEvidence(fact.evidence, now)));
+  }
+
+  return errors;
 }
 
 function isIsoCalendarDate(value: unknown): value is string {
