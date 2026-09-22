@@ -47,7 +47,7 @@ export default function ShortlistCountLink() {
   return (
     <Link
       href="/shortlist"
-      className="text-sm font-semibold text-ink-600 hover:text-brand-700"
+      className="inline-flex min-h-touch items-center text-sm font-semibold text-ink-600 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       Shortlist{count > 0 ? ` (${count})` : ''}
     </Link>

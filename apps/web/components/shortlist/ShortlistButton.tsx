@@ -67,7 +67,11 @@ export default function ShortlistButton({
       onClick={handleToggle}
       className={
         className ??
-        'inline-flex min-h-10 items-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2'
+        `inline-flex min-h-touch items-center rounded-control border px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+          saved
+            ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+            : 'border-border bg-white text-ink-700 hover:border-brand-400 hover:text-brand-700'
+        }`
       }
     >
       {saved ? 'Saved to shortlist' : 'Save to shortlist'}

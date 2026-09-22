@@ -135,7 +135,7 @@ export default function ShortlistComparison({
         </p>
         <Link
           href="/programmes"
-          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-control border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         >
           Browse programmes
         </Link>
@@ -145,7 +145,7 @@ export default function ShortlistComparison({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-card border border-ink-200 bg-white p-5">
+      <div className="rounded-card border border-border bg-white p-5">
         <Badge tone="brand" className="mb-4">
           Shortlist
         </Badge>
@@ -161,7 +161,7 @@ export default function ShortlistComparison({
           </div>
           <Link
             href="/programmes"
-            className="inline-flex min-h-10 items-center justify-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700"
+            className="inline-flex min-h-touch items-center justify-center rounded-control border border-border bg-white px-4 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             Add more
           </Link>
@@ -197,7 +197,7 @@ export default function ShortlistComparison({
             return (
               <article
                 key={summary.programme.id}
-                className="rounded-card border border-brand-100 bg-white p-4 shadow-card"
+                className="rounded-card border border-border bg-white p-4 shadow-card"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -215,7 +215,7 @@ export default function ShortlistComparison({
                   {summary.signals.map((signal) => (
                     <div
                       key={signal.label}
-                      className="rounded border border-ink-100 bg-ink-50 p-2"
+                      className="rounded-control border border-border bg-silver p-2"
                     >
                       <dt className="text-[11px] font-bold uppercase text-ink-500">
                         {signal.label}
@@ -239,7 +239,7 @@ export default function ShortlistComparison({
                   </p>
                 )}
 
-                <div className="mt-4 rounded border border-ink-100 bg-white p-3">
+                <div className="mt-4 rounded-control border border-border bg-white p-3">
                   <p className="text-[11px] font-bold uppercase text-ink-500">
                     Next action
                   </p>
@@ -248,7 +248,7 @@ export default function ShortlistComparison({
                   </p>
                 </div>
 
-                <div className="mt-4 space-y-3 rounded border border-ink-100 bg-ink-50 p-3">
+                <div className="mt-4 space-y-3 rounded-control border border-border bg-silver p-3">
                   <label className="block text-[11px] font-bold uppercase text-ink-500">
                     Planning status
                     <select
@@ -258,7 +258,7 @@ export default function ShortlistComparison({
                           status: event.target.value as ShortlistPlanStatus,
                         })
                       }
-                      className="mt-1 block min-h-10 w-full rounded border border-ink-300 bg-white px-3 text-sm font-semibold text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                      className="mt-1 block min-h-touch w-full rounded-control border border-border bg-white px-3 text-sm font-semibold text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     >
                       {Object.entries(SHORTLIST_PLAN_STATUS_LABELS).map(
                         ([status, label]) => (
@@ -282,7 +282,7 @@ export default function ShortlistComparison({
                       rows={3}
                       maxLength={500}
                       placeholder="What do you still need to ask, compare, or confirm?"
-                      className="mt-1 block w-full rounded border border-ink-300 bg-white px-3 py-2 text-sm font-medium leading-6 text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                      className="mt-1 block min-h-touch w-full rounded-control border border-border bg-white px-3 py-2 text-sm font-medium leading-6 text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     />
                   </label>
                 </div>
@@ -292,9 +292,9 @@ export default function ShortlistComparison({
         </div>
       </section>
 
-      <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
+      <div className="overflow-x-auto rounded-card border border-border bg-white">
         <table className="min-w-[860px] w-full border-collapse text-left text-sm">
-          <thead className="bg-ink-50 text-xs uppercase text-ink-500">
+          <thead className="bg-silver text-xs uppercase text-ink-500">
             <tr>
               <th className="px-4 py-3">Programme</th>
               <th className="px-4 py-3">Tuition</th>
@@ -307,11 +307,11 @@ export default function ShortlistComparison({
           </thead>
           <tbody>
             {shortlisted.map((programme) => (
-              <tr key={programme.id} className="border-t border-ink-200">
+              <tr key={programme.id} className="border-t border-border">
                 <td className="px-4 py-4">
                   <Link
                     href={`/programmes/${programme.id}`}
-                    className="font-extrabold text-ink-900 hover:text-brand-700"
+                    className="font-semibold text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
                     {programme.name}
                   </Link>
@@ -336,7 +336,7 @@ export default function ShortlistComparison({
                   <button
                     type="button"
                     onClick={() => removeProgramme(programme.id)}
-                    className="inline-flex min-h-10 items-center rounded-card border border-ink-300 bg-white px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-danger-600 hover:text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    className="inline-flex min-h-touch items-center rounded-control border border-border bg-white px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-danger-600 hover:text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                   >
                     Remove
                   </button>
