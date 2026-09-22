@@ -549,12 +549,19 @@ export function validateCoverageMatrix(
     errors.push('At least one catalogue coverage row is required.');
   }
 
-  const validRegions = regionList.filter((region): region is CatalogueRegion => {
-    if (isRecord(region)) return true;
+  const validRegions: CatalogueRegion[] = [];
+  for (const candidate of regionList) {
+    if (!isRecord(candidate)) {
+      errors.push('Catalogue region must be an object.');
+      continue;
+    }
 
-    errors.push('Catalogue region must be an object.');
-    return false;
-  });
+    const regionErrors = validateCatalogueRegion(candidate);
+    errors.push(...regionErrors);
+    if (regionErrors.length === 0) {
+      validRegions.push(candidate as unknown as CatalogueRegion);
+    }
+  }
   const regionIds = new Set<CatalogueRegionId>();
   for (const regionId of CATALOGUE_REGION_IDS) {
     const count = validRegions.filter((region) => region.id === regionId).length;
