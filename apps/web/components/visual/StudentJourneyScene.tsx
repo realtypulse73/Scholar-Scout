@@ -15,7 +15,10 @@ export default function StudentJourneyScene({
       )}
       {...props}
     >
-      <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden">
+      <div
+        data-scene-decorations
+        className="absolute inset-y-0 right-0 w-1/2 overflow-hidden"
+      >
         <div
           aria-hidden="true"
           data-student-decoration
