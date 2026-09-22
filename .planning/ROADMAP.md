@@ -260,7 +260,7 @@ Plans:
 
 ### Phase 07.1: Futuristic Student Journey Visual System (INSERTED)
 
-**Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, and accessible CSS-only student-side scene motion without dark page backgrounds.
+**Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, accessible CSS-only student-side scene motion, and a code-native accessible Scholar Scout brand mark without dark page backgrounds.
 **Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08]
 **Depends on:** Phase 7
 **Plans:** 14 plans
