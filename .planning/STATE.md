@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 Phase: 09 — Catalogue Foundations and Source Contracts
 Plan: —
 Status: Ready to plan
-Last activity: 2026-09-22 — v1.1 seven-phase roadmap created
+Last activity: 2026-09-22 — Added Greater Kingston, Jamaica as the sixth v1.1 regional area
 
 ## Performance Metrics
 
@@ -204,6 +204,7 @@ None yet.
 | 260811-q1h | Create the Phase 2 API coverage matrix required by the verification gate. | 2026-08-11 | 39a1021 | [260811-q1h-create-the-phase-2-api-coverage-matrix-r](./quick/260811-q1h-create-the-phase-2-api-coverage-matrix-r/) |
 | 260828-o24 | Add a clear unavailable Continue with Apple option beside Google sign-in, with tests | 2026-08-28 | 4908d03 | [260828-o24-add-a-clear-unavailable-continue-with-ap](./quick/260828-o24-add-a-clear-unavailable-continue-with-ap/) |
 | 9 | Repair governed dashboard pathway scoring | 2026-09-21 | d9cd1d0 | — |
+| 260922-6jm | Add Greater Kingston, Jamaica to the v1.1 Regional Opportunity Navigator scope, research plan, requirements, and roadmap. | 2026-09-22 | 5e389ad | [260922-6jm-add-greater-kingston-jamaica-to-the-v1-1](./quick/260922-6jm-add-greater-kingston-jamaica-to-the-v1-1/) |
 
 ## Deferred Items
 
