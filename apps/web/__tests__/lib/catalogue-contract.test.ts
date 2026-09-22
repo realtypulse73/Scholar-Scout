@@ -776,4 +776,39 @@ describe('review regression contracts', () => {
 
     expect(validateCoverageMatrix([region], completeCoverage, FACT_NOW)).toEqual([]);
   });
+
+  it.each([
+    {
+      state: 'not-yet-verified' as const,
+    },
+    {
+      state: 'verified' as const,
+      evidence: factEvidence,
+    },
+  ])('rejects a controlled undeclared coverage region in the $state state', (extraCoverage) => {
+    const completeKingstonCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
+      ...coverage,
+      pathway,
+    }));
+
+    expect(validateCoverageMatrix([region], [
+      ...completeKingstonCoverage,
+      {
+        ...coverage,
+        ...extraCoverage,
+        regionId: 'greater-houston',
+      },
+    ] as unknown as CatalogueCoverage[], FACT_NOW)).toContain(
+      'Coverage region is not declared: greater-houston.',
+    );
+  });
+
+  it('rejects a checked date before a documented source date while preserving unavailable source dates', () => {
+    expect(validateSourceMetadata({
+      ...region.officialBoundary,
+      sourceDate: { state: 'documented', value: '2026-09-22' },
+      checkedAt: '2026-09-21',
+    })).toEqual(['Checked date cannot precede the documented source date.']);
+    expect(validateSourceMetadata(region.officialBoundary)).toEqual([]);
+  });
 });
