@@ -8,11 +8,15 @@ import {
   isWithinLocalFocus,
   validateCatalogueRegion,
   validateCoverageMatrix,
+  validateEmployerTrainingFacts,
   validateFactEvidence,
+  validateOccupationAreaWageContext,
   validateSourceMetadata,
   type CatalogueCoverage,
   type CatalogueRegion,
+  type EmployerTrainingFacts,
   type FactEvidence,
+  type OccupationAreaWageContext,
 } from '@/lib/catalogue-contract';
 
 const region: CatalogueRegion = {
@@ -58,6 +62,34 @@ const factEvidence: FactEvidence = {
 };
 
 const FACT_NOW = new Date('2026-09-22T00:00:00.000Z');
+
+const employerTrainingFacts: EmployerTrainingFacts = {
+  pathway: 'employer-linked-training',
+  taughtSkill: {
+    value: 'Industrial maintenance',
+    evidence: factEvidence,
+  },
+  trainingPayer: 'employer',
+  traineePay: {
+    value: '$18 per hour during training',
+    evidence: factEvidence,
+  },
+  employmentCommitment: 'no-published-guarantee',
+  employmentCommitmentEvidence: factEvidence,
+};
+
+const wageContext: OccupationAreaWageContext = {
+  occupation: 'Industrial maintenance technician',
+  area: 'Greater Houston',
+  wage: {
+    value: '$24.00 hourly median wage',
+    evidence: {
+      ...factEvidence,
+      authority: 'workforce-authority',
+    },
+  },
+  informationalLabel: 'Occupation-and-area wage context only — not an offer or forecast.',
+};
 
 describe('catalogue contract', () => {
   it('proves one source-dated region-to-coverage path without treating an unavailable boundary date as current', () => {
@@ -258,5 +290,70 @@ describe('field-level fact evidence', () => {
       ...atThreshold,
       sourceDate: { state: 'documented', value: '2026-09-23' },
     }, 'operational', now)).toBe('unknown');
+  });
+});
+
+describe('employer training and wage context', () => {
+  it('keeps taught skill, trainee pay, and no-guarantee evidence structurally separate', () => {
+    expect(validateEmployerTrainingFacts(employerTrainingFacts, FACT_NOW)).toEqual([]);
+    expect(employerTrainingFacts.employmentCommitment).toBe('no-published-guarantee');
+    expect(validateEmployerTrainingFacts({
+      ...employerTrainingFacts,
+      employmentCommitment: 'unknown',
+      employmentCommitmentEvidence: {
+        ...factEvidence,
+        status: 'unknown',
+        sourceDate: { state: 'unavailable', value: null },
+      },
+    }, FACT_NOW)).toEqual([]);
+  });
+
+  it('rejects an unsupported pathway, payer, missing material evidence, and incomplete commitment evidence', () => {
+    expect(validateEmployerTrainingFacts({
+      ...employerTrainingFacts,
+      pathway: 'registered-apprenticeship' as EmployerTrainingFacts['pathway'],
+      trainingPayer: 'student' as EmployerTrainingFacts['trainingPayer'],
+      taughtSkill: { value: '', evidence: factEvidence },
+      traineePay: { value: '', evidence: factEvidence },
+      employmentCommitmentEvidence: {
+        ...factEvidence,
+        sourceDate: undefined as unknown as FactEvidence['sourceDate'],
+      },
+    }, FACT_NOW)).toEqual(expect.arrayContaining([
+      'Employer training facts require the employer-linked-training pathway.',
+      'Employer training facts require employer as the training payer.',
+      'Taught skill value is required.',
+      'Trainee pay value is required.',
+      'Employment commitment: Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
+    ]));
+  });
+
+  it('requires independent dated wage evidence and fixes the context-only explanation', () => {
+    expect(validateOccupationAreaWageContext(wageContext, FACT_NOW)).toEqual([]);
+    expect(validateOccupationAreaWageContext({
+      ...wageContext,
+      occupation: '',
+      wage: {
+        value: '',
+        evidence: {
+          ...wageContext.wage.evidence,
+          reviewedAt: 'not-a-date',
+        },
+      },
+      informationalLabel: 'Estimated offer',
+    }, FACT_NOW)).toEqual(expect.arrayContaining([
+      'Wage context occupation is required.',
+      'Wage context value is required.',
+      'Wage context: Fact review date must be an ISO calendar date.',
+      'Wage context must use the informational-only label.',
+    ]));
+    expect(Object.keys(wageContext)).not.toEqual(expect.arrayContaining([
+      'provider',
+      'learner',
+      'offer',
+      'placement',
+      'forecast',
+      'ranking',
+    ]));
   });
 });
