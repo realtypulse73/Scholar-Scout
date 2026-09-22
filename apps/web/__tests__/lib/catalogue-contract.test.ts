@@ -109,7 +109,7 @@ describe('catalogue contract', () => {
   });
 
   it('uses an inclusive ten-mile great-circle boundary and rejects invalid coordinates', () => {
-    const pointAtTenMiles = { latitude: 0, longitude: 0.144731584379898 };
+    const pointAtTenMiles = { latitude: 0, longitude: 0.144731584379897 };
     const pointBeyondTenMiles = { latitude: 0, longitude: 0.1448 };
     const localFocus = { ...region.localFocus, latitude: 0, longitude: 0 };
 
