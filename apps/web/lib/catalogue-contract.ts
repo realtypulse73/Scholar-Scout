@@ -242,6 +242,14 @@ export function validateSourceMetadata(metadata: unknown): string[] {
   if (!isIsoCalendarDate(metadata.checkedAt)) {
     errors.push('Checked date must be an ISO calendar date.');
   }
+  if (isSourceDate(metadata.sourceDate) && isIsoCalendarDate(metadata.checkedAt)) {
+    const documentedSourceDate = getDocumentedDate(metadata.sourceDate);
+    const checkedDate = getIsoDate(metadata.checkedAt);
+
+    if (documentedSourceDate && checkedDate && checkedDate.getTime() < documentedSourceDate.getTime()) {
+      errors.push('Checked date cannot precede the documented source date.');
+    }
+  }
 
   return errors;
 }
@@ -579,6 +587,8 @@ export function validateCoverageMatrix(
 
     if (!isCatalogueRegionId(regionId)) {
       invalidCoverageErrors.add(`Unsupported coverage region: ${regionId}.`);
+    } else if (!regionIds.has(regionId)) {
+      invalidCoverageErrors.add(`Coverage region is not declared: ${regionId}.`);
     }
     if (!isCataloguePathway(pathway)) {
       invalidCoverageErrors.add(`Unsupported coverage pathway: ${pathway}.`);
