@@ -618,4 +618,82 @@ describe('review regression contracts', () => {
       'Verified coverage requires current attributable evidence for greater-kingston-jamaica:university.',
     );
   });
+
+  it('rejects verified coverage review dates after the injected clock or before its evidence chronology', () => {
+    const completeVerifiedCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
+      ...coverage,
+      pathway,
+      state: 'verified' as const,
+      evidence: factEvidence,
+    })) as unknown as CatalogueCoverage[];
+
+    expect(validateCoverageMatrix([region], [
+      { ...completeVerifiedCoverage[0], reviewedAt: '2026-09-23' },
+      ...completeVerifiedCoverage.slice(1),
+    ], FACT_NOW)).toContain(
+      'Coverage review date cannot be in the future for greater-kingston-jamaica:university.',
+    );
+    expect(validateCoverageMatrix([region], [
+      { ...completeVerifiedCoverage[0], reviewedAt: '2026-09-21' },
+      ...completeVerifiedCoverage.slice(1),
+    ], FACT_NOW)).toEqual(expect.arrayContaining([
+      'Coverage review date cannot precede evidence review date for greater-kingston-jamaica:university.',
+      'Coverage review date cannot precede documented evidence source date for greater-kingston-jamaica:university.',
+    ]));
+  });
+
+  it.each([
+    null,
+    'malformed evidence',
+    [],
+  ])('returns a stable error for malformed unresolved duration evidence: %p', (evidence) => {
+    const malformedCardFacts = {
+      ...cardFacts,
+      duration: {
+        value: null,
+        state: 'unknown',
+        evidence,
+      },
+    } as unknown as CatalogueOpportunityCardFacts;
+
+    expect(() => validateCatalogueOpportunityCardFacts(malformedCardFacts, FACT_NOW)).not.toThrow();
+    expect(validateCatalogueOpportunityCardFacts(malformedCardFacts, FACT_NOW)).toContain(
+      'Duration evidence must be an object.',
+    );
+  });
+
+  it.each([
+    null,
+    'malformed region',
+    [],
+  ])('returns a stable error for malformed region entries: %p', (malformedRegion) => {
+    const completeCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({ ...coverage, pathway }));
+
+    expect(() => validateCoverageMatrix(
+      [region, malformedRegion] as unknown as CatalogueRegion[],
+      completeCoverage,
+      FACT_NOW,
+    )).not.toThrow();
+    expect(validateCoverageMatrix(
+      [region, malformedRegion] as unknown as CatalogueRegion[],
+      completeCoverage,
+      FACT_NOW,
+    )).toContain('Catalogue region must be an object.');
+  });
+
+  it.each([
+    null,
+    'malformed coverage row',
+    [],
+  ])('returns a stable error for malformed coverage entries: %p', (malformedCoverage) => {
+    const completeCoverage = [
+      ...CATALOGUE_PATHWAYS.map((pathway) => ({ ...coverage, pathway })),
+      malformedCoverage,
+    ] as unknown as CatalogueCoverage[];
+
+    expect(() => validateCoverageMatrix([region], completeCoverage, FACT_NOW)).not.toThrow();
+    expect(validateCoverageMatrix([region], completeCoverage, FACT_NOW)).toContain(
+      'Catalogue coverage row must be an object.',
+    );
+  });
 });
