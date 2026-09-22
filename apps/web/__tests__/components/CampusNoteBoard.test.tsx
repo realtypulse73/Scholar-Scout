@@ -12,10 +12,9 @@ const mockUseSession = useSession as jest.Mock;
 describe('CampusNoteBoard', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ data: { user: { email: 'student@example.com' } } });
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ notes: [] }),
-    }) as typeof fetch;
+    global.fetch = jest.fn(
+      () => new Promise<Response>(() => {}),
+    ) as typeof fetch;
   });
 
   it('keeps privacy guidance and a keyboard-reachable public note control visible', () => {

@@ -89,14 +89,14 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
   }
 
   return (
-    <section className="rounded-card border border-ink-200 bg-white p-5 shadow-card" aria-busy={isPosting || isReporting}>
-      <p className="text-sm font-semibold uppercase text-brand-700">Campus note board</p>
+    <section className="rounded-card border border-border bg-white p-5 shadow-card" aria-busy={isPosting || isReporting}>
+      <p className="text-sm font-semibold uppercase text-ink-700">Campus note board</p>
       <h2 className="mt-2 text-xl font-semibold text-ink-900">{uploaderUsername ? 'Leave a note for this uploader' : 'Ask the student community'}</h2>
       <p className="mt-2 text-sm leading-6 text-ink-600">{uploaderUsername ? 'Leave a public note or question for this student uploader.' : 'Leave a public question or note for the students posting from this school.'}</p>
       {session ? (
         <div className="mt-4" aria-busy={isPosting}>
           <label className="block text-sm font-semibold text-ink-800" htmlFor="campus-note">Your public note</label>
-          <textarea id="campus-note" value={body} onChange={(event) => setBody(event.target.value)} maxLength={500} rows={4} placeholder="What do you want to know about the campus or program?" className="mt-2 w-full break-words rounded-card border border-ink-300 p-3 text-sm text-ink-900" aria-describedby="campus-note-guidance" />
+          <textarea id="campus-note" value={body} onChange={(event) => setBody(event.target.value)} maxLength={500} rows={4} placeholder="What do you want to know about the campus or program?" className="mt-2 min-h-touch w-full break-words rounded-control border border-border bg-white p-3 text-sm text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" aria-describedby="campus-note-guidance" />
           <div id="campus-note-guidance" className="mt-2 space-y-1 text-sm leading-5 text-ink-600">
             <p>{SHARED_LIMIT_HELPER}</p>
             <p>{CONTACT_HELPER}</p>
@@ -104,24 +104,24 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
           <Button className="mt-3" onClick={() => void postNote()} disabled={!body.trim() || isPosting}>{isPosting ? 'Posting note...' : 'Post note'}</Button>
         </div>
       ) : (
-        <Link href="/auth/sign-in" className="mt-4 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white">Sign in to leave a note</Link>
+        <Link href="/auth/sign-in" className="mt-4 inline-flex min-h-touch items-center justify-center rounded-control border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Sign in to leave a note</Link>
       )}
-      {status ? <p className="mt-3 text-sm font-semibold text-brand-700" role="status">{status}</p> : null}
+      {status ? <p className="mt-3 text-sm font-semibold text-ink-700" role="status">{status}</p> : null}
       <div className="mt-5 space-y-3" aria-live="polite">
         {notes.length ? notes.map((note) => (
-          <article key={note.id} className="rounded-card border border-ink-200 bg-ink-50 p-3">
+          <article key={note.id} className="rounded-card border border-border bg-silver p-3">
             <p className="break-words text-sm leading-6 text-ink-800">{note.body}</p>
             <p className="mt-2 text-sm font-semibold text-ink-500">ScholarScout community member · {new Date(note.created_at).toLocaleDateString()}</p>
-            <button type="button" className="mt-2 min-h-touch rounded-card px-0 text-sm font-semibold text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2" onClick={(event) => setReportingNote({ note, trigger: event.currentTarget })}>Report this note</button>
+            <button type="button" className="mt-2 min-h-touch rounded-control px-3 text-sm font-semibold text-ink-600 transition-colors hover:bg-white hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2" onClick={(event) => setReportingNote({ note, trigger: event.currentTarget })}>Report this note</button>
           </article>
-        )) : <div className="rounded-card bg-ink-50 p-4"><h3 className="text-xl font-semibold text-ink-900">Start the conversation</h3><p className="mt-2 text-sm leading-6 text-ink-600">Be the first to ask a question or share a helpful campus perspective. Keep personal contact details out of public notes.</p></div>}
+        )) : <div className="rounded-card border border-border bg-silver p-4"><h3 className="text-xl font-semibold text-ink-900">Start the conversation</h3><p className="mt-2 text-sm leading-6 text-ink-600">Be the first to ask a question or share a helpful campus perspective. Keep personal contact details out of public notes.</p></div>}
       </div>
       {reportingNote ? (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="report-note-title"
-          className="mt-4 rounded-card border border-ink-300 bg-white p-4 shadow-panel"
+          className="mt-4 rounded-card border border-border bg-white p-4 shadow-panel"
           onKeyDown={(event) => {
             if (event.key === 'Escape' && !isReporting) {
               event.preventDefault();
@@ -135,7 +135,7 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
           <p className="mt-2 text-sm leading-6 text-ink-600">This will hide the note from the community while staff review it.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button autoFocus variant="secondary" onClick={() => closeReportDialog()} disabled={isReporting}>Cancel</Button>
-            <Button onClick={() => void confirmReport()} disabled={isReporting}>{isReporting ? 'Reporting note...' : 'Confirm report'}</Button>
+            <Button variant="danger" onClick={() => void confirmReport()} disabled={isReporting}>{isReporting ? 'Reporting note...' : 'Confirm report'}</Button>
           </div>
         </div>
       ) : null}
