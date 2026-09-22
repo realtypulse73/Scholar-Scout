@@ -73,7 +73,8 @@ export interface SourcedFact<Value> {
 export type EmploymentCommitmentState =
   | 'no-published-guarantee'
   | 'published-provider-statement'
-  | 'unknown';
+  | 'unknown'
+  | 'conflicting';
 
 /**
  * Factual employer-paid training disclosures. This shape is intentionally
@@ -146,13 +147,39 @@ export interface CatalogueRegion {
   localFocus: LocalFocus;
 }
 
-export interface CatalogueCoverage {
+export interface VerifiedCatalogueCoverage {
   regionId: CatalogueRegionId;
   pathway: CataloguePathway;
-  state: CoverageState;
+  state: 'verified';
   reviewedAt: string;
-  sourceUrl?: string;
+  evidence: FactEvidence;
 }
+
+export interface UnverifiedCatalogueCoverage {
+  regionId: CatalogueRegionId;
+  pathway: CataloguePathway;
+  state: 'not-yet-verified';
+  reviewedAt: string;
+  evidence?: never;
+  sourceUrl?: never;
+}
+
+export type CatalogueCoverage = VerifiedCatalogueCoverage | UnverifiedCatalogueCoverage;
+
+const REGION_BOUNDARY_REQUIREMENTS: Readonly<Record<CatalogueRegionId, {
+  authority: BoundaryAuthority;
+  boundaryId: string | null;
+}>> = {
+  'greater-houston': { authority: 'us-census-omb-cbsa', boundaryId: '26420' },
+  'greater-chicago': { authority: 'us-census-omb-cbsa', boundaryId: '16980' },
+  'greater-buffalo': { authority: 'us-census-omb-cbsa', boundaryId: '15380' },
+  'greater-atlanta': { authority: 'us-census-omb-cbsa', boundaryId: '12060' },
+  'greater-new-orleans': { authority: 'us-census-omb-cbsa', boundaryId: '35380' },
+  'greater-kingston-jamaica': {
+    authority: 'statin-kingston-metropolitan-area',
+    boundaryId: null,
+  },
+};
 
 export interface GeoCoordinate {
   latitude: number;
@@ -199,7 +226,7 @@ export function getFreshnessStatus(
 export function validateSourceMetadata(metadata: SourceMetadata): string[] {
   const errors: string[] = [];
 
-  if (!metadata.sourceLabel?.trim()) {
+  if (!hasText(metadata?.sourceLabel)) {
     errors.push('Source label is required.');
   }
   if (!isHttpUrl(metadata.sourceUrl)) {
@@ -222,6 +249,8 @@ export function validateSourceMetadata(metadata: SourceMetadata): string[] {
  */
 export function validateFactEvidence(evidence: FactEvidence, now: Date): string[] {
   const errors: string[] = [];
+  const documentedSourceDate = getDocumentedDate(evidence?.sourceDate);
+  const reviewedDate = getIsoDate(evidence?.reviewedAt);
 
   if (!isFactStatus(evidence?.status)) {
     errors.push('Fact status is unsupported.');
@@ -229,7 +258,7 @@ export function validateFactEvidence(evidence: FactEvidence, now: Date): string[
   if (!isFactAuthority(evidence?.authority)) {
     errors.push('Fact authority is unsupported.');
   }
-  if (!evidence?.sourceLabel?.trim()) {
+  if (!hasText(evidence?.sourceLabel)) {
     errors.push('Fact source label is required.');
   }
   if (!isHttpUrl(evidence?.sourceUrl)) {
@@ -238,13 +267,20 @@ export function validateFactEvidence(evidence: FactEvidence, now: Date): string[
   if (!isSourceDate(evidence?.sourceDate)) {
     errors.push('Fact source date must be documented with an ISO calendar date or explicitly unavailable.');
   }
-  if (!isIsoCalendarDate(evidence?.reviewedAt)) {
+  if (!reviewedDate) {
     errors.push('Fact review date must be an ISO calendar date.');
-  } else if (isValidDate(now) && new Date(`${evidence.reviewedAt}T00:00:00.000Z`).getTime() > now.getTime()) {
+  } else if (isValidDate(now) && reviewedDate.getTime() > now.getTime()) {
     errors.push('Fact review date cannot be in the future.');
   }
-  if (!evidence?.verificationAction?.trim()) {
+  if (!hasText(evidence?.verificationAction)) {
     errors.push('Fact verification action is required.');
+  }
+
+  if (documentedSourceDate && isValidDate(now) && documentedSourceDate.getTime() > now.getTime()) {
+    errors.push('Fact source date cannot be in the future.');
+  }
+  if (documentedSourceDate && reviewedDate && reviewedDate.getTime() < documentedSourceDate.getTime()) {
+    errors.push('Fact review date cannot precede the documented source date.');
   }
 
   if (evidence?.status === 'current') {
@@ -295,6 +331,13 @@ export function validateEmployerTrainingFacts(
       'Employment commitment',
       validateFactEvidence(facts.employmentCommitmentEvidence, now),
     ));
+    if (isEmploymentCommitmentState(facts.employmentCommitment)
+      && !isCompatibleEmploymentCommitmentEvidence(
+        facts.employmentCommitment,
+        facts.employmentCommitmentEvidence.status,
+      )) {
+      errors.push('Employment commitment state must match its evidence status.');
+    }
   }
 
   return errors;
@@ -310,10 +353,10 @@ export function validateOccupationAreaWageContext(
 ): string[] {
   const errors: string[] = [];
 
-  if (!context?.occupation?.trim()) {
+  if (!hasText(context?.occupation)) {
     errors.push('Wage context occupation is required.');
   }
-  if (!context?.area?.trim()) {
+  if (!hasText(context?.area)) {
     errors.push('Wage context area is required.');
   }
   errors.push(...validateSourcedTextFact('Wage context', context?.wage, now));
@@ -385,7 +428,7 @@ export function validateCatalogueRegion(region: CatalogueRegion): string[] {
   if (!isCatalogueRegionId(region.id)) {
     errors.push('Region ID is unsupported.');
   }
-  if (!region.label?.trim()) {
+  if (!hasText(region.label)) {
     errors.push('Region label is required.');
   }
   if (!isBoundaryAuthority(region.officialBoundary.authority)) {
@@ -394,15 +437,23 @@ export function validateCatalogueRegion(region: CatalogueRegion): string[] {
   if (typeof region.officialBoundary.boundaryId !== 'string' && region.officialBoundary.boundaryId !== null) {
     errors.push('Official boundary ID must be a string or null.');
   }
-  if (!region.officialBoundary.boundaryVersion?.trim()) {
+  const boundaryRequirement = isCatalogueRegionId(region.id)
+    ? REGION_BOUNDARY_REQUIREMENTS[region.id]
+    : undefined;
+  if (boundaryRequirement
+    && (region.officialBoundary.authority !== boundaryRequirement.authority
+      || region.officialBoundary.boundaryId !== boundaryRequirement.boundaryId)) {
+    errors.push('Official boundary authority and ID must match the declared region.');
+  }
+  if (!hasText(region.officialBoundary.boundaryVersion)) {
     errors.push('Official boundary version is required.');
   }
   errors.push(...prefixErrors('Official boundary', validateSourceMetadata(region.officialBoundary)));
 
-  if (!region.localFocus.authority?.trim()) {
+  if (!hasText(region.localFocus.authority)) {
     errors.push('Local focus authority is required.');
   }
-  if (!region.localFocus.anchorLabel?.trim()) {
+  if (!hasText(region.localFocus.anchorLabel)) {
     errors.push('Local focus anchor label is required.');
   }
   if (!isValidCoordinate(region.localFocus)) {
@@ -457,6 +508,7 @@ export function isWithinLocalFocus(
 export function validateCoverageMatrix(
   regions: readonly CatalogueRegion[] | null | undefined,
   coverage: readonly CatalogueCoverage[] | null | undefined,
+  now: Date,
 ): string[] {
   const errors: string[] = [];
   const regionList = Array.isArray(regions) ? regions : [];
@@ -505,8 +557,14 @@ export function validateCoverageMatrix(
     if (!isIsoCalendarDate(row.reviewedAt)) {
       invalidCoverageErrors.add(`Coverage review date must be an ISO calendar date for ${key}.`);
     }
-    if (row.sourceUrl !== undefined && !isHttpUrl(row.sourceUrl)) {
-      invalidCoverageErrors.add(`Coverage source URL must use http:// or https:// for ${key}.`);
+    if (row.state === 'verified') {
+      if (!row.evidence || row.evidence.status !== 'current') {
+        invalidCoverageErrors.add(`Verified coverage requires current attributable evidence for ${key}.`);
+      } else {
+        for (const error of validateFactEvidence(row.evidence, now)) {
+          invalidCoverageErrors.add(`Coverage evidence for ${key}: ${error}`);
+        }
+      }
     }
   }
   errors.push(...[...invalidCoverageErrors].sort());
@@ -529,7 +587,13 @@ function getDocumentedDate(sourceDate: SourceDate): Date | null {
     return null;
   }
 
-  return new Date(`${sourceDate.value}T00:00:00.000Z`);
+  return getIsoDate(sourceDate.value);
+}
+
+function getIsoDate(value: unknown): Date | null {
+  if (!isIsoCalendarDate(value)) return null;
+
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 function isSourceDate(sourceDate: SourceDate): boolean {
@@ -554,7 +618,19 @@ function isFactAuthority(value: unknown): value is FactAuthority {
 function isEmploymentCommitmentState(value: unknown): value is EmploymentCommitmentState {
   return value === 'no-published-guarantee'
     || value === 'published-provider-statement'
-    || value === 'unknown';
+    || value === 'unknown'
+    || value === 'conflicting';
+}
+
+function isCompatibleEmploymentCommitmentEvidence(
+  commitment: EmploymentCommitmentState,
+  status: unknown,
+): boolean {
+  if (commitment === 'no-published-guarantee' || commitment === 'published-provider-statement') {
+    return status === 'current' || status === 'needs-confirmation';
+  }
+
+  return commitment === status;
 }
 
 function validateSourcedTextFact(
@@ -564,7 +640,7 @@ function validateSourcedTextFact(
 ): string[] {
   const errors: string[] = [];
 
-  if (!fact?.value?.trim()) {
+  if (typeof fact?.value !== 'string' || !fact.value.trim()) {
     errors.push(`${label} value is required.`);
   }
   if (!fact?.evidence) {
@@ -594,6 +670,12 @@ function validateCatalogueCardFact<Value>(
   }
 
   if (isUnresolvedCatalogueCardFact(fact)) {
+    if (fact.value !== null) {
+      errors.push(`${label} unresolved card facts must have a null value.`);
+    }
+    if (!isUnresolvedFactStatus(fact.state)) {
+      errors.push(`${label} unresolved state is unsupported.`);
+    }
     if (fact.evidence.status !== fact.state) {
       errors.push(`${label} unresolved state must match its evidence status.`);
     }
@@ -625,6 +707,10 @@ function isUnresolvedCatalogueCardFact(
   return isRecord(fact) && 'state' in fact;
 }
 
+function isUnresolvedFactStatus(value: unknown): value is Exclude<FactStatus, 'current'> {
+  return value === 'needs-confirmation' || value === 'unknown' || value === 'conflicting';
+}
+
 function isCatalogueDelivery(value: unknown): value is CatalogueDelivery {
   return value === 'in-person' || value === 'online' || value === 'hybrid';
 }
@@ -636,6 +722,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function hasMaterialValue(value: unknown): boolean {
   return (typeof value === 'string' && Boolean(value.trim()))
     || (typeof value === 'number' && Number.isFinite(value));
+}
+
+function hasText(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(value.trim());
 }
 
 function isIsoCalendarDate(value: unknown): value is string {
