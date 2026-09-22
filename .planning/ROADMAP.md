@@ -2,7 +2,7 @@
 
 ## Overview
 
-Scholar Scout v1.1 gives students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans a trustworthy, choice-preserving way to discover and compare broad education and training routes. This milestone grows from source/evidence foundations, through governed publication and discovery, to qualification safety, provider stories, local-only referrals, and an operational release gate.
+Scholar Scout v1.1 gives students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica a trustworthy, choice-preserving way to discover and compare broad education and training routes. This milestone grows from source/evidence foundations, through governed publication and discovery, to qualification safety, provider stories, local-only referrals, and an operational release gate.
 
 The product presents published facts and verification actions. It does not make admission, eligibility, enlistment, funding, employment, pay, placement, safety, quality, or outcome decisions. Unknown, stale, and conflicting facts remain visible with a source/date and verification action rather than being invented or silently represented as current.
 
@@ -20,19 +20,19 @@ The product presents published facts and verification actions. It does not make 
 
 **Phase Numbering:** Phase 9 continues the completed v1.0 numbering. Each phase begins with zero plans; plans are added only after phase planning.
 
-- [ ] **Phase 9: Catalogue Foundations and Source Contracts** — Define the five-metro scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 0/0)
+- [ ] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 0/0)
 - [ ] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 0/0)
-- [ ] **Phase 11: Choice-Preserving Five-Metro Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 0/0)
+- [ ] **Phase 11: Choice-Preserving Six-Area Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 0/0)
 - [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 0/0)
 - [ ] **Phase 13: Provider Detail, Transition Stories, and Media Safety** — Deliver factual provider pages and finite, inclusive, rights-safe, motion-safe Scholar Scout story-to-facts journeys. (Plans: 0/0)
 - [ ] **Phase 14: Sensitive Support Referral and Neutral Military Information** — Offer approved local-only support referrals and neutral official military information without sensitive retention or recruitment pressure. (Plans: 0/0)
-- [ ] **Phase 15: Five-Metro Expansion, Operations, and Release Gate** — Complete coverage expansion and prove ongoing freshness, source, rights, accessibility, and launch readiness. (Plans: 0/0)
+- [ ] **Phase 15: Six-Area Expansion, Operations, and Release Gate** — Complete coverage expansion and prove ongoing freshness, source, rights, accessibility, and launch readiness. (Plans: 0/0)
 
 ## Phase Details
 
 ### Phase 9: Catalogue Foundations and Source Contracts
 
-**Goal:** Establish a deterministic, source-first catalogue foundation for the five approved metros that represents trustworthy facts and visible uncertainty without inventing availability or coverage.
+**Goal:** Establish a deterministic, source-first catalogue foundation for the six approved regional areas that represents trustworthy facts and visible uncertainty without inventing availability or coverage.
 
 **Depends on:** Completed v1.0 governed matching and catalogue boundaries.
 
@@ -42,7 +42,7 @@ The product presents published facts and verification actions. It does not make 
 
 **Success criteria:**
 
-1. Each approved metro has an explicit, versioned official boundary, source, release/check date, and visible coverage status for all six pathway types.
+1. Each approved regional area has an explicit, versioned official boundary, authority, source, release/check date, and visible coverage status for all six pathway types; the five U.S. areas use a frozen Census/OMB CBSA release and Greater Kingston uses a frozen Statistical Institute of Jamaica Kingston Metropolitan Area authority record.
 2. The catalogue represents university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information records with controlled types.
 3. Every material fact carries its own source/authority, source and review date, `Current` / `Needs confirmation` / `Unknown` / `Conflicting` status, and direct verification action.
 4. Missing, stale, or conflicting facts are visible as such and never become a confirmed fact, inferred availability, fit signal, salary promise, or fabricated offering.
@@ -50,7 +50,7 @@ The product presents published facts and verification actions. It does not make 
 
 **Plans:** 0/0 plans executed.
 
-**Risk:** Incorrect metro/source definitions create false local coverage. Freeze one official boundary release and validate fixtures before any public record or coverage claim ships.
+**Risk:** Incorrect regional/source definitions create false local coverage. Freeze the appropriate official boundary record for each country and validate fixtures before any public record or coverage claim ships.
 
 ### Phase 10: Curated Import and Governed Staff Publication
 
@@ -74,9 +74,9 @@ The product presents published facts and verification actions. It does not make 
 
 **Risk:** Broad imports can overwrite current data or normalize marketing claims. Use quarantined candidate files, strict validation, small batches, existing CAS/audit controls, and fixture-based recovery tests.
 
-### Phase 11: Choice-Preserving Five-Metro Discovery
+### Phase 11: Choice-Preserving Six-Area Discovery
 
-**Goal:** Let any student browse, filter, save, compare, and verify the governed five-metro catalogue through accessible, source-first discovery surfaces.
+**Goal:** Let any student browse, filter, save, compare, and verify the governed six-area catalogue through accessible, source-first discovery surfaces.
 
 **Depends on:** Phase 10.
 
@@ -159,9 +159,9 @@ The product presents published facts and verification actions. It does not make 
 
 **Risk:** Sensitive choices can leak through persistence, telemetry, URLs, or provider handoff; military language can be coercive for minors. Block release until destination ownership and exact neutral wording have human approval and regression coverage.
 
-### Phase 15: Five-Metro Expansion, Operations, and Release Gate
+### Phase 15: Six-Area Expansion, Operations, and Release Gate
 
-**Goal:** Complete and release the five-metro catalogue only after coverage, freshness, source, rights, accessibility, and safety operations are demonstrably sustainable.
+**Goal:** Complete and release the six-area catalogue only after coverage, freshness, source, rights, accessibility, and safety operations are demonstrably sustainable.
 
 **Depends on:** Phases 9–14.
 
@@ -172,7 +172,7 @@ The product presents published facts and verification actions. It does not make 
 **Success criteria:**
 
 1. Staff can review source changes, link health, freshness/review deadlines, media-rights status, and metro/pathway coverage before labelling a record current.
-2. All five metros and six pathway types have transparent coverage reporting; unverified gaps remain visibly `Not yet verified` rather than implied inventory.
+2. All six regional areas and six pathway types have transparent coverage reporting; unverified gaps remain visibly `Not yet verified` rather than implied inventory.
 3. Automated checks cover evidence, freshness, claim safety, all-visible discovery, qualification/proxy exclusion, referral separation, media fallback, and accessible states.
 4. A Preview and human release gate confirms source/rights review, keyboard/screen-reader/reduced-motion behavior, approved referral destinations, and neutral minor-safe military wording.
 

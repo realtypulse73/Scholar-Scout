@@ -3,13 +3,13 @@
 **Project:** Scholar Scout v1.1 — Regional Opportunity Navigator  
 **Synthesized:** 2026-09-22  
 **Research inputs:** `RESEARCH-PLAN.md`, `STACK.md`, `FEATURES.md`, `ARCHITECTURE.md`, and `PITFALLS.md`  
-**Overall confidence:** Medium. The product, safety, and existing-code boundaries are clear; the five-metro source inventory, rights evidence, freshness owners, and final boundary release still require explicit confirmation.
+**Overall confidence:** Medium. The product, safety, and existing-code boundaries are clear; the six-area source inventory, rights evidence, freshness owners, and final boundary releases still require explicit confirmation.
 
 ## Key Findings
 
-### 1. The v1.1 product is a bounded five-metro, multi-pathway navigator
+### 1. The v1.1 product is a bounded six-area, multi-pathway navigator
 
-The approved scope is Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans. Each metro must offer broad discovery across university, community college, trades/career schools, registered apprenticeships, employer-linked training (including AI-infrastructure-related training), and military-information paths.
+The approved scope is Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica. Each regional area must offer broad discovery across university, community college, trades/career schools, registered apprenticeships, employer-linked training (including AI-infrastructure-related training), and military-information paths.
 
 The catalogue is not national coverage, a college-only directory, an application funnel, a recruitment engine, or a prediction product. Students must be able to browse every pathway type regardless of age, neighbourhood, race, personal circumstance, prior education, or selected preference. Filters can refine and rank, but they must be reversible and must never suppress a pathway class.
 
@@ -20,7 +20,7 @@ Every material public claim needs its own source, authority tier, checked date, 
 The minimum public record needs:
 
 - stable opportunity/provider identifiers and controlled pathway type;
-- metro CBSA code and the specific saved boundary-release version;
+- a region’s appropriate official statistical code or boundary identifier and the specific saved boundary-release/check version; U.S. areas use Census/OMB CBSA identifiers, while Greater Kingston retains its Statistical Institute of Jamaica Kingston Metropolitan Area authority record;
 - physical/remote availability relationship, delivery mode, and published status;
 - field-scoped provenance: source URL/label/tier, effective date when known, review date, stale-after date, and `current` / `needs-confirmation` / `unknown` / `conflicting` state;
 - source-backed requirements-to-verify, next action, and factual provider summary;
@@ -35,7 +35,7 @@ The recommended initial publication model is staff-curated source records plus a
 
 This preserves repeatable Preview/production behavior, makes data diffs reviewable, allows a provider site to be unavailable without breaking discovery, and avoids source-terms, rate-limit, malicious-content, and media-rights risks. Offline import adapters or URL health checks may be evaluated only as bounded staff/CI operations. They must never scrape content, auto-publish changes, or bypass access controls.
 
-The initial stack remains Next.js App Router, React, strict TypeScript, Node scripts, GitHub Actions, Vercel Preview, and existing Jest/Testing Library coverage. No database, ORM, CMS, ETL platform, hosted search, live marketplace API, vector system, or new production dependency is justified for the bounded five-metro launch.
+The initial stack remains Next.js App Router, React, strict TypeScript, Node scripts, GitHub Actions, Vercel Preview, and existing Jest/Testing Library coverage. No database, ORM, CMS, ETL platform, hosted search, live marketplace API, vector system, or new production dependency is justified for the bounded six-area launch.
 
 ### 4. Integrate incrementally through the governed catalogue boundary
 
@@ -83,7 +83,7 @@ These are proposed categories for future roadmap/requirements work, not invented
 
 | Category | Requirement intent | Evidence of completion |
 |---|---|---|
-| Catalogue scope and geography | Each of the five approved metros has a versioned official boundary definition and transparent coverage state across all six pathway categories. | Saved boundary version/URL, coverage matrix, metro validation tests, and no national-coverage copy. |
+| Catalogue scope and geography | Each of the six approved regional areas has a versioned official boundary definition and transparent coverage state across all six pathway categories. | Saved boundary version/URL, coverage matrix, regional validation tests, and no national-coverage copy. |
 | Provenance and freshness | Every displayed material fact is attributable, dated, stateful, and reviewable; stale/conflicting facts cannot appear confirmed. | Import/record validation, snapshot manifest, freshness report, unknown/stale card tests, staff review evidence. |
 | Governed publication | Only authorized staff can create/publish/revise records; source/media/claim failures block publication and conflicts are recoverable. | Active-staff API tests, validators, CAS/409 tests, audited revisions, bounded import rehearsal. |
 | Choice-preserving discovery | Students can browse, filter, save, compare, verify, and reach alternate routes without eligibility suppression or opaque ranking. | All-visible ranking tests, reason snapshots, card/provider-page actions, compare and accessibility tests. |
@@ -94,13 +94,13 @@ These are proposed categories for future roadmap/requirements work, not invented
 
 ### Staged roadmap sequence
 
-1. **Catalogue foundations and source contracts** — Freeze the five official metro boundaries; define controlled metro/pathway/source/evidence/media unions; add fixtures, source-authority ladder, field-level evidence, and freshness calculation.
+1. **Catalogue foundations and source contracts** — Freeze the six appropriate official regional boundaries; define controlled region/pathway/source/evidence/media unions; add fixtures, source-authority ladder, field-level evidence, and freshness calculation.
 2. **Curated import and governed staff publication** — Build quarantined source input, deterministic validation, reviewed snapshot/manifest, source/claim/media validation, staff/CAS workflow, audit evidence, and small-batch recovery tests.
-3. **Choice-preserving five-metro discovery** — Deliver universal browse/filter, factual cards, source/date/status, save/compare, official next action, alternate-path rail, and accessible mobile/keyboard behavior. Begin with a complete small vertical slice before growing inventory.
+3. **Choice-preserving six-area discovery** — Deliver universal browse/filter, factual cards, source/date/status, save/compare, official next action, alternate-path rail, and accessible mobile/keyboard behavior. Begin with a complete small vertical slice before growing inventory.
 4. **Qualification lens and explanation governance** — Add optional student-controlled ordinary qualification highlighting to the shared match view model; prove all-visible, non-predictive, non-proxy behavior across list, detail, and recommendations.
 5. **Provider detail, transition stories, and media safety** — Add source-first provider pages plus finite Scholar Scout story-to-facts handoff. Enforce rights metadata, no-media fallback, caption/alt text, external-link safety, and reduced-motion controls.
 6. **Sensitive support referral** — Extend/refine only the existing local-only consent/link pattern after referral destination owners, jurisdiction notes, freshness rules, and minor-safe wording are approved.
-7. **Five-metro expansion and operations gate** — Grow coverage metro-by-metro and pathway-by-pathway, showing honest coverage gaps; run source/link/freshness reports, rights and accessibility review, Preview evidence, and launch approval.
+7. **Six-area expansion and operations gate** — Grow coverage region-by-region and pathway-by-pathway, showing honest coverage gaps; run source/link/freshness reports, rights and accessibility review, Preview evidence, and launch approval.
 
 ### Delivery principles
 
@@ -114,7 +114,7 @@ These are proposed categories for future roadmap/requirements work, not invented
 
 The following must be explicitly decided or researched before implementation/launch; the current research does not authorize assumptions.
 
-1. **Metro boundary authority:** Confirm the final Census/OMB delineation release, official CBSA labels/codes, component geography, and update trigger for Houston, Chicago, Buffalo, Atlanta, and New Orleans. The candidate codes in `STACK.md` require freezing against one selected release.
+1. **Regional boundary authority:** Confirm the final Census/OMB delineation release, official CBSA labels/codes, component geography, and update trigger for Houston, Chicago, Buffalo, Atlanta, and New Orleans; separately freeze Greater Kingston against the Statistical Institute of Jamaica Kingston Metropolitan Area boundary authority and its applicable checked/release date. Greater Kingston must not be assigned a U.S. CBSA code.
 2. **Coverage threshold:** Define what “available in a metro” means for each pathway type and the minimum source-reviewed inventory required before a metro/type is shown as covered rather than `not yet verified`.
 3. **Freshness policy:** Approve field-specific review windows and escalation: operational programme facts, applications/openings, provider/media rights, CBSA releases, wage data, and military/VA information change on different schedules.
 4. **Source ownership:** Assign a data-operations owner for provenance/freshness, a product owner for student-facing language, a security/privacy owner for referrals, an advisor/student-success owner for referral content, and a media-rights owner.
@@ -140,6 +140,7 @@ The following must be explicitly decided or researched before implementation/lau
 ### Primary external sources identified for the implementation research
 
 - [U.S. Census metropolitan and micropolitan delineation files](https://www.census.gov/programs-surveys/metro-micro/about/delineation-files.html)
+- [Statistical Institute of Jamaica — Kingston Metropolitan Area communities and population](https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html)
 - [NCES IPEDS data resources](https://nces.ed.gov/Ipeds/use-the-data)
 - [College Scorecard institution data documentation](https://collegescorecard.ed.gov/assets/InstitutionDataDocumentation.pdf)
 - [Apprenticeship.gov Job Finder](https://www.apprenticeship.gov/apprenticeship-job-finder)

@@ -6,7 +6,7 @@
 
 ## Research objective
 
-Establish a reliable, maintainable evidence base for an opportunity catalogue that helps students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans compare college, trade, apprenticeship, employer-linked training, and military-information pathways without making eligibility or outcome claims.
+Establish a reliable, maintainable evidence base for an opportunity catalogue that helps students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica compare college, trade, apprenticeship, employer-linked training, and military-information pathways without making eligibility or outcome claims.
 
 ## Non-negotiable product rules
 
@@ -21,11 +21,11 @@ Establish a reliable, maintainable evidence base for an opportunity catalogue th
 
 ### 1. Official regional boundary and inventory scope
 
-**Question:** Which official CBSA/MSA definitions and published component geographies define each approved metro area?
+**Question:** Which official statistical boundary and published component geography define each approved regional area?
 
-**Sources of record:** OMB metropolitan statistical area delineations; U.S. Census Gazetteer/CBSA resources; official regional workforce agencies only for supplementary local coverage.
+**Sources of record:** OMB metropolitan statistical area delineations and U.S. Census Gazetteer/CBSA resources for the five U.S. areas; the [Statistical Institute of Jamaica’s Kingston Metropolitan Area boundary material](https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html) for Greater Kingston; official regional workforce agencies only for supplementary local coverage.
 
-**Deliverable:** Stable metro IDs, display labels, authority URLs, checked dates, update-trigger policy, and a coverage matrix for Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans.
+**Deliverable:** Stable regional IDs, display labels, authority URLs, checked dates, update-trigger policy, and a coverage matrix for Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica. The Greater Kingston record must retain its Jamaican statistical authority and must not be assigned a U.S. CBSA code.
 
 ### 2. Opportunity-source catalogue
 
@@ -84,4 +84,4 @@ Establish a reliable, maintainable evidence base for an opportunity catalogue th
 
 ## Completion criteria
 
-Research is complete only when the summary names authoritative sources and freshness rules for all five metros and pathway categories, identifies unresolved source/rights gaps honestly, and produces testable requirements without relaxing existing recommendation-governance safeguards.
+Research is complete only when the summary names authoritative sources and freshness rules for all six regional areas and pathway categories, identifies unresolved source/rights gaps honestly, and produces testable requirements without relaxing existing recommendation-governance safeguards.

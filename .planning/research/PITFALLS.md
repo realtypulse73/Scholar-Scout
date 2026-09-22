@@ -1,7 +1,7 @@
 # Regional Opportunity Navigator — Pitfalls and Prevention Research
 
 **Researched:** 2026-09-22  
-**Scope:** Five-metro official-source opportunity catalogue  
+**Scope:** Six-area official-source opportunity catalogue
 **Confidence:** High for product/technical safeguards; source-specific freshness and rights schedules require owner confirmation
 
 ## Executive Risk Position
@@ -16,7 +16,7 @@ No record should be considered safe merely because its provider is real. Each ma
 |---|---|---|---|---|
 | Stale availability, dates, cost, delivery, or support | An old page is rendered as current; a student acts on a withdrawn or changed offering. | Field-level `current` / `needs-confirmation` / `unknown` / `conflicting` state, source and checked dates, next-review date, and staff due queue. Keep stale records visible with a verification action. | Unit-test deterministic freshness; component-test source/date/verify state; staff review sample before Preview. | 1 — evidence/freshness foundation |
 | A provider-wide “verified” badge | One checked fact is mistaken for proof of tuition, requirements, support, and media. | Evidence is attached to each material field. A summary may say what is documented, never that every fact is verified. | Schema/renderer test with a current provider record and an unknown support fact. | 1 |
-| Unclear metro inclusion | Marketing geography or a nearby campus makes a listing appear in Houston, Chicago, Buffalo, Atlanta, or New Orleans without an authoritative boundary basis. | Stable metro IDs backed by official CBSA/MSA boundary source, check date, and a source-backed location relationship per record. | Validation rejects unknown metro ID; coverage review includes boundary URL and date. | 1 |
+| Unclear regional inclusion | Marketing geography or a nearby campus makes a listing appear in Houston, Chicago, Buffalo, Atlanta, New Orleans, or Greater Kingston without an authoritative boundary basis. | Stable regional IDs backed by the appropriate official boundary authority, check date, and a source-backed location relationship per record. | Validation rejects unknown regional ID; coverage review includes boundary URL and date. | 1 |
 | Inaccurate apprenticeship registration | A sponsor/training page is treated as a current registered apprenticeship without official verification. | Require Apprenticeship.gov or other official registration evidence plus sponsor detail; otherwise label it provider training with confirmation required. | Fixture tests distinguish registered-apprenticeship from employer-linked training. | 1–2 |
 | Employer/AI-infrastructure overclaim | Marketing copy becomes a promise of an AI job, employer placement, infrastructure role, pay, or partner relationship. | Preserve only attributable provider wording; type as `employer-linked-training`; separate documented employer relationship from outcomes; prohibit employment promise language. | Copy review and test fixtures reject “guaranteed job/pay/placement” phrases. | 2 — staff publication and first vertical slice |
 | Salary or placement promise | BLS/occupation context is displayed as provider outcome or personal forecast. | Store salary data as dated occupation-and-area context with source, not programme evidence or ranking input. Use “may vary; verify” wording. | Unit test no pay fact enters score/reasons; content checklist blocks promise terms. | 2 |
@@ -29,7 +29,7 @@ No record should be considered safe merely because its provider is real. Each ma
 | Misleading transition storytelling | Scholar Scout stock/original/generated image implies provider affiliation, a student outcome, or a specific pathway experience. | Keep transition stories distinct from provider records; label broadly, use original/licensed assets, avoid provider claims, include captions/alt text. | Content/visual review with claim checklist; accessibility test verifies alternative text. | 5 |
 | Automated scraping or runtime fetches | Vercel requests scrape provider sites, violate terms, time out, propagate malicious/incorrect content, or create uncontrolled volume. | No runtime scraping or provider integration. Staff review an approved bounded research/import package outside student request paths. | Code review prohibits remote source fetch from public routes; integration test has no network dependency. | 1–2 |
 | Government/official source revision | OMB boundaries, provider catalogues, registries, labour data, or service/VA pages change format or retire URLs. | Persist source type, stable identifier where available, checked/effective dates, reviewer, and next-review; make every field display unknown/needs confirmation safely. | Link-health/staff review workflow and fixtures for missing/changed source. | 1, then 6 — operations |
-| Staff curation backlog and inconsistent judgement | Five metros × six pathway types create a large, uneven review workload; errors or stale data cluster in lower-resource categories. | Coverage matrix by metro/pathway, source-authority checklist, reviewer assignment, due queue, reusable import fixtures, small batches, and explicit “coverage not yet verified” states. | Admin validation tests; operational dashboard/report; sample audit by metro and type. | 2, then 6 |
+| Staff curation backlog and inconsistent judgement | Six regional areas × six pathway types create a large, uneven review workload; errors or stale data cluster in lower-resource categories. | Coverage matrix by regional area/pathway, source-authority checklist, reviewer assignment, due queue, reusable import fixtures, small batches, and explicit “coverage not yet verified” states. | Admin validation tests; operational dashboard/report; sample audit by area and type. | 2, then 6 |
 | Whole-document import overwrite/concurrency | Bulk catalogue work overwrites student or staff changes due to the legacy document store. | Keep increments small; use existing CAS revisions, validation-before-write, audit event, conflict/reload response, and recoverable backup/import workflow. Do not introduce unbounded source history. | API conflict test; fixture-based import test; recovery rehearsal. | 2 |
 | Paid placement or provider incentive alters organic ordering | Funding/partnership influence is hidden in a personalized score. | Organic rank receives no payment/provider signal. Any future sponsorship is visually separate, labelled, and cannot alter organic order. | Ranking input allowlist test and product review. | 3 |
 | Accessibility, motion, and source-link usability | Cards hide source context, use color alone for freshness, autoplay motion, unreadable embeds, or inaccessible external links. | Semantic source/date/verify text; visible focus; `rel="noreferrer"`; accessible name for each action; reduced-motion support; captions/transcripts; no media is an acceptable fallback. | Testing Library role/attribute tests plus keyboard/screen-reader and reduced-motion manual checks. | 3 and 5 |
@@ -52,7 +52,7 @@ The product must make a factual distinction every time it mentions these topics:
 
 ### Before research enters a draft
 
-- Identify the official MSA/CBSA authority and the specific pathway/provider source.
+- Identify the appropriate official regional-boundary authority and the specific pathway/provider source.
 - Record why the source is authoritative, the literal URL, checked date, and field it supports.
 - Flag unsupported facts as unknown; do not draft a plausible value from nearby providers, a search result, social media, or general reputation.
 - For media, record rights/approval evidence before copying or embedding anything.
@@ -66,7 +66,7 @@ The product must make a factual distinction every time it mentions these topics:
 
 ### Before Preview/production
 
-- Exercise five-metro coverage fixtures, stale/unknown/conflicting sources, and every pathway type.
+- Exercise six-area coverage fixtures, stale/unknown/conflicting sources, and every pathway type.
 - Review all external links and media licensing/embedding terms manually.
 - Perform keyboard, screen-reader, zoom, contrast, and reduced-motion checks on source/freshness/referral UI.
 - Review rank-reason snapshots to detect proxy, paid, or sensitive changes; test that qualification data never suppresses a listing.
@@ -91,7 +91,7 @@ Do not publish a listing or declare metro coverage complete when any of the foll
 - A sensitive field can alter rank, persist with the profile, reach a URL/log/analytics event, or be disclosed to a provider.
 - Provider media lacks rights evidence or the fallback is inaccessible.
 - The source is scraped, a search result, affiliate material, a social post, or an unsupported summary.
-- The MSA/CBSA membership has no authority record or the pathway category cannot be substantiated.
+- The applicable official regional-boundary membership has no authority record or the pathway category cannot be substantiated.
 - A stale source is displayed as current rather than `needs-confirmation` with a verification action.
 
 ## Research Gaps Requiring Owner Decisions

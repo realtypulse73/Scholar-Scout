@@ -59,7 +59,7 @@ The following should be explicitly excluded from v1.1 because they erode trust, 
 | Provider-site scraping, copied catalogues, or unlicensed campus video | These create accuracy, copyright, and trust failures. | Store attributable facts from official/approved sources and use approved embeds or licensed/owned media only. |
 | Unverified employer-training or AI-infrastructure promises | Employer programmes can change quickly, vary by location, and use marketing language. | Require employer-owned source plus local partner/workforce corroboration where possible; otherwise mark availability `Needs confirmation`. |
 | Demographic or visual targeting of pathways | Showing a person in a story must never imply that their identity, neighbourhood, or circumstance determines which options are suitable. | Use representation intentionally in visual media while keeping search, comparison, and rank independent of identity. |
-| National-coverage claim | Five metros are a meaningful initial scope, not a nationwide inventory. | Clearly label the five covered areas and offer neutral external resources for out-of-area exploration. |
+| National-coverage claim | Six regional areas are a meaningful initial scope, not a nationwide inventory. | Clearly label the six covered areas and offer neutral external resources for out-of-area exploration. |
 
 ## Feature Dependencies
 
@@ -85,14 +85,14 @@ Original/licensed story media + motion controls
 
 Prioritize:
 
-1. A source-verified, five-metro opportunity record and browse/filter surface that keeps every pathway type available.
+1. A source-verified, six-area opportunity record and browse/filter surface that keeps every pathway type available.
 2. Factual cards, save/compare, provider pages, and a requirements-to-verify checklist with a source/date/unknown state.
 3. A finite, motion-safe Transformation Signal layer that hands students from inclusive Scholar Scout stories to facts—not an endless feed.
 4. Optional support referral only after the purpose-separated consent and non-ranking data boundary is implemented and tested.
 
 Defer:
 
-- National catalogue expansion until the five-metro freshness/review process is proven.
+- National catalogue expansion until the six-area freshness/review process is proven.
 - Automated provider ingestion, web scraping, individual outcome predictions, and any social or recruiter messaging mechanics.
 - Advanced labour-market personalization until a source model, governance review, and fairness evaluation justify it.
 

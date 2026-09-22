@@ -5,7 +5,7 @@
 **Status:** Researching and defining requirements
 **Started:** 2026-09-22
 
-**Goal:** Give students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans a trustworthy, choice-preserving way to find and compare broad education and training options.
+**Goal:** Give students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica a trustworthy, choice-preserving way to find and compare broad education and training options.
 
 **Scope:** Official source and boundary research; post-secondary, trade, apprenticeship, employer-linked training, and military-information pathways; student-controlled qualification comparison; optional referral-only sensitive support; verified provider pages; and inclusive Scholar Scout transition storytelling.
 

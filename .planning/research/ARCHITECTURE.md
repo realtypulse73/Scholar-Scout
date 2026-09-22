@@ -1,7 +1,7 @@
 # Regional Opportunity Navigator — Architecture Research
 
 **Researched:** 2026-09-22  
-**Scope:** Five-metro source-verified opportunity catalogue  
+**Scope:** Six-area source-verified opportunity catalogue
 **Confidence:** High for application integration boundaries; medium for catalogue operations pending source-owner confirmation
 
 ## Executive Architecture Decision
@@ -65,7 +65,8 @@ type MetroId =
   | 'greater-chicago'
   | 'greater-buffalo'
   | 'greater-atlanta'
-  | 'greater-new-orleans';
+  | 'greater-new-orleans'
+  | 'greater-kingston-jamaica';
 
 type OpportunityType =
   | 'university'
@@ -144,7 +145,7 @@ Freshness is a deterministic status calculation: compare `nextReviewAt` to the s
 
 ### Server-only responsibilities
 
-- Read/merge governed records and render public metro/provider pages.
+- Read/merge governed records and render public regional/provider pages.
 - Enforce active staff authorization before parsing any admin write.
 - Validate record evidence, availability, source URLs, and media-rights declarations; apply an atomic conditional mutation and return a safe conflict response.
 - Generate a non-sensitive staff freshness queue from record metadata.
@@ -152,7 +153,7 @@ Freshness is a deterministic status calculation: compare `nextReviewAt` to the s
 
 ### Client responsibilities
 
-- Filter already-governed public records by metro/pathway type and render source/date/state exactly as received.
+- Filter already-governed public records by regional area/pathway type and render source/date/state exactly as received.
 - Let students choose ordinary preferences and local compare/save actions.
 - Render a `Verify with provider` / `Visit official source` link with `target="_blank"` and `rel="noreferrer"` for external sources.
 - Maintain sensitive-referral category and consent only in component state. The only successful output is the vetted public information/contact URL.
@@ -203,7 +204,7 @@ The referral directory itself may be staff-managed public metadata (category, de
 | Domain schema | Reject unknown metro/type/evidence/media-rights values; legacy records normalize to explicit unknowns. |
 | Freshness | Current, due, stale, unknown, and conflicting facts produce deterministic state without a write. |
 | Publication | Only active staff can publish; missing source/date/rights fails validation; stale revision returns the existing safe `409`. |
-| Governed read | Draft/review records are not public; public server pages never import raw seed data; all five metro IDs can filter valid published records. |
+| Governed read | Draft/review records are not public; public server pages never import raw seed data; all six regional IDs can filter valid published records. |
 | Matching | Every input programme remains visible; ordinary qualifications only change reasons/order; eligibility text never becomes a result. |
 | Referral | Sensitive value causes no fetch, localStorage/sessionStorage write, analytics call, provider query string, or rank change. |
 | Provider UI | Each material displayed fact has source/date/state; unknown and stale states contain a verification action; external links have `rel="noreferrer"`. |
@@ -216,7 +217,7 @@ Run focused Jest unit/component/API tests on each change, then the full web suit
 1. **Foundations:** Define stable metro/pathway/evidence/media unions, boundary metadata, source authority rules, freshness function, and fixtures. Add unit tests before staff UI changes.
 2. **Governed storage:** Extend `Programme`/admin normalization/validation/manager and server merge tests with backward-compatible unknown defaults. Retain publication/CAS/audit behavior.
 3. **First vertical slice:** Publish a small staff-reviewed record set for one metro across all six pathway categories. Add public list/detail cards, source/date/state, save/compare, and no-eligibility copy.
-4. **Five-metro expansion:** Add source-reviewed coverage matrices and fixtures metro by metro. A missing category is shown as an honest coverage gap, not fabricated inventory.
+4. **Six-area expansion:** Add source-reviewed coverage matrices and fixtures region by region. A missing category is shown as an honest coverage gap, not fabricated inventory.
 5. **Qualification explanations:** Add optional ordinary qualification highlight logic to the shared opportunity view model; prove all-visible, no-prediction behaviour across listing, detail, and recommendations.
 6. **Referrals and media:** Generalize the local-only referral directory and rights-safe provider media boundary only after destination owners/rights are documented.
 7. **Operations:** Add a staff freshness queue/report, Preview evidence, manual source/rights audit, and a bounded plan for moving catalogue records out of whole-document storage if volume/concurrent staff activity requires it.
@@ -225,7 +226,7 @@ Run focused Jest unit/component/API tests on each change, then the full web suit
 
 - The current whole-document adapter remains a bounded implementation constraint. Do not bulk-scrape/import or introduce unbounded history; use small validated batches, CAS, audit events, and tested rollback/recovery procedures.
 - “Employer/AI-infrastructure training” is a pathway type, not a claim that a provider operates AI infrastructure, offers employment, or guarantees a role. Publish only the provider's documented description.
-- Official MSA/CBSA membership, allowed source list, field freshness intervals, provider-media permissions, and referral destination ownership require product/data-operations confirmation before publishing coverage claims.
+- Official boundary membership—Census/OMB CBSA for the five U.S. regions and Statistical Institute of Jamaica Kingston Metropolitan Area authority for Greater Kingston—plus the allowed source list, field freshness intervals, provider-media permissions, and referral destination ownership require product/data-operations confirmation before publishing coverage claims.
 - No runtime scraping, provider API integration, paid ranking, application submission, eligibility determinations, recruiting targeting, or sensitive-data retention is authorized by this architecture.
 
 ## Architecture Recommendation

@@ -4,7 +4,7 @@
 
 Scholar Scout is a web application that helps students explore post-secondary pathways, compare programmes, understand fit, and make more informed next-step decisions. It combines a programme catalogue, personalised onboarding and recommendations, simulations, community-oriented features, and optional advisor guidance.
 
-The Regional Opportunity Navigator will make that exploration practical in five official metropolitan areas: Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans. It will cover university, community-college, trade, apprenticeship, employer-linked training, and military-information pathways through source-verified facts and student-controlled comparison.
+The Regional Opportunity Navigator will make that exploration practical in six official regional areas: Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica. It will cover university, community-college, trade, apprenticeship, employer-linked training, and military-information pathways through source-verified facts and student-controlled comparison.
 
 ## Core Value
 
@@ -29,7 +29,7 @@ Students can confidently discover and act on the education pathways that fit the
 
 ### Active
 
-- [ ] Build a source-verified, freshness-governed opportunity catalogue for the five approved metro areas.
+- [ ] Build a source-verified, freshness-governed opportunity catalogue for the six approved regional areas.
 - [ ] Let students browse and compare university, community-college, trade, apprenticeship, employer-linked training, and military-information pathways without suppressing options.
 - [ ] Keep ordinary qualifications student-controlled and keep personal circumstances purpose-separated, optional, and referral-only.
 - [ ] Distinguish Scholar Scout transition storytelling from verified provider-specific pages and media.
@@ -61,16 +61,16 @@ Phases 5–7 established governed programme evidence, choice-preserving matching
 | Treat the school/community/WNY feature cluster as a separately validated release slice | It has broad scope and should not be obscured by stabilization work | Phase 5 passed |
 | Modernize persistence incrementally | A wholesale rewrite would create unacceptable delivery and data-migration risk | — Pending |
 | Validate the school/community/WNY release slice through isolated Preview UAT | Preserve privacy and source safety while proving browser, provider, moderation, and assistive-technology behavior | Phase 5 passed |
-| Use official metropolitan statistical area boundaries for the regional catalogue | A stable public definition prevents ambiguous area coverage | — Pending research verification |
+| Use the appropriate official statistical boundary authority for each regional catalogue area | A stable public definition prevents ambiguous area coverage; U.S. CBSAs do not govern Greater Kingston, Jamaica | — Pending research verification |
 | Treat military pathways as factual exploration and human verification, not recruitment targeting or eligibility determination | Minors and adults need accurate official information without pressure or unsupported conclusions | — Pending |
 | Keep personal circumstances separate from matching | Support can be offered with voluntary, purpose-specific consent without turning sensitive data into a ranking signal | Phase 7 foundation passed |
 
 ## Current Milestone: v1.1 Regional Opportunity Navigator
 
-**Goal:** Students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans can discover, compare, and verify broad post-secondary and training pathways while retaining control over what personal information informs their experience.
+**Goal:** Students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, and Greater Kingston, Jamaica can discover, compare, and verify broad post-secondary and training pathways while retaining control over what personal information informs their experience.
 
 **Target features:**
-- Five-metro, official-source catalogue and source-freshness operations.
+- Six-area, official-source catalogue and source-freshness operations.
 - Choice-preserving comparison across college, trades, apprenticeships, employer-linked training, and military-information paths.
 - Provider-page verification, safe optional support referrals, and inclusive Scholar Scout transition stories.
 

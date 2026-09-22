@@ -7,7 +7,7 @@
 
 ### Regional catalogue scope
 
-- [ ] **REG-01**: A student can explicitly choose Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, or Greater New Orleans and see the catalogue’s exact official metropolitan boundary, source, and boundary-release date.
+- [ ] **REG-01**: A student can explicitly choose Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, or Greater Kingston, Jamaica and see the catalogue’s exact official regional boundary, authority, source, and boundary-release/check date.
 - [ ] **REG-02**: A student can browse university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information paths in every selected metro without one class being hidden by default.
 - [ ] **REG-03**: A student can see an honest coverage state for each metro and pathway class, including `Not yet verified`, rather than a fabricated or implied local offering.
 
@@ -60,7 +60,7 @@
 
 ### Catalogue scale and platform
 
-- **CAT-01**: Expand beyond the five approved metro areas after the same source, review, and coverage gates are satisfied.
+- **CAT-01**: Expand beyond the six approved regional areas after the same source, review, and coverage gates are satisfied.
 - **CAT-02**: Introduce a narrow independent catalogue persistence model only after measured snapshot volume, revision frequency, or staff concurrency exceeds the safe current boundary.
 - **CAT-03**: Offer privacy-approved aggregate measures of decision clarity, option breadth, source quality, and referral usefulness; do not use engagement/conversion to rank options.
 
@@ -78,7 +78,7 @@
 | Sensitive-data ranking, inference, profiling, or external provider disclosure | Personal circumstances may support a voluntary referral only; they are never a recommendation signal. |
 | Paid organic placement, recruitment pressure, or application submission funnel | Discovery must preserve student agency and broad choice. |
 | Unlicensed/uncertain provider media or an infinite/autoplay feed | Provider rights and accessible, controllable motion are required. |
-| National rollout, a new database/ORM/CMS, hosted search, or prediction system | The five-metro, governed launch should prove the bounded catalogue model first. |
+| National rollout, a new database/ORM/CMS, hosted search, or prediction system | The six-area, governed launch should prove the bounded catalogue model first. |
 
 ## Traceability
 

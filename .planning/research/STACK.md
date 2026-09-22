@@ -26,7 +26,7 @@ This is intentionally not a live marketplace scraper. A student should never see
 
 | Technology | Version | Purpose | Why |
 |---|---:|---|---|
-| Repository-owned JSON/JSONL source records + generated JSON snapshot | no new dependency | Initial canonical public catalogue | Five metros are a bounded launch scope. A committed, reviewable snapshot is simpler and safer than exposing a runtime upstream dependency. Use source records as inputs and generate one normalized read model. |
+| Repository-owned JSON/JSONL source records + generated JSON snapshot | no new dependency | Initial canonical public catalogue | Six regional areas are a bounded launch scope. A committed, reviewable snapshot is simpler and safer than exposing a runtime upstream dependency. Use source records as inputs and generate one normalized read model. |
 | Existing `Programme` / governed programme-record boundary | existing | Incremental integration into discovery and matching | `apps/web/lib/programmes.ts` already has publication, source-confidence, evidence, source URL, and last-verified concepts. Extend it rather than make a parallel ungoverned catalogue. |
 | Existing Vercel Blob / HTTP adapter | existing, **not** initial public catalogue authority | Accounts, drafts, audit events, and later approved mutable records | The current adapter writes a whole document. Do not make it the sole ingestion store or use it for raw source pulls. If a later staff workflow needs independent catalogue records, add a narrow versioned collection boundary first. |
 | Vercel build artifact / static import | existing | Serve the approved catalogue without an external fetch on learner requests | Makes results repeatable, supports Preview tests, and works when a source site is down. |
@@ -52,7 +52,7 @@ This is intentionally not a live marketplace scraper. A student should never see
 
 ## Source authority ladder
 
-The five launch regions are a common coverage rule, not five separate data architectures. Store each official CBSA code and the delineation file/version used. The current candidates to verify and freeze against the selected Census release are Houston **26420**, Chicago **16980**, Buffalo **15380**, Atlanta **12060**, and New Orleans **35380**. The import must validate each code against the same saved Census/OMB release before assuming its title, member counties, or area mapping.
+The six launch regions are a common coverage rule, not six separate data architectures. Store each area’s appropriate official statistical identifier and boundary authority/version. The five U.S. candidates to verify and freeze against the selected Census release are Houston **26420**, Chicago **16980**, Buffalo **15380**, Atlanta **12060**, and New Orleans **35380**. Greater Kingston, Jamaica uses the [Statistical Institute of Jamaica Kingston Metropolitan Area](https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html) boundary authority, not a U.S. CBSA code. The import must validate every area against its saved authority record before assuming its title, member geography, or area mapping.
 
 | Tier | Accepted source | Use | Required handling |
 |---|---|---|---|
@@ -81,7 +81,7 @@ Every public opportunity needs a stable internal ID and the following groups. Th
 | Group | Required fields |
 |---|---|
 | Identity | `id`, `providerId`, `providerName`, `providerType`, optional external IDs (`unitid`, `opeid`, VA facility ID, sponsor ID) with namespace |
-| Geography | `metroCbsaCode`, `metroDelineationVersion`, physical location(s), state, delivery mode, and a controlled `inMetro`/`remote-available` relationship — never a vague “nearby” boolean |
+| Geography | `regionalAuthority`, `regionalBoundaryId`, `regionalBoundaryVersion`, physical location(s), country/subnational area, delivery mode, and a controlled `inRegion`/`remote-available` relationship — never a vague “nearby” boolean |
 | Pathway | controlled pathway type (expand existing union for military-information and employer-linked training), credential/role, subject/occupation tags with SOC when a wage fact is used |
 | Published facts | programme title, concise description, current-status state, published requirement text **as a quote-free summary with source link**, delivery, duration/cost state, next step, and explicit `unknown` where evidence is absent |
 | Provenance | per-fact source URL, source label, authority tier, source/effective date when known, `reviewedAt`, reviewer ID, evidence state, and verification guidance |
@@ -90,7 +90,7 @@ Every public opportunity needs a stable internal ID and the following groups. Th
 
 ### Required import rules
 
-1. **Metro validation:** Every in-scope record must reference one of the five saved CBSA codes and the boundary-release version used to determine it. A remote opportunity needs its own explicit `remote-available` evidence; it does not inherit a metro merely because a provider headquarters is there.
+1. **Regional validation:** Every in-scope record must reference one of the five saved U.S. CBSA codes or the saved Greater Kingston Statistical Institute of Jamaica boundary record, with the authority version used to determine it. A remote opportunity needs its own explicit `remote-available` evidence; it does not inherit an area merely because a provider headquarters is there.
 2. **Fact validation:** Required factual fields have evidence. A missing or conflicting fact is represented visibly as `unknown`, `stale`, or `conflicting`; it cannot be converted into a number or a fit score.
 3. **Claims validation:** Reject phrases or fields that claim admission, enlistment, funding, placement, salary, or a student’s likelihood of success. Reject a direct `matchScore` or `acceptanceRate` as a ranking input. Existing legacy fields should be retired from new catalogue records rather than copied forward.
 4. **Matching validation:** Test that only the student’s declared ordinary preferences (pathway, broad location choice, interests, affordability sensitivity) can order records. GPA/test score and similar qualifications may only produce a private “compare this published requirement” prompt; sensitive support data cannot enter the selector or sort input.
@@ -121,7 +121,7 @@ Every public opportunity needs a stable internal ID and the following groups. Th
 |---|---|
 | A general web scraper, browser automation, proxy, or “AI research agent” that publishes provider content | Breaks provenance, terms, freshness, and media-rights safeguards; could invent or misstate availability. |
 | A live third-party catalogue/search API in learner page requests | Makes the experience nondeterministic, rate-limited, and hard to attribute/rehearse. |
-| A new database, ORM, vector database, CMS, ETL platform, or search vendor | The five-metro launch can be safely served from versioned snapshots. Add infrastructure only when measurable catalogue volume/edit concurrency defeats the current curated workflow. |
+| A new database, ORM, vector database, CMS, ETL platform, or search vendor | The six-area launch can be safely served from versioned snapshots. Add infrastructure only when measurable catalogue volume/edit concurrency defeats the current curated workflow. |
 | A ranking/eligibility model, predictive score, or “best program” recommender | Violates the active recommendation-governance specification and risks discriminatory outcomes. |
 | OAuth/API credentials for schools, employers, recruiters, or military services | Not required for citations/links; expands sensitive credential and student-data risk. |
 | Provider media copying/downloading | Provider pages may use licensed media that they cannot sublicense. Use approved embeds or original/licensed Scholar Scout assets. |
@@ -154,8 +154,8 @@ If a later phase adds JSON Schema interchange for external editors, select a val
 - [NCES IPEDS — Use the Data](https://nces.ed.gov/Ipeds/use-the-data) — official IPEDS tools and complete/custom CSV data downloads. Confidence: MEDIUM.
 - [College Scorecard institution data documentation](https://collegescorecard.ed.gov/files/InstitutionDataDocumentation.pdf) — privacy suppression, Title IV scope, and institutional aggregation caveats. Confidence: MEDIUM.
 - [U.S. Census — Metropolitan and Micropolitan Delineation Files](https://www.census.gov/programs-surveys/metro-micro/about/delineation-files.html) and [current CBSA Gazetteer files](https://www.census.gov/geographies/reference-files/2026/geo/gazetter-file.html) — OMB/Census geography authority and releases. Confidence: MEDIUM.
+- [Statistical Institute of Jamaica — Kingston Metropolitan Area communities and population](https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html) — Greater Kingston boundary authority for this catalogue scope. Confidence: MEDIUM; freeze a checked authority version before publication.
 - [Apprenticeship.gov Job Finder](https://www.apprenticeship.gov/apprenticeship-job-finder) and [data/statistics](https://www.apprenticeship.gov/data-and-statistics) — discovery labels, sponsor/program context, and aggregate statistics. Confidence: MEDIUM.
 - [CareerOneStop Training V2 API — provider list](https://api.careeronestop.org/api-explorer/home/index/TrainingV2_GetTrainingProviderList) — authenticated discovery endpoint. Confidence: MEDIUM.
 - [BLS May 2025 OEWS metropolitan estimates](https://www.bls.gov/OES/current/oessrcma.htm), [OEWS documentation](https://www.bls.gov/oes/oes_doc.htm), and [OOH data/republication guidance](https://www.bls.gov/ooh/about/ooh-developer-info.htm) — annual metro wage data, definitions, methods, and attribution. Confidence: MEDIUM.
 - [VA — choosing a GI Bill-approved school](https://www.va.gov/resources/choosing-a-gi-bill-approved-school/) and [GI Bill Comparison Tool documentation](https://www.benefits.va.gov/gibill/comparison_tool/about_this_tool.asp) — approved-programme discovery and explicit planning-tool limitation. Confidence: MEDIUM.
-
