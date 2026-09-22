@@ -59,9 +59,9 @@ export default function OnboardingSummary({ data, onStartOver }: Props) {
   return (
     <div className="text-center">
       {/* Success icon */}
-      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-50">
         <svg
-          className="w-8 h-8 text-green-600"
+          className="h-8 w-8 text-success-700"
           fill="none"
           viewBox="0 0 24 24"
           aria-hidden="true"
@@ -76,24 +76,24 @@ export default function OnboardingSummary({ data, onStartOver }: Props) {
         </svg>
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-2xl font-semibold text-ink-900">
         You&apos;re all set! 🎉
       </h2>
-      <p className="text-sm text-gray-500 mb-8">
+      <p className="mb-8 text-sm text-ink-600">
         Here&apos;s a summary of your preferences. We&apos;ll use these to find
         your best-fit schools.
       </p>
 
-      <dl className="text-left space-y-3 mb-8">
+      <dl className="mb-8 space-y-3 text-left">
         {rows.map(({ label, value }) => (
           <div
             key={label}
-            className="flex flex-col sm:flex-row sm:justify-between bg-gray-50 rounded-xl px-4 py-3 gap-1"
+            className="flex flex-col gap-1 rounded-card border border-border bg-silver px-4 py-3 sm:flex-row sm:justify-between"
           >
-            <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">
               {label}
             </dt>
-            <dd className="text-sm font-medium text-gray-800 sm:text-right sm:max-w-[60%]">
+            <dd className="text-sm font-medium text-ink-800 sm:max-w-[60%] sm:text-right">
               {value}
             </dd>
           </div>
@@ -103,14 +103,14 @@ export default function OnboardingSummary({ data, onStartOver }: Props) {
       <div className="flex flex-col gap-3">
         <Link
           href={matchesHref}
-          className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+          className="min-h-touch w-full rounded-control bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           Find My Matches
         </Link>
         <button
           type="button"
           onClick={onStartOver}
-          className="w-full py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold text-sm hover:border-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+          className="min-h-touch w-full rounded-control border-2 border-border px-4 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           Start Over
         </button>
