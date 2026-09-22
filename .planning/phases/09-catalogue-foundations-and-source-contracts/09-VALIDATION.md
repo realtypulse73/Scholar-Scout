@@ -44,6 +44,9 @@ created: 2026-09-22
 | 09-03-01 | 03 | 2 | EVID-01, EVID-02 | T-09-07 | Fact evidence requires authority, structured source/review dates, status, and verification action; unavailable or stale evidence cannot be current. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
 | 09-03-02 | 03 | 2 | EVID-01, EVID-02, EVID-05 | T-09-08, T-09-10 | Employer training and wage context have independently dated evidence and cannot encode a provider or personal pay promise. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
 | 09-03-03 | 03 | 2 | EVID-01, EVID-02, D-08 | T-09-11 | A non-sensitive opportunity record carries sourced or visibly unresolved location, pathway, taught skill, payer, cost/tuition, verification state, duration, and delivery facts. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
+| 09-04-01 | 04 | 3 | REG-01, REG-02, REG-03, EVID-01, EVID-02, EVID-05 | T-09-12 through T-09-18 | RED regressions prove forged region provenance, impossible chronology, unsupported verified coverage, malformed text facts, invalid unresolved/commitment states, and mutable fixture aliases are rejected. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts __tests__/lib/catalogue-fixtures.test.ts --runInBand` | existing test files extended by this task | ⬜ pending |
+| 09-04-02 | 04 | 3 | REG-01, REG-02, REG-03, EVID-01, EVID-02, EVID-05 | T-09-12 through T-09-17 | Contract validators bind exact region provenance, enforce evidence chronology and discriminated verified coverage, return errors for malformed values, and retain claim-safe card/employment states. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | existing test file extended by 09-04-01 | ⬜ pending |
+| 09-04-03 | 04 | 3 | REG-01, REG-02, REG-03 | T-09-18 | Frozen six-region and 36-cell fixtures are deeply immutable with independent source-date objects while retaining the exact roster and explicit coverage baseline. | unit + quality gate | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts __tests__/lib/catalogue-fixtures.test.ts --runInBand && pnpm --filter @scholar-scout/web run typecheck && pnpm --filter @scholar-scout/web run lint && pnpm --filter @scholar-scout/web run test --runInBand` | existing test files extended by 09-04-01 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,6 +57,7 @@ created: 2026-09-22
 - Plan 09-01 Task 1 creates the contract module and its focused test file as a red-to-green tracer.
 - Plan 09-02 Task 1 creates the fixture module and its focused test file after Plan 09-01 exports the metadata/freshness interface.
 - Plan 09-03 extends the Plan 09-01 test file after Plan 09-01 completes; it has no fixture-plan dependency.
+- Plan 09-04 Task 1 adds all review regressions to both existing test files before any production-module edit; Task 2 resolves contract regressions and Task 3 resolves fixture immutability regressions before the full quality gate.
 
 ---
 
