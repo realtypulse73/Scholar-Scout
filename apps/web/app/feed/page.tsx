@@ -88,7 +88,7 @@ export default function FeedPage() {
 
   return (
     <main
-      className="relative h-screen overflow-hidden bg-ink-950 text-white"
+      className="relative h-screen overflow-hidden bg-silver text-ink-900"
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -113,7 +113,7 @@ export default function FeedPage() {
         </section>
       ) : (
         <div className="flex h-full items-center justify-center px-6 text-center">
-          <p className="text-sm font-semibold text-white/80">{status}</p>
+          <p className="text-sm font-semibold text-ink-600">{status}</p>
         </div>
       )}
     </main>

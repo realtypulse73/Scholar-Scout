@@ -24,15 +24,17 @@ export default async function PeerCommunityPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8" aria-label="Peer community navigation">
-        <Link href="/" className="text-lg font-extrabold text-brand-700">ScholarScout</Link>
+        <Link href="/" className="text-lg font-semibold text-brand-700">ScholarScout</Link>
         <div className="flex items-center gap-4">
           <Link href="/feed" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Discover</Link>
           <Link href="/programmes" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Programs</Link>
           <AuthStatusLink />
         </div>
       </nav>
-      <section className="mx-auto max-w-6xl px-5 pb-12 pt-4 sm:px-6 lg:px-8">
-        <PeerCommunity matches={matches} signedIn={Boolean(session?.user?.id)} />
+      <section className="border-y border-border bg-white">
+        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8">
+          <PeerCommunity matches={matches} signedIn={Boolean(session?.user?.id)} />
+        </div>
       </section>
     </main>
   );
