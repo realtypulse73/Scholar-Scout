@@ -289,8 +289,8 @@ Plans:
 - [x] 07.1-10-PLAN.md — Migrate decision-support cards and shortlist controls with focused tests.
 - [x] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
 - [x] 07.1-13-PLAN.md — Migrate affordability and support-need steps with explicit safety states.
-- [ ] 07.1-14-PLAN.md — Modernize the accessible code-native Scholar Scout mark across public/student identity locations.
+- [x] 07.1-14-PLAN.md — Modernize the accessible code-native Scholar Scout mark across public/student identity locations.
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
+- [x] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
