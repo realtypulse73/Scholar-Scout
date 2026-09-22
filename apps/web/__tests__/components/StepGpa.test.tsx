@@ -24,6 +24,8 @@ describe('StepGpa', () => {
     render(<StepGpa value="3.0-3.4" onChange={jest.fn()} />);
     const selectedBtn = screen.getByText(GPA_BAND_LABELS['3.0-3.4']).closest('button');
     expect(selectedBtn).toHaveAttribute('aria-checked', 'true');
+    expect(selectedBtn).toHaveClass('bg-brand-600');
+    expect(selectedBtn).toHaveClass('min-h-touch');
   });
 
   it('marks unselected bands as aria-checked=false', () => {

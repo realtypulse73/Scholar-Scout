@@ -29,6 +29,8 @@ describe('StepInterests', () => {
     render(<StepInterests value={['stem']} onChange={jest.fn()} />);
     const btn = screen.getByText(INTEREST_LABELS['stem']).closest('button');
     expect(btn).toHaveAttribute('aria-pressed', 'true');
+    expect(btn).toHaveClass('bg-brand-600');
+    expect(btn).toHaveClass('rounded-control');
   });
 
   it('marks unselected interests as aria-pressed=false', () => {
