@@ -2,11 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Regional Opportunity Navigator
-current_phase: 9
+current_phase: 09
 current_phase_name: Catalogue Foundations and Source Contracts
 status: planning
-last_updated: "2026-09-22T00:00:00.000Z"
+stopped_at: Phase 9 context gathered
+last_updated: "2026-09-22T19:48:47.699Z"
 last_activity: 2026-09-22
+last_activity_desc: Added Greater Kingston, Jamaica as the sixth v1.1 regional area
 progress:
   total_phases: 7
   completed_phases: 0
@@ -215,6 +217,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-22T04:16:21.280Z
-Stopped at: Completed 07.1-13-PLAN.md
-Resume file: None
+Last session: 2026-09-22T19:48:47.682Z
+Stopped at: Phase 9 context gathered
+Resume file: .planning/phases/09-catalogue-foundations-and-source-contracts/09-CONTEXT.md
