@@ -223,7 +223,11 @@ export function getFreshnessStatus(
  * Validates public source metadata without replacing an unavailable date with
  * an invented documented date.
  */
-export function validateSourceMetadata(metadata: SourceMetadata): string[] {
+export function validateSourceMetadata(metadata: unknown): string[] {
+  if (!isRecord(metadata)) {
+    return ['Source metadata must be an object.'];
+  }
+
   const errors: string[] = [];
 
   if (!hasText(metadata?.sourceLabel)) {
@@ -422,7 +426,11 @@ export function getOpportunityCardVerificationStatus(
  * region. The local focus is straight-line geographic scope only; it is not a
  * commute estimate or a replacement for the official regional boundary.
  */
-export function validateCatalogueRegion(region: CatalogueRegion): string[] {
+export function validateCatalogueRegion(region: unknown): string[] {
+  if (!isRecord(region)) {
+    return ['Catalogue region must be an object.'];
+  }
+
   const errors: string[] = [];
 
   if (!isCatalogueRegionId(region.id)) {
@@ -431,38 +439,50 @@ export function validateCatalogueRegion(region: CatalogueRegion): string[] {
   if (!hasText(region.label)) {
     errors.push('Region label is required.');
   }
-  if (!isBoundaryAuthority(region.officialBoundary.authority)) {
-    errors.push('Official boundary authority is unsupported.');
-  }
-  if (typeof region.officialBoundary.boundaryId !== 'string' && region.officialBoundary.boundaryId !== null) {
-    errors.push('Official boundary ID must be a string or null.');
-  }
   const boundaryRequirement = isCatalogueRegionId(region.id)
     ? REGION_BOUNDARY_REQUIREMENTS[region.id]
     : undefined;
-  if (boundaryRequirement
-    && (region.officialBoundary.authority !== boundaryRequirement.authority
-      || region.officialBoundary.boundaryId !== boundaryRequirement.boundaryId)) {
-    errors.push('Official boundary authority and ID must match the declared region.');
-  }
-  if (!hasText(region.officialBoundary.boundaryVersion)) {
-    errors.push('Official boundary version is required.');
-  }
-  errors.push(...prefixErrors('Official boundary', validateSourceMetadata(region.officialBoundary)));
+  if (!isRecord(region.officialBoundary)) {
+    errors.push('Official boundary must be an object.');
+  } else {
+    const officialBoundary = region.officialBoundary;
 
-  if (!hasText(region.localFocus.authority)) {
-    errors.push('Local focus authority is required.');
+    if (!isBoundaryAuthority(officialBoundary.authority)) {
+      errors.push('Official boundary authority is unsupported.');
+    }
+    if (typeof officialBoundary.boundaryId !== 'string' && officialBoundary.boundaryId !== null) {
+      errors.push('Official boundary ID must be a string or null.');
+    }
+    if (boundaryRequirement
+      && (officialBoundary.authority !== boundaryRequirement.authority
+        || officialBoundary.boundaryId !== boundaryRequirement.boundaryId)) {
+      errors.push('Official boundary authority and ID must match the declared region.');
+    }
+    if (!hasText(officialBoundary.boundaryVersion)) {
+      errors.push('Official boundary version is required.');
+    }
+    errors.push(...prefixErrors('Official boundary', validateSourceMetadata(officialBoundary)));
   }
-  if (!hasText(region.localFocus.anchorLabel)) {
-    errors.push('Local focus anchor label is required.');
+
+  if (!isRecord(region.localFocus)) {
+    errors.push('Local focus must be an object.');
+  } else {
+    const localFocus = region.localFocus;
+
+    if (!hasText(localFocus.authority)) {
+      errors.push('Local focus authority is required.');
+    }
+    if (!hasText(localFocus.anchorLabel)) {
+      errors.push('Local focus anchor label is required.');
+    }
+    if (!isValidCoordinate(localFocus as GeoCoordinate)) {
+      errors.push('Local focus coordinates must be finite latitude/longitude values.');
+    }
+    if (localFocus.radiusMiles !== 10) {
+      errors.push('Local focus radius must be exactly 10 miles.');
+    }
+    errors.push(...prefixErrors('Local focus', validateSourceMetadata(localFocus)));
   }
-  if (!isValidCoordinate(region.localFocus)) {
-    errors.push('Local focus coordinates must be finite latitude/longitude values.');
-  }
-  if (region.localFocus.radiusMiles !== 10) {
-    errors.push('Local focus radius must be exactly 10 miles.');
-  }
-  errors.push(...prefixErrors('Local focus', validateSourceMetadata(region.localFocus)));
 
   return errors;
 }
@@ -594,6 +614,13 @@ export function validateCoverageMatrix(
             );
           }
         }
+      }
+    } else if (row.state === 'not-yet-verified') {
+      if (Object.prototype.hasOwnProperty.call(row, 'evidence')) {
+        invalidCoverageErrors.add(`Not-yet-verified coverage cannot include evidence for ${key}.`);
+      }
+      if (Object.prototype.hasOwnProperty.call(row, 'sourceUrl')) {
+        invalidCoverageErrors.add(`Not-yet-verified coverage cannot include a source URL for ${key}.`);
       }
     }
   }
