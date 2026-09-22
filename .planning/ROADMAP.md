@@ -263,7 +263,7 @@ Plans:
 **Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, accessible CSS-only student-side scene motion, and a code-native accessible Scholar Scout brand mark without dark page backgrounds.
 **Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08]
 **Depends on:** Phase 7
-**Plans:** 10/14 plans executed
+**Plans:** 11/14 plans executed
 
 Plans:
 **Wave 1**
@@ -287,7 +287,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 07.1-10-PLAN.md — Migrate decision-support cards and shortlist controls with focused tests.
-- [ ] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
+- [x] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
 - [ ] 07.1-13-PLAN.md — Migrate affordability and support-need steps with explicit safety states.
 - [ ] 07.1-14-PLAN.md — Modernize the accessible code-native Scholar Scout mark across public/student identity locations.
 
