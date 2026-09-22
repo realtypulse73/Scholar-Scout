@@ -85,7 +85,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-800 transition-colors hover:border-brand-500 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-border bg-white px-4 text-sm font-semibold text-ink-800 transition-colors hover:border-brand-500 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
           >
             Continue with Google
           </button>
@@ -93,7 +93,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             type="button"
             disabled
             aria-describedby="apple-sign-in-status"
-            className="inline-flex min-h-touch w-full cursor-not-allowed items-center justify-center rounded-card border border-ink-200 bg-ink-50 px-4 text-sm font-semibold text-ink-500"
+            className="inline-flex min-h-touch w-full cursor-not-allowed items-center justify-center rounded-card border border-border bg-silver px-4 text-sm font-semibold text-ink-500"
           >
             Continue with Apple
           </button>
@@ -113,32 +113,32 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'sign-up' ? (
           <label className="block">
-            <span className="text-sm font-bold text-ink-800">Name</span>
+            <span className="text-sm font-semibold text-ink-800">Name</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+              className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
             />
           </label>
         ) : null}
 
         <label className="block">
-          <span className="text-sm font-bold text-ink-800">Email</span>
+          <span className="text-sm font-semibold text-ink-800">Email</span>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
           />
         </label>
 
         <label className="block">
-          <span className="text-sm font-bold text-ink-800">Password</span>
+          <span className="text-sm font-semibold text-ink-800">Password</span>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
           />
         </label>
 
@@ -150,7 +150,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
         <button
           type="submit"
-          className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
         >
           {mode === 'sign-in' ? 'Sign in with email' : 'Create account'}
         </button>

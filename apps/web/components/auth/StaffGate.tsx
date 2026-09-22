@@ -22,7 +22,7 @@ export default function StaffGate({ children }: StaffGateProps) {
         <Badge tone="warning" className="mb-4">
           Staff access
         </Badge>
-        <h1 className="text-2xl font-extrabold text-ink-900">
+        <h1 className="text-2xl font-semibold text-ink-900">
           Sign in as staff to use CMS tools
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
@@ -31,7 +31,7 @@ export default function StaffGate({ children }: StaffGateProps) {
         </p>
         <Link
           href="/auth/sign-in"
-          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
         >
           Sign in
         </Link>
