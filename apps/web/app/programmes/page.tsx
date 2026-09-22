@@ -76,7 +76,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
         className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
         aria-label="Programmes navigation"
       >
-        <Link href="/" className="text-lg font-extrabold text-brand-700">
+        <Link href="/" className="text-lg font-semibold text-brand-700">
           ScholarScout
         </Link>
         <div className="flex items-center gap-4">
@@ -110,7 +110,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
           </Badge>
           <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <h1 className="text-3xl font-extrabold text-ink-900 sm:text-4xl">
+              <h1 className="text-3xl font-semibold leading-tight text-ink-900 sm:text-4xl">
                 Programmes worth exploring
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600 sm:text-base">
@@ -120,19 +120,19 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="border-l border-ink-200 pl-3">
-                <p className="text-2xl font-extrabold">{filtered.length}</p>
+                <p className="text-2xl font-semibold">{filtered.length}</p>
                 <p className="text-xs font-semibold uppercase text-ink-500">
                   matches
                 </p>
               </div>
               <div className="border-l border-ink-200 pl-3">
-                <p className="text-2xl font-extrabold">100%</p>
+                <p className="text-2xl font-semibold">100%</p>
                 <p className="text-xs font-semibold uppercase text-ink-500">
                   flexible routes
                 </p>
               </div>
               <div className="border-l border-ink-200 pl-3">
-                <p className="text-2xl font-extrabold">$0</p>
+                <p className="text-2xl font-semibold">$0</p>
                 <p className="text-xs font-semibold uppercase text-ink-500">
                   rejection fee
                 </p>
@@ -149,7 +149,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
               <div>
                 <label
                   htmlFor="q"
-                  className="text-sm font-bold text-ink-800"
+                  className="text-sm font-semibold text-ink-800"
                 >
                   Search
                 </label>
@@ -158,14 +158,14 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
                   name="q"
                   defaultValue={query}
                   placeholder="Programme, school, city"
-                  className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                  className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="pathway"
-                  className="text-sm font-bold text-ink-800"
+                  className="text-sm font-semibold text-ink-800"
                 >
                   Pathway
                 </label>
@@ -173,7 +173,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
                   id="pathway"
                   name="pathway"
                   defaultValue={pathway}
-                  className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                  className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
                 >
                   <option value="all">All pathways</option>
                   {Object.entries(PROGRAMME_PATHWAY_LABELS).map(
@@ -189,7 +189,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
               <div>
                 <label
                   htmlFor="location"
-                  className="text-sm font-bold text-ink-800"
+                  className="text-sm font-semibold text-ink-800"
                 >
                   Location
                 </label>
@@ -197,7 +197,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
                   id="location"
                   name="location"
                   defaultValue={location}
-                  className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                  className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
                 >
                   <option value="all">Any location</option>
                   <option value="local">Campus or hybrid</option>
@@ -208,7 +208,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
               <div>
                 <label
                   htmlFor="maxTuition"
-                  className="text-sm font-bold text-ink-800"
+                  className="text-sm font-semibold text-ink-800"
                 >
                   Tuition
                 </label>
@@ -216,7 +216,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
                   id="maxTuition"
                   name="maxTuition"
                   defaultValue={maxTuitionValue}
-                  className="mt-2 min-h-touch w-full rounded-card border border-ink-200 bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                  className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
                 >
                   {tuitionOptions.map((option) => (
                     <option key={option.label} value={option.value}>
@@ -228,7 +228,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
 
               <button
                 type="submit"
-                className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                className="inline-flex min-h-touch w-full items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
               >
                 Apply filters
               </button>
