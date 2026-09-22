@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import { Badge, Card } from '@/components/ui';
+import StudentJourneyScene from '@/components/visual/StudentJourneyScene';
 
 const stats = [
   { label: 'student signals', value: '6' },
@@ -54,7 +55,7 @@ export default function Home() {
         className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
         aria-label="Main navigation"
       >
-        <Link href="/" className="text-lg font-extrabold text-brand-700">
+        <Link href="/" className="text-lg font-semibold text-brand-700">
           ScholarScout
         </Link>
         <div className="flex items-center gap-3">
@@ -98,13 +99,13 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="transition-story border-y border-ink-200">
+      <StudentJourneyScene className="border-x-0">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:items-center lg:px-8 lg:py-16">
           <div>
             <Badge tone="brand" className="mb-5">
               Rejection-free discovery
             </Badge>
-            <h1 className="max-w-3xl text-4xl font-extrabold leading-tight text-ink-900 sm:text-5xl">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl">
               ScholarScout
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-600 sm:text-lg">
@@ -138,7 +139,7 @@ export default function Home() {
                   <dt className="text-xs font-semibold uppercase text-ink-500">
                     {stat.label}
                   </dt>
-                  <dd className="mt-1 text-2xl font-extrabold text-ink-900">
+                  <dd className="mt-1 text-2xl font-semibold text-ink-900">
                     {stat.value}
                   </dd>
                 </div>
@@ -152,7 +153,7 @@ export default function Home() {
                 <p className="text-xs font-semibold uppercase text-ink-500">
                   Match preview
                 </p>
-                <p className="mt-1 text-sm font-bold text-ink-900">
+                <p className="mt-1 text-sm font-semibold text-ink-900">
                   Routes worth exploring
                 </p>
               </div>
@@ -166,14 +167,14 @@ export default function Home() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-sm font-bold text-ink-900">
+                      <h2 className="text-sm font-semibold text-ink-900">
                         {match.name}
                       </h2>
                       <p className="mt-1 text-sm text-ink-500">
                         {match.school}
                       </p>
                     </div>
-                    <p className="text-sm font-extrabold text-success-700">
+                    <p className="text-sm font-semibold text-success-700">
                       {match.score}
                     </p>
                   </div>
@@ -187,21 +188,21 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </StudentJourneyScene>
 
       <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 max-w-2xl">
           <Badge tone="warning" className="mb-4">
             Practical guidance
           </Badge>
-          <h2 className="text-2xl font-extrabold text-ink-900">
+          <h2 className="text-2xl font-semibold text-ink-900">
             Built for students comparing real options
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {valueProps.map((item) => (
             <Card key={item.title} className="p-5">
-              <h3 className="text-base font-bold text-ink-900">
+              <h3 className="text-base font-semibold text-ink-900">
                 {item.title}
               </h3>
               <p className="mt-3 text-sm leading-6 text-ink-600">
@@ -212,18 +213,18 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-t border-ink-200 bg-ink-900">
-        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-10 text-white sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+      <section className="border-t border-ink-200 bg-ink-50">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-10 text-ink-900 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <div>
-            <h2 className="text-2xl font-extrabold">Start with six signals.</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-200">
+            <h2 className="text-2xl font-semibold">Start with six signals.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-600">
               The onboarding wizard is live and ready to collect the first
               student profile needed for future programme matching.
             </p>
           </div>
           <Link
             href="/programmes"
-            className="inline-flex min-h-12 items-center justify-center rounded-card border border-white bg-white px-5 text-base font-semibold text-ink-900 transition-colors hover:bg-ink-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900"
+            className="inline-flex min-h-12 items-center justify-center rounded-card border border-ink-300 bg-white px-5 text-base font-semibold text-ink-900 transition-colors hover:border-brand-500 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           >
             Browse programmes
           </Link>

@@ -4,13 +4,14 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: #FFFFFF;
+  --foreground: #26364A;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {
@@ -24,5 +25,63 @@ body {
       url('/images/scholar-scout-transition-v1.png');
     background-position: center;
     background-size: cover;
+  }
+}
+
+.student-journey-scene {
+  background-color: #F3F5F7;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.86) 50%, rgba(243, 245, 247, 0.72) 100%),
+    url('/images/scholar-scout-transition-v1.png');
+  background-position: center;
+  background-size: cover;
+}
+
+.student-motion-layer {
+  animation: student-journey 11s ease-in-out infinite;
+}
+
+.student-light-trail {
+  animation: student-light-trail 9s ease-in-out infinite;
+}
+
+@keyframes student-journey {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translateX(0);
+  }
+
+  50% {
+    opacity: 0.58;
+    transform: translateX(20px);
+  }
+}
+
+@keyframes student-light-trail {
+  0%,
+  100% {
+    opacity: 0.14;
+    transform: translateX(-8px);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: translateX(16px);
+  }
+}
+
+@media (max-width: 767px) {
+  .student-motion-layer,
+  .student-light-trail {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-motion-layer,
+  .student-light-trail {
+    animation: none;
+    transform: none;
   }
 }
