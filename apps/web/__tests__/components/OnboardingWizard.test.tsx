@@ -87,6 +87,14 @@ describe('OnboardingWizard 4-step flow', () => {
     expect(screen.getAllByText(/step 1 of 4/i)).toHaveLength(2);
   });
 
+  it('uses the staged visual system for the active step and choice controls', () => {
+    render(<OnboardingWizard />);
+
+    expect(screen.getByRole('main')).toHaveClass('bg-canvas');
+    expect(screen.getByRole('button', { name: 'STEM' })).toHaveClass('rounded-control');
+    expect(screen.getByRole('button', { name: 'STEM' })).toHaveClass('min-h-touch');
+  });
+
   it('keeps only ordinary support preferences in the editable support step', () => {
     render(<OnboardingWizard />);
 
