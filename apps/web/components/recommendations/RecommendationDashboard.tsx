@@ -139,7 +139,7 @@ export default function RecommendationDashboard({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-card border border-ink-200 bg-white p-5 shadow-card">
+      <section className="rounded-card border border-border bg-white p-5 shadow-card">
         <Badge tone="brand" className="mb-4">
           Governed recommendation dashboard
         </Badge>
@@ -181,7 +181,7 @@ export default function RecommendationDashboard({
           type="button"
           aria-controls="sensitive-referral-panel"
           aria-expanded={isSensitiveReferralOpen}
-          className="mt-4 inline-flex min-h-10 items-center justify-center rounded-card border border-brand-600 bg-white px-4 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="mt-4 inline-flex min-h-touch items-center justify-center rounded-control border border-brand-600 bg-white px-4 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           onClick={() => setIsSensitiveReferralOpen((open) => !open)}
         >
           Need confidential support?
@@ -215,7 +215,7 @@ function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-5">
       <p className="text-xs font-bold uppercase text-ink-500">{label}</p>
-      <p className="mt-2 text-3xl font-extrabold text-ink-900">{value}</p>
+      <p className="mt-2 text-3xl font-semibold text-ink-900">{value}</p>
     </Card>
   );
 }

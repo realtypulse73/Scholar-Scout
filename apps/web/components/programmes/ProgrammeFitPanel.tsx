@@ -63,7 +63,7 @@ export default function ProgrammeFitPanel({
         </p>
         <Link
           href="/onboarding"
-          className="mt-4 inline-flex min-h-10 items-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="mt-4 inline-flex min-h-touch items-center rounded-control border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         >
           Complete onboarding
         </Link>

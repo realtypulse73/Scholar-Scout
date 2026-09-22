@@ -68,7 +68,7 @@ export default function ProgrammeResults({
 
   return (
     <section aria-label="Programme results" className="space-y-4">
-      <div className="rounded-card border border-ink-200 bg-white px-4 py-3">
+      <div className="rounded-card border border-border bg-white px-4 py-3">
         <p className="text-sm font-semibold text-ink-700">
           {profile
             ? 'Sorted by your saved preferences.'
@@ -127,7 +127,7 @@ function PageLink({
 
   if (disabled) {
     return (
-      <span className="inline-flex min-h-10 items-center rounded-card border border-ink-200 px-4 text-sm font-semibold text-ink-300">
+      <span className="inline-flex min-h-touch items-center rounded-control border border-border px-4 text-sm font-semibold text-ink-300">
         {label}
       </span>
     );
@@ -136,7 +136,7 @@ function PageLink({
   return (
     <Link
       href={`/programmes?${nextParams.toString()}`}
-      className="inline-flex min-h-10 items-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700"
+      className="inline-flex min-h-touch items-center rounded-control border border-border bg-white px-4 text-sm font-semibold text-ink-700 hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       {label}
     </Link>
