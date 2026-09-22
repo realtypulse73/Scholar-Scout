@@ -3,7 +3,7 @@ import PhaseFiveAccessibilityFixture from '@/components/phase-5-accessibility/Ph
 
 describe('PhaseFiveAccessibilityFixture', () => {
   it('renders all missing Phase 5 accessibility states without an interactive submission flow', () => {
-    render(<PhaseFiveAccessibilityFixture />);
+    render(<PhaseFiveAccessibilityFixture countState="zero" />);
 
     expect(screen.getByRole('heading', { name: 'No pathways match these priorities yet' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Verify programme details before you apply' })).toBeInTheDocument();

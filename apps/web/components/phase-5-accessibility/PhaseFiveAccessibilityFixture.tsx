@@ -2,7 +2,14 @@ import { Badge, Card } from '@/components/ui';
 
 const LONG_UNICODE_LABEL = 'École supérieure d’études technologiques — apprentissage 漢字かなカナ العربية';
 
-export default function PhaseFiveAccessibilityFixture() {
+export type FixtureCountState = 'zero' | 'one' | 'many';
+
+export default function PhaseFiveAccessibilityFixture({
+  countState = 'zero',
+}: {
+  countState?: FixtureCountState;
+}) {
+  const countLabel = countState === 'zero' ? 'No pathways match these priorities yet' : countState === 'one' ? '1 pathway matches these priorities' : '3 pathways match these priorities';
   return (
     <main className="min-h-screen bg-ink-50 px-5 py-10 text-ink-900 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -17,7 +24,7 @@ export default function PhaseFiveAccessibilityFixture() {
 
         <Card className="p-5">
           <p className="text-xs font-bold uppercase text-brand-700">Western New York directory</p>
-          <h2 className="mt-2 text-xl font-extrabold">No pathways match these priorities yet</h2>
+          <h2 className="mt-2 text-xl font-extrabold">{countLabel}</h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
             Try adjusting your access priorities, then use the official sources to compare options directly.
           </p>
