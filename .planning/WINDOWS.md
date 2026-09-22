@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 2
 waived_count: 0
 fixed_count: 0
-total_count: 1
-last_updated: 2026-09-22T20:59:05.494Z
+total_count: 2
+last_updated: 2026-09-22T22:15:36.081Z
 ---
 
 # Broken Windows Ledger
@@ -16,6 +16,7 @@ last_updated: 2026-09-22T20:59:05.494Z
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 09 | deviation | apps/web/lib/catalogue-contract.ts |  | Added the missing great-circle angle conversion helper after the tracer exposed it. | open |  | 2026-09-22T20:59:05.494Z |  |
+| 2 | 09 | deviation | apps/web/__tests__/lib/catalogue-contract.test.ts | 646 | Corrected the isolated documented-source chronology regression setup so it tests the required later source date. | open |  | 2026-09-22T22:15:36.081Z |  |
 
 ````json
 [
@@ -29,6 +30,18 @@ last_updated: 2026-09-22T20:59:05.494Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-22T20:59:05.494Z",
+    "resolved_at": null
+  },
+  {
+    "id": 2,
+    "kind": "deviation",
+    "phase": "09",
+    "file": "apps/web/__tests__/lib/catalogue-contract.test.ts",
+    "line": 646,
+    "description": "Corrected the isolated documented-source chronology regression setup so it tests the required later source date.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-22T22:15:36.081Z",
     "resolved_at": null
   }
 ]
