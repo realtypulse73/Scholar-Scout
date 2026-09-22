@@ -28,4 +28,39 @@ describe('UI primitives', () => {
 
     expect(screen.getByText('Match')).toBeInTheDocument();
   });
+
+  it('keeps primary, secondary, and destructive controls visually distinct with a strong focus ring', () => {
+    render(
+      <>
+        <Button>Primary action</Button>
+        <Button variant="secondary">Secondary action</Button>
+        <Button variant="danger">Delete</Button>
+        <Card data-testid="surface">Surface</Card>
+        <Input aria-label="Student email" />
+        <Badge tone="success">Ready</Badge>
+        <Badge tone="warning">Review</Badge>
+      </>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Primary action' })).toHaveClass(
+      'bg-brand-600',
+      'text-white',
+      'focus-visible:ring-focus',
+    );
+    expect(screen.getByRole('button', { name: 'Secondary action' })).toHaveClass(
+      'bg-white',
+      'border-border',
+    );
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass(
+      'bg-danger-600',
+      'border-danger-600',
+    );
+    expect(screen.getByTestId('surface')).toHaveClass('bg-white', 'border-border');
+    expect(screen.getByLabelText('Student email')).toHaveClass(
+      'focus-visible:ring-focus',
+      'focus-visible:ring-offset-2',
+    );
+    expect(screen.getByText('Ready')).toHaveClass('bg-success-50', 'text-success-700');
+    expect(screen.getByText('Review')).toHaveClass('bg-warning-50', 'text-warning-700');
+  });
 });
