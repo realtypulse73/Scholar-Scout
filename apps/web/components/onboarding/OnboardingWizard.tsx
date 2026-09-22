@@ -28,6 +28,7 @@ import {
   serializeOnboardingProfile,
 } from '@/lib/preference-matching';
 import OnboardingSummary from './OnboardingSummary';
+import ProgressIndicator from './ProgressIndicator';
 
 const ONBOARDING_DRAFT_STORAGE_KEY = 'scholarscout.onboarding-draft';
 
@@ -187,7 +188,7 @@ export default function OnboardingWizard() {
 
   if (completed) {
     return (
-      <main className="min-h-screen bg-ink-50 px-5 py-8 text-ink-900">
+      <main className="min-h-screen bg-canvas px-5 py-8 text-ink-900">
         <div className="mx-auto w-full max-w-2xl">
           <OnboardingSummary data={data} onStartOver={handleStartOver} />
         </div>
@@ -196,9 +197,9 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <main className="min-h-screen bg-ink-50 px-5 py-8 text-ink-900">
+    <main className="min-h-screen bg-canvas px-5 py-8 text-ink-900">
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="rounded-card border border-ink-200 bg-white p-5 shadow-card">
+        <section className="rounded-card border border-border bg-white p-5 shadow-card">
           <Link href="/" className="text-sm font-bold text-brand-700">
             ScholarScout
           </Link>
@@ -214,7 +215,7 @@ export default function OnboardingWizard() {
             </p>
           </div>
 
-          <ProgressBar step={step} />
+          <ProgressIndicator currentStep={step} />
 
           <div className="mt-6">
             {step === 1 ? (
@@ -274,7 +275,7 @@ export default function OnboardingWizard() {
           </div>
         </section>
 
-        <aside className="rounded-card border border-ink-200 bg-white p-5 shadow-card lg:sticky lg:top-5 lg:self-start">
+        <aside className="rounded-card border border-border bg-white p-5 shadow-card lg:sticky lg:top-5 lg:self-start">
           <p className="text-xs font-bold uppercase text-ink-500">
             Early insight preview
           </p>
@@ -286,7 +287,7 @@ export default function OnboardingWizard() {
             {insight.signals.map((signal) => (
               <div
                 key={signal.label}
-                className="rounded-card border border-ink-200 bg-ink-50 p-3"
+                className="rounded-card border border-border bg-silver p-3"
               >
                 <p className="text-xs font-bold uppercase text-ink-500">
                   {signal.label}
@@ -300,28 +301,6 @@ export default function OnboardingWizard() {
         </aside>
       </div>
     </main>
-  );
-}
-
-function ProgressBar({ step }: { step: number }) {
-  const percent = Math.round((step / TOTAL_STEPS) * 100);
-
-  return (
-    <div className="mt-6">
-      <div className="flex justify-between text-xs font-bold uppercase text-ink-500">
-        <span>Progress</span>
-        <span>{percent}%</span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded bg-ink-200">
-        <div
-          className="h-full bg-brand-600 transition-all"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <p className="sr-only">
-        Step {step} of {TOTAL_STEPS}
-      </p>
-    </div>
   );
 }
 
@@ -504,10 +483,10 @@ function ChoiceButton({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`min-h-10 rounded-card border px-3 py-2 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+      className={`min-h-touch rounded-control border px-3 py-2 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
         selected
           ? 'border-brand-600 bg-brand-600 text-white'
-          : 'border-ink-200 bg-white text-ink-700 hover:border-brand-400 hover:text-brand-700'
+          : 'border-border bg-white text-ink-700 hover:border-brand-400 hover:text-brand-700'
       }`}
     >
       {children}

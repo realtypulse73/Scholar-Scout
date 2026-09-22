@@ -7,12 +7,10 @@ interface Props {
 }
 
 const STEP_LABELS = [
-  'GPA',
   'Interests',
-  'Location',
-  'Pathway',
-  'Affordability',
+  'Fit basics',
   'Support',
+  'Preview',
 ];
 
 export default function ProgressIndicator({ currentStep }: Props) {
@@ -20,25 +18,25 @@ export default function ProgressIndicator({ currentStep }: Props) {
     <div className="w-full" aria-label={`Step ${currentStep} of ${TOTAL_STEPS}`}>
       {/* Step dots */}
       <div className="flex items-center justify-between mb-2">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => {
-          const step = i + 1;
+        {Array.from({ length: TOTAL_STEPS }, (_, index) => {
+          const step = index + 1;
           const isComplete = step < currentStep;
           const isCurrent = step === currentStep;
           return (
             <div key={step} className="flex flex-col items-center gap-1 flex-1">
               <div
                 aria-hidden="true"
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   isComplete
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-ink-700 text-white'
                     : isCurrent
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                      : 'bg-gray-200 text-gray-400'
+                      ? 'bg-brand-600 text-white ring-4 ring-brand-100'
+                      : 'bg-silver text-ink-500'
                 }`}
               >
                 {isComplete ? (
                   <svg
-                    className="w-4 h-4"
+                    className="h-4 w-4"
                     fill="none"
                     viewBox="0 0 16 16"
                     aria-hidden="true"
@@ -55,24 +53,17 @@ export default function ProgressIndicator({ currentStep }: Props) {
                   step
                 )}
               </div>
-              <span
-                className={`hidden sm:block text-[10px] font-medium ${
-                  isCurrent ? 'text-blue-600' : isComplete ? 'text-gray-500' : 'text-gray-400'
-                }`}
-              >
-                {STEP_LABELS[i]}
-              </span>
             </div>
           );
         })}
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-1.5 overflow-hidden rounded-full bg-silver">
         <div
           aria-hidden="true"
-          className="h-full bg-blue-600 rounded-full transition-all duration-300"
-          style={{ width: `${((currentStep - 1) / (TOTAL_STEPS - 1)) * 100}%` }}
+          className="h-full rounded-full bg-brand-600 transition-all duration-300"
+          style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
         />
       </div>
 
