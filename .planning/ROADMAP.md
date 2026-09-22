@@ -263,16 +263,20 @@ Plans:
 **Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, and accessible CSS-only student-side scene motion without dark page backgrounds.
 **Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07]
 **Depends on:** Phase 7
-**Plans:** 9 plans
+**Plans:** 13 plans
 
 Plans:
 
 - [ ] 07.1-01-PLAN.md — Establish Space Grotesk, visual tokens, shared controls, and the home scene.
 - [ ] 07.1-02-PLAN.md — Apply the shared scene to school-locker and community consumers.
-- [ ] 07.1-03-PLAN.md — Migrate discovery, recommendation, programme, and shortlist surfaces.
-- [ ] 07.1-04-PLAN.md — Migrate community, profile, feed, creator, campus, and directory surfaces.
+- [ ] 07.1-03-PLAN.md — Migrate discovery, programme, recommendation, and shortlist route shells.
+- [ ] 07.1-04-PLAN.md — Migrate community, profile, feed, and creator surfaces.
 - [ ] 07.1-05-PLAN.md — Migrate authentication, account-status, staff-gate, and advisor surfaces.
 - [ ] 07.1-06-PLAN.md — Migrate simulation, referral, support, and sharing surfaces.
 - [ ] 07.1-07-PLAN.md — Migrate staff operations and governance interfaces.
 - [ ] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
-- [ ] 07.1-09-PLAN.md — Migrate every onboarding step while retaining validation and consent behavior.
+- [ ] 07.1-09-PLAN.md — Migrate the onboarding wizard, progress, and summary hierarchy.
+- [ ] 07.1-10-PLAN.md — Migrate decision-support cards and shortlist controls with focused tests.
+- [ ] 07.1-11-PLAN.md — Migrate Western New York, campus-note, and uploader-contact surfaces.
+- [ ] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
+- [ ] 07.1-13-PLAN.md — Migrate affordability and support-need steps with explicit safety states.
