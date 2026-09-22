@@ -1,9 +1,13 @@
 import {
+  CATALOGUE_PATHWAYS,
   CATALOGUE_REGION_IDS,
   getFreshnessStatus,
   validateCatalogueRegion,
+  validateCoverageMatrix,
+  type CatalogueCoverage,
 } from '@/lib/catalogue-contract';
 import {
+  catalogueCoverage,
   catalogueRegions,
 } from '@/lib/catalogue-fixtures';
 
@@ -113,5 +117,44 @@ describe('catalogue regional fixtures', () => {
     };
 
     expect(getFreshnessStatus(staleBoundary, 'boundary', new Date('2025-09-24T00:00:00.000Z'))).toBe('needs-confirmation');
+  });
+});
+
+describe('catalogue coverage fixtures', () => {
+  it('publishes all 36 controlled pairs in region/pathway order as not-yet-verified', () => {
+    const expectedKeys = CATALOGUE_REGION_IDS.flatMap((regionId) => (
+      CATALOGUE_PATHWAYS.map((pathway) => `${regionId}:${pathway}`)
+    ));
+
+    expect(catalogueCoverage).toHaveLength(36);
+    expect(catalogueCoverage.map((row) => `${row.regionId}:${row.pathway}`)).toEqual(expectedKeys);
+    expect(catalogueCoverage.every((row) => row.state === 'not-yet-verified' && row.reviewedAt === checkedAt)).toBe(true);
+    expect(validateCoverageMatrix(catalogueRegions, catalogueCoverage)).toEqual([]);
+  });
+
+  it('keeps all six Greater Kingston pathways explicit without a provider inventory', () => {
+    const kingstonCoverage = catalogueCoverage.filter((row) => row.regionId === 'greater-kingston-jamaica');
+
+    expect(kingstonCoverage).toHaveLength(6);
+    expect(kingstonCoverage.map((row) => row.pathway)).toEqual(CATALOGUE_PATHWAYS);
+    expect(kingstonCoverage.every((row) => row.state === 'not-yet-verified' && row.sourceUrl === undefined)).toBe(true);
+  });
+
+  it('detects deleted, duplicated, and unsupported coverage cells', () => {
+    const deleted = catalogueCoverage.slice(1);
+    const duplicate = [...catalogueCoverage, catalogueCoverage[0]];
+    const unknown = [
+      ...catalogueCoverage,
+      {
+        regionId: 'not-a-region',
+        pathway: 'university',
+        state: 'not-yet-verified',
+        reviewedAt: checkedAt,
+      } as unknown as CatalogueCoverage,
+    ];
+
+    expect(validateCoverageMatrix(catalogueRegions, deleted)).toContain('Missing catalogue coverage: greater-houston:university.');
+    expect(validateCoverageMatrix(catalogueRegions, duplicate)).toContain('Duplicate catalogue coverage: greater-houston:university.');
+    expect(validateCoverageMatrix(catalogueRegions, unknown)).toContain('Unsupported coverage region: not-a-region.');
   });
 });
