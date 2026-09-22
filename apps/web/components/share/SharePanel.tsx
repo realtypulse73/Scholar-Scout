@@ -28,12 +28,12 @@ export default function SharePanel({ targetType, targetId }: SharePanelProps) {
 
   return (
     <Card className="p-5">
-      <h2 className="text-base font-bold text-ink-900">Share card</h2>
-      <div className="mt-3 rounded-card border border-ink-200 bg-white p-4">
+      <h2 className="text-base font-semibold text-ink-900">Share card</h2>
+      <div className="mt-3 rounded-card border border-border bg-white p-4">
         <p className="text-xs font-semibold uppercase text-ink-500">
           ScholarScout path
         </p>
-        <p className="mt-2 text-lg font-extrabold text-ink-900">{targetId}</p>
+        <p className="mt-2 text-lg font-semibold text-ink-900">{targetId}</p>
       </div>
       <Button variant="secondary" className="mt-4 w-full" onClick={() => void share()}>
         Create share link
