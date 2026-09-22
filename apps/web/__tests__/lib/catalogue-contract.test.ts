@@ -110,7 +110,7 @@ describe('catalogue contract', () => {
     expect(createCoverageKey(coverage.regionId, coverage.pathway)).toBe(
       'greater-kingston-jamaica:university',
     );
-    expect(validateCoverageMatrix([region], [coverage])).toHaveLength(5);
+    expect(validateCoverageMatrix([region], [coverage], FACT_NOW)).toHaveLength(5);
     expect(getFreshnessStatus(region.officialBoundary, 'boundary', new Date('2026-09-22')))
       .toBe('unknown');
   });
@@ -204,12 +204,12 @@ describe('catalogue contract', () => {
       'At least one catalogue region is required.',
       'At least one catalogue coverage row is required.',
     ]);
-    expect(validateCoverageMatrix([region], invalidCoverage)).toEqual([
+    expect(validateCoverageMatrix([region], invalidCoverage, FACT_NOW)).toEqual([
       'Unsupported coverage pathway: unsupported-pathway.',
       'Unsupported coverage region: unsupported-region.',
       'Duplicate catalogue coverage: greater-kingston-jamaica:university.',
     ]);
-    expect(validateCoverageMatrix([region], completeCoverage.slice(1))).toEqual([
+    expect(validateCoverageMatrix([region], completeCoverage.slice(1), FACT_NOW)).toEqual([
       'Missing catalogue coverage: greater-kingston-jamaica:university.',
     ]);
   });
@@ -304,6 +304,23 @@ describe('field-level fact evidence', () => {
       sourceDate: { state: 'documented', value: '2026-09-23' },
     }, 'operational', now)).toBe('unknown');
   });
+
+  it('rejects documented source dates after the injected clock and reviews before the source', () => {
+    expect(validateFactEvidence({
+      ...factEvidence,
+      sourceDate: { state: 'documented', value: '2026-09-23' },
+    }, FACT_NOW)).toContain('Fact source date cannot be in the future.');
+    expect(validateFactEvidence({
+      ...factEvidence,
+      status: 'unknown',
+      sourceDate: { state: 'documented', value: '2026-09-23' },
+    }, FACT_NOW)).toContain('Fact source date cannot be in the future.');
+    expect(validateFactEvidence({
+      ...factEvidence,
+      sourceDate: { state: 'documented', value: '2026-03-23' },
+      reviewedAt: '2026-03-22',
+    }, FACT_NOW)).toContain('Fact review date cannot precede the documented source date.');
+  });
 });
 
 describe('employer training and wage context', () => {
@@ -368,6 +385,66 @@ describe('employer training and wage context', () => {
       'forecast',
       'ranking',
     ]));
+  });
+
+  it.each([
+    42,
+    { amount: '$18' },
+    ['$18'],
+  ])('returns errors rather than throwing for malformed sourced text values', (value) => {
+    const malformedEmployerTraining = {
+      ...employerTrainingFacts,
+      taughtSkill: { value, evidence: factEvidence },
+      traineePay: { value, evidence: factEvidence },
+    } as unknown as EmployerTrainingFacts;
+    const malformedWageContext = {
+      ...wageContext,
+      wage: { value, evidence: wageContext.wage.evidence },
+    } as unknown as OccupationAreaWageContext;
+
+    expect(() => validateEmployerTrainingFacts(malformedEmployerTraining, FACT_NOW)).not.toThrow();
+    expect(validateEmployerTrainingFacts(malformedEmployerTraining, FACT_NOW)).toEqual(expect.arrayContaining([
+      'Taught skill value is required.',
+      'Trainee pay value is required.',
+    ]));
+    expect(() => validateOccupationAreaWageContext(malformedWageContext, FACT_NOW)).not.toThrow();
+    expect(validateOccupationAreaWageContext(malformedWageContext, FACT_NOW)).toContain(
+      'Wage context value is required.',
+    );
+  });
+
+  it.each([
+    ['no-published-guarantee', 'unknown'],
+    ['published-provider-statement', 'conflicting'],
+    ['unknown', 'current'],
+    ['conflicting', 'needs-confirmation'],
+  ] as const)('rejects an incompatible %s commitment evidence state of %s', (commitment, status) => {
+    expect(validateEmployerTrainingFacts({
+      ...employerTrainingFacts,
+      employmentCommitment: commitment as EmployerTrainingFacts['employmentCommitment'],
+      employmentCommitmentEvidence: {
+        ...factEvidence,
+        status,
+        sourceDate: status === 'unknown' ? { state: 'unavailable', value: null } : factEvidence.sourceDate,
+      },
+    }, FACT_NOW)).toContain('Employment commitment state must match its evidence status.');
+  });
+
+  it.each([
+    ['no-published-guarantee', 'current'],
+    ['published-provider-statement', 'needs-confirmation'],
+    ['unknown', 'unknown'],
+    ['conflicting', 'conflicting'],
+  ] as const)('accepts a compatible %s commitment evidence state of %s', (commitment, status) => {
+    expect(validateEmployerTrainingFacts({
+      ...employerTrainingFacts,
+      employmentCommitment: commitment as EmployerTrainingFacts['employmentCommitment'],
+      employmentCommitmentEvidence: {
+        ...factEvidence,
+        status,
+        sourceDate: status === 'unknown' ? { state: 'unavailable', value: null } : factEvidence.sourceDate,
+      },
+    }, FACT_NOW)).toEqual([]);
   });
 });
 
@@ -444,5 +521,101 @@ describe('opportunity card facts', () => {
       'Skill taught: Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
       'Duration: Fact verification action is required.',
     ]));
+  });
+
+  it('rejects unresolved card facts with a material value or unsupported state', () => {
+    expect(validateCatalogueOpportunityCardFacts({
+      ...cardFacts,
+      duration: {
+        value: 'Unverified duration',
+        state: 'unknown',
+        evidence: {
+          ...factEvidence,
+          status: 'unknown',
+          sourceDate: { state: 'unavailable', value: null },
+        },
+      },
+    } as unknown as CatalogueOpportunityCardFacts, FACT_NOW)).toContain(
+      'Duration unresolved card facts must have a null value.',
+    );
+    expect(validateCatalogueOpportunityCardFacts({
+      ...cardFacts,
+      duration: {
+        value: null,
+        state: 'current',
+        evidence: factEvidence,
+      },
+    } as unknown as CatalogueOpportunityCardFacts, FACT_NOW)).toContain(
+      'Duration unresolved state is unsupported.',
+    );
+  });
+});
+
+describe('review regression contracts', () => {
+  it('binds each region to its exact authority and boundary identifier', () => {
+    const houston = {
+      ...region,
+      id: 'greater-houston' as const,
+      label: 'Greater Houston',
+      officialBoundary: {
+        ...region.officialBoundary,
+        authority: 'us-census-omb-cbsa' as const,
+        boundaryId: '26420',
+      },
+    };
+
+    expect(validateCatalogueRegion(houston)).toEqual([]);
+    expect(validateCatalogueRegion({
+      ...houston,
+      officialBoundary: {
+        ...houston.officialBoundary,
+        authority: 'statin-kingston-metropolitan-area',
+        boundaryId: null,
+      },
+    } as unknown as CatalogueRegion)).toContain(
+      'Official boundary authority and ID must match the declared region.',
+    );
+    expect(validateCatalogueRegion({
+      ...region,
+      officialBoundary: {
+        ...region.officialBoundary,
+        authority: 'us-census-omb-cbsa',
+        boundaryId: '26420',
+      },
+    } as unknown as CatalogueRegion)).toContain(
+      'Official boundary authority and ID must match the declared region.',
+    );
+  });
+
+  it('requires current attributable evidence and a direct action for verified coverage', () => {
+    const verifiedCoverage = {
+      ...coverage,
+      state: 'verified',
+      evidence: factEvidence,
+    } as unknown as CatalogueCoverage;
+    const incompleteVerifiedCoverage = {
+      ...coverage,
+      state: 'verified',
+    } as unknown as CatalogueCoverage;
+
+    expect(validateCoverageMatrix([region], [verifiedCoverage], FACT_NOW)).toHaveLength(5);
+    expect(validateCoverageMatrix([region], [
+      verifiedCoverage,
+      ...CATALOGUE_PATHWAYS.filter((pathway) => pathway !== coverage.pathway).map((pathway) => ({
+        ...coverage,
+        pathway,
+        state: 'verified',
+        evidence: factEvidence,
+      })),
+    ] as unknown as CatalogueCoverage[], FACT_NOW)).toEqual([]);
+    expect(validateCoverageMatrix([region], [
+      incompleteVerifiedCoverage,
+      ...CATALOGUE_PATHWAYS.filter((pathway) => pathway !== coverage.pathway).map((pathway) => ({
+        ...coverage,
+        pathway,
+      })),
+    ] as unknown as CatalogueCoverage[], FACT_NOW)).toContain(
+      'Verified coverage requires current attributable evidence for greater-kingston-jamaica:university.',
+    );
   });
 });

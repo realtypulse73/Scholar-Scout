@@ -129,7 +129,7 @@ describe('catalogue coverage fixtures', () => {
     expect(catalogueCoverage).toHaveLength(36);
     expect(catalogueCoverage.map((row) => `${row.regionId}:${row.pathway}`)).toEqual(expectedKeys);
     expect(catalogueCoverage.every((row) => row.state === 'not-yet-verified' && row.reviewedAt === checkedAt)).toBe(true);
-    expect(validateCoverageMatrix(catalogueRegions, catalogueCoverage)).toEqual([]);
+    expect(validateCoverageMatrix(catalogueRegions, catalogueCoverage, new Date('2026-09-22T00:00:00.000Z'))).toEqual([]);
   });
 
   it('keeps all six Greater Kingston pathways explicit without a provider inventory', () => {
@@ -153,8 +153,30 @@ describe('catalogue coverage fixtures', () => {
       } as unknown as CatalogueCoverage,
     ];
 
-    expect(validateCoverageMatrix(catalogueRegions, deleted)).toContain('Missing catalogue coverage: greater-houston:university.');
-    expect(validateCoverageMatrix(catalogueRegions, duplicate)).toContain('Duplicate catalogue coverage: greater-houston:university.');
-    expect(validateCoverageMatrix(catalogueRegions, unknown)).toContain('Unsupported coverage region: not-a-region.');
+    expect(validateCoverageMatrix(catalogueRegions, deleted, new Date('2026-09-22T00:00:00.000Z'))).toContain('Missing catalogue coverage: greater-houston:university.');
+    expect(validateCoverageMatrix(catalogueRegions, duplicate, new Date('2026-09-22T00:00:00.000Z'))).toContain('Duplicate catalogue coverage: greater-houston:university.');
+    expect(validateCoverageMatrix(catalogueRegions, unknown, new Date('2026-09-22T00:00:00.000Z'))).toContain('Unsupported coverage region: not-a-region.');
+  });
+
+  it('deep-freezes every exported record and gives every source date distinct identity', () => {
+    const sourceDates = catalogueRegions.flatMap((region) => [
+      region.officialBoundary.sourceDate,
+      region.localFocus.sourceDate,
+    ]);
+    const secondRegionSourceLabel = catalogueRegions[1].officialBoundary.sourceLabel;
+    const mutableBoundary = catalogueRegions[0].officialBoundary as unknown as { sourceLabel: string };
+
+    expect(Object.isFrozen(catalogueRegions)).toBe(true);
+    expect(Object.isFrozen(catalogueCoverage)).toBe(true);
+    expect(Object.isFrozen(catalogueRegions[0])).toBe(true);
+    expect(Object.isFrozen(catalogueRegions[0].officialBoundary)).toBe(true);
+    expect(Object.isFrozen(catalogueRegions[0].officialBoundary.sourceDate)).toBe(true);
+    expect(Object.isFrozen(catalogueCoverage[0])).toBe(true);
+    expect(new Set(sourceDates).size).toBe(sourceDates.length);
+
+    expect(() => {
+      mutableBoundary.sourceLabel = 'Tampered source';
+    }).toThrow();
+    expect(catalogueRegions[1].officialBoundary.sourceLabel).toBe(secondRegionSourceLabel);
   });
 });
