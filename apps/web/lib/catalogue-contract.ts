@@ -663,7 +663,7 @@ function getIsoDate(value: unknown): Date | null {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
-function isSourceDate(sourceDate: unknown): boolean {
+function isSourceDate(sourceDate: unknown): sourceDate is SourceDate {
   return isRecord(sourceDate)
     && ((sourceDate.state === 'documented' && isIsoCalendarDate(sourceDate.value))
       || (sourceDate.state === 'unavailable' && sourceDate.value === null));
