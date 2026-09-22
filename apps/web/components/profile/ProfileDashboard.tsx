@@ -46,7 +46,7 @@ export default function ProfileDashboard() {
         <Badge tone="brand" className="mb-4">
           Account
         </Badge>
-        <h1 className="text-2xl font-extrabold text-ink-900">
+        <h1 className="text-2xl font-semibold text-ink-900">
           Sign in to see your saved ScholarScout workspace
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
@@ -54,7 +54,7 @@ export default function ProfileDashboard() {
         </p>
         <Link
           href="/auth/sign-in"
-          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="mt-6 inline-flex min-h-touch items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
         >
           Sign in
         </Link>
@@ -70,7 +70,7 @@ export default function ProfileDashboard() {
             <Badge tone="success" className="mb-4">
               {session.user.role}
             </Badge>
-            <h1 className="text-3xl font-extrabold text-ink-900">
+            <h1 className="text-3xl font-semibold text-ink-900">
               {session.user.name}
             </h1>
             <p className="mt-2 text-sm font-semibold text-ink-600">
@@ -107,7 +107,7 @@ export default function ProfileDashboard() {
 
       {session.user.role === 'staff' ? (
         <Card className="p-5">
-          <h2 className="text-xl font-extrabold text-ink-900">Staff tools</h2>
+          <h2 className="text-xl font-semibold text-ink-900">Staff tools</h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
             Staff access is enabled for this authenticated session.
           </p>
@@ -136,7 +136,7 @@ function StatusCard({
     <Link href={href} className="block">
       <Card className="h-full p-5 transition-colors hover:border-brand-300">
         <p className="text-xs font-semibold uppercase text-ink-500">{label}</p>
-        <p className="mt-2 text-xl font-extrabold text-ink-900">{value}</p>
+        <p className="mt-2 text-xl font-semibold text-ink-900">{value}</p>
       </Card>
     </Link>
   );

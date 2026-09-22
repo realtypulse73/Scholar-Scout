@@ -67,7 +67,7 @@ export default function PathCard({
     <article className="relative h-screen overflow-hidden">
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full bg-ink-950 object-cover"
+        className="absolute inset-0 h-full w-full bg-silver object-cover"
         src={path.videoUrl}
         autoPlay={active}
         muted
@@ -80,7 +80,7 @@ export default function PathCard({
 
       <div className="relative z-10 flex h-full flex-col justify-end px-5 py-6 sm:px-8 lg:px-12">
         <div className="max-w-2xl pb-16 sm:pb-10">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase text-white/75">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase text-white/75">
             <span>
               {position} / {total}
             </span>
@@ -88,12 +88,12 @@ export default function PathCard({
             <span>{path.durationSeconds}s</span>
           </div>
 
-          <h1 className="mt-4 max-w-xl text-4xl font-extrabold leading-tight text-white sm:text-6xl">
+          <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight text-white sm:text-6xl">
             {path.title}
           </h1>
           <Link
             href={`/u/${path.creatorUsername}`}
-            className="mt-3 inline-block text-sm font-bold text-brand-100 hover:text-white"
+            className="mt-3 inline-block text-sm font-semibold text-brand-100 hover:text-white"
           >
             @{path.creatorUsername}
           </Link>

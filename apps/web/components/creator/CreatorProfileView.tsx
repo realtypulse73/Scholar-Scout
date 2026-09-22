@@ -17,7 +17,7 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
       <section className="space-y-4">
         <Card className="p-6">
           <Badge tone="brand">{creator.pathway}</Badge>
-          <h1 className="mt-4 text-4xl font-extrabold text-ink-900">
+          <h1 className="mt-4 text-4xl font-semibold text-ink-900">
             {creator.displayName}
           </h1>
           <p className="mt-2 text-sm font-semibold text-brand-700">
@@ -44,7 +44,7 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
             <p className="text-xs font-semibold uppercase text-ink-500">
               Followers
             </p>
-            <p className="mt-2 text-2xl font-extrabold text-ink-900">
+            <p className="mt-2 text-2xl font-semibold text-ink-900">
               {creator.stats.followers}
             </p>
           </Card>
@@ -52,7 +52,7 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
             <p className="text-xs font-semibold uppercase text-ink-500">
               Completions
             </p>
-            <p className="mt-2 text-2xl font-extrabold text-ink-900">
+            <p className="mt-2 text-2xl font-semibold text-ink-900">
               {creator.stats.completions}
             </p>
           </Card>
@@ -60,7 +60,7 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
             <p className="text-xs font-semibold uppercase text-ink-500">
               Clarity
             </p>
-            <p className="mt-2 text-2xl font-extrabold text-ink-900">
+            <p className="mt-2 text-2xl font-semibold text-ink-900">
               {creator.clarityScore}
             </p>
           </Card>
@@ -71,7 +71,7 @@ export default function CreatorProfileView({ creator }: CreatorProfileViewProps)
         <Card className="p-5">
           <p className="text-xs font-semibold uppercase text-ink-500">Contact this uploader</p>
           <UploaderContactPanel username={creator.username} programId={creator.programmeId} inboxEnabled={creator.inboxEnabled} />
-          <Link href={`/schools/${creator.schoolSlug}`} className="mt-4 inline-flex text-sm font-bold text-brand-700">Open {creator.school} locker</Link>
+          <Link href={`/schools/${creator.schoolSlug}`} className="mt-4 inline-flex text-sm font-semibold text-brand-700">Open {creator.school} locker</Link>
         </Card>
         <CampusNoteBoard schoolSlug={creator.schoolSlug} uploaderUsername={creator.username} programId={creator.programmeId} />
         <ReferralPanel referrer={creator.username} />
