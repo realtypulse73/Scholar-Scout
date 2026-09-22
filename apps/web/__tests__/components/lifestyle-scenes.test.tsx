@@ -15,5 +15,12 @@ describe('lifestyle scene consumers', () => {
     expect(scene.querySelector('[data-scene-content]')).toContainElement(
       screen.getByText('Campus conversations'),
     );
+    expect(scene.querySelector('[data-scene-content]')).not.toContainElement(
+      screen.getByRole('link', { name: 'Sign in to begin' }),
+    );
+    expect(screen.getByRole('link', { name: 'Sign in to begin' })).toHaveAttribute(
+      'href',
+      '/auth/sign-in',
+    );
   });
 });

@@ -26,7 +26,10 @@ describe('StudentJourneyScene', () => {
     render(<StudentJourneyScene>Scene content</StudentJourneyScene>);
 
     expect(screen.getByTestId('student-journey-scene')).toHaveClass('student-journey-scene');
-    expect(document.querySelector('.student-motion-layer')).toBeInTheDocument();
-    expect(document.querySelector('.student-light-trail')).toBeInTheDocument();
+    const decorations = document.querySelector('[data-scene-decorations]');
+
+    expect(decorations).toHaveClass('absolute', 'inset-y-0', 'right-0', 'w-1/2', 'overflow-hidden');
+    expect(decorations?.querySelector('.student-motion-layer')).toBeInTheDocument();
+    expect(decorations?.querySelector('.student-light-trail')).toBeInTheDocument();
   });
 });
