@@ -57,6 +57,8 @@ const factEvidence: FactEvidence = {
   verificationAction: 'Confirm details with the provider.',
 };
 
+const FACT_NOW = new Date('2026-09-22T00:00:00.000Z');
+
 describe('catalogue contract', () => {
   it('proves one source-dated region-to-coverage path without treating an unavailable boundary date as current', () => {
     expect(validateCatalogueRegion(region)).toEqual([]);
@@ -183,12 +185,12 @@ describe('catalogue contract', () => {
 
 describe('field-level fact evidence', () => {
   it('accepts complete documented current evidence and an unavailable unresolved source date', () => {
-    expect(validateFactEvidence(factEvidence)).toEqual([]);
+    expect(validateFactEvidence(factEvidence, FACT_NOW)).toEqual([]);
     expect(validateFactEvidence({
       ...factEvidence,
       status: 'unknown',
       sourceDate: { state: 'unavailable', value: null },
-    })).toEqual([]);
+    }, FACT_NOW)).toEqual([]);
   });
 
   it('requires authority, public attribution, structured source/review dates, status, and an action', () => {
@@ -200,7 +202,7 @@ describe('field-level fact evidence', () => {
       sourceDate: undefined as unknown as FactEvidence['sourceDate'],
       reviewedAt: 'not-a-date',
       verificationAction: '',
-    })).toEqual(expect.arrayContaining([
+    }, FACT_NOW)).toEqual(expect.arrayContaining([
       'Fact authority is unsupported.',
       'Fact source label is required.',
       'Fact source URL must use http:// or https://.',
@@ -217,11 +219,11 @@ describe('field-level fact evidence', () => {
       ...factEvidence,
       status: 'current',
       sourceDate: { state: 'unavailable', value: null },
-    })).toContain('Current facts require a documented source date.');
+    }, FACT_NOW)).toContain('Current facts require a documented source date.');
     expect(validateFactEvidence({
       ...factEvidence,
       status: 'conflicting',
-    })).toEqual([]);
+    }, FACT_NOW)).toEqual([]);
     expect(getFreshnessStatus({
       sourceLabel: factEvidence.sourceLabel,
       sourceUrl: factEvidence.sourceUrl,
@@ -243,7 +245,7 @@ describe('field-level fact evidence', () => {
       ...factEvidence,
       sourceDate: { state: 'documented', value: '2026-02-30' },
       reviewedAt: '2026-09-23',
-    })).toEqual(expect.arrayContaining([
+    }, FACT_NOW)).toEqual(expect.arrayContaining([
       'Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
       'Fact review date cannot be in the future.',
     ]));

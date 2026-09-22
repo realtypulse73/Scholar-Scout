@@ -39,11 +39,35 @@ export type SourceDate =
   | { state: 'documented'; value: string }
   | { state: 'unavailable'; value: null };
 
+export type FactStatus = 'current' | 'needs-confirmation' | 'unknown' | 'conflicting';
+export type FactAuthority =
+  | 'provider-official'
+  | 'employer-official'
+  | 'government-official'
+  | 'workforce-authority';
+
 export interface SourceMetadata {
   sourceLabel: string;
   sourceUrl: string;
   sourceDate: SourceDate;
   checkedAt: string;
+}
+
+/** Provenance and review state for one independently material catalogue fact. */
+export interface FactEvidence {
+  status: FactStatus;
+  authority: FactAuthority;
+  sourceLabel: string;
+  sourceUrl: string;
+  sourceDate: SourceDate;
+  reviewedAt: string;
+  verificationAction: string;
+}
+
+/** A material value that remains separate from its evidence and review state. */
+export interface SourcedFact<Value> {
+  value?: Value;
+  evidence: FactEvidence;
 }
 
 export interface OfficialBoundary extends SourceMetadata {
@@ -131,6 +155,57 @@ export function validateSourceMetadata(metadata: SourceMetadata): string[] {
   }
   if (!isIsoCalendarDate(metadata.checkedAt)) {
     errors.push('Checked date must be an ISO calendar date.');
+  }
+
+  return errors;
+}
+
+/**
+ * Validates evidence for one material fact against a supplied clock. A current
+ * status is only valid when its documented source date is within the
+ * operational freshness window; unresolved states stay explicit.
+ */
+export function validateFactEvidence(evidence: FactEvidence, now: Date): string[] {
+  const errors: string[] = [];
+
+  if (!isFactStatus(evidence?.status)) {
+    errors.push('Fact status is unsupported.');
+  }
+  if (!isFactAuthority(evidence?.authority)) {
+    errors.push('Fact authority is unsupported.');
+  }
+  if (!evidence?.sourceLabel?.trim()) {
+    errors.push('Fact source label is required.');
+  }
+  if (!isHttpUrl(evidence?.sourceUrl)) {
+    errors.push('Fact source URL must use http:// or https://.');
+  }
+  if (!isSourceDate(evidence?.sourceDate)) {
+    errors.push('Fact source date must be documented with an ISO calendar date or explicitly unavailable.');
+  }
+  if (!isIsoCalendarDate(evidence?.reviewedAt)) {
+    errors.push('Fact review date must be an ISO calendar date.');
+  } else if (isValidDate(now) && new Date(`${evidence.reviewedAt}T00:00:00.000Z`).getTime() > now.getTime()) {
+    errors.push('Fact review date cannot be in the future.');
+  }
+  if (!evidence?.verificationAction?.trim()) {
+    errors.push('Fact verification action is required.');
+  }
+
+  if (evidence?.status === 'current') {
+    if (evidence.sourceDate?.state !== 'documented' || !isIsoCalendarDate(evidence.sourceDate.value)) {
+      errors.push('Current facts require a documented source date.');
+    } else if (isValidDate(now)) {
+      const freshness = getFreshnessStatus({
+        sourceLabel: evidence.sourceLabel,
+        sourceUrl: evidence.sourceUrl,
+        sourceDate: evidence.sourceDate,
+        checkedAt: evidence.reviewedAt,
+      }, 'operational', now);
+      if (freshness !== 'current') {
+        errors.push('Current facts require source evidence within the operational freshness window.');
+      }
+    }
   }
 
   return errors;
@@ -297,6 +372,20 @@ function getDocumentedDate(sourceDate: SourceDate): Date | null {
 function isSourceDate(sourceDate: SourceDate): boolean {
   return (sourceDate?.state === 'documented' && isIsoCalendarDate(sourceDate.value))
     || (sourceDate?.state === 'unavailable' && sourceDate.value === null);
+}
+
+function isFactStatus(value: unknown): value is FactStatus {
+  return value === 'current'
+    || value === 'needs-confirmation'
+    || value === 'unknown'
+    || value === 'conflicting';
+}
+
+function isFactAuthority(value: unknown): value is FactAuthority {
+  return value === 'provider-official'
+    || value === 'employer-official'
+    || value === 'government-official'
+    || value === 'workforce-authority';
 }
 
 function isIsoCalendarDate(value: unknown): value is string {
