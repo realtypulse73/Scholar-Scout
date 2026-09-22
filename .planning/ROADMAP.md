@@ -257,3 +257,14 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 07-04-PLAN.md — Reachable sensitive-referral entry point, authoritative release-gate wiring, and final validation
+
+### Phase 07.1: Futuristic Student Journey Visual System (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 07.1 to break down)
