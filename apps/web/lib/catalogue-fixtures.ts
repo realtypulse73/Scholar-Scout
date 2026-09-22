@@ -1,4 +1,9 @@
+import {
+  CATALOGUE_PATHWAYS,
+  CATALOGUE_REGION_IDS,
+} from './catalogue-contract';
 import type {
+  CatalogueCoverage,
   CatalogueRegion,
   SourceDate,
 } from './catalogue-contract';
@@ -157,3 +162,16 @@ export const catalogueRegions: readonly CatalogueRegion[] = [
     },
   },
 ];
+
+/**
+ * Every controlled local-coverage cell is explicitly present. Phase 9 records
+ * no reviewed opportunity inventory, so each cell remains not-yet-verified.
+ */
+export const catalogueCoverage: readonly CatalogueCoverage[] = CATALOGUE_REGION_IDS.flatMap((regionId) => (
+  CATALOGUE_PATHWAYS.map((pathway) => ({
+    regionId,
+    pathway,
+    state: 'not-yet-verified' as const,
+    reviewedAt: CHECKED_AT,
+  }))
+));
