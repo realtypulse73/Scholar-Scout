@@ -13,15 +13,15 @@ interface Props {
 export default function StepAffordability({ value, onChange }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-xl font-semibold text-ink-900">
         How important is cost to you?
       </h2>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="mb-6 text-sm text-ink-600">
         We&apos;ll prioritise schools that match your budget sensitivity.
       </p>
 
       <div className="flex flex-col gap-6">
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-ink-600">
           <span>Cost is #1 priority</span>
           <span>Cost is no barrier</span>
         </div>
@@ -40,7 +40,7 @@ export default function StepAffordability({ value, onChange }: Props) {
           onChange={(e) =>
             onChange(Number(e.target.value) as AffordabilitySensitivity)
           }
-          className="w-full h-2 rounded-full appearance-none bg-gray-200 accent-blue-600 cursor-pointer"
+          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-silver accent-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         />
 
         <div className="flex justify-between">
@@ -49,10 +49,10 @@ export default function StepAffordability({ value, onChange }: Props) {
               key={v}
               type="button"
               onClick={() => onChange(v)}
-              className={`w-9 h-9 rounded-full text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`min-h-touch min-w-touch rounded-control text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 value === v
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-silver text-ink-700 hover:bg-brand-50'
               }`}
             >
               {v}
@@ -60,8 +60,8 @@ export default function StepAffordability({ value, onChange }: Props) {
           ))}
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-center">
-          <p className="text-sm font-semibold text-blue-800">
+        <div className="rounded-card border border-brand-200 bg-brand-50 px-4 py-3 text-center">
+          <p className="text-sm font-semibold text-ink-800">
             {AFFORDABILITY_LABELS[value]}
           </p>
         </div>
