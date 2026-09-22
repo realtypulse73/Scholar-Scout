@@ -34,8 +34,16 @@ for (const file of identityConsumers) {
 }
 
 const responsiveGuards = [
+  ['apps/web/app/page.tsx', ['flex-col', 'sm:flex-row']],
   ['apps/web/app/shortlist/page.tsx', ['flex-col', 'sm:flex-row']],
   ['apps/web/app/peer-community/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/programmes/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/recommendations/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/programmes/[id]/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/schools/[slug]/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/profile/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/western-new-york/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/admin/programmes/page.tsx', ['flex-col', 'sm:flex-row']],
   ['apps/web/components/advisor/AdvisorChat.tsx', ['flex flex-col', 'sm:flex-row']],
 ];
 

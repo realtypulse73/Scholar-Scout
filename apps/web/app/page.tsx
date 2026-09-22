@@ -53,13 +53,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-ink-900">
       <nav
-        className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
+        className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         aria-label="Main navigation"
       >
         <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
           <ScholarScoutBrandMark size="compact" />
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Link
             href="/feed"
             className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
