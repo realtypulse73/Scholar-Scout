@@ -16,10 +16,10 @@ const PATHWAYS = Object.keys(PATHWAY_LABELS) as PathwayPreference[];
 export default function StepPathway({ value, onChange, error }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-xl font-semibold text-ink-900">
         What kind of programme interests you?
       </h2>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="mb-6 text-sm text-ink-600">
         No right answer — pick the path that feels right for you.
       </p>
 
@@ -31,10 +31,10 @@ export default function StepPathway({ value, onChange, error }: Props) {
         {PATHWAYS.map((pathway) => (
           <label
             key={pathway}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+            className={`flex min-h-touch items-center gap-3 rounded-control border-2 px-4 py-3 text-sm font-semibold cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-brand-500 ${
               value === pathway
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-blue-400'
+                ? 'border-brand-600 bg-brand-50 text-brand-800'
+                : 'border-border bg-white text-ink-700 hover:border-brand-400'
             }`}
           >
             <input
@@ -46,16 +46,16 @@ export default function StepPathway({ value, onChange, error }: Props) {
               className="sr-only"
             />
             <span
-              className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                value === pathway ? 'border-blue-600' : 'border-gray-400'
+              className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                value === pathway ? 'border-brand-600' : 'border-ink-500'
               }`}
             >
               {value === pathway && (
-                <span className="w-2 h-2 rounded-full bg-blue-600" />
+                <span className="h-2 w-2 rounded-full bg-brand-600" />
               )}
             </span>
             <span
-              className={`text-sm font-medium ${value === pathway ? 'text-blue-700' : 'text-gray-700'}`}
+              className={`text-sm font-semibold ${value === pathway ? 'text-brand-800' : 'text-ink-700'}`}
             >
               {PATHWAY_LABELS[pathway]}
             </span>
@@ -64,7 +64,7 @@ export default function StepPathway({ value, onChange, error }: Props) {
       </div>
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 text-sm text-danger-700">
           {error}
         </p>
       )}
