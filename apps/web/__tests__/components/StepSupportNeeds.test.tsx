@@ -33,6 +33,14 @@ describe('StepSupportNeeds', () => {
     expect(onChange).toHaveBeenCalledWith(['financial-aid']);
   });
 
+  it('keeps the safety disclosure and an explicit selected control visible', () => {
+    render(<StepSupportNeeds value={['financial-aid']} onChange={jest.fn()} />);
+
+    expect(screen.getByText(/optional and never used to exclude you/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SUPPORT_NEED_LABELS['financial-aid'] })).toHaveClass('border-brand-600');
+    expect(screen.getByRole('button', { name: SUPPORT_NEED_LABELS['financial-aid'] })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('removes a support need when already selected item is clicked', () => {
     const onChange = jest.fn();
     render(
