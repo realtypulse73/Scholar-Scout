@@ -41,10 +41,10 @@ export default function StepSupportNeeds({ value, onChange }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-xl font-semibold text-ink-900">
         Do you have any specific support needs?
       </h2>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="mb-6 text-sm text-ink-600">
         Select all that apply — this is optional and never used to exclude you.
       </p>
 
@@ -61,20 +61,20 @@ export default function StepSupportNeeds({ value, onChange }: Props) {
               type="button"
               aria-pressed={selected}
               onClick={() => toggle(need)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`flex min-h-touch items-center gap-3 rounded-control border-2 px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 selected
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-blue-400'
+                  ? 'border-brand-600 bg-brand-50 text-brand-800'
+                  : 'border-border bg-white text-ink-700 hover:border-brand-400'
               }`}
             >
               <span
-                className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                  selected ? 'border-blue-600 bg-blue-600' : 'border-gray-400'
+                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                  selected ? 'border-brand-600 bg-brand-600' : 'border-ink-500'
                 }`}
               >
                 {selected && (
                   <svg
-                    className="w-3 h-3 text-white"
+                    className="h-3 w-3 text-white"
                     fill="none"
                     viewBox="0 0 12 12"
                     aria-hidden="true"
@@ -89,7 +89,7 @@ export default function StepSupportNeeds({ value, onChange }: Props) {
                   </svg>
                 )}
               </span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-semibold">
                 {SUPPORT_NEED_LABELS[need]}
               </span>
             </button>
