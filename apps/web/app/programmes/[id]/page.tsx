@@ -65,7 +65,7 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
         className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
         aria-label="Programme detail navigation"
       >
-        <Link href="/" className="text-lg font-extrabold text-brand-700">
+        <Link href="/" className="text-lg font-semibold text-brand-700">
           ScholarScout
         </Link>
         <div className="flex items-center gap-4">
@@ -88,7 +88,7 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
               <Badge>{programme.delivery}</Badge>
               <Badge tone="brand">{programme.credential}</Badge>
             </div>
-            <h1 className="mt-5 text-3xl font-extrabold leading-tight text-ink-900 sm:text-4xl">
+            <h1 className="mt-5 text-3xl font-semibold leading-tight text-ink-900 sm:text-4xl">
               {programme.name}
             </h1>
             <p className="mt-2 text-base font-semibold text-ink-600">
@@ -106,7 +106,7 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
           </div>
 
           <Card className="p-5">
-            <h2 className="text-sm font-extrabold uppercase text-ink-500">
+            <h2 className="text-sm font-semibold uppercase text-ink-500">
               Snapshot
             </h2>
             <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -128,21 +128,21 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
           <ProgrammeFitPanel programme={programme} />
 
           <Card className="p-5">
-            <h2 className="text-xl font-extrabold">Fit factors</h2>
+            <h2 className="text-xl font-semibold">Fit factors</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               {programme.highlights.map((highlight) => (
                 <div
                   key={highlight}
-                  className="rounded-card border border-ink-200 bg-ink-50 p-4"
+                  className="rounded-card border border-border bg-silver p-4"
                 >
-                  <p className="text-sm font-bold text-ink-900">{highlight}</p>
+                  <p className="text-sm font-semibold text-ink-900">{highlight}</p>
                 </div>
               ))}
             </div>
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-xl font-extrabold">Support services</h2>
+            <h2 className="text-xl font-semibold">Support services</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">
               These are the support signals currently attached to this
               programme. They are intended to help students compare practical
@@ -158,11 +158,11 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-xl font-extrabold">Next steps</h2>
+            <h2 className="text-xl font-semibold">Next steps</h2>
             <ol className="mt-4 space-y-3">
               {programme.nextSteps.map((step, index) => (
                 <li key={step} className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-extrabold text-brand-800">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800">
                     {index + 1}
                   </span>
                   <span className="pt-1 text-sm font-medium text-ink-700">
@@ -176,7 +176,7 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
 
         <aside className="space-y-6">
           <Card className="p-5">
-            <h2 className="text-lg font-extrabold">Programme profile</h2>
+            <h2 className="text-lg font-semibold">Programme profile</h2>
             <dl className="mt-4 space-y-4">
               <Detail label="Pathway" value={PROGRAMME_PATHWAY_LABELS[programme.pathway]} />
               <Detail label="Credential" value={programme.credential} />
@@ -192,15 +192,15 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-lg font-extrabold">Related options</h2>
+            <h2 className="text-lg font-semibold">Related options</h2>
             <div className="mt-4 space-y-3">
               {related.map((item) => (
                 <Link
                   key={item.id}
                   href={`/programmes/${item.id}`}
-                  className="block rounded-card border border-ink-200 p-3 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                  className="block rounded-card border border-border p-3 transition-colors hover:border-brand-300 hover:bg-brand-50"
                 >
-                  <p className="text-sm font-bold text-ink-900">{item.name}</p>
+                  <p className="text-sm font-semibold text-ink-900">{item.name}</p>
                   <p className="mt-1 text-xs font-semibold text-ink-500">
                     {item.school}
                   </p>
@@ -226,7 +226,7 @@ function Metric({
   return (
     <div>
       <dt className="text-xs font-semibold uppercase text-ink-500">{label}</dt>
-      <dd className="mt-1 text-xl font-extrabold text-ink-900">{value}</dd>
+      <dd className="mt-1 text-xl font-semibold text-ink-900">{value}</dd>
       {note ? (
         <dd className="mt-1 text-xs font-medium leading-4 text-ink-500">
           {note}
@@ -240,7 +240,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs font-semibold uppercase text-ink-500">{label}</dt>
-      <dd className="mt-1 text-sm font-bold leading-6 text-ink-800">{value}</dd>
+      <dd className="mt-1 text-sm font-semibold leading-6 text-ink-800">{value}</dd>
     </div>
   );
 }
