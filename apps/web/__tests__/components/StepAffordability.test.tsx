@@ -24,7 +24,8 @@ describe('StepAffordability', () => {
   it('highlights the currently selected value button', () => {
     render(<StepAffordability value={4} onChange={jest.fn()} />);
     const btn = screen.getAllByRole('button').find((b) => b.textContent === '4');
-    expect(btn).toHaveClass('bg-blue-600');
+    expect(btn).toHaveClass('bg-brand-600');
+    expect(btn).toHaveClass('min-h-touch');
   });
 
   it('renders all 5 numbered buttons', () => {
