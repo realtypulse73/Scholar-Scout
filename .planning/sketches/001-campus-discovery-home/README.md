@@ -1,9 +1,17 @@
+---
+sketch: 001
+name: campus-discovery-home
+question: "How can an immersive campus moment and trustworthy school facts coexist on the start page?"
+winner: "B"
+tags: [home, discovery, school-facts]
+---
+
 # 001 — Campus discovery home
 
 Open `index.html` in a browser. It contains three clickable approaches to the new Scholar Scout start page:
 
 1. **Campus Stories** — a bright, cinematic full-screen discovery feed.
-2. **Campus Signal** — the recommended hybrid: a social-style campus moment paired with a factual school listing.
+2. **Campus Signal ★ Selected** — the selected hybrid: a social-style campus moment paired with a factual school listing.
 3. **Pathway Lens** — a calmer school-choice view with an immersive watermark and a decision sheet.
 
 ## How to review
