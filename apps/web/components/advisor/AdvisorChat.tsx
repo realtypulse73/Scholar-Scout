@@ -136,10 +136,10 @@ export default function AdvisorChat() {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
       <Card className="p-5">
-        <p className="text-xs font-bold uppercase text-ink-500">
+        <p className="text-xs font-semibold uppercase text-ink-500">
           Advisor summary
         </p>
-        <h2 className="mt-3 text-xl font-extrabold text-ink-900">
+        <h2 className="mt-3 text-xl font-semibold text-ink-900">
           {advisorSummary.title}
         </h2>
         <p className="mt-3 text-sm leading-6 text-ink-600">
@@ -150,12 +150,12 @@ export default function AdvisorChat() {
           {advisorSummary.metrics.map((metric) => (
             <div
               key={metric.label}
-              className="rounded-card border border-ink-200 bg-ink-50 p-3"
+              className="rounded-card border border-border bg-silver p-3"
             >
-              <p className="text-xs font-bold uppercase text-ink-500">
+              <p className="text-xs font-semibold uppercase text-ink-500">
                 {metric.label}
               </p>
-              <p className="mt-1 text-lg font-extrabold text-ink-900">
+              <p className="mt-1 text-lg font-semibold text-ink-900">
                 {metric.value}
               </p>
             </div>
@@ -163,7 +163,7 @@ export default function AdvisorChat() {
         </div>
 
         <div className="mt-5">
-          <p className="text-xs font-bold uppercase text-ink-500">
+          <p className="text-xs font-semibold uppercase text-ink-500">
             Suggested questions
           </p>
           <div className="mt-3 grid gap-2">
@@ -173,7 +173,7 @@ export default function AdvisorChat() {
                 type="button"
                 onClick={() => void sendMessage(question)}
                 disabled={isSending}
-                className="rounded-card border border-ink-200 bg-white p-3 text-left text-sm font-semibold leading-6 text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-card border border-border bg-white p-3 text-left text-sm font-semibold leading-6 text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {question}
               </button>
@@ -183,21 +183,21 @@ export default function AdvisorChat() {
       </Card>
 
       <Card className="p-5">
-        <div className="h-[28rem] space-y-3 overflow-y-auto rounded-card border border-ink-200 bg-ink-50 p-4">
+        <div className="h-[28rem] space-y-3 overflow-y-auto rounded-card border border-border bg-silver p-4">
           {messages.map((message, index) => (
             <div
               key={`${message.role}-${index}`}
               className={`max-w-[85%] rounded-card border p-3 text-sm leading-6 ${
                 message.role === 'student'
                   ? 'ml-auto border-brand-200 bg-brand-600 text-white'
-                  : 'border-ink-200 bg-white text-ink-700'
+                  : 'border-border bg-white text-ink-700'
               }`}
             >
               {message.text}
             </div>
           ))}
           {isSending ? (
-            <div className="max-w-[85%] rounded-card border border-ink-200 bg-white p-3 text-sm font-semibold text-ink-500">
+            <div className="max-w-[85%] rounded-card border border-border bg-white p-3 text-sm font-semibold text-ink-500">
               Thinking...
             </div>
           ) : null}
