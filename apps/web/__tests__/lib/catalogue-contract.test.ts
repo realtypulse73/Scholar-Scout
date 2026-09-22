@@ -708,4 +708,72 @@ describe('review regression contracts', () => {
       'Catalogue coverage row must be an object.',
     );
   });
+
+  it.each([
+    undefined,
+    null,
+    'malformed source metadata',
+    [],
+  ])('returns a stable root error for malformed source metadata: %p', (metadata) => {
+    expect(() => validateSourceMetadata(metadata as unknown as typeof region.officialBoundary)).not.toThrow();
+    expect(validateSourceMetadata(metadata as unknown as typeof region.officialBoundary)).toEqual([
+      'Source metadata must be an object.',
+    ]);
+  });
+
+  it.each([
+    undefined,
+    null,
+    'malformed catalogue region',
+    [],
+  ])('returns a stable root error for malformed catalogue regions: %p', (candidate) => {
+    expect(() => validateCatalogueRegion(candidate as unknown as CatalogueRegion)).not.toThrow();
+    expect(validateCatalogueRegion(candidate as unknown as CatalogueRegion)).toEqual([
+      'Catalogue region must be an object.',
+    ]);
+  });
+
+  it.each([
+    ['officialBoundary', undefined, 'Official boundary must be an object.'],
+    ['officialBoundary', null, 'Official boundary must be an object.'],
+    ['officialBoundary', 'malformed boundary', 'Official boundary must be an object.'],
+    ['officialBoundary', [], 'Official boundary must be an object.'],
+    ['localFocus', undefined, 'Local focus must be an object.'],
+    ['localFocus', null, 'Local focus must be an object.'],
+    ['localFocus', 'malformed focus', 'Local focus must be an object.'],
+    ['localFocus', [], 'Local focus must be an object.'],
+  ] as const)('returns a stable nested-object error for malformed %s: %p', (field, value, error) => {
+    const malformedRegion = { ...region, [field]: value } as unknown as CatalogueRegion;
+
+    expect(() => validateCatalogueRegion(malformedRegion)).not.toThrow();
+    expect(validateCatalogueRegion(malformedRegion)).toEqual([error]);
+  });
+
+  it.each([
+    ['evidence', factEvidence, 'Not-yet-verified coverage cannot include evidence for greater-kingston-jamaica:university.'],
+    ['evidence', undefined, 'Not-yet-verified coverage cannot include evidence for greater-kingston-jamaica:university.'],
+    ['sourceUrl', 'https://provider.example/programmes', 'Not-yet-verified coverage cannot include a source URL for greater-kingston-jamaica:university.'],
+    ['sourceUrl', undefined, 'Not-yet-verified coverage cannot include a source URL for greater-kingston-jamaica:university.'],
+  ] as const)('rejects an own %s field on not-yet-verified coverage: %p', (field, value, error) => {
+    const completeCoverage = [
+      { ...coverage, [field]: value },
+      ...CATALOGUE_PATHWAYS.filter((pathway) => pathway !== coverage.pathway).map((pathway) => ({
+        ...coverage,
+        pathway,
+      })),
+    ] as unknown as CatalogueCoverage[];
+
+    expect(validateCoverageMatrix([region], completeCoverage, FACT_NOW)).toContain(error);
+  });
+
+  it('continues to accept complete verified coverage with current attributable evidence', () => {
+    const completeCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
+      ...coverage,
+      pathway,
+      state: 'verified' as const,
+      evidence: factEvidence,
+    })) as unknown as CatalogueCoverage[];
+
+    expect(validateCoverageMatrix([region], completeCoverage, FACT_NOW)).toEqual([]);
+  });
 });
