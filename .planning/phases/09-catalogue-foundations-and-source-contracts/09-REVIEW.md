@@ -1,6 +1,6 @@
 ---
 phase: 09-catalogue-foundations-and-source-contracts
-reviewed: 2026-09-22T21:28:28Z
+reviewed: 2026-09-22T21:55:24Z
 depth: standard
 files_reviewed: 4
 files_reviewed_list:
@@ -9,86 +9,56 @@ files_reviewed_list:
   - apps/web/__tests__/lib/catalogue-contract.test.ts
   - apps/web/__tests__/lib/catalogue-fixtures.test.ts
 findings:
-  critical: 4
-  warning: 3
+  critical: 3
+  warning: 0
   info: 0
-  total: 7
+  total: 3
 status: issues_found
 ---
 
-# Phase 09: Code Review Report
+# Phase 09: Code Re-review Report
 
-**Reviewed:** 2026-09-22T21:28:28Z
+**Reviewed:** 2026-09-22T21:55:24Z
 **Depth:** standard
 **Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-The Phase 09 scope remains domain-only and does not introduce scraping, persistence, discovery UI, or sensitive-data fields. The focused Jest suites (27 tests), TypeScript check, and lint all pass. However, the core validators accept forged or impossible provenance as valid input, allow a verified coverage assertion without any evidence, and throw on malformed imported fact values. These are source-governance failures on the intended Phase 10 import/publication boundary and must be corrected before publication work builds on this contract.
+All seven prior findings have been resolved in both implementation and regression coverage: exact regional authority/ID binding (former CR-01), source/review chronology (CR-02), evidence-backed verified coverage (CR-03), malformed text values (CR-04), unresolved-card null values (WR-01), employment-state/evidence compatibility (WR-02), and deeply immutable, non-aliased fixtures (WR-03).
+
+The focused Phase 09 Jest suites pass (43 tests), as do TypeScript and ESLint. The re-review found three new import-boundary defects: a verified coverage row can carry a future or causally impossible review date, and two public validators throw instead of returning validation errors for malformed snapshot shapes. These must be fixed before Phase 10 uses this contract to validate imports or publication.
+
+## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01: Region validation does not bind official authority or boundary ID to the declared region
+### CR-01: Verified coverage accepts a future or causally impossible coverage review date
 
-**File:** `apps/web/lib/catalogue-contract.ts:385`
+**File:** `apps/web/lib/catalogue-contract.ts:557`
 
-**Issue:** `validateCatalogueRegion` checks only that an ID and an authority are independently in their allowed unions (lines 385-400). It accepts, for example, `greater-houston` with the STATIN authority and `boundaryId: null`, or Greater Kingston with a U.S. CBSA ID. This violates the binding regional-source contract and allows a forged authority/boundary relationship to pass the fixture/import gate.
+**Issue:** `validateCoverageMatrix` verifies only that `row.reviewedAt` parses as an ISO date. It never compares that date to the injected `now` or to the row's source evidence. A complete six-row `verified` matrix with `reviewedAt: '2099-01-01'` and otherwise current evidence returns no errors; so does a coverage row purporting to have been reviewed before the underlying source/evidence review. This lets a forged verification audit date pass the source-governance gate.
 
-**Fix:** Define an internal authoritative mapping keyed by `CatalogueRegionId`, then require the matching authority and null/non-null boundary-ID rule (and, where appropriate, the declared CBSA ID) in `validateCatalogueRegion`. Add negative tests for a U.S. region with STATIN/null and Kingston with a CBSA ID.
+**Fix:** Parse the coverage review date, reject a date after `now`, and for verified rows require it to be on or after the evidence review date (and source date where documented). Add fixed-clock regressions for future and review-before-evidence rows.
 
-### CR-02: Fact evidence accepts impossible source/review chronology as current
+### CR-02: An unresolved card fact with malformed evidence throws instead of producing validation errors
 
-**File:** `apps/web/lib/catalogue-contract.ts:241`
+**File:** `apps/web/lib/catalogue-contract.ts:679`
 
-**Issue:** A `current` fact with source date `2026-09-22` and review date `2020-01-01` returns no errors: the validator only rejects a future review date and only evaluates the source date freshness at lines 250-263. A reviewer therefore appears to have validated a source six years before it existed. It also accepts a future documented source date whenever the claimed status is non-current. Both cases contradict the planned requirement to reject future dates and preserve meaningful source/review provenance.
+**Issue:** The unresolved branch directly evaluates `fact.evidence.status`. A parsed snapshot containing `{ value: null, state: 'unknown', evidence: null }` causes a `TypeError` before `validateFactEvidence` can report an invalid fact. This is the same untrusted-import failure class addressed by the former malformed-text fix, now reachable through the unresolved fact shape.
 
-**Fix:** With the injected clock, reject every documented source date after `now`; for documented dates, reject a `reviewedAt` before the source date. Keep unavailable source dates limited to explicit non-current states. Add fixed-clock regression cases for review-before-source and future source dates in both current and unresolved evidence.
+**Fix:** Verify that `evidence` is a record before reading `status`; otherwise add a deterministic evidence-required/invalid error. Only compare states after evidence passes its structural guard. Add null, primitive, and array evidence regression cases that assert the validator never throws.
 
-### CR-03: A coverage row can claim `verified` with no attributable source
+### CR-03: Coverage validation crashes on malformed region or coverage array entries
 
-**File:** `apps/web/lib/catalogue-contract.ts:149`
+**File:** `apps/web/lib/catalogue-contract.ts:526`
 
-**Issue:** `CatalogueCoverage.sourceUrl` is optional, and `validateCoverageMatrix` only validates it when supplied (lines 502-510). Consequently, a complete matrix of `state: 'verified'` rows with no source URL passes validation. This directly defeats the honest-coverage and field-level attribution guarantees: a public reader could be told that an area/pathway is verified with no evidence or verification action.
+**Issue:** The validator assumes every array entry is an object and dereferences `region.id` and `row.regionId` (line 541) without a shape guard. A JSON snapshot such as `validateCoverageMatrix([validRegion], [null] as unknown as CatalogueCoverage[], now)` throws rather than returning a recoverable import error; a `null` region entry fails similarly. This prevents the advertised validator from safely rejecting malformed Phase 10 import data.
 
-**Fix:** Make coverage a discriminated union: `not-yet-verified` may omit evidence, while `verified` must carry source metadata/evidence and a direct verification action. Validate its source/review dates with an injected clock, and add a regression test rejecting verified rows without required evidence.
-
-### CR-04: Text-fact validation throws instead of rejecting malformed imported data
-
-**File:** `apps/web/lib/catalogue-contract.ts:567`
-
-**Issue:** `validateSourcedTextFact` calls `fact?.value?.trim()` without checking that `value` is a string. A runtime payload such as `{ value: 42, evidence: validEvidence }` causes `validateOccupationAreaWageContext` (and the employer-training validator) to throw `fact?.value?.trim is not a function`, rather than return a recoverable validation error. This is unsafe at the planned untrusted import boundary and can turn one malformed row into a failed import/request.
-
-**Fix:** Guard the value explicitly, e.g. `if (typeof fact?.value !== 'string' || !fact.value.trim())`, and retain the existing error-return contract. Add runtime-shaped negative tests with number, object, and array values.
-
-## Warnings
-
-### WR-01: An "unresolved" card fact may carry an arbitrary non-null material value
-
-**File:** `apps/web/lib/catalogue-contract.ts:596`
-
-**Issue:** `isUnresolvedCatalogueCardFact` identifies an unresolved fact solely by the presence of `state`; the validation branch never enforces the declared `value: null` invariant. Thus `{ value: 'Unverified raw assertion', state: 'unknown', evidence: validUnknownEvidence }` validates successfully. This lets an unsupported material assertion enter a card under the unresolved branch.
-
-**Fix:** Require `fact.value === null` in the unresolved branch and reject any additional material value. Add a test for a non-null unresolved value and for a missing/invalid state.
-
-### WR-02: Definitive employment-commitment states accept unknown evidence
-
-**File:** `apps/web/lib/catalogue-contract.ts:288`
-
-**Issue:** `no-published-guarantee` and `published-provider-statement` are accepted regardless of `employmentCommitmentEvidence.status`. For example, `no-published-guarantee` paired with unavailable-date `unknown` evidence passes validation, turning absence of verified evidence into a definitive employment statement.
-
-**Fix:** Require definitive commitment states to have appropriately current or needs-confirmation evidence, and require `unknown`/`conflicting` evidence to map to the corresponding non-definitive state. Add mismatch tests for each controlled commitment state.
-
-### WR-03: The advertised frozen fixture data is shallowly mutable and shares one date object
-
-**File:** `apps/web/lib/catalogue-fixtures.ts:12`
-
-**Issue:** `catalogueRegions` is only a readonly array; its nested records remain mutable. In addition, every `sourceDate` points to the same `UNAVAILABLE_SOURCE_DATE` object. A consumer can mutate one nested date/source record and silently change multiple supposedly frozen provenance records for the process.
-
-**Fix:** Export deeply readonly fixture types and deep-freeze the fixture objects (or construct independent immutable source-date values per record). Add a regression test that attempted mutations cannot alter another region's source metadata.
+**Fix:** Treat list items as `unknown`, validate object shape before property access, and append stable errors such as `Catalogue coverage row must be an object.` / `Catalogue region must be an object.`. Add null, primitive, and array-entry tests to prove the function never throws.
 
 ---
 
-_Reviewed: 2026-09-22T21:28:28Z_
+_Reviewed: 2026-09-22T21:55:24Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
