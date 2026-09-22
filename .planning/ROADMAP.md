@@ -1,296 +1,203 @@
-# Roadmap: Scholar Scout
+# Roadmap: Scholar Scout v1.1 — Regional Opportunity Navigator
 
 ## Overview
 
-Scholar Scout will move from a fragile Next.js monolith with whole-document persistence and an unvalidated feature cluster to a releasable student-pathway product. The phases intentionally follow the repository's current horizontal risk layers: establish a trustworthy release gate, secure identity and external boundaries, restore safe operations, make persistence conflict-safe incrementally, validate the separate school/community/WNY slice, and prove the complete discovery journey before release.
+Scholar Scout v1.1 gives students in Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, and Greater New Orleans a trustworthy, choice-preserving way to discover and compare broad education and training routes. This milestone grows from source/evidence foundations, through governed publication and discovery, to qualification safety, provider stories, local-only referrals, and an operational release gate.
+
+The product presents published facts and verification actions. It does not make admission, eligibility, enlistment, funding, employment, pay, placement, safety, quality, or outcome decisions. Unknown, stale, and conflicting facts remain visible with a source/date and verification action rather than being invented or silently represented as current.
+
+## Milestone-wide Boundaries
+
+- No live learner-facing provider aggregation, runtime scraping, auto-publication, or copied provider content/media.
+- Every pathway type remains browseable; filters/ranking are reversible and cannot suppress an opportunity class.
+- Only student-controlled ordinary preferences may produce transparent reasons/order. Qualifications highlight published requirements to verify; they never issue a verdict or hide a route.
+- Sensitive support is optional, purpose-specific, local-only, and non-ranking. It requires approved referral destinations before release and must not persist, transmit, or reach analytics/URLs.
+- Military content is factual exploration only: official sources, approved neutral minor-safe wording, human verification, and no recruitment pressure or eligibility/outcome claims.
+- Provider-specific media requires stored rights evidence. Uncertain/expired/revoked rights use a factual text-and-source fallback.
+- Retain Next.js, React, TypeScript, NextAuth, Vercel, the governed catalogue boundary, and incremental persistence safety; do not add a database/CMS/search platform without measured need and a separate decision.
 
 ## Phases
 
-**Phase Numbering:** Integer phases are planned milestone work; decimal phases are reserved for urgent insertions.
+**Phase Numbering:** Phase 9 continues the completed v1.0 numbering. Each phase begins with zero plans; plans are added only after phase planning.
 
-- [x] **Phase 1: Release and CI Baseline** - Make Scholar Scout's supported install and pull-request quality signal trustworthy. (completed 2026-08-13)
-- [x] **Phase 2: Authentication, API, AI, and Webhook Controls** - Protect student data, privileged actions, and cost-bearing integrations at their server boundaries. (completed 2026-08-28)
-- [x] **Phase 3: Administrative and Data Operations Correctness** - Restore authorized administrative recovery operations and fail safely when storage is unhealthy. (completed 2026-08-28)
-- [x] **Phase 4: Incremental Durable Persistence Boundaries** - Prevent silent write loss while moving high-value records away from unbounded shared-document mutations. (completed 2026-08-29)
-- [ ] **Phase 5: School, Community, and WNY Release Slice** - Complete the in-progress student-facing experiences with privacy and moderation protections.
-- [x] **Phase 6: End-to-End Hardening and Release Readiness** - Demonstrate the protected, durable product journeys in automated and production-like checks. (completed 2026-09-20)
+- [ ] **Phase 9: Catalogue Foundations and Source Contracts** — Define the five-metro scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 0/0)
+- [ ] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 0/0)
+- [ ] **Phase 11: Choice-Preserving Five-Metro Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 0/0)
+- [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 0/0)
+- [ ] **Phase 13: Provider Detail, Transition Stories, and Media Safety** — Deliver factual provider pages and finite, inclusive, rights-safe, motion-safe Scholar Scout story-to-facts journeys. (Plans: 0/0)
+- [ ] **Phase 14: Sensitive Support Referral and Neutral Military Information** — Offer approved local-only support referrals and neutral official military information without sensitive retention or recruitment pressure. (Plans: 0/0)
+- [ ] **Phase 15: Five-Metro Expansion, Operations, and Release Gate** — Complete coverage expansion and prove ongoing freshness, source, rights, accessibility, and launch readiness. (Plans: 0/0)
 
 ## Phase Details
 
-### Phase 1: Release and CI Baseline
+### Phase 9: Catalogue Foundations and Source Contracts
 
-**Goal**: Maintainers can reproduce a clean Scholar Scout build and use pull-request checks as a reliable release signal.
-**Depends on**: Nothing (first phase)
-**Requirements**: OPS-01, OPS-05
-**Success Criteria** (what must be TRUE):
+**Goal:** Establish a deterministic, source-first catalogue foundation for the five approved metros that represents trustworthy facts and visible uncertainty without inventing availability or coverage.
 
-  1. A maintainer can install dependencies with one documented immutable package-manager and lockfile path, and use it for local development, CI, and Vercel builds.
-  2. Every pull request reports Scholar Scout build, typecheck, lint, and test results without an unrelated CrimClock job failing the pipeline.
-  3. A maintainer can distinguish a failed Scholar Scout quality check from a clean, releasable pull request.
+**Depends on:** Completed v1.0 governed matching and catalogue boundaries.
 
-**Plans**: 6/6 plans executed
+**Requirements:** REG-01, REG-02, REG-03, EVID-01, EVID-02, EVID-05.
 
-- [x] 01-01-PLAN.md
-- [x] 01-02-PLAN.md
-- [x] 01-03-PLAN.md
-- [x] 01-04-PLAN.md
-- [x] 01-05-PLAN.md
-- [x] 01-06-PLAN.md — Close stale pnpm guidance and the Node runtime lifecycle-decision gaps
+**Scope boundaries:** Define records, fixtures, source authority, metro/pathway vocabulary, and freshness calculations only. Do not create a live provider integration, publish unreviewed inventory, add a new database, or build personalized qualification/referral experiences.
 
-**Risk**: Package-manager cleanup can alter dependency resolution; preserve the npm 10 workspace contract and verify from a clean install before treating CI as a gate.
+**Success criteria:**
 
-### Phase 2: Authentication, API, AI, and Webhook Controls
+1. Each approved metro has an explicit, versioned official boundary, source, release/check date, and visible coverage status for all six pathway types.
+2. The catalogue represents university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information records with controlled types.
+3. Every material fact carries its own source/authority, source and review date, `Current` / `Needs confirmation` / `Unknown` / `Conflicting` status, and direct verification action.
+4. Missing, stale, or conflicting facts are visible as such and never become a confirmed fact, inferred availability, fit signal, salary promise, or fabricated offering.
+5. Wage information, if present, is structurally separate, dated occupation-and-area context rather than provider evidence or a personal forecast.
 
-**Goal**: Students, staff, and integrations can use server APIs only within an authenticated, authorized, validated, and abuse-bounded scope.
-**Depends on**: Phase 1
-**Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, SEC-05
-**Success Criteria** (what must be TRUE):
+**Plans:** 0/0 plans executed.
 
-  1. A signed-in student can access and change only their own account, shortlist, memory, simulation, referral, and engagement records, regardless of values supplied by the browser.
-  2. A staff member can use administrative operations only while their active server-checked authorization remains valid; removed staff access is no longer accepted.
-  3. A signed-in advisor user receives a bounded response, while oversized, malformed, or rate-exceeding advisor requests are safely rejected before they can create unbounded provider cost.
-  4. An incoming GitHub webhook is rejected when its signature secret is missing or invalid, and a valid qualifying webhook can dispatch only an authenticated, size-bounded agent request.
-  5. A user who repeatedly attempts login or registration receives a safe rate-limit response without tying up the server event loop for avoidable work.
+**Risk:** Incorrect metro/source definitions create false local coverage. Freeze one official boundary release and validate fixtures before any public record or coverage claim ships.
 
-**Plans**: 13/13 plans executed
+### Phase 10: Curated Import and Governed Staff Publication
 
-Plans:
-**Wave 1**
+**Goal:** Enable authorized staff to produce a reviewed, deterministic snapshot from bounded source inputs while preserving source, claim, rights, audit, and conflict-safety controls.
 
-- [x] 02-01-PLAN.md — Approve the externally atomic counter dependencies
-- [x] 02-09-PLAN.md — Harden and test the GitHub webhook runner
+**Depends on:** Phase 9.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Requirements:** EVID-03, EVID-04, PUB-01, PUB-02, PUB-03.
 
-- [x] 02-02-PLAN.md — Add fail-closed atomic reservations and bounded request parsing
+**Scope boundaries:** Build only staff/CI/build-time import, validation, reviewed snapshot, and publication flows. Learner requests must not scrape, aggregate, or depend on a live provider; imported candidates never publish automatically.
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Success criteria:**
 
-- [x] 02-03-PLAN.md — Establish opaque guest actors and safe same-device migration
+1. A staff reviewer can inspect source authority, evidence state, freshness, claim wording, boundary relationship, and media-rights metadata before publication.
+2. The public read model is a versioned reviewed snapshot with a manifest; learner requests read it through the governed catalogue boundary rather than a live provider site.
+3. Active authorized staff alone can create, revise, publish, retire, restore, or correct records with audit evidence and recoverable stale-revision conflicts.
+4. Missing/invalid source, claim, boundary, or media-rights evidence blocks publication without discarding the existing valid public record.
+5. A bounded validated batch can be previewed and recovered safely without an unbounded whole-document rewrite or automatic source publication.
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Plans:** 0/0 plans executed.
 
-- [x] 02-04-PLAN.md — Protect memory, simulations, and analytics ownership boundaries
-- [x] 02-05-PLAN.md — Protect referral, engagement, share, and experiment ownership boundaries
-- [x] 02-06-PLAN.md — Add revocable active-staff authorization and audit evidence
-- [x] 02-08-PLAN.md — Harden the direct Responses advisor and evaluation fixtures
-- [x] 02-12-PLAN.md — Route onboarding and shortlist through opaque guest/account actors
+**Risk:** Broad imports can overwrite current data or normalize marketing claims. Use quarantined candidate files, strict validation, small batches, existing CAS/audit controls, and fixture-based recovery tests.
 
-**Wave 5** *(blocked on Wave 4 completion)*
+### Phase 11: Choice-Preserving Five-Metro Discovery
 
-- [x] 02-07-PLAN.md — Apply fresh staff checks to data-operation routes
-- [x] 02-10-PLAN.md — Rate-bound credentials and trigger guest migration after sign-in
-- [x] 02-13-PLAN.md — Disable public decision mutations and guard global decision dashboards
+**Goal:** Let any student browse, filter, save, compare, and verify the governed five-metro catalogue through accessible, source-first discovery surfaces.
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Depends on:** Phase 10.
 
-- [x] 02-11-PLAN.md — Rate-bound registration and wire the supported credential client flow
+**Requirements:** DISC-01, DISC-02, DISC-03, DISC-04.
 
-**Risk**: Existing public routes and JWT-carried roles currently assume caller data or stale authorization; introduce shared server guards with route-contract tests before changing client flows.
+**Scope boundaries:** Deliver factual discovery/comparison and official next actions only. Do not introduce application submission, paid placement, provider messaging, eligibility determination, identity/location inference, or engagement-based ranking.
 
-### Phase 3: Administrative and Data Operations Correctness
+**Success criteria:**
 
-**Goal**: Authorized staff can perform only implemented, recoverable data operations and are never misled when persisted data cannot be read.
-**Depends on**: Phase 2
-**Requirements**: OPS-02, OPS-03, DATA-03
-**Success Criteria** (what must be TRUE):
+1. A student can select/change a covered metro and browse every pathway type before signing in, completing a story, or providing personal information.
+2. Opportunity cards, comparison, and detail surfaces show provider, type, location/delivery, status, reasons, facts to verify, source/date/state, alternate routes, save/compare, and an official next action.
+3. Filters and deterministic ordering are reversible and preserve every opportunity/pathway class; they do not infer residence or use passive behavior.
+4. Unknown, stale, conflicting, empty-coverage, and external-link states provide a clear next action and cannot look confirmed.
+5. Discovery and comparison work with keyboard/screen reader and supported phone/tablet layouts without horizontal page overflow.
 
-  1. An authorized administrator sees data-operation controls only for implemented server routes and receives explicit success, failure, and recovery states for each operation.
-  2. A storage read failure is surfaced as a recoverable operational error and cannot silently appear as an empty Scholar Scout data set that a later save overwrites.
-  3. An authorized administrator can validate backup, restore, and import inputs with retention limits and recoverable audit evidence before a data-changing operation occurs.
+**Plans:** 0/0 plans executed.
 
-**Plans**: 6/6 plans executed
+**Risk:** A polished surface can conceal uncertainty or use convenience filtering as exclusion. Treat source/status/verify content and all-visible ranking assertions as core UI/test contracts.
 
-Plans:
-**Wave 1**
+### Phase 12: Qualification Lens and Explanation Governance
 
-- [x] 03-01-PLAN.md — Prove fail-closed storage reads through an authorized capability tracer and Wave 0 tests
-- [x] 03-02-PLAN.md — Implement signed envelopes, bound restore plans, one-write apply, retention, and audit policy
+**Goal:** Give students an optional, private way to compare ordinary qualifications against published requirements while keeping all options visible and explanations non-predictive.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Depends on:** Phase 11.
 
-- [x] 03-03-PLAN.md — Wire authorized backup list, preview, and apply route contracts
+**Requirements:** MATCH-01, MATCH-02, MATCH-03, MATCH-04.
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Scope boundaries:** Use only student-chosen ordinary qualifications to highlight published items to verify. Do not save sensitive/referral data, add a predictor, use GPA/test/prestige/ZIP/engagement proxies, issue eligibility decisions, or rank out a pathway.
 
-- [x] 03-04-PLAN.md — Wire bounded signed import validation/apply and signing readiness
+**Success criteria:**
 
-**Wave 4** *(blocked on Wave 3 completion)*
+1. A student can choose ordinary qualifications—diploma/credits, degree, licence, prior work, or voluntary military history—and see relevant published requirements to confirm.
+2. The lens produces no eligible/ineligible, realistic/safe match, admission, enlistment, funding, placement, salary, or outcome verdict and never hides an opportunity.
+3. Every ranked result gives decomposable stated-preference/programme-verified reasons, a material verification step, a plain-language support statement, and a choice-preserving action.
+4. GPA, test scores, prestige, ZIP, click/passive behavior, and similar proxies are excluded from rank, visibility, and conclusions by contracts and regression tests.
 
-- [x] 03-05-PLAN.md — Deliver the capability-driven accessible recovery UI and visual backstops
+**Plans:** 0/0 plans executed.
 
-**Wave 5** *(blocked on Wave 4 completion)*
+**Risk:** Helpful qualification guidance can drift into an opaque eligibility model. Centralize it in the shared view model, snapshot explanations, and test that input changes never remove records or add prohibited signals.
 
-- [x] 03-06-PLAN.md — Close adapter semantics, coverage, prohibitions, and full validation evidence
+### Phase 13: Provider Detail, Transition Stories, and Media Safety
 
-**UI hint**: yes
-**Risk**: `ProgrammeAdminManager` currently renders controls for missing endpoints and whole-snapshot restore is destructive; establish privileged route contracts and recovery semantics before reconnecting controls.
+**Goal:** Pair factual source-first provider pages with inclusive, finite, accessible Scholar Scout transition stories while preserving strict media rights and content boundaries.
 
-### Phase 4: Incremental Durable Persistence Boundaries
+**Depends on:** Phase 11.
 
-**Goal**: Student, programme, and operational changes remain durable under concurrent use without requiring every event to rewrite a shared unbounded document.
-**Depends on**: Phase 3
-**Requirements**: DATA-01, DATA-02
-**Success Criteria** (what must be TRUE):
+**Requirements:** MEDIA-01, MEDIA-02, MEDIA-03.
 
-  1. When a user or staff member submits a stale change, the product preserves the current data and returns an explicit conflict or retry outcome instead of silently losing another person's write.
-  2. Student, programme, and operational records can be read and changed through bounded domain operations rather than a full shared-document replacement for every event.
-  3. A maintainer can migrate one high-risk persistence boundary at a time while existing supported data adapters and recovery workflows remain verifiably safe.
+**Scope boundaries:** Provider detail is factual and source-led; stories are Scholar Scout-owned non-authoritative context. Do not copy provider assets, use unlicensed/unknown media, imply provider affiliation/outcomes, or add infinite/autoplay attention mechanics.
 
-**Plans**: 5/5 plans executed
+**Success criteria:**
 
-Plans:
-**Wave 1**
+1. Provider pages display attributable factual details and official sources, and render media only when stored rights evidence identifies owned, licensed, provider-approved, or approved-embed use.
+2. Unknown, expired, revoked, or unsupported media rights always use a complete factual text-and-source fallback.
+3. Scholar Scout transition stories are finite, skippable, inclusive, non-authoritative, and link to verified factual records without implying attendance, placement, endorsement, or outcome.
+4. Story/provider media provide accessible names/alt text or captions/transcripts, respect reduced-motion, and keep user control over non-essential motion.
 
-- [x] 04-01-PLAN.md — Prove programme save/delete through provider-level CAS across JSON, HTTP, and Vercel Blob
+**Plans:** 0/0 plans executed.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Risk:** Visual content can create copyright exposure, misleading affiliation, inaccessible motion, or a manipulative feed. Rights evidence and no-media/reduced-motion fallbacks are release-critical.
 
-- [x] 04-02-PLAN.md — Migrate account, onboarding, shortlist, and plan writes to bounded student operations
+### Phase 14: Sensitive Support Referral and Neutral Military Information
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Goal:** Provide approved optional local-only sensitive support referrals and neutral official military-information pathways without changing rank, retaining sensitive selections, or pressuring learners.
 
-- [x] 04-03-PLAN.md — Migrate operational lifecycle, audit, and platform writes with explicit retry classification
+**Depends on:** Phase 12 and Phase 13.
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Requirements:** SAFE-01, SAFE-02, SAFE-03.
 
-- [x] 04-04-PLAN.md — Bind Phase 3 recovery to conditional apply and close adapter compatibility boundaries
+**Scope boundaries:** Referral selection/consent stays in client memory and reveals only approved public information links. Do not create referral records, send provider requests, add bookings, use sensitive data in ranking, or use military content for recruitment/targeting.
 
-**Wave 5** *(blocked on Wave 4 completion)*
+**Success criteria:**
 
-- [x] 04-05-PLAN.md — Record DATA-01/DATA-02 coverage and run the complete Phase 4 validation gate
+1. A student can voluntarily open a purpose-specific support referral without the category being inferred, persisted, disclosed, or changing catalogue/rank.
+2. The interaction makes no request or browser-storage/analytics/query write and reveals a destination only after the student explicitly chooses an approved public information link.
+3. Referral destinations have approved owner, jurisdiction/availability note, source, review date, and unavailable/expired fallback before release.
+4. Military-information surfaces use approved official sources and neutral minor-safe wording, include human verification, and make no recruiting pressure, personal eligibility, or enlistment-outcome claim.
 
-**Risk**: `data-store.ts` is the current system of record for several domains and adapters; use compatibility boundaries, transactional/versioned writes, and adapter-level integration tests rather than a wholesale datastore replacement.
+**Plans:** 0/0 plans executed.
 
-### Phase 5: School, Community, and WNY Release Slice
+**Risk:** Sensitive choices can leak through persistence, telemetry, URLs, or provider handoff; military language can be coercive for minors. Block release until destination ownership and exact neutral wording have human approval and regression coverage.
 
-**Goal**: Students can safely use the in-progress school, Western New York, peer, and campus-community experiences as a separately validated release slice.
-**Depends on**: Phase 4
-**Requirements**: PROD-01, PROD-02, PROD-03
-**Success Criteria** (what must be TRUE):
+### Phase 15: Five-Metro Expansion, Operations, and Release Gate
 
-  1. A student can explore the school and Western New York discovery experiences using validated programme data, accessible screens, and dependable decision logic.
-  2. A student can participate in peer and campus-community experiences without unnecessary exposure of author identity or contact details.
-  3. Community submissions are server-validated and rate-limited, publish an author-safe representation, and provide a usable report and authorized removal path for harmful or spam content.
+**Goal:** Complete and release the five-metro catalogue only after coverage, freshness, source, rights, accessibility, and safety operations are demonstrably sustainable.
 
-**Plans**: 7/7 executed and verified
+**Depends on:** Phases 9–14.
 
-Plans:
+**Requirements:** OPS-06, OPS-07.
 
-- [x] 05-01-PLAN.md — Establish safe community persistence, public DTOs, reporting transitions, and submission reservation
-- [x] 05-02-PLAN.md — Add fresh-staff-gated moderation queue and restore/remove actions
-- [x] 05-03-PLAN.md — Harden school and Western New York discovery data, decision logic, source links, and empty states
-- [x] 05-04-PLAN.md — Deliver peer matching and community UI with protected interaction states
-- [x] 05-05-PLAN.md — Extend community protections to inbox writes and shared quota
-- [x] 05-06-PLAN.md — Complete Phase 5 validation and release evidence
-- [x] 05-07-PLAN.md — Close the SUNY Erie source-link gap and record the completed Preview UAT.
+**Scope boundaries:** Expand only source-reviewed records and prove operational readiness. Do not claim national coverage, auto-publish source changes, downgrade stale/unknown state, or add infrastructure/personalization outside milestone governance.
 
-**UI hint**: yes
-**Risk**: This is an uncommitted feature cluster with unaudited public routes; keep its validation/release path separate from stabilization work and cover contact obfuscation, spam, and decision-logic edge cases.
+**Success criteria:**
 
-### Phase 6: End-to-End Hardening and Release Readiness
+1. Staff can review source changes, link health, freshness/review deadlines, media-rights status, and metro/pathway coverage before labelling a record current.
+2. All five metros and six pathway types have transparent coverage reporting; unverified gaps remain visibly `Not yet verified` rather than implied inventory.
+3. Automated checks cover evidence, freshness, claim safety, all-visible discovery, qualification/proxy exclusion, referral separation, media fallback, and accessible states.
+4. A Preview and human release gate confirms source/rights review, keyboard/screen-reader/reduced-motion behavior, approved referral destinations, and neutral minor-safe military wording.
 
-**Goal**: Maintainers can release a production-like Scholar Scout build knowing high-risk boundaries and core student discovery journeys have passed automated and end-to-end checks.
-**Depends on**: Phase 5
-**Requirements**: OPS-04, PROD-04
-**Success Criteria** (what must be TRUE):
+**Plans:** 0/0 plans executed.
 
-  1. High-risk API, webhook, and persistence behaviors have automated route or integration coverage, and a minimal end-to-end release check exercises the protected student journey.
-  2. A student can still complete programme discovery, onboarding, shortlist, recommendation, and simulation journeys after the security, operations, persistence, and feature-slice changes.
-  3. A maintainer can run the documented release checks against a production-like configuration and identify any failed journey or external-boundary safeguard before release.
+**Risk:** Expansion can turn a safe vertical slice into stale or uneven coverage. Coverage/freshness reports and human release approval are hard gates; gaps retain `Not yet verified`.
 
-**Plans**: 6/7 complete; Plan 06-07 is blocked on protected Preview verification
+## Requirement Coverage
 
-Plans:
+| Requirement | Phase |
+|---|---:|
+| REG-01, REG-02, REG-03 | 9 |
+| EVID-01, EVID-02, EVID-05 | 9 |
+| EVID-03, EVID-04 | 10 |
+| PUB-01, PUB-02, PUB-03 | 10 |
+| DISC-01, DISC-02, DISC-03, DISC-04 | 11 |
+| MATCH-01, MATCH-02, MATCH-03, MATCH-04 | 12 |
+| MEDIA-01, MEDIA-02, MEDIA-03 | 13 |
+| SAFE-01, SAFE-02, SAFE-03 | 14 |
+| OPS-06, OPS-07 | 15 |
 
-- [x] 06-01-PLAN.md — Establish the protected student-journey release tracer
-- [x] 06-02-PLAN.md — Harden end-to-end route and external-boundary coverage
-- [x] 06-03-PLAN.md — Run the owned local browser journey
-- [x] 06-04-PLAN.md — Complete high-risk API, webhook, and persistence checks
-- [x] 06-05-PLAN.md — Provision the candidate lifecycle and Preview fixture
-- [x] 06-06-PLAN.md — Supervise the protected Preview tracer
-- [x] 06-07-PLAN.md — Run the candidate release rehearsal and restored outage proof
+**Coverage:** 27/27 v1.1 requirements mapped exactly once; 0 unmapped; 0 duplicate mappings.
 
-**Risk**: No browser E2E harness or coverage gate currently exists; start with the smallest production-like critical path and retain route/service tests as the primary regression boundary.
+## Execution Order
 
-## Progress
+Phase 9 → Phase 10 → Phase 11 → Phase 12 → Phase 13 → Phase 14 → Phase 15.
 
-**Execution Order:** Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Release and CI Baseline | 6/6 | Complete    | 2026-08-13 |
-| 2. Authentication, API, AI, and Webhook Controls | 13/13 | Complete    | 2026-08-28 |
-| 3. Administrative and Data Operations Correctness | 6/6 | Complete | 2026-08-28 |
-| 4. Incremental Durable Persistence Boundaries | 5/5 | Complete | 2026-08-29 |
-| 5. School, Community, and WNY Release Slice | 7/7 | Complete | 2026-08-31 |
-| 6. End-to-End Hardening and Release Readiness | 13/13 | Complete    | 2026-09-20 |
-| 7. Governed Opportunity and Support Matching | 4/4 | Complete | 2026-09-21 |
-
-### Phase 7: Governed Opportunity and Support Matching
-
-**Goal:** Students can compare visible programme and pathway opportunities through evidence-grounded, choice-preserving support explanations, while sensitive support uses a non-persisting referral path and never becomes a ranking or profile signal.
-**Requirements**: No milestone requirement ID — approved governance-only, pre-launch hardening slice. `PROD-07` remains exclusively mapped to Phase 8.
-**Depends on:** Phase 6
-**Success Criteria** (what must be TRUE):
-
-  1. Every programme or pathway remains visible and shows documented support evidence or an explicit unknown/verify state; undocumented ordinary support lowers rank but never hides a choice.
-  2. Only editable ordinary preferences can affect matching. Referral-only sensitive needs require purpose-specific local consent, cannot persist or transfer automatically, and do not affect matching.
-  3. Every matching surface uses the same plain-language reasons, source/date/verification information, and save, compare, source, and alternate-pathway actions.
-  4. Phase 7 contains only conspicuously test-only `.invalid` referral fixtures. Public referral destinations remain blocked until the authoritative release process records per-destination ownership, source, availability/jurisdiction, review date, and human sign-off.
-
-**Plans:** 4/4 plans complete
-
-Plans:
-**Wave 1**
-
-- [x] 07-01-PLAN.md — Governed programme evidence boundary
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 07-02-PLAN.md — Ordinary-profile boundary and fixture-only sensitive referral interaction
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 07-03-PLAN.md — Shared matching surfaces and governed card contract
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 07-04-PLAN.md — Reachable sensitive-referral entry point, authoritative release-gate wiring, and final validation
-
-### Phase 07.1: Futuristic Student Journey Visual System (INSERTED)
-
-**Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, accessible CSS-only student-side scene motion, and a code-native accessible Scholar Scout brand mark without dark page backgrounds.
-**Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08]
-**Depends on:** Phase 7
-**Plans:** 12/14 plans executed
-
-Plans:
-**Wave 1**
-
-- [x] 07.1-01-PLAN.md — Establish Space Grotesk, visual tokens, shared controls, and the home scene.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 07.1-02-PLAN.md — Apply the shared scene to school-locker and community consumers.
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 07.1-03-PLAN.md — Migrate discovery, programme, recommendation, and shortlist route shells.
-- [x] 07.1-04-PLAN.md — Migrate community, profile, feed, and creator surfaces.
-- [x] 07.1-05-PLAN.md — Migrate authentication, account-status, staff-gate, and advisor surfaces.
-- [x] 07.1-06-PLAN.md — Migrate simulation, referral, support, and sharing surfaces.
-- [x] 07.1-07-PLAN.md — Migrate staff operations and governance interfaces.
-- [x] 07.1-09-PLAN.md — Migrate the onboarding wizard, progress, and summary hierarchy.
-- [x] 07.1-11-PLAN.md — Migrate Western New York, campus-note, and uploader-contact surfaces.
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 07.1-10-PLAN.md — Migrate decision-support cards and shortlist controls with focused tests.
-- [x] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
-- [x] 07.1-13-PLAN.md — Migrate affordability and support-need steps with explicit safety states.
-- [x] 07.1-14-PLAN.md — Modernize the accessible code-native Scholar Scout mark across public/student identity locations.
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
+Phase 13 may begin research/design after Phase 11 because it uses the governed record contract, but it must not release provider pages/stories until the shared discovery evidence contract is stable. Phase 14 begins only once qualification governance and provider/military factual source surfaces are stable. Phase 15 is the integrated release gate for all prior phases.
