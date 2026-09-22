@@ -13,6 +13,7 @@
 | [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md) | Active milestone requirements and traceability. | Planning or verifying roadmap work. |
 | [.planning/ROADMAP.md](.planning/ROADMAP.md) | Phase order, goals, dependencies, and success criteria. | Planning, executing, or assessing a phase. |
 | [.planning/STATE.md](.planning/STATE.md) | Current progress, decisions, blockers, and quick-task history. | Every GSD task and before resuming work. |
+| [.planning/MILESTONES.md](.planning/MILESTONES.md) | Milestone history, active milestone charter, and archived-planning pointer. | Starting, completing, or auditing a milestone. |
 | [README.md](README.md) | Repository overview and developer entry point. | Onboarding or general setup. |
 
 ## Architecture and engineering reference
@@ -84,6 +85,7 @@
 | Location | Role | Read when |
 |---|---|---|
 | [.planning/phases/](.planning/phases/) | Phase context, research, plans, validation, summaries, and verification evidence. | Resuming or auditing a specific phase. |
+| [.planning/research/](.planning/research/) | Active milestone research plan, source research, and synthesis. | Defining requirements or planning the Regional Opportunity Navigator. |
 | [.planning/quick/](.planning/quick/) | Small-task plans and summaries. | Resuming or auditing a quick task. |
 | [reports/environment-provisioning.md](reports/environment-provisioning.md) and [reports/production-provider-setup.md](reports/production-provider-setup.md) | Environment and provider setup evidence. | Recreating infrastructure setup or resolving an operational handoff. |
 | [reports/prelaunch-rehearsal/](reports/prelaunch-rehearsal/) | Prelaunch rehearsal results. | Reviewing release readiness evidence. |
