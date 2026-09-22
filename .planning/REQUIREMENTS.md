@@ -1,112 +1,123 @@
-# Requirements: Scholar Scout
+# Requirements: Scholar Scout v1.1 Regional Opportunity Navigator
 
-**Defined:** 2026-07-25
+**Defined:** 2026-09-22
 **Core Value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
 
-## v1 Requirements
+## v1.1 Requirements
 
-### Security and Privacy
+### Regional catalogue scope
 
-- [x] **SEC-01**: A signed-in student can read and change only their own account, shortlist, memory, simulation, referral, and engagement data; routes never trust a caller-supplied user key as identity.
-- [x] **SEC-02**: A staff member can access administrative data operations only when the server confirms an active, revocable staff authorization.
-- [x] **SEC-03**: A user can use the AI advisor without arbitrary callers creating unbounded provider cost or submitting oversized, unvalidated context.
-- [x] **SEC-04**: A webhook request is rejected unless its signature secret is configured and valid, and any outbound agent dispatch is authenticated and bounded.
-- [x] **SEC-05**: A login or registration attempt is rate-limited and receives a safe failure response without blocking the server event loop unnecessarily.
+- [ ] **REG-01**: A student can explicitly choose Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, or Greater New Orleans and see the catalogue’s exact official metropolitan boundary, source, and boundary-release date.
+- [ ] **REG-02**: A student can browse university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information paths in every selected metro without one class being hidden by default.
+- [ ] **REG-03**: A student can see an honest coverage state for each metro and pathway class, including `Not yet verified`, rather than a fabricated or implied local offering.
 
-### Reliability and Operations
+### Source evidence and freshness
 
-- [x] **OPS-01**: Every pull request receives a relevant Scholar Scout build, typecheck, lint, and test result; no unrelated CrimClock job can fail the pipeline.
-- [x] **OPS-02**: An administrator sees only data-operation controls backed by implemented, authorized route handlers with explicit error and recovery states.
-- [x] **OPS-03**: A storage read failure is surfaced without silently replacing persisted application data with an empty data set.
-- [x] **OPS-04**: High-risk API, webhook, and data-service behaviors have automated route or integration tests, and the product has a minimal end-to-end release check.
-- [x] **OPS-05**: The repository has one documented, immutable package-manager and lockfile path for local development, CI, and deployment.
+- [ ] **EVID-01**: Every material fact shown on an opportunity card or provider page has its own attributable source, authority type, source/review date, factual status, and direct verification action.
+- [ ] **EVID-02**: A student can distinguish `Current`, `Needs confirmation`, `Unknown`, and `Conflicting` facts; stale or conflicting facts never appear confirmed.
+- [ ] **EVID-03**: A staff member can review an opportunity’s source, required evidence, freshness state, and claim boundaries before it becomes public.
+- [ ] **EVID-04**: The published catalogue is a deterministic, versioned reviewed snapshot; learner-facing requests do not scrape, aggregate, or depend on a live provider site.
+- [ ] **EVID-05**: If occupation-and-area wage context is shown, it is dated, source-linked context and clearly not a provider promise or personal salary forecast.
 
-### Data Foundation
+### Governed publication
 
-- [x] **DATA-01**: Concurrent user and staff writes cannot silently overwrite each other; write operations have an atomic transaction or explicit version-conflict outcome.
-- [x] **DATA-02**: User, programme, and operational records can be accessed and changed through bounded domain operations rather than rewriting an unbounded shared document for every event.
-- [x] **DATA-03**: Backup, restore, and import workflows use authenticated operations, validation, retention limits, and recoverable audit evidence.
+- [ ] **PUB-01**: Only active authorized staff can create, revise, publish, retire, or restore catalogue records, with validation and audit evidence for each state-changing action.
+- [ ] **PUB-02**: A source, claim, boundary, or media-rights failure blocks publication and gives staff a recoverable correction path without silently discarding a valid current record.
+- [ ] **PUB-03**: Staff can publish a small validated batch with conflict-safe recovery rather than rewriting an unbounded shared document or automatically publishing imported content.
 
-### Product Completion and Community Safety
+### Choice-preserving discovery
 
-- [x] **PROD-01**: Students can use the in-progress school and Western New York discovery experiences with validated programme data, accessible UI, and automated coverage for their decision logic.
-- [x] **PROD-02**: Students can use the in-progress peer and campus-community experiences without exposing unnecessary author identity, contact details, or unmoderated spam pathways.
-- [x] **PROD-03**: Community content has server-enforced validation, rate limits, a report/removal path, and an author-safe public representation.
-- [x] **PROD-04**: The existing programme discovery, onboarding, and recommendation journeys remain functional after stabilization work.
-- [ ] **PROD-07**: Students can discover source-verified higher-education and local transition resources for Greater Chicago; Greater Kingston, Jamaica; Greater Memphis, Tennessee; New Orleans, Louisiana; Austin, Texas; Houston, Texas; and the Greater Hempstead, New York area. Area-aware advisor/simulation guidance is student-centered, choice-preserving, and source-linked; it may use only data the student knowingly and voluntarily provides for that stated advice purpose, with field-level explanation, consent, minimization, protection, retention/deletion controls, clear limits/verification guidance, and no unsupported admissions/eligibility claims.
+- [ ] **DISC-01**: A student can browse, filter, save, compare, and open an official next action for opportunities without signing in or completing a story first.
+- [ ] **DISC-02**: A student can see a provider, pathway type, delivery/place relationship, published status, reasons to consider it, facts to verify, source/date/status, and alternate paths on every detailed opportunity surface.
+- [ ] **DISC-03**: Ordering and filters remain reversible; they do not infer a student’s residence, use passive behaviour, or suppress an opportunity or pathway class.
+- [ ] **DISC-04**: Discovery, comparison, provider detail, stale/unknown states, and external-link actions are keyboard-accessible, screen-reader understandable, and usable without horizontal page overflow on supported phone and tablet sizes.
 
-## User Stories
+### Qualification and claim safety
 
-- As a student, I want my profile and saved pathway activity to be private and reliable so I can make decisions with confidence.
-- As a staff member, I want safe programme and data operations so I can maintain accurate student-facing information without risking system data.
-- As a project maintainer, I want trustworthy CI and automated checks so I can release changes safely.
-- As a student, I want useful school and peer-community features with clear safety controls so I can explore options without avoidable risk.
+- [ ] **MATCH-01**: A student can optionally use ordinary qualifications they deliberately provide—such as diploma/credits, degree, licence, prior work, or voluntary military history—to highlight published requirements they should verify.
+- [ ] **MATCH-02**: Qualification information never produces an eligible/ineligible, realistic/safe-match, admission, enlistment, funding, placement, salary, or outcome verdict and never hides an opportunity.
+- [ ] **MATCH-03**: Every ranked option shows decomposable student-selected or programme-verified reasons, a material verification step, a plain-language support statement, and a choice-preserving action.
+- [ ] **MATCH-04**: GPA, test scores, school prestige, ZIP code, click behaviour, passive engagement, and similar proxies cannot rank or hide opportunities.
 
-## Acceptance Criteria
+### Sensitive support and military information
 
-- All user-specific and staff-only routes enforce server-derived identity and authorization.
-- Abuse-prone or billable endpoints have input limits, rate limits, and regression tests.
-- CI reports only Scholar Scout checks and passes from a clean install using the documented package manager.
-- Admin operations either work end-to-end with authorized APIs or are not shown.
-- New persistence boundaries detect write conflicts and never silently reset corrupt data.
-- The current school, Western New York, peer, and campus feature work is tested and releasable without regressing core discovery journeys.
+- [ ] **SAFE-01**: A student can voluntarily open a purpose-specific support-referral panel for sensitive circumstances without that selection changing rank, being inferred, being persisted with the recommendation profile, or being disclosed to a provider.
+- [ ] **SAFE-02**: A sensitive-referral panel cannot send a request, write browser storage, add an analytics field/query parameter, or reveal a destination until the student explicitly chooses an approved public human/provider information link.
+- [ ] **SAFE-03**: Military-information content uses approved official sources and neutral language, provides a human-verification action, and makes no recruiting-pressure, personal eligibility, or enlistment-outcome claim; minor-facing content uses the separately approved safety wording.
 
-## Definition of Done
+### Provider details, storytelling, and media
 
-- Each requirement has automated verification appropriate to its risk.
-- Required manual user journeys and security checks pass in a production-like environment.
-- Each shipped phase is committed, documented, and reflected in traceability.
+- [ ] **MEDIA-01**: A provider detail page uses factual provider-specific content with official sources and displays media only when stored rights evidence identifies it as Scholar Scout-owned, licensed, provider-approved, or an approved embed.
+- [ ] **MEDIA-02**: A provider page falls back to factual text and source links when media rights are unknown, expired, revoked, or unsupported.
+- [ ] **MEDIA-03**: Scholar Scout-owned transition stories are finite, inclusive, non-authoritative, and motion-safe; they connect students to factual opportunities without implying that a pictured person attended, was placed by, or is endorsed by a provider.
 
-## v2 Requirements
+### Operations and release assurance
 
-### Data Platform
+- [ ] **OPS-06**: Staff can see source-change, link-health, freshness, media-rights, and metro/pathway coverage reports before a record is presented as current.
+- [ ] **OPS-07**: The catalogue has automated validation for source, freshness, claims, choice preservation, referral separation, rights fallbacks, and accessible states, plus Preview and human source/rights/accessibility review before launch.
 
-- **DATA-04**: Product analytics are stored and queried separately from transactional student data.
-- **DATA-05**: Long-running imports, backups, and AI work run through auditable background jobs.
+## Future Requirements
 
-### Product Expansion
+### Catalogue scale and platform
 
-- **PROD-05**: Students can manage notification preferences for relevant pathway and community updates.
-- **PROD-06**: Staff can use moderation analytics and workflow queues to manage community content at scale.
+- **CAT-01**: Expand beyond the five approved metro areas after the same source, review, and coverage gates are satisfied.
+- **CAT-02**: Introduce a narrow independent catalogue persistence model only after measured snapshot volume, revision frequency, or staff concurrency exceeds the safe current boundary.
+- **CAT-03**: Offer privacy-approved aggregate measures of decision clarity, option breadth, source quality, and referral usefulness; do not use engagement/conversion to rank options.
+
+### Deeper student services
+
+- **SUP-01**: Add recipient-specific support referral or booking only after consent, retention, withdrawal, access, audit, delete/export, and provider handoff requirements are separately designed and approved.
+- **SUP-02**: Add personalized financial-aid or eligibility guidance only after a distinct legal, data-lifecycle, and human-review design; it is not part of v1.1.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Whole-application rewrite | Incremental boundary replacement protects current users and in-progress work. |
-| Public, unmoderated community publishing | Privacy, abuse prevention, and author safety must be established first. |
-| New major product verticals | The existing discovery journey and current feature cluster need reliable release foundations first. |
-| Separate mobile application | The current scope is web stability and student-facing product completion. |
+| Automated admission, eligibility, enlistment, funding, job, salary, placement, or outcome decision | The product shows published facts and verification actions; it does not decide a student’s future. |
+| Provider-site scraping, live learner-facing aggregation, or automatic publishing | Curated, reviewed snapshots keep the catalogue safe, repeatable, and rights-aware. |
+| Sensitive-data ranking, inference, profiling, or external provider disclosure | Personal circumstances may support a voluntary referral only; they are never a recommendation signal. |
+| Paid organic placement, recruitment pressure, or application submission funnel | Discovery must preserve student agency and broad choice. |
+| Unlicensed/uncertain provider media or an infinite/autoplay feed | Provider rights and accessible, controllable motion are required. |
+| National rollout, a new database/ORM/CMS, hosted search, or prediction system | The five-metro, governed launch should prove the bounded catalogue model first. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 2 | Complete |
-| SEC-02 | Phase 2 | Complete |
-| SEC-03 | Phase 2 | Complete |
-| SEC-04 | Phase 2 | Complete |
-| SEC-05 | Phase 2 | Complete |
-| OPS-01 | Phase 1 | Complete |
-| OPS-02 | Phase 3 | Complete |
-| OPS-03 | Phase 3 | Complete |
-| OPS-04 | Phase 6 | Complete |
-| OPS-05 | Phase 1 | Complete |
-| DATA-01 | Phase 4 | Complete |
-| DATA-02 | Phase 4 | Complete |
-| DATA-03 | Phase 3 | Complete |
-| PROD-01 | Phase 5 | Complete |
-| PROD-02 | Phase 5 | Complete |
-| PROD-03 | Phase 5 | Complete |
-| PROD-04 | Phase 6 | Complete |
-| PROD-07 | Phase 8 | Pending |
+| REG-01 | Phase 9 | Pending |
+| REG-02 | Phase 9 | Pending |
+| REG-03 | Phase 9 | Pending |
+| EVID-01 | Phase 9 | Pending |
+| EVID-02 | Phase 9 | Pending |
+| EVID-03 | Phase 10 | Pending |
+| EVID-04 | Phase 10 | Pending |
+| EVID-05 | Phase 9 | Pending |
+| PUB-01 | Phase 10 | Pending |
+| PUB-02 | Phase 10 | Pending |
+| PUB-03 | Phase 10 | Pending |
+| DISC-01 | Phase 11 | Pending |
+| DISC-02 | Phase 11 | Pending |
+| DISC-03 | Phase 11 | Pending |
+| DISC-04 | Phase 11 | Pending |
+| MATCH-01 | Phase 12 | Pending |
+| MATCH-02 | Phase 12 | Pending |
+| MATCH-03 | Phase 12 | Pending |
+| MATCH-04 | Phase 12 | Pending |
+| SAFE-01 | Phase 14 | Pending |
+| SAFE-02 | Phase 14 | Pending |
+| SAFE-03 | Phase 14 | Pending |
+| MEDIA-01 | Phase 13 | Pending |
+| MEDIA-02 | Phase 13 | Pending |
+| MEDIA-03 | Phase 13 | Pending |
+| OPS-06 | Phase 15 | Pending |
+| OPS-07 | Phase 15 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0
+- v1.1 requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-07-25*
-*Last updated: 2026-07-25 after roadmap creation*
+*Requirements defined: 2026-09-22*
+*Last updated: 2026-09-22 after v1.1 research synthesis*
