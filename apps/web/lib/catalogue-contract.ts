@@ -260,6 +260,8 @@ export function validateSourceMetadata(metadata: unknown): string[] {
  * operational freshness window; unresolved states stay explicit.
  */
 export function validateFactEvidence(evidence: FactEvidence, now: Date): string[] {
+  if (!isValidDate(now)) return [VALIDATION_CLOCK_ERROR];
+
   const errors: string[] = [];
   const documentedSourceDate = getDocumentedDate(evidence?.sourceDate);
   const reviewedDate = getIsoDate(evidence?.reviewedAt);
@@ -322,6 +324,8 @@ export function validateEmployerTrainingFacts(
   facts: EmployerTrainingFacts,
   now: Date,
 ): string[] {
+  if (!isValidDate(now)) return [VALIDATION_CLOCK_ERROR];
+
   const errors: string[] = [];
 
   if (facts?.pathway !== 'employer-linked-training') {
@@ -363,6 +367,8 @@ export function validateOccupationAreaWageContext(
   context: OccupationAreaWageContext,
   now: Date,
 ): string[] {
+  if (!isValidDate(now)) return [VALIDATION_CLOCK_ERROR];
+
   const errors: string[] = [];
 
   if (!hasText(context?.occupation)) {
@@ -387,6 +393,8 @@ export function validateCatalogueOpportunityCardFacts(
   facts: Partial<CatalogueOpportunityCardFacts>,
   now: Date,
 ): string[] {
+  if (!isValidDate(now)) return [VALIDATION_CLOCK_ERROR];
+
   const errors: string[] = [];
 
   errors.push(...validateCatalogueCardFact('Location', facts?.location, now));
@@ -538,6 +546,8 @@ export function validateCoverageMatrix(
   coverage: readonly unknown[] | null | undefined,
   now: Date,
 ): string[] {
+  if (!isValidDate(now)) return [VALIDATION_CLOCK_ERROR];
+
   const errors: string[] = [];
   const regionList = Array.isArray(regions) ? regions : [];
   const coverageList = Array.isArray(coverage) ? coverage : [];
@@ -814,6 +824,8 @@ function isIsoCalendarDate(value: unknown): value is string {
 
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
+
+const VALIDATION_CLOCK_ERROR = 'Validation clock must be a valid Date.';
 
 function isValidDate(value: Date): boolean {
   return value instanceof Date && !Number.isNaN(value.getTime());
