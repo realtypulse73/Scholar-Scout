@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scholar Scout — campus discovery directions</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bricolage+Grotesque:opsz,wdth,wght@10..48,75..100,300..800&family=Sora:wght@400;500;600;700;800&display=swap');
+
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #dfe4e9; color: var(--sketch-ink); font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+      button { font: inherit; cursor: pointer; }
+      .review-shell { min-height: 100vh; padding: 28px 28px 96px; }
+      .review-bar { max-width: 1280px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+      .review-title { display: grid; gap: 3px; }
+      .review-title b { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+      .review-title span { color: var(--sketch-muted); font-size: 14px; }
+      .variant-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+      .variant-tab, .toolbar button { border: 1px solid var(--sketch-line); border-radius: 999px; background: white; color: var(--sketch-ink); padding: 9px 14px; font-weight: 700; font-size: 13px; }
+      .variant-tab[aria-selected="true"], .toolbar button.active { background: var(--sketch-red); border-color: var(--sketch-red); color: white; }
+      .stage { width: min(1280px, 100%); min-height: 760px; margin: auto; overflow: hidden; border-radius: 30px; background: var(--sketch-paper); box-shadow: var(--sketch-shadow); transition: width .3s ease; }
+      .stage.tablet { width: min(780px, 100%); }
+      .stage.phone { width: min(390px, 100%); min-height: 810px; border-radius: 24px; }
+      .variant { display: none; min-height: 760px; position: relative; overflow: hidden; }
+      .variant.active { display: block; }
+      .stage.phone .variant { min-height: 810px; }
+      .brand { display: inline-flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; font-weight: 800; letter-spacing: -.04em; }
+      .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: var(--sketch-red); color: white; font: 18px 'Archivo Black', sans-serif; }
+      .eyebrow { margin: 0; color: var(--sketch-red); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .sample { display: inline-flex; align-items: center; gap: 6px; width: max-content; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; background: rgba(23,33,43,.54); color: white; padding: 7px 10px; font-size: 11px; font-weight: 700; backdrop-filter: blur(8px); }
+      .sample::before { content: '•'; color: #ff647c; font-size: 18px; line-height: 0; }
+      .save { display: inline-grid; place-items: center; width: 43px; height: 43px; border: 1px solid rgba(255,255,255,.5); border-radius: 50%; background: rgba(255,255,255,.15); color: white; font-size: 21px; backdrop-filter: blur(8px); }
+      .save.saved { background: var(--sketch-red); border-color: var(--sketch-red); }
+      .next { border: 0; border-radius: 999px; padding: 14px 18px; background: var(--sketch-red); color: white; font-weight: 800; box-shadow: 0 10px 26px rgba(220,31,61,.26); }
+      .source-note { margin: 0; color: var(--sketch-muted); font-size: 12px; line-height: 1.45; }
+
+      /* A — Campus Stories */
+      .stories { isolation: isolate; color: white; background: #5a2330; font-family: 'Archivo Black', sans-serif; }
+      .stories::before { content: ''; position: absolute; inset: 0; z-index: -2; background: linear-gradient(90deg, rgba(21,22,29,.7), rgba(21,22,29,.12) 58%, rgba(21,22,29,.4)), url('assets/campus-discovery-moodboard.png') left center / auto 100% no-repeat; transition: background-position .7s ease; }
+      .stories[data-scene="1"]::before { background-position: center center; }
+      .stories[data-scene="2"]::before { background-position: right center; }
+      .stories::after { content: ''; position: absolute; z-index: -1; width: 540px; height: 540px; right: -150px; top: 14%; border-radius: 50%; background: rgba(220,31,61,.38); filter: blur(4px); animation: glow 7s ease-in-out infinite; }
+      .stories-header { display: flex; align-items: center; justify-content: space-between; padding: 28px 34px; }
+      .stories .brand { color: white; font-size: 20px; }
+      .story-copy { position: absolute; left: 8%; bottom: 8%; max-width: 610px; display: grid; gap: 17px; }
+      .story-copy h1 { margin: 0; max-width: 680px; font-size: clamp(42px, 6vw, 82px); line-height: .96; letter-spacing: -.065em; text-wrap: balance; }
+      .story-copy p { max-width: 470px; margin: 0; font: 500 18px/1.4 'Bricolage Grotesque', sans-serif; }
+      .story-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+      .story-actions .next { font-family: 'Bricolage Grotesque', sans-serif; }
+      .story-rail { position: absolute; right: 30px; bottom: 36px; display: grid; gap: 8px; }
+      .story-rail span { width: 3px; height: 38px; border-radius: 2px; background: rgba(255,255,255,.36); }
+      .story-rail span.active { background: white; }
+      .stories .motion-layer { position: absolute; right: 17%; bottom: 0; width: 140px; height: 115px; opacity: .7; background: linear-gradient(90deg, transparent 0 22%, white 22% 29%, transparent 29% 44%, white 44% 51%, transparent 51%); filter: blur(.4px); animation: stroll 6s linear infinite; }
+      .stage.phone .stories-header { padding: 22px; }.stage.phone .story-copy { left: 24px; right: 24px; bottom: 46px; }.stage.phone .story-copy h1 { font-size: 48px; }.stage.phone .story-rail { display: none; }.stage.phone .stories .motion-layer { right: 4%; }
+
+      /* B — Campus Signal (recommended) */
+      .signal { background: #f7f8fa; font-family: 'Bricolage Grotesque', sans-serif; }
+      .signal-top { height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 36px; border-bottom: 1px solid var(--sketch-line); background: rgba(255,255,255,.88); }
+      .signal-top nav { display: flex; gap: 20px; color: var(--sketch-muted); font-size: 14px; font-weight: 700; }
+      .signal-top nav b { color: var(--sketch-red); }
+      .signal-grid { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(300px, .82fr); min-height: 680px; }
+      .campus-film { position: relative; min-height: 680px; overflow: hidden; color: white; background: #2f2327; }
+      .campus-film::before { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(15,22,27,.78), transparent 58%), url('assets/campus-discovery-moodboard.png') center / auto 100% no-repeat; transition: background-position .7s ease; }
+      .signal[data-scene="0"] .campus-film::before { background-position: left center; }.signal[data-scene="1"] .campus-film::before { background-position: center center; }.signal[data-scene="2"] .campus-film::before { background-position: right center; }
+      .campus-film > * { position: relative; }
+      .film-top { display: flex; justify-content: space-between; align-items: start; padding: 25px; }
+      .film-bottom { position: absolute; left: 28px; right: 28px; bottom: 28px; display: grid; gap: 12px; }
+      .film-bottom h1 { margin: 0; max-width: 560px; font-size: clamp(33px, 4vw, 58px); line-height: .98; letter-spacing: -.06em; }
+      .film-bottom p { margin: 0; font-size: 15px; font-weight: 600; }
+      .live-dot { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 800; }.live-dot i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: #ff4d6b; box-shadow: 0 0 0 5px rgba(255,77,107,.2); animation: pulse 1.8s infinite; }
+      .fact-sheet { padding: 32px; display: grid; align-content: start; gap: 22px; background: linear-gradient(135deg, white, #f0f2f5); }
+      .fact-head { display: flex; justify-content: space-between; gap: 16px; }.fact-head h2 { margin: 7px 0 0; max-width: 250px; font-size: 29px; line-height: .98; letter-spacing: -.055em; }.fact-head .save { border-color: var(--sketch-line); background: white; color: var(--sketch-red); }
+      .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }.fact { min-height: 94px; border: 1px solid var(--sketch-line); border-radius: 16px; background: rgba(255,255,255,.78); padding: 13px; }.fact span { display: block; color: var(--sketch-muted); font-size: 11px; font-weight: 700; }.fact b { display: block; margin-top: 7px; font-size: 16px; letter-spacing: -.03em; }
+      .why { border-left: 4px solid var(--sketch-red); border-radius: 0 13px 13px 0; background: var(--sketch-blush); padding: 14px 16px; font-size: 14px; line-height: 1.4; }.why b { display: block; margin-bottom: 4px; }
+      .sheet-actions { display: grid; gap: 10px; }.sheet-actions .next { width: 100%; }.outline { border: 1px solid var(--sketch-line); border-radius: 999px; padding: 12px 16px; background: white; color: var(--sketch-ink); font-weight: 800; }
+      .reco { display: inline-flex; width: max-content; align-items: center; border-radius: 999px; background: #eff8f2; color: #17713b; padding: 7px 10px; font-size: 11px; font-weight: 800; }
+      .stage.phone .signal-top { height: 66px; padding: 0 18px; }.stage.phone .signal-top nav { display: none; }.stage.phone .signal-grid { display: block; }.stage.phone .campus-film { min-height: 425px; }.stage.phone .fact-sheet { padding: 23px; gap: 17px; }.stage.phone .film-bottom { left: 22px; right: 22px; bottom: 22px; }.stage.phone .film-bottom h1 { font-size: 37px; }.stage.phone .facts { gap: 7px; }
+
+      /* C — Pathway Lens */
+      .lens { min-height: 760px; background: #fff; font-family: 'Sora', sans-serif; }
+      .lens-header { position: absolute; z-index: 2; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 27px 34px; color: white; }.lens .brand { color: white; font-size: 18px; }.lens-header .save { width: 38px; height: 38px; }
+      .lens-media { height: 59%; min-height: 448px; position: relative; overflow: hidden; color: white; background: #202b35; }.lens-media::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12,22,31,.67), transparent 48%, rgba(12,22,31,.45)), url('assets/campus-discovery-moodboard.png') right center / auto 100% no-repeat; transition: background-position .7s ease; }.lens[data-scene="0"] .lens-media::before { background-position: left center; }.lens[data-scene="1"] .lens-media::before { background-position: center center; }.lens[data-scene="2"] .lens-media::before { background-position: right center; }
+      .lens-media .sample { position: absolute; right: 34px; bottom: 29px; }.lens-ghost { position: absolute; left: 7%; bottom: 14%; margin: 0; font-size: clamp(46px, 8vw, 98px); line-height: .88; letter-spacing: -.09em; opacity: .94; max-width: 820px; }
+      .listing { position: absolute; left: 7%; right: 7%; top: 51%; min-height: 350px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 26px; border: 1px solid rgba(255,255,255,.68); border-radius: 23px; background: rgba(255,255,255,.96); padding: 29px 32px; box-shadow: 0 22px 54px rgba(20,33,42,.23); }.listing h1 { margin: 8px 0 13px; max-width: 470px; font-size: 34px; letter-spacing: -.06em; line-height: 1.04; }.listing p { max-width: 520px; margin: 0; color: #4e5c68; font-size: 14px; line-height: 1.55; }.listing-right { display: grid; align-content: center; gap: 13px; }.score { display: flex; align-items: baseline; gap: 9px; }.score strong { color: var(--sketch-red); font-size: 50px; letter-spacing: -.09em; }.score span { color: var(--sketch-muted); font-size: 12px; font-weight: 700; }.mini-facts { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--sketch-line); border-bottom: 1px solid var(--sketch-line); padding: 13px 0; }.mini-facts div { padding-left: 13px; border-left: 1px solid var(--sketch-line); }.mini-facts div:first-child { padding-left: 0; border-left: 0; }.mini-facts span { display: block; color: var(--sketch-muted); font-size: 10px; }.mini-facts b { display: block; margin-top: 4px; font-size: 13px; }.lens-actions { display: flex; flex-wrap: wrap; gap: 9px; }.lens-actions .next { padding: 12px 15px; }.lens-actions .outline { padding: 11px 14px; }
+      .stage.phone .lens-header { padding: 20px; }.stage.phone .lens-media { height: 49%; min-height: 395px; }.stage.phone .lens-media .sample { right: 20px; bottom: 18px; }.stage.phone .lens-ghost { left: 21px; right: 21px; bottom: 18%; font-size: 50px; }.stage.phone .listing { position: absolute; top: 43%; left: 13px; right: 13px; display: grid; grid-template-columns: 1fr; gap: 14px; padding: 23px; min-height: 430px; }.stage.phone .listing h1 { font-size: 29px; }.stage.phone .listing-right { gap: 9px; }.stage.phone .score strong { font-size: 42px; }
+
+      .motion-off * { animation-play-state: paused !important; }
+      .toolbar { position: fixed; z-index: 20; right: 22px; bottom: 20px; display: flex; flex-wrap: wrap; justify-content: end; gap: 7px; max-width: 500px; }.toolbar button { box-shadow: 0 7px 20px rgba(17,27,36,.13); }
+      @keyframes stroll { from { transform: translateX(100px); } to { transform: translateX(-710px); } }
+      @keyframes glow { 50% { transform: translate(-35px, 45px) scale(1.12); opacity: .66; } }
+      @keyframes pulse { 50% { transform: scale(.8); opacity: .55; } }
+      @media (max-width: 660px) { .review-shell { padding: 18px 15px 110px; }.review-bar { align-items: start; flex-direction: column; }.stage { border-radius: 22px; }.toolbar { right: 13px; bottom: 12px; }.stories-header, .signal-top { padding-left: 20px; padding-right: 20px; }.listing { left: 20px; right: 20px; } }
+    </style>
+  </head>
+  <body>
+    <main class="review-shell">
+      <header class="review-bar">
+        <div class="review-title"><b>Scholar Scout home directions</b><span>Interactive mockups • marketing feeling, student-first decision help</span></div>
+        <div class="variant-tabs" role="tablist" aria-label="Choose a homepage direction">
+          <button class="variant-tab" role="tab" aria-selected="true" aria-controls="stories" data-target="stories">A · Campus Stories</button>
+          <button class="variant-tab" role="tab" aria-selected="false" aria-controls="signal" data-target="signal">B · Campus Signal ★</button>
+          <button class="variant-tab" role="tab" aria-selected="false" aria-controls="lens" data-target="lens">C · Pathway Lens</button>
+        </div>
+      </header>
+
+      <section class="stage" aria-label="Interactive homepage concept preview">
+        <article class="variant stories active" id="stories" data-scene="0" role="tabpanel">
+          <header class="stories-header"><a class="brand" href="#stories"><span class="brand-mark">S</span>Scholar Scout</a><button class="save" aria-label="Save this sample campus">♡</button></header>
+          <div class="story-copy"><span class="sample">Sample visual — not an official campus</span><p class="eyebrow" style="color:#fff">01 / Meet a campus before you commit</p><h1 data-story-title>See the pace of a campus, not just the brochure.</h1><p data-story-copy>A cinematic, student-side scene delivers the emotional first look. Decision facts appear one tap away.</p><div class="story-actions"><button class="next" data-next>Next campus</button><span class="live-dot"><i></i> campus movement</span></div></div>
+          <div class="motion-layer" aria-hidden="true"></div><div class="story-rail" aria-hidden="true"><span class="active"></span><span></span><span></span></div>
+        </article>
+
+        <article class="variant signal" id="signal" data-scene="0" role="tabpanel">
+          <header class="signal-top"><a class="brand" href="#signal"><span class="brand-mark">S</span>Scholar Scout</a><nav><b>Discover</b><span>Compare</span><span>My shortlist</span></nav><span class="reco">Recommended direction</span></header>
+          <div class="signal-grid"><section class="campus-film" aria-label="Sample immersive campus story"><div class="film-top"><span class="sample">Sample campus scene</span><button class="save" aria-label="Save this sample school">♡</button></div><div class="film-bottom"><span class="live-dot"><i></i> students in motion</span><h1 data-film-title>Feel the commons before you read the fine print.</h1><p data-film-caption>A short, vivid first impression—then the information a student needs to decide.</p></div></section>
+            <aside class="fact-sheet"><div class="fact-head"><div><p class="eyebrow">Sample school profile</p><h2 data-school-name>North Valley College</h2></div><button class="save" aria-label="Save this sample school">♡</button></div><div class="facts"><div class="fact"><span>Programme focus</span><b data-focus>Justice &amp; public service</b></div><div class="fact"><span>Campus feeling</span><b data-feel>City-connected</b></div><div class="fact"><span>Student support</span><b data-support>Verify with school</b></div><div class="fact"><span>Source status</span><b>Demo only</b></div></div><div class="why"><b>Why this may fit</b><span data-why>You said you want a people-facing pathway with a practical next step.</span></div><div class="sheet-actions"><button class="next" data-next>Next campus</button><button class="outline">Compare school facts</button></div><p class="source-note">Production version: a short staff-verified summary, source link, date checked, and approved image—not copied web content.</p></aside>
+          </div>
+        </article>
+
+        <article class="variant lens" id="lens" data-scene="0" role="tabpanel">
+          <header class="lens-header"><a class="brand" href="#lens"><span class="brand-mark">S</span>Scholar Scout</a><button class="save" aria-label="Save this sample school">♡</button></header>
+          <section class="lens-media"><h1 class="lens-ghost" data-lens-hero>Live close to your next possibility.</h1><span class="sample">Original mockup art — demo only</span></section>
+          <section class="listing"><div><p class="eyebrow">Sample school listing</p><h1 data-listing-title>North Valley College</h1><p data-listing-copy>A confident first look paired with a compact, transparent fact sheet—like browsing a home, but for a school pathway.</p></div><div class="listing-right"><div class="score"><strong data-score>82</strong><span>sample fit signal<br />not an admission prediction</span></div><div class="mini-facts"><div><span>Setting</span><b data-setting>Urban edge</b></div><div><span>Study style</span><b data-style>Hands-on</b></div><div><span>Evidence</span><b>Demo only</b></div></div><div class="lens-actions"><button class="next" data-next>Next campus</button><button class="outline">See sources</button></div></div></section>
+        </article>
+      </section>
+    </main>
+    <div class="toolbar" aria-label="Sketch controls"><button class="active" data-size="desktop">Desktop</button><button data-size="tablet">Tablet</button><button data-size="phone">Phone</button><button id="motion-toggle">Motion: on</button></div>
+    <script>
+      const campuses = [
+        { storyTitle: 'See the pace of a campus, not just the brochure.', storyCopy: 'A cinematic, student-side scene delivers the emotional first look. Decision facts appear one tap away.', filmTitle: 'Feel the commons before you read the fine print.', filmCaption: 'A short, vivid first impression—then the information a student needs to decide.', name: 'North Valley College', focus: 'Justice & public service', feel: 'City-connected', support: 'Verify with school', why: 'You said you want a people-facing pathway with a practical next step.', lensHero: 'Live close to your next possibility.', listingCopy: 'A confident first look paired with a compact, transparent fact sheet—like browsing a home, but for a school pathway.', score: '82', setting: 'Urban edge', style: 'Hands-on' },
+        { storyTitle: 'Find the table where your ideas get practical.', storyCopy: 'A close look at how students learn together can make a school feel real long before a visit.', filmTitle: 'A study environment you can picture yourself in.', filmCaption: 'The social feed creates interest; the facts panel protects the decision.', name: 'Metro Technical Institute', focus: 'Technology & design', feel: 'Collaborative', support: 'Verify with school', why: 'You said you value learning by making and seeing clear career connections.', lensHero: 'Build toward a future you can picture.', listingCopy: 'The listing side keeps the energy grounded: useful facts, a reason, and a route to verification.', score: '78', setting: 'Downtown', style: 'Project-led' },
+        { storyTitle: 'Picture the walk between class and your next chapter.', storyCopy: 'The most meaningful school information includes the daily rhythm students actually experience.', filmTitle: 'A campus moment can show the feeling behind the facts.', filmCaption: 'Movement stays gentle: people walking, transit arriving, a life already in progress.', name: 'Lakeside Community College', focus: 'Transfer & career paths', feel: 'Open & local', support: 'Verify with school', why: 'You said flexibility and a supportive place to start matter to you.', lensHero: 'Start where you can see yourself grow.', listingCopy: 'A calm alternative that still lets students explore an environment before comparing options.', score: '85', setting: 'Lakeside', style: 'Flexible' }
+      ];
+      let index = 0;
+      const all = (selector) => document.querySelectorAll(selector);
+      const text = (selector, value) => all(selector).forEach((node) => node.textContent = value);
+      function refresh() {
+        const c = campuses[index];
+        all('.variant').forEach((node) => node.dataset.scene = index);
+        text('[data-story-title]', c.storyTitle); text('[data-story-copy]', c.storyCopy); text('[data-film-title]', c.filmTitle); text('[data-film-caption]', c.filmCaption); text('[data-school-name]', c.name); text('[data-focus]', c.focus); text('[data-feel]', c.feel); text('[data-support]', c.support); text('[data-why]', c.why); text('[data-lens-hero]', c.lensHero); text('[data-listing-title]', c.name); text('[data-listing-copy]', c.listingCopy); text('[data-score]', c.score); text('[data-setting]', c.setting); text('[data-style]', c.style);
+        all('.story-rail span').forEach((dot, position) => dot.classList.toggle('active', position === index));
+      }
+      all('[data-next]').forEach((button) => button.addEventListener('click', () => { index = (index + 1) % campuses.length; refresh(); }));
+      all('.save').forEach((button) => button.addEventListener('click', () => { button.classList.toggle('saved'); button.textContent = button.classList.contains('saved') ? '♥' : '♡'; }));
+      all('.variant-tab').forEach((tab) => tab.addEventListener('click', () => { all('.variant-tab').forEach((item) => item.setAttribute('aria-selected', 'false')); all('.variant').forEach((item) => item.classList.remove('active')); tab.setAttribute('aria-selected', 'true'); document.getElementById(tab.dataset.target).classList.add('active'); }));
+      const stage = document.querySelector('.stage');
+      all('[data-size]').forEach((button) => button.addEventListener('click', () => { stage.classList.remove('tablet', 'phone'); if (button.dataset.size !== 'desktop') stage.classList.add(button.dataset.size); all('[data-size]').forEach((item) => item.classList.toggle('active', item === button)); }));
+      document.getElementById('motion-toggle').addEventListener('click', (event) => { document.body.classList.toggle('motion-off'); event.currentTarget.textContent = document.body.classList.contains('motion-off') ? 'Motion: off' : 'Motion: on'; event.currentTarget.classList.toggle('active', document.body.classList.contains('motion-off')); });
+      refresh();
+    </script>
+  </body>
+</html>

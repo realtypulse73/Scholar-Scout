@@ -1,0 +1,11 @@
+:root {
+  --sketch-ink: #17212b;
+  --sketch-muted: #65717d;
+  --sketch-red: #dc1f3d;
+  --sketch-red-deep: #a8102a;
+  --sketch-blush: #fff1f3;
+  --sketch-silver: #e7ebef;
+  --sketch-paper: #fbfcfd;
+  --sketch-line: rgba(23, 33, 43, 0.14);
+  --sketch-shadow: 0 24px 64px rgba(34, 45, 59, 0.18);
+}
