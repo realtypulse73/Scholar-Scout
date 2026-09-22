@@ -21,10 +21,10 @@ export default function StepInterests({ value, onChange, error }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-xl font-semibold text-ink-900">
         What are your interests?
       </h2>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="mb-6 text-sm text-ink-600">
         Select all that apply — this helps us personalise your matches.
       </p>
 
@@ -41,10 +41,10 @@ export default function StepInterests({ value, onChange, error }: Props) {
               type="button"
               aria-pressed={selected}
               onClick={() => toggle(interest)}
-              className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`min-h-touch rounded-control border-2 px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 selected
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-blue-400'
+                  ? 'border-brand-600 bg-brand-600 text-white'
+                  : 'border-border bg-white text-ink-700 hover:border-brand-400'
               }`}
             >
               {INTEREST_LABELS[interest]}
@@ -54,7 +54,7 @@ export default function StepInterests({ value, onChange, error }: Props) {
       </div>
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 text-sm text-danger-700">
           {error}
         </p>
       )}
