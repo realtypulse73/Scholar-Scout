@@ -475,7 +475,7 @@ export function validateCatalogueRegion(region: unknown): string[] {
     if (!hasText(localFocus.anchorLabel)) {
       errors.push('Local focus anchor label is required.');
     }
-    if (!isValidCoordinate(localFocus as GeoCoordinate)) {
+    if (!isValidCoordinate(localFocus)) {
       errors.push('Local focus coordinates must be finite latitude/longitude values.');
     }
     if (localFocus.radiusMiles !== 10) {
@@ -653,9 +653,10 @@ function getIsoDate(value: unknown): Date | null {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
-function isSourceDate(sourceDate: SourceDate): boolean {
-  return (sourceDate?.state === 'documented' && isIsoCalendarDate(sourceDate.value))
-    || (sourceDate?.state === 'unavailable' && sourceDate.value === null);
+function isSourceDate(sourceDate: unknown): boolean {
+  return isRecord(sourceDate)
+    && ((sourceDate.state === 'documented' && isIsoCalendarDate(sourceDate.value))
+      || (sourceDate.state === 'unavailable' && sourceDate.value === null));
 }
 
 function isFactStatus(value: unknown): value is FactStatus {
@@ -812,7 +813,13 @@ function isHttpUrl(value: unknown): boolean {
   }
 }
 
-function isValidCoordinate(coordinate: GeoCoordinate): boolean {
+function isValidCoordinate(coordinate: unknown): boolean {
+  if (!isRecord(coordinate)
+    || typeof coordinate.latitude !== 'number'
+    || typeof coordinate.longitude !== 'number') {
+    return false;
+  }
+
   return Number.isFinite(coordinate.latitude)
     && Number.isFinite(coordinate.longitude)
     && coordinate.latitude >= -90
