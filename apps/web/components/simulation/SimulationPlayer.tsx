@@ -119,7 +119,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
             <p className="text-xs font-semibold uppercase text-ink-500">
               Score
             </p>
-            <p className="mt-1 text-5xl font-extrabold text-ink-900">
+            <p className="mt-1 text-5xl font-semibold text-ink-900">
               {result.score}%
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
             <p className="text-xs font-semibold uppercase text-ink-500">
               Clarity score
             </p>
-            <p className="mt-1 text-5xl font-extrabold text-success-700">
+            <p className="mt-1 text-5xl font-semibold text-success-700">
               {result.clarityScore}%
             </p>
           </div>
@@ -137,7 +137,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
           {result.insights.map((insight) => (
             <p
               key={insight}
-              className="rounded-card border border-ink-200 bg-ink-50 p-3 text-sm leading-6 text-ink-700"
+              className="rounded-card border border-border bg-silver p-3 text-sm leading-6 text-ink-700"
             >
               {insight}
             </p>
@@ -158,7 +158,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-200 bg-ink-50 p-5">
+      <div className="border-b border-border bg-silver p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Badge tone="brand">{simulation.careerTitle}</Badge>
           <p className="text-xs font-semibold uppercase text-ink-500">
@@ -174,12 +174,12 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
       </div>
 
       <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="border-b border-ink-200 bg-ink-900 p-6 text-white lg:border-b-0 lg:border-r">
-          <p className="text-xs font-semibold uppercase text-brand-100">
+        <section className="border-b border-border bg-silver p-6 text-ink-900 lg:border-b-0 lg:border-r">
+          <p className="text-xs font-semibold uppercase text-brand-700">
             Scenario
           </p>
-          <h2 className="mt-3 text-2xl font-extrabold">{step.title}</h2>
-          <p className="mt-4 text-sm leading-6 text-white/80">{step.scene}</p>
+          <h2 className="mt-3 text-2xl font-semibold">{step.title}</h2>
+          <p className="mt-4 text-sm leading-6 text-ink-600">{step.scene}</p>
           <p className="mt-6 text-base font-semibold leading-7">
             {step.prompt}
           </p>
@@ -198,10 +198,10 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
                   className={`rounded-card border p-4 text-left transition-colors ${
                     selected
                       ? 'border-brand-600 bg-brand-50 text-brand-900'
-                      : 'border-ink-200 bg-white text-ink-700 hover:border-brand-400'
+                      : 'border-border bg-white text-ink-700 hover:border-brand-400'
                   }`}
                 >
-                  <span className="text-sm font-bold">{choice.label}</span>
+                  <span className="text-sm font-semibold">{choice.label}</span>
                   {selected ? (
                     <span className="mt-2 block text-sm leading-6 text-ink-600">
                       {choice.outcome}

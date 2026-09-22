@@ -42,7 +42,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
     return (
       <Card className="p-6 space-y-4">
         <Badge tone="success">Simulation complete</Badge>
-        <h2 className="text-2xl font-extrabold">Your fit score: {result.score}%</h2>
+        <h2 className="text-2xl font-semibold">Your fit score: {result.score}%</h2>
         <p className="text-sm text-ink-600">Clarity score: {result.clarityScore}%</p>
 
         <div className="space-y-2">
@@ -61,7 +61,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
   return (
     <Card className="p-6 space-y-4">
       <Badge tone="brand">{simulation.careerTitle}</Badge>
-      <h2 className="text-xl font-extrabold">{step.title}</h2>
+      <h2 className="text-xl font-semibold">{step.title}</h2>
       <p className="text-sm text-ink-600">{step.scene}</p>
 
       <p className="font-semibold">{step.prompt}</p>
@@ -71,7 +71,7 @@ export default function SimulationPlayer({ simulation }: SimulationPlayerProps) 
           <button
             key={choice.id}
             onClick={() => handleChoice(choice.id)}
-            className="w-full text-left border rounded p-3 hover:border-brand-500"
+            className="w-full rounded-card border border-border bg-white p-3 text-left text-sm font-semibold text-ink-700 hover:border-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             {choice.label}
           </button>

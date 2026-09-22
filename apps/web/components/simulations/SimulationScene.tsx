@@ -8,7 +8,7 @@ interface SimulationSceneProps {
 
 const environmentStyles: Record<CareerSimulation['environment'], string> = {
   'job-site': 'from-amber-100 via-orange-50 to-slate-100 border-amber-200',
-  'security-operations-center': 'from-slate-900 via-blue-950 to-slate-800 border-blue-800 text-white',
+  'security-operations-center': 'from-blush via-white to-silver border-brand-200 text-ink-900',
   'healthcare-floor': 'from-sky-50 via-white to-emerald-50 border-sky-200',
 };
 
@@ -22,7 +22,7 @@ export default function SimulationScene({
   simulation,
   step,
 }: SimulationSceneProps) {
-  const isDark = simulation.environment === 'security-operations-center';
+  const isDark = false;
 
   return (
     <section
@@ -42,7 +42,7 @@ export default function SimulationScene({
               <Badge tone={isDark ? 'brand' : 'success'} className="mb-4">
                 {environmentLabels[simulation.environment]}
               </Badge>
-              <h2 className="max-w-xl text-3xl font-extrabold leading-tight">
+              <h2 className="max-w-xl text-3xl font-semibold leading-tight">
                 {simulation.careerTitle}
               </h2>
               <p className={`mt-3 max-w-xl text-sm leading-6 ${isDark ? 'text-blue-100' : 'text-ink-700'}`}>
@@ -51,7 +51,7 @@ export default function SimulationScene({
             </div>
 
             <div className={`mt-8 rounded-card border p-4 ${isDark ? 'border-blue-700 bg-white/10 text-blue-50' : 'border-white/70 bg-white/70 text-ink-700'}`}>
-              <p className="text-xs font-bold uppercase opacity-80">
+              <p className="text-xs font-semibold uppercase opacity-80">
                 AI scene prompt
               </p>
               <p className="mt-2 text-sm leading-6">
@@ -65,7 +65,7 @@ export default function SimulationScene({
           <p className={`text-xs font-bold uppercase ${isDark ? 'text-blue-200' : 'text-ink-500'}`}>
             Current scene
           </p>
-          <h3 className="mt-2 text-2xl font-extrabold">
+          <h3 className="mt-2 text-2xl font-semibold">
             {step?.title ?? simulation.title}
           </h3>
           <p className={`mt-3 text-sm leading-7 ${isDark ? 'text-blue-100' : 'text-ink-700'}`}>
@@ -78,10 +78,10 @@ export default function SimulationScene({
                 key={interest}
                 className={`rounded-card border p-3 ${isDark ? 'border-blue-700 bg-white/10' : 'border-ink-100 bg-white'}`}
               >
-                <p className="text-[11px] font-bold uppercase opacity-70">
+                <p className="text-[11px] font-semibold uppercase opacity-70">
                   Signal
                 </p>
-                <p className="mt-1 text-sm font-extrabold capitalize">
+                <p className="mt-1 text-sm font-semibold capitalize">
                   {interest.replace('-', ' ')}
                 </p>
               </div>
