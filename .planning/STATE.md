@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 07.1
 current_phase_name: Futuristic Student Journey Visual System
-status: executing
-stopped_at: Phase 07.1 responsive overflow repair
+status: complete
+stopped_at: Phase 07.1 complete; ready for Phase 8
 last_updated: "2026-09-22T00:00:00.000Z"
 last_activity: 2026-09-22
-last_activity_desc: "Phase 07.1 reopened: reported mobile/tablet horizontal overflow requires repair and retest"
+last_activity_desc: "Phase 07.1 complete: responsive overflow repair passed maintainer re-test"
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 68
-  completed_plans: 67
+  completed_plans: 68
 ---
 
 # Project State
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-31)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 07.1 responsive overflow repair.
+**Current focus:** Select the next roadmap phase.
 
 ## Current Position
 
-Phase: 07.1 (Futuristic Student Journey Visual System) — EXECUTING
+Phase: 07.1 (Futuristic Student Journey Visual System) — COMPLETE
 Plan: 14 plans across 5 waves
-Status: Repair and re-test reported mobile/tablet horizontal overflow
-Last activity: 2026-09-22 — Phase 07.1 reopened after mobile/tablet horizontal overflow report
+Status: Ready to begin the next roadmap phase
+Last activity: 2026-09-22 — Phase 07.1 completed after responsive overflow repair and re-test
 
 Progress: [████████░░] 81%
 

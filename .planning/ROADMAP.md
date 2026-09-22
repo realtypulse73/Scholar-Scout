@@ -293,4 +293,4 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
+- [x] 07.1-08-PLAN.md — Add visual-system regression contracts, source audit, and final browser/build acceptance.
