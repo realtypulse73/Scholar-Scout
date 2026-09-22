@@ -353,7 +353,7 @@ describe('employer training and wage context', () => {
           reviewedAt: 'not-a-date',
         },
       },
-      informationalLabel: 'Estimated offer',
+      informationalLabel: 'Estimated offer' as OccupationAreaWageContext['informationalLabel'],
     }, FACT_NOW)).toEqual(expect.arrayContaining([
       'Wage context occupation is required.',
       'Wage context value is required.',

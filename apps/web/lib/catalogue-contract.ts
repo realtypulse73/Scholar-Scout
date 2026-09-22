@@ -100,6 +100,31 @@ export interface OccupationAreaWageContext {
   informationalLabel: typeof WAGE_CONTEXT_INFORMATIONAL_LABEL;
 }
 
+export type CatalogueDelivery = 'in-person' | 'online' | 'hybrid';
+
+/** An unavailable first-view fact that stays visibly non-current and actionable. */
+export interface UnresolvedCatalogueCardFact {
+  value: null;
+  state: Exclude<FactStatus, 'current'>;
+  evidence: FactEvidence;
+}
+
+export type CatalogueCardFact<Value> = SourcedFact<Value> | UnresolvedCatalogueCardFact;
+
+/**
+ * Domain-only first-view facts for a future opportunity card. This is not a
+ * provider inventory, route payload, source client, or student profile.
+ */
+export interface CatalogueOpportunityCardFacts {
+  location: CatalogueCardFact<string>;
+  pathway: CatalogueCardFact<CataloguePathway>;
+  skillTaught: CatalogueCardFact<string>;
+  trainingPayer: CatalogueCardFact<string>;
+  costOrTuition: CatalogueCardFact<string | number>;
+  duration: CatalogueCardFact<string>;
+  delivery: CatalogueCardFact<CatalogueDelivery>;
+}
+
 export interface OfficialBoundary extends SourceMetadata {
   authority: BoundaryAuthority;
   boundaryId: string | null;
@@ -297,6 +322,56 @@ export function validateOccupationAreaWageContext(
   }
 
   return errors;
+}
+
+/**
+ * Validates the complete non-sensitive first-view card boundary. Each fact is
+ * independently sourced or explicitly unresolved with a visible next action.
+ */
+export function validateCatalogueOpportunityCardFacts(
+  facts: Partial<CatalogueOpportunityCardFacts>,
+  now: Date,
+): string[] {
+  const errors: string[] = [];
+
+  errors.push(...validateCatalogueCardFact('Location', facts?.location, now));
+  errors.push(...validateCatalogueCardFact('Pathway', facts?.pathway, now, isCataloguePathway));
+  errors.push(...validateCatalogueCardFact('Skill taught', facts?.skillTaught, now));
+  errors.push(...validateCatalogueCardFact('Training payer', facts?.trainingPayer, now));
+  errors.push(...validateCatalogueCardFact('Cost or tuition', facts?.costOrTuition, now));
+  errors.push(...validateCatalogueCardFact('Duration', facts?.duration, now));
+  errors.push(...validateCatalogueCardFact('Delivery', facts?.delivery, now, isCatalogueDelivery));
+
+  return errors;
+}
+
+/**
+ * Produces a public verification state from valid constituent facts only. It
+ * never represents provider quality, eligibility, rank, or any outcome.
+ */
+export function getOpportunityCardVerificationStatus(
+  facts: Partial<CatalogueOpportunityCardFacts>,
+  now: Date,
+): FactStatus {
+  if (validateCatalogueOpportunityCardFacts(facts, now).length > 0) {
+    return 'unknown';
+  }
+
+  const states = [
+    getCatalogueCardFactStatus(facts.location),
+    getCatalogueCardFactStatus(facts.pathway),
+    getCatalogueCardFactStatus(facts.skillTaught),
+    getCatalogueCardFactStatus(facts.trainingPayer),
+    getCatalogueCardFactStatus(facts.costOrTuition),
+    getCatalogueCardFactStatus(facts.duration),
+    getCatalogueCardFactStatus(facts.delivery),
+  ];
+
+  if (states.includes('conflicting')) return 'conflicting';
+  if (states.includes('unknown')) return 'unknown';
+  if (states.includes('needs-confirmation')) return 'needs-confirmation';
+
+  return 'current';
 }
 
 /**
@@ -499,6 +574,68 @@ function validateSourcedTextFact(
   }
 
   return errors;
+}
+
+function validateCatalogueCardFact<Value>(
+  label: string,
+  fact: CatalogueCardFact<Value> | undefined,
+  now: Date,
+  isSupportedValue?: (value: unknown) => boolean,
+): string[] {
+  const errors: string[] = [];
+
+  if (!fact) {
+    errors.push(`${label} card fact is required.`);
+    return errors;
+  }
+  if (!isRecord(fact) || !('evidence' in fact)) {
+    errors.push(`${label} must be a sourced or explicitly unresolved card fact.`);
+    return errors;
+  }
+
+  if (isUnresolvedCatalogueCardFact(fact)) {
+    if (fact.evidence.status !== fact.state) {
+      errors.push(`${label} unresolved state must match its evidence status.`);
+    }
+    errors.push(...prefixErrors(label, validateFactEvidence(fact.evidence, now)));
+    return errors;
+  }
+
+  if (!hasMaterialValue(fact.value)) {
+    errors.push(`${label} value is required.`);
+  } else if (isSupportedValue && !isSupportedValue(fact.value)) {
+    errors.push(`${label} value is unsupported.`);
+  }
+  errors.push(...prefixErrors(label, validateFactEvidence(fact.evidence, now)));
+
+  return errors;
+}
+
+function getCatalogueCardFactStatus(
+  fact: CatalogueCardFact<unknown> | undefined,
+): FactStatus {
+  if (!fact) return 'unknown';
+
+  return isUnresolvedCatalogueCardFact(fact) ? fact.state : fact.evidence.status;
+}
+
+function isUnresolvedCatalogueCardFact(
+  fact: CatalogueCardFact<unknown>,
+): fact is UnresolvedCatalogueCardFact {
+  return isRecord(fact) && 'state' in fact;
+}
+
+function isCatalogueDelivery(value: unknown): value is CatalogueDelivery {
+  return value === 'in-person' || value === 'online' || value === 'hybrid';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasMaterialValue(value: unknown): boolean {
+  return (typeof value === 'string' && Boolean(value.trim()))
+    || (typeof value === 'number' && Number.isFinite(value));
 }
 
 function isIsoCalendarDate(value: unknown): value is string {
