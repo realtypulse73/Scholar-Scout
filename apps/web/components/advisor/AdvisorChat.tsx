@@ -208,18 +208,20 @@ export default function AdvisorChat() {
           <p className="mt-3 text-sm font-semibold text-danger-700">{error}</p>
         ) : null}
 
-        <div className="mt-4 flex gap-3">
-          <Input
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Ask about fit, risk, cost, or next steps"
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                void sendMessage();
-              }
-            }}
-          />
-          <Button disabled={isSending} onClick={() => void sendMessage()}>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <div className="min-w-0 flex-1">
+            <Input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask about fit, risk, cost, or next steps"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  void sendMessage();
+                }
+              }}
+            />
+          </div>
+          <Button className="w-full sm:w-auto" disabled={isSending} onClick={() => void sendMessage()}>
             Send
           </Button>
         </div>

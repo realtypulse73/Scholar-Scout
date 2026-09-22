@@ -33,4 +33,15 @@ for (const file of identityConsumers) {
   if (/bg-(black|gray-9|slate-9|neutral-9)/.test(source)) throw new Error(`${file} contains a disallowed dark visual shell token`);
 }
 
+const responsiveGuards = [
+  ['apps/web/app/shortlist/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/app/peer-community/page.tsx', ['flex-col', 'sm:flex-row']],
+  ['apps/web/components/advisor/AdvisorChat.tsx', ['flex flex-col', 'sm:flex-row']],
+];
+
+for (const [file, expectedTokens] of responsiveGuards) {
+  const source = await readFile(resolve(root, file), 'utf8');
+  if (!expectedTokens.every((token) => source.includes(token))) throw new Error(`${file} is missing its narrow-screen overflow guard`);
+}
+
 console.log(`Visual system source audit passed for ${identityConsumers.length} identity consumers.`);
