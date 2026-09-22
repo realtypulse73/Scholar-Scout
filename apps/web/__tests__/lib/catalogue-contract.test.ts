@@ -8,9 +8,11 @@ import {
   isWithinLocalFocus,
   validateCatalogueRegion,
   validateCoverageMatrix,
+  validateFactEvidence,
   validateSourceMetadata,
   type CatalogueCoverage,
   type CatalogueRegion,
+  type FactEvidence,
 } from '@/lib/catalogue-contract';
 
 const region: CatalogueRegion = {
@@ -43,6 +45,16 @@ const coverage: CatalogueCoverage = {
   pathway: 'university',
   state: 'not-yet-verified',
   reviewedAt: '2026-09-22',
+};
+
+const factEvidence: FactEvidence = {
+  status: 'current',
+  authority: 'provider-official',
+  sourceLabel: 'Programme catalogue',
+  sourceUrl: 'https://provider.example/programmes',
+  sourceDate: { state: 'documented', value: '2026-03-23' },
+  reviewedAt: '2026-09-22',
+  verificationAction: 'Confirm details with the provider.',
 };
 
 describe('catalogue contract', () => {
@@ -166,5 +178,83 @@ describe('catalogue contract', () => {
       'Source date must be documented with an ISO calendar date or explicitly unavailable.',
       'Checked date must be an ISO calendar date.',
     ]);
+  });
+});
+
+describe('field-level fact evidence', () => {
+  it('accepts complete documented current evidence and an unavailable unresolved source date', () => {
+    expect(validateFactEvidence(factEvidence)).toEqual([]);
+    expect(validateFactEvidence({
+      ...factEvidence,
+      status: 'unknown',
+      sourceDate: { state: 'unavailable', value: null },
+    })).toEqual([]);
+  });
+
+  it('requires authority, public attribution, structured source/review dates, status, and an action', () => {
+    expect(validateFactEvidence({
+      ...factEvidence,
+      authority: 'unapproved-authority' as FactEvidence['authority'],
+      sourceLabel: '',
+      sourceUrl: 'ftp://provider.example/programmes',
+      sourceDate: undefined as unknown as FactEvidence['sourceDate'],
+      reviewedAt: 'not-a-date',
+      verificationAction: '',
+    })).toEqual(expect.arrayContaining([
+      'Fact authority is unsupported.',
+      'Fact source label is required.',
+      'Fact source URL must use http:// or https://.',
+      'Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
+      'Fact review date must be an ISO calendar date.',
+      'Fact verification action is required.',
+    ]));
+  });
+
+  it('keeps unavailable dates and explicit conflict from being treated as current', () => {
+    const now = new Date('2026-09-22T00:00:00.000Z');
+
+    expect(validateFactEvidence({
+      ...factEvidence,
+      status: 'current',
+      sourceDate: { state: 'unavailable', value: null },
+    })).toContain('Current facts require a documented source date.');
+    expect(validateFactEvidence({
+      ...factEvidence,
+      status: 'conflicting',
+    })).toEqual([]);
+    expect(getFreshnessStatus({
+      sourceLabel: factEvidence.sourceLabel,
+      sourceUrl: factEvidence.sourceUrl,
+      sourceDate: { state: 'unavailable', value: null },
+      checkedAt: factEvidence.reviewedAt,
+    }, 'operational', now)).toBe('unknown');
+  });
+
+  it('rejects malformed or future dates and honors the exact operational freshness threshold', () => {
+    const now = new Date('2026-09-22T00:00:00.000Z');
+    const atThreshold = {
+      sourceLabel: factEvidence.sourceLabel,
+      sourceUrl: factEvidence.sourceUrl,
+      sourceDate: { state: 'documented' as const, value: '2026-03-23' },
+      checkedAt: factEvidence.reviewedAt,
+    };
+
+    expect(validateFactEvidence({
+      ...factEvidence,
+      sourceDate: { state: 'documented', value: '2026-02-30' },
+      reviewedAt: '2026-09-23',
+    })).toEqual(expect.arrayContaining([
+      'Fact source date must be documented with an ISO calendar date or explicitly unavailable.',
+      'Fact review date cannot be in the future.',
+    ]));
+    expect(getFreshnessStatus(atThreshold, 'operational', now)).toBe('current');
+    expect(getFreshnessStatus({
+      ...atThreshold,
+      sourceDate: { state: 'documented', value: '2026-03-22' },
+    }, 'operational', now)).toBe('needs-confirmation');
+    expect(getFreshnessStatus({
+      ...atThreshold,
+      sourceDate: { state: 'documented', value: '2026-09-23' },
+    }, 'operational', now)).toBe('unknown');
   });
 });
