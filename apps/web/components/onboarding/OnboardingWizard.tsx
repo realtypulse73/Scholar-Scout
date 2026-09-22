@@ -29,6 +29,7 @@ import {
 } from '@/lib/preference-matching';
 import OnboardingSummary from './OnboardingSummary';
 import ProgressIndicator from './ProgressIndicator';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 
 const ONBOARDING_DRAFT_STORAGE_KEY = 'scholarscout.onboarding-draft';
 
@@ -200,8 +201,8 @@ export default function OnboardingWizard() {
     <main className="min-h-screen bg-canvas px-5 py-8 text-ink-900">
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="rounded-card border border-border bg-white p-5 shadow-card">
-          <Link href="/" className="text-sm font-bold text-brand-700">
-            ScholarScout
+          <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            <ScholarScoutBrandMark size="compact" />
           </Link>
           <div className="mt-5">
             <p className="text-xs font-bold uppercase text-ink-500">
