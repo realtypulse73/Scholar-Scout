@@ -636,10 +636,22 @@ describe('review regression contracts', () => {
     expect(validateCoverageMatrix([region], [
       { ...completeVerifiedCoverage[0], reviewedAt: '2026-09-21' },
       ...completeVerifiedCoverage.slice(1),
-    ], FACT_NOW)).toEqual(expect.arrayContaining([
+    ], FACT_NOW)).toContain(
       'Coverage review date cannot precede evidence review date for greater-kingston-jamaica:university.',
+    );
+    expect(validateCoverageMatrix([region], [
+      {
+        ...completeVerifiedCoverage[0],
+        reviewedAt: '2026-09-21',
+        evidence: {
+          ...factEvidence,
+          sourceDate: { state: 'documented', value: '2026-09-22' },
+        },
+      },
+      ...completeVerifiedCoverage.slice(1),
+    ], FACT_NOW)).toContain(
       'Coverage review date cannot precede documented evidence source date for greater-kingston-jamaica:university.',
-    ]));
+    );
   });
 
   it.each([

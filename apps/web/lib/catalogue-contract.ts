@@ -506,8 +506,8 @@ export function isWithinLocalFocus(
  * controlled region and pathway constants, never by caller input order.
  */
 export function validateCoverageMatrix(
-  regions: readonly CatalogueRegion[] | null | undefined,
-  coverage: readonly CatalogueCoverage[] | null | undefined,
+  regions: readonly unknown[] | null | undefined,
+  coverage: readonly unknown[] | null | undefined,
   now: Date,
 ): string[] {
   const errors: string[] = [];
@@ -521,13 +521,19 @@ export function validateCoverageMatrix(
     errors.push('At least one catalogue coverage row is required.');
   }
 
+  const validRegions = regionList.filter((region): region is CatalogueRegion => {
+    if (isRecord(region)) return true;
+
+    errors.push('Catalogue region must be an object.');
+    return false;
+  });
   const regionIds = new Set<CatalogueRegionId>();
   for (const regionId of CATALOGUE_REGION_IDS) {
-    const count = regionList.filter((region) => region.id === regionId).length;
+    const count = validRegions.filter((region) => region.id === regionId).length;
     if (count > 1) errors.push(`Duplicate catalogue region: ${regionId}.`);
     if (count > 0) regionIds.add(regionId);
   }
-  const unknownRegionIds = regionList
+  const unknownRegionIds = validRegions
     .map((region) => region.id)
     .filter((regionId) => !isCatalogueRegionId(regionId))
     .sort();
@@ -537,7 +543,13 @@ export function validateCoverageMatrix(
 
   const coverageByKey = new Map<string, CatalogueCoverage[]>();
   const invalidCoverageErrors = new Set<string>();
-  for (const row of coverageList) {
+  const validCoverageRows = coverageList.filter((row): row is CatalogueCoverage => {
+    if (isRecord(row)) return true;
+
+    errors.push('Catalogue coverage row must be an object.');
+    return false;
+  });
+  for (const row of validCoverageRows) {
     const regionId = row.regionId as string;
     const pathway = row.pathway as string;
     const key = `${regionId}:${pathway}`;
@@ -554,15 +566,33 @@ export function validateCoverageMatrix(
     if (row.state !== 'verified' && row.state !== 'not-yet-verified') {
       invalidCoverageErrors.add(`Unsupported coverage state for ${key}.`);
     }
-    if (!isIsoCalendarDate(row.reviewedAt)) {
+    const reviewedDate = getIsoDate(row.reviewedAt);
+    if (!reviewedDate) {
       invalidCoverageErrors.add(`Coverage review date must be an ISO calendar date for ${key}.`);
+    } else if (isValidDate(now) && reviewedDate.getTime() > now.getTime()) {
+      invalidCoverageErrors.add(`Coverage review date cannot be in the future for ${key}.`);
     }
     if (row.state === 'verified') {
-      if (!row.evidence || row.evidence.status !== 'current') {
+      if (!isRecord(row.evidence) || row.evidence.status !== 'current') {
         invalidCoverageErrors.add(`Verified coverage requires current attributable evidence for ${key}.`);
       } else {
-        for (const error of validateFactEvidence(row.evidence, now)) {
+        const evidence = row.evidence as FactEvidence;
+        for (const error of validateFactEvidence(evidence, now)) {
           invalidCoverageErrors.add(`Coverage evidence for ${key}: ${error}`);
+        }
+        if (reviewedDate) {
+          const evidenceReviewedDate = getIsoDate(evidence.reviewedAt);
+          if (evidenceReviewedDate && reviewedDate.getTime() < evidenceReviewedDate.getTime()) {
+            invalidCoverageErrors.add(
+              `Coverage review date cannot precede evidence review date for ${key}.`,
+            );
+          }
+          const evidenceSourceDate = getDocumentedDate(evidence.sourceDate);
+          if (evidenceSourceDate && reviewedDate.getTime() < evidenceSourceDate.getTime()) {
+            invalidCoverageErrors.add(
+              `Coverage review date cannot precede documented evidence source date for ${key}.`,
+            );
+          }
         }
       }
     }
@@ -666,6 +696,10 @@ function validateCatalogueCardFact<Value>(
   }
   if (!isRecord(fact) || !('evidence' in fact)) {
     errors.push(`${label} must be a sourced or explicitly unresolved card fact.`);
+    return errors;
+  }
+  if (!isRecord(fact.evidence)) {
+    errors.push(`${label} evidence must be an object.`);
     return errors;
   }
 
