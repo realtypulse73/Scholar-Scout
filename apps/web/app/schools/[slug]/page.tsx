@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import CampusNoteBoard from '@/components/campus-community/CampusNoteBoard';
 import { Badge, Card } from '@/components/ui';
+import StudentJourneyScene from '@/components/visual/StudentJourneyScene';
 import { creatorProfiles } from '@/lib/platform';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
@@ -18,7 +19,13 @@ export default async function SchoolLockerPage({ params }: { params: Promise<{ s
         <Link href="/" className="text-lg font-extrabold text-brand-700">ScholarScout</Link>
         <div className="flex items-center gap-4"><Link href="/peer-community" className="text-sm font-semibold text-ink-600">Campus conversations</Link><AuthStatusLink /></div>
       </nav>
-      <section className="transition-story border-y border-ink-200"><div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8"><Badge tone="brand">School locker</Badge><h1 className="mt-4 text-4xl font-extrabold text-ink-900">{uploaders[0].school}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">A place for official program information alongside the real perspectives posted by students studying here.</p></div></section>
+      <StudentJourneyScene className="rounded-none border-x-0">
+        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
+          <Badge tone="brand">School locker</Badge>
+          <h1 className="mt-4 text-4xl font-semibold text-ink-900">{uploaders[0].school}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">A place for official program information alongside the real perspectives posted by students studying here.</p>
+        </div>
+      </StudentJourneyScene>
       <section aria-labelledby="school-verification-heading" className="mx-auto max-w-6xl px-5 pt-8 sm:px-6 lg:px-8">
         <div className="rounded-card border border-brand-200 bg-brand-50 p-6 text-sm leading-6 text-ink-700">
           <h2 id="school-verification-heading" className="font-extrabold text-brand-800">Verify programme details before you apply</h2>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { Badge, Button } from '@/components/ui';
+import StudentJourneyScene from '@/components/visual/StudentJourneyScene';
 import type { CampusUploaderMatch } from '@/lib/peer-guides';
 
 interface PeerCommunityProps {
@@ -46,28 +47,20 @@ export default function PeerCommunity({ matches, signedIn }: PeerCommunityProps)
 
   return (
     <div className="space-y-8">
-      <section
-        className="overflow-hidden rounded-card border border-brand-200 bg-brand-700 p-6 text-white shadow-card sm:p-10"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, rgba(29, 78, 216, 0.94), rgba(67, 56, 202, 0.82)), url('/images/scholar-scout-transition-v1.png')",
-          backgroundPosition: 'center',
-          backgroundSize: 'cover',
-        }}
-      >
-          <Badge tone="success" className="bg-white/15 text-white">Campus conversations</Badge>
+      <StudentJourneyScene className="p-6 text-ink-900 shadow-card sm:p-10">
+        <Badge tone="success" className="bg-white text-success-700">Campus conversations</Badge>
         <h1 className="mt-5 max-w-3xl text-[32px] font-semibold leading-tight">
           Hear what campus is really like—from the students posting about it.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-white/90">
+        <p className="mt-5 max-w-2xl text-base leading-7 text-ink-600">
           Explore a school locker, follow the students sharing their experience, and ask the question that matters before you apply. Uploaders choose whether to open their inbox.
         </p>
-        <div className="mt-7 flex flex-wrap gap-3 text-sm font-semibold text-white/95">
-          <span className="rounded-full bg-white/15 px-3 py-2">Student-uploaded perspectives</span>
-          <span className="rounded-full bg-white/15 px-3 py-2">School locker notes</span>
-          <span className="rounded-full bg-white/15 px-3 py-2">Opt-in inboxes</span>
+        <div className="mt-7 flex flex-wrap gap-3 text-sm font-semibold text-ink-700">
+          <span className="rounded-full bg-silver px-3 py-2">Student-uploaded perspectives</span>
+          <span className="rounded-full bg-silver px-3 py-2">School locker notes</span>
+          <span className="rounded-full bg-silver px-3 py-2">Opt-in inboxes</span>
         </div>
-      </section>
+      </StudentJourneyScene>
 
       <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
