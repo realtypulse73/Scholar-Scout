@@ -551,6 +551,61 @@ describe('opportunity card facts', () => {
   });
 });
 
+describe('invalid injected validation clock regressions', () => {
+  const validationClockError = 'Validation clock must be a valid Date.';
+  const invalidNow = new Date('invalid');
+  const futureEvidence: FactEvidence = {
+    ...factEvidence,
+    sourceDate: { state: 'documented', value: '2099-01-01' },
+    reviewedAt: '2099-01-01',
+  };
+
+  it('rejects otherwise current direct and composed facts while card status remains unknown', () => {
+    const futureEmployerTrainingFacts: EmployerTrainingFacts = {
+      ...employerTrainingFacts,
+      taughtSkill: { ...employerTrainingFacts.taughtSkill, evidence: futureEvidence },
+      traineePay: { ...employerTrainingFacts.traineePay, evidence: futureEvidence },
+      employmentCommitmentEvidence: futureEvidence,
+    };
+    const futureWageContext: OccupationAreaWageContext = {
+      ...wageContext,
+      wage: { ...wageContext.wage, evidence: futureEvidence },
+    };
+    const futureCardFacts: CatalogueOpportunityCardFacts = {
+      ...cardFacts,
+      location: { ...cardFacts.location, evidence: futureEvidence },
+      pathway: { ...cardFacts.pathway, evidence: futureEvidence },
+      skillTaught: { ...cardFacts.skillTaught, evidence: futureEvidence },
+      trainingPayer: { ...cardFacts.trainingPayer, evidence: futureEvidence },
+      costOrTuition: { ...cardFacts.costOrTuition, evidence: futureEvidence },
+      duration: { ...cardFacts.duration, evidence: futureEvidence },
+      delivery: { ...cardFacts.delivery, evidence: futureEvidence },
+    };
+
+    expect(validateFactEvidence(futureEvidence, invalidNow)).toEqual([validationClockError]);
+    expect(validateEmployerTrainingFacts(futureEmployerTrainingFacts, invalidNow))
+      .toEqual([validationClockError]);
+    expect(validateOccupationAreaWageContext(futureWageContext, invalidNow))
+      .toEqual([validationClockError]);
+    expect(validateCatalogueOpportunityCardFacts(futureCardFacts, invalidNow))
+      .toEqual([validationClockError]);
+    expect(getOpportunityCardVerificationStatus(futureCardFacts, invalidNow)).toBe('unknown');
+  });
+
+  it('rejects a complete verified matrix with future coverage and evidence dates', () => {
+    const futureVerifiedCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
+      ...coverage,
+      pathway,
+      state: 'verified' as const,
+      reviewedAt: '2099-01-01',
+      evidence: futureEvidence,
+    })) as CatalogueCoverage[];
+
+    expect(validateCoverageMatrix([region], futureVerifiedCoverage, invalidNow))
+      .toEqual([validationClockError]);
+  });
+});
+
 describe('review regression contracts', () => {
   it('binds each region to its exact authority and boundary identifier', () => {
     const houston = {
