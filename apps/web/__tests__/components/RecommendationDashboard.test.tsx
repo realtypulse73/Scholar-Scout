@@ -42,6 +42,7 @@ describe('RecommendationDashboard', () => {
     const entryPoint = await screen.findByRole('button', {
       name: /need confidential support/i,
     });
+    expect(entryPoint).toHaveClass('rounded-control');
     entryPoint.focus();
     await user.keyboard('{Enter}');
 

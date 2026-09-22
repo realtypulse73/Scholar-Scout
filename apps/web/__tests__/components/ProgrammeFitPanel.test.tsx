@@ -30,6 +30,7 @@ describe('ProgrammeFitPanel', () => {
       ).toBeInTheDocument();
     });
     expect(screen.getAllByText(/Verify this information directly/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /compare/i })).toHaveClass('rounded-control');
     expect(screen.queryByText(/personal fit/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/housing support/i)).not.toBeInTheDocument();
   });

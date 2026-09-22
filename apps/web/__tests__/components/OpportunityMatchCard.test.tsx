@@ -59,6 +59,7 @@ describe('OpportunityMatchCard', () => {
     expect(screen.getByText(/Example catalogue/i)).toBeInTheDocument();
     expect(screen.getByText(/Confirm the current tuition/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save/i })).toHaveClass('rounded-control');
     expect(screen.getByRole('link', { name: /compare/i })).toHaveAttribute('href', '/shortlist');
     expect(screen.getByRole('link', { name: /visit source/i })).toHaveAttribute('href', 'https://example.test/catalogue');
     expect(screen.getByRole('link', { name: /alternate pathway/i })).toHaveAttribute('href', '/programmes?pathway=2-year-community-college');
