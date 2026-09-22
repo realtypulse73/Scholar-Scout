@@ -200,7 +200,7 @@ describe('catalogue contract', () => {
       },
     ] as unknown as CatalogueCoverage[];
 
-    expect(validateCoverageMatrix([], [])).toEqual([
+    expect(validateCoverageMatrix([], [], FACT_NOW)).toEqual([
       'At least one catalogue region is required.',
       'At least one catalogue coverage row is required.',
     ]);
