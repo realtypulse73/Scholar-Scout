@@ -263,7 +263,7 @@ Plans:
 **Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, accessible CSS-only student-side scene motion, and a code-native accessible Scholar Scout brand mark without dark page backgrounds.
 **Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08]
 **Depends on:** Phase 7
-**Plans:** 5/14 plans executed
+**Plans:** 6/14 plans executed
 
 Plans:
 **Wave 1**
@@ -279,7 +279,7 @@ Plans:
 - [x] 07.1-03-PLAN.md — Migrate discovery, programme, recommendation, and shortlist route shells.
 - [x] 07.1-04-PLAN.md — Migrate community, profile, feed, and creator surfaces.
 - [x] 07.1-05-PLAN.md — Migrate authentication, account-status, staff-gate, and advisor surfaces.
-- [ ] 07.1-06-PLAN.md — Migrate simulation, referral, support, and sharing surfaces.
+- [x] 07.1-06-PLAN.md — Migrate simulation, referral, support, and sharing surfaces.
 - [ ] 07.1-07-PLAN.md — Migrate staff operations and governance interfaces.
 - [ ] 07.1-09-PLAN.md — Migrate the onboarding wizard, progress, and summary hierarchy.
 - [ ] 07.1-11-PLAN.md — Migrate Western New York, campus-note, and uploader-contact surfaces.
