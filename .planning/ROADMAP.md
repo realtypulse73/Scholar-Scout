@@ -261,9 +261,9 @@ Plans:
 ### Phase 07.1: Futuristic Student Journey Visual System (INSERTED)
 
 **Goal:** Apply a bright, hopeful Space Grotesk visual system across the app, using white/silver surfaces, red action hierarchy, and accessible CSS-only student-side scene motion without dark page backgrounds.
-**Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07]
+**Requirements**: [D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08]
 **Depends on:** Phase 7
-**Plans:** 13 plans
+**Plans:** 14 plans
 
 Plans:
 
@@ -280,3 +280,4 @@ Plans:
 - [ ] 07.1-11-PLAN.md — Migrate Western New York, campus-note, and uploader-contact surfaces.
 - [ ] 07.1-12-PLAN.md — Migrate academic, interest, location, and pathway choice steps.
 - [ ] 07.1-13-PLAN.md — Migrate affordability and support-need steps with explicit safety states.
+- [ ] 07.1-14-PLAN.md — Modernize the accessible code-native Scholar Scout mark across public/student identity locations.
