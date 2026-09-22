@@ -19,7 +19,7 @@ export default async function AdminProgrammesPage() {
         className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
         aria-label="Admin navigation"
       >
-        <Link href="/" className="text-lg font-extrabold text-brand-700">
+        <Link href="/" className="text-lg font-semibold text-brand-700">
           ScholarScout
         </Link>
         <div className="flex items-center gap-4">

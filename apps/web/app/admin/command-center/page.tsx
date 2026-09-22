@@ -20,7 +20,7 @@ export default async function CommandCenterPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <Link href="/" className="text-lg font-extrabold text-brand-700">
+        <Link href="/" className="text-lg font-semibold text-brand-700">
           ScholarScout
         </Link>
       </nav>
@@ -32,7 +32,7 @@ export default async function CommandCenterPage() {
               <Badge tone="brand" className="mb-4">
                 Executive Command Center
               </Badge>
-              <h1 className="text-3xl font-extrabold">
+              <h1 className="text-3xl font-semibold">
                 System Overview
               </h1>
               <p className="mt-2 text-sm text-ink-600">
