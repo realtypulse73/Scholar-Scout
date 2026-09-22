@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import ProgrammeFitPanel from '@/components/programmes/ProgrammeFitPanel';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
@@ -65,8 +66,8 @@ export default async function ProgrammeDetailPage({ params }: PageProps) {
         className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8"
         aria-label="Programme detail navigation"
       >
-        <Link href="/" className="text-lg font-semibold text-brand-700">
-          ScholarScout
+        <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <ScholarScoutBrandMark size="compact" />
         </Link>
         <div className="flex items-center gap-4">
           <Link

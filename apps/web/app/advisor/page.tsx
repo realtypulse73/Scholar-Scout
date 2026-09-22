@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AdvisorChat from '@/components/advisor/AdvisorChat';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import { Badge } from '@/components/ui';
 
 export const metadata = {
@@ -12,8 +13,8 @@ export default function AdvisorPage() {
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <header className="border-b border-border bg-white">
         <div className="mx-auto max-w-5xl px-5 py-8">
-          <Link href="/" className="text-sm font-semibold text-brand-700">
-            ScholarScout
+          <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            <ScholarScoutBrandMark size="compact" />
           </Link>
           <div className="mt-5 max-w-2xl">
             <Badge tone="brand">AI advisor</Badge>

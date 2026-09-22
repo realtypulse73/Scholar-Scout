@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import Link from 'next/link';
 import { authOptions } from '@/auth';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import PeerCommunity from '@/components/peer-community/PeerCommunity';
 import { getCampusUploaderMatches } from '@/lib/peer-guides';
 import { creatorProfiles } from '@/lib/platform';
@@ -24,7 +25,7 @@ export default async function PeerCommunityPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8" aria-label="Peer community navigation">
-        <Link href="/" className="text-lg font-semibold text-brand-700">ScholarScout</Link>
+        <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><ScholarScoutBrandMark size="compact" /></Link>
         <div className="flex items-center gap-4">
           <Link href="/feed" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Discover</Link>
           <Link href="/programmes" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Programs</Link>

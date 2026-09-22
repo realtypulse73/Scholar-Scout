@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AuthForm from '@/components/auth/AuthForm';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import { Card } from '@/components/ui';
 
 export const metadata = {
@@ -11,8 +12,8 @@ export default function SignInPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
-        <Link href="/" className="mb-6 text-lg font-semibold text-brand-700">
-          ScholarScout
+        <Link href="/" aria-label="Scholar Scout" className="mb-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <ScholarScoutBrandMark size="full" />
         </Link>
         <Card className="p-6">
           <h1 className="text-2xl font-semibold">Sign in</h1>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
+import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import CampusNoteBoard from '@/components/campus-community/CampusNoteBoard';
 import { Badge, Card } from '@/components/ui';
 import StudentJourneyScene from '@/components/visual/StudentJourneyScene';
@@ -16,7 +17,7 @@ export default async function SchoolLockerPage({ params }: { params: Promise<{ s
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8">
-        <Link href="/" className="text-lg font-extrabold text-brand-700">ScholarScout</Link>
+        <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><ScholarScoutBrandMark size="compact" /></Link>
         <div className="flex items-center gap-4"><Link href="/peer-community" className="text-sm font-semibold text-ink-600">Campus conversations</Link><AuthStatusLink /></div>
       </nav>
       <StudentJourneyScene className="rounded-none border-x-0">
