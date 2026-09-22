@@ -51,7 +51,7 @@
 
 Phase 9 should add a new, pure TypeScript catalogue contract and six-area fixture module; it should not repurpose the legacy `Programme.matchScore`, add a database, write to the shared `ScholarScoutData` document, or fetch providers at learner request time. The existing `Programme` shape has useful evidence seams, but it also holds legacy `acceptanceRate`, `matchScore`, and broad programme values that cannot safely represent the v1.1 source-first public record. [VERIFIED: repository source `apps/web/lib/programmes.ts`, `apps/web/lib/server/data-store.ts`]
 
-The six regions need two related but different records: an official regional-boundary record for honest scope disclosure and a fixed downtown coordinate plus a ten-mile focus for local opportunity classification. The five U.S. records use current Census/OMB CBSA sources; Greater Kingston must retain the Statistical Institute of Jamaica KMA authority and has no U.S. CBSA code. [CITED: https://www.census.gov/programs-surveys/metro-micro/about/delineation-files.html] [CITED: https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html]
+The six regions need two related but different records: an official regional-boundary record for honest scope disclosure and a fixed downtown coordinate plus a ten-mile focus for local opportunity classification. The five U.S. records use the frozen July 2023 Census/OMB CBSA release; Greater Kingston retains the Statistical Institute of Jamaica KMA authority and has no U.S. CBSA code. [CITED: https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html] [CITED: https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html]
 
 **Primary recommendation:** Create a static `catalogue-contract.ts` plus `catalogue-fixtures.ts`, validate all six-by-six coverage cells and all evidence fields in unit tests, and leave live ingestion, staff publication, ranking, referrals, military content, and public discovery to their assigned later phases.
 
@@ -153,28 +153,50 @@ apps/web/
 **When to use:** Every region and every future provider location classification.
 
 ```typescript
+export type SourceDate =
+  | { state: 'documented'; value: string }
+  | { state: 'unavailable'; value: null };
+
+export interface SourceMetadata {
+  sourceLabel: string;
+  sourceUrl: string;
+  sourceDate: SourceDate;
+  checkedAt: string;
+}
+
 export interface CatalogueRegion {
   id: CatalogueRegionId;
   label: string;
   officialBoundary: {
     authority: 'us-census-omb-cbsa' | 'statin-kingston-metropolitan-area';
-    boundaryId?: string;
-    sourceUrl: string;
+    boundaryId: string | null;
     boundaryVersion: string;
-    checkedAt: string;
-  };
+  } & SourceMetadata;
   localFocus: {
     anchorLabel: string;
     latitude: number;
     longitude: number;
     radiusMiles: 10;
-    sourceUrl: string;
-    checkedAt: string;
-  };
+  } & SourceMetadata;
 }
 ```
 
-The U.S. CBSA codes supported by current Census material are Houston `26420`, Chicago `16980`, Buffalo `15380`, Atlanta `12060`, and New Orleans `35380`; verify the exact frozen release URL/version in the committed fixture. [CITED: https://tigerweb.geo.census.gov/tigerwebmain/Files/acs26/tigerweb_acs26_metro_cbsa_us.html] [CITED: https://tigerweb.geo.census.gov/tigerwebmain/Files/bas26/tigerweb_bas26_metro_cbsa_us.html]
+The U.S. CBSA codes are Houston `26420`, Chicago `16980`, Buffalo `15380`, Atlanta `12060`, and New Orleans `35380`. The committed fixture must use the frozen **July 2023 OMB delineation** release, not a moving current lookup. [CITED: https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html]
+
+### Frozen Phase 9 geographic source roster (resolved 2026-09-22)
+
+Phase 9 uses a fixed product reference point for the requested ten-mile local-focus calculation. It is not asserted to be an official downtown boundary or a provider-availability statement. Each reference point is the cited government city-hall or municipal address, normalized once into a stored decimal latitude/longitude in the static fixture; the cited address and the stored coordinate make the calculation repeatable without runtime geocoding.
+
+| Region | Official regional-boundary source | Fixed local-focus reference point and source |
+|---|---|---|
+| Greater Houston | U.S. Census July 2023 OMB CBSA map, CBSA `26420` — https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html | City of Houston City Hall, 901 Bagby, Houston, TX 77002 — https://houstontx.gov/contactus/ |
+| Greater Chicago | U.S. Census July 2023 OMB CBSA map, CBSA `16980` — https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html | Chicago City Hall, 121 N LaSalle Street, Chicago, IL 60602 — https://311.chicago.gov/ |
+| Greater Buffalo | U.S. Census July 2023 OMB CBSA map, CBSA `15380` — https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html | Buffalo City Hall, 65 Niagara Square, Buffalo, NY 14202 — https://www.buffalony.gov/m/directory/department?did=114 |
+| Greater Atlanta | U.S. Census July 2023 OMB CBSA map, CBSA `12060` — https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html | Atlanta City Hall Annex, 55 Trinity Avenue SW, Atlanta, GA 30303 — https://www.atlantaga.gov/residents/city-hall |
+| Greater New Orleans | U.S. Census July 2023 OMB CBSA map, CBSA `35380` — https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html | New Orleans City Hall, 1300 Perdido Street, New Orleans, LA 70112 — https://nola.gov/contact-us/ |
+| Greater Kingston, Jamaica | STATIN Kingston Metropolitan Area (Kingston plus the suburban section of St. Andrew); no CBSA — https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html | Kingston & St. Andrew Municipal Corporation, 24 Church Street, Kingston, Jamaica — https://www.ksamc.gov.jm/contact-us |
+
+Implementation must freeze `boundaryVersion: 'OMB July 2023 delineation'` for the five U.S. records and `boundaryVersion: 'STATIN KMA communities and population'` for Kingston. All six boundary and local-focus `checkedAt` dates are `2026-09-22`. The fixed local-focus radius is exactly ten straight-line miles; it is not a travel-time or commute claim.
 
 ### Pattern 2: Complete coverage matrix, never inferred coverage
 
@@ -202,7 +224,7 @@ export interface CatalogueCoverage {
 
 ### Pattern 3: Per-fact evidence and deterministic freshness
 
-**What:** Model material values as independently sourced facts. A source URL alone is not a current fact. `current` requires a valid source, review date, direct verification action, and a six-month review window for operational facts; regional boundaries use the separate two-year window.
+**What:** Model material values as independently sourced facts. `sourceDate` is a required tagged field: its documented variant has a validated ISO calendar date, while its unavailable variant is structurally present and forces the fact to remain non-current/unresolved. A source URL alone is not a current fact. `current` requires valid source metadata, review date, direct verification action, and a six-month review window for operational facts; regional boundaries use the separate two-year window.
 
 **When to use:** Tuition, cost, entry requirements, duration, delivery, location, trainee pay, availability, participation policies, and wage context.
 
@@ -213,12 +235,16 @@ export type FactStatus =
   | 'unknown'
   | 'conflicting';
 
+export type SourceDate =
+  | { state: 'documented'; value: string }
+  | { state: 'unavailable'; value: null };
+
 export interface FactEvidence {
   status: FactStatus;
   authority: 'provider-official' | 'employer-official' | 'government-official' | 'workforce-authority';
   sourceLabel: string;
   sourceUrl: string;
-  sourceDate?: string;
+  sourceDate: SourceDate;
   reviewedAt: string;
   verificationAction: string;
 }
@@ -348,20 +374,16 @@ The fixture test should fail if this returns any missing cell or if it finds an 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | A simple great-circle calculation is sufficient for the deterministic ten-mile classification before routing/map features exist. | Standard Stack / Don't Hand-Roll | It measures straight-line distance, not travel distance; the catalogue must label it as a local focus rather than a commute promise. |
-| A2 | Exact downtown anchor coordinates can be documented from an appropriate official municipal/geographic source during implementation. | Architecture Patterns | An undocumented anchor would make the local-focus label irreproducible. |
+| A2 | Exact downtown anchor coordinates are normalized once from the frozen civic reference-point roster and stored with its government source URL/check date. | Frozen Phase 9 geographic source roster | An undocumented anchor would make the local-focus label irreproducible. |
 | A3 | The asserted `no-published-guarantee` disclosure can be modeled as a controlled factual state rather than inferred from prose. | Architecture Patterns | A source may be too ambiguous and require `unknown` plus a verification action. |
 
-## Open Questions
+## Open Questions — RESOLVED
 
-1. **Downtown anchor source for each area**
-   - What we know: The product requires a documented downtown ten-mile focus.
-   - Recommendation: Record exact coordinates, source URL/label, and checked date in the six fixtures; use `unknown` coverage rather than classifying a provider if its location is not sourceable.
-2. **Initial verified opportunity rows**
-   - What we know: This phase must not invent Jamaican or U.S. provider availability.
-   - Recommendation: Ship the six-region/36-cell contract with `not-yet-verified` where a reviewed record is absent; Phase 10 owns reviewed imports/publication.
-3. **Boundary release freeze**
-   - What we know: Census publishes dated delineation resources and its current material identifies the five U.S. CBSA codes.
-   - Recommendation: Store the exact chosen Census/TIGER release URL and current check date in the fixture, then test the two-year maximum.
+1. **Initial verified opportunity rows — RESOLVED**
+   - Resolution: Phase 9 ships all 36 metro/pathway coverage cells as explicit `not-yet-verified` records. It ships no verified opportunity rows or provider inventory.
+   - Ownership: Phase 10 exclusively owns reviewed, verified opportunity imports and governed publication after source/claim validation.
+
+The geographic-source and release decisions are resolved above. The executor must not select different URLs, versions, anchors, or a moving current Census source during implementation.
 
 ## Environment Availability
 
@@ -381,32 +403,31 @@ No external service, API key, package installation, or production deployment is 
 |----------|-------|
 | Framework | Jest 30.3.0 with `next/jest` |
 | Config file | `apps/web/jest.config.ts` |
-| Quick run command | `pnpm --filter @scholar-scout/web run test -- catalogue-contract catalogue-fixtures` |
+| Fast target-unit command | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` (substitute `catalogue-fixtures.test.ts` for fixture tasks) |
 | Full suite command | `pnpm --filter @scholar-scout/web run test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|--------------|
-| REG-01 | Exactly six region records have authority/source/version/date; Kingston has no CBSA; local focus is ten miles. | unit | web Jest command | ❌ Wave 0 |
-| REG-02 | Every region contains all six controlled pathways. | unit | web Jest command | ❌ Wave 0 |
-| REG-03 | Matrix is complete and explicit `not-yet-verified` never upgrades itself. | unit | web Jest command | ❌ Wave 0 |
-| EVID-01 | A material fact requires source, authority, date, status, and verification action. | unit | web Jest command | ❌ Wave 0 |
-| EVID-02 | Current/needs-confirmation/unknown/conflicting stay distinct at six-month boundaries. | unit | web Jest command | ❌ Wave 0 |
-| EVID-05 | Wage context requires dated source and never includes a personal/provider promise field. | unit | web Jest command | ❌ Wave 0 |
+| REG-01 | Exactly six region records have authority/source/version/date; Kingston has no CBSA; local focus is ten miles. | unit | fixture target-unit command | created by 09-02-01 after 09-01 contract |
+| REG-02 | Every region contains all six controlled pathways. | unit | fixture target-unit command | created by 09-02-01/02 |
+| REG-03 | Matrix is complete and all 36 Phase 9 cells remain explicit `not-yet-verified`. | unit | fixture target-unit command | created by 09-02-01/02 |
+| EVID-01 | A material fact requires source, authority, required structured source/review dates, status, and verification action. | unit | contract target-unit command | created by 09-01-01; extended by 09-03 |
+| EVID-02 | Current/needs-confirmation/unknown/conflicting stay distinct at six-month boundaries. | unit | contract target-unit command | created by 09-01-01/02; extended by 09-03-01 |
+| EVID-05 | Wage context requires dated source and never includes a personal/provider promise field. | unit | contract target-unit command | extended by 09-03-02 |
 
 ### Sampling Rate
 
-- **Per task commit:** targeted Jest command plus `pnpm --filter @scholar-scout/web run typecheck`.
+- **Per task commit:** the one-file target Jest command named above, before beginning the next task.
 - **Per wave merge:** `pnpm --filter @scholar-scout/web run lint` and full web Jest suite.
 - **Phase gate:** lint, typecheck, full Jest suite, and a manual review that fixtures contain no invented provider, pay, support, restriction, or local-office claims.
 
-### Wave 0 Gaps
+### Test-Creation Order
 
-- [ ] `apps/web/__tests__/lib/catalogue-contract.test.ts`
-- [ ] `apps/web/__tests__/lib/catalogue-fixtures.test.ts`
-- [ ] `apps/web/lib/catalogue-contract.ts`
-- [ ] `apps/web/lib/catalogue-fixtures.ts`
+- [ ] Plan 09-01 Task 1 creates the contract module and focused test as the red-to-green tracer.
+- [ ] Plan 09-02 Task 1 creates the fixture module and focused test only after Plan 09-01 exports its metadata/freshness interface.
+- [ ] Plan 09-03 extends the contract suite after Plan 09-01, independently of Plan 09-02.
 
 ## Security Domain
 
@@ -433,9 +454,14 @@ No external service, API key, package installation, or production deployment is 
 ## Sources
 
 ### Primary (MEDIUM confidence)
-- [U.S. Census metropolitan delineation files](https://www.census.gov/programs-surveys/metro-micro/about/delineation-files.html) — OMB/Census delineation authority and dated releases.
-- [Census current CBSA geography](https://tigerweb.geo.census.gov/tigerwebmain/Files/acs26/tigerweb_acs26_metro_cbsa_us.html) — current names/codes for the five U.S. areas.
+- [Census July 2023 CBSA map](https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html) — frozen July 2023 OMB delineation release for all five U.S. CBSA records.
 - [Statistical Institute of Jamaica KMA record](https://statinja.gov.jm/maps/kmacommunitiesandpopulation.html) — Kingston and suburban St. Andrew KMA authority.
+- [City of Houston contact record](https://houstontx.gov/contactus/) — 901 Bagby civic reference point.
+- [City of Chicago 311 record](https://311.chicago.gov/) — 121 N LaSalle Street civic reference point.
+- [City of Buffalo City Hall record](https://www.buffalony.gov/m/directory/department?did=114) — 65 Niagara Square civic reference point.
+- [City of Atlanta City Hall record](https://www.atlantaga.gov/residents/city-hall) — 55 Trinity Avenue SW civic reference point.
+- [City of New Orleans contact record](https://nola.gov/contact-us/) — 1300 Perdido Street civic reference point.
+- [KSAMC contact record](https://www.ksamc.gov.jm/contact-us) — 24 Church Street civic reference point.
 - [NCES IPEDS release-cycle guidance](https://nces.ed.gov/ipeds/use-the-data/timing-of-ipeds-data-collection) — annual collection and data-year/release timing.
 - [Apprenticeship.gov Job Finder](https://www.apprenticeship.gov/apprenticeship-job-finder) — government apprenticeship listing context and its multiple-source labels.
 
@@ -449,7 +475,7 @@ No external service, API key, package installation, or production deployment is 
 **Confidence breakdown:**
 - Standard stack: HIGH — no new stack; repository manifests/configuration confirm the tools.
 - Architecture: HIGH — current programme governance and persistence seams were read directly.
-- External boundary/source facts: MEDIUM — official sources were checked through web search and must be frozen with exact fixture URLs/dates at implementation time.
+- External boundary/source facts: HIGH — the exact July 2023 Census/OMB and STATIN sources, six civic reference sources, versions, and checked date are frozen in the Phase 9 source roster.
 - Pitfalls: HIGH — directly derived from locked requirements and existing legacy data constraints.
 
 **Research date:** 2026-09-22  

@@ -2,8 +2,7 @@
 phase: 9
 slug: catalogue-foundations-and-source-contracts
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
 created: 2026-09-22
 ---
 
@@ -19,18 +18,18 @@ created: 2026-09-22
 |----------|-------|
 | **Framework** | Jest 30.3.0 with `next/jest` |
 | **Config file** | `apps/web/jest.config.ts` |
-| **Quick run command** | `pnpm --filter @scholar-scout/web run test -- catalogue-contract catalogue-fixtures` |
+| **Fast target-unit command** | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` (substitute `catalogue-fixtures.test.ts` for fixture tasks) |
 | **Full suite command** | `pnpm --filter @scholar-scout/web run test` |
-| **Estimated runtime** | ~60 seconds |
+| **Target feedback latency** | under 30 seconds for the one-file, in-band unit command; full-suite timing is tracked separately at wave gates. |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `pnpm --filter @scholar-scout/web run test -- catalogue-contract catalogue-fixtures` and `pnpm --filter @scholar-scout/web run typecheck`.
+- **After every task commit:** Run the exact task-target command from the map below. For contract tasks use `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand`; for fixture tasks substitute `catalogue-fixtures.test.ts`. This fast unit feedback is required before the next task begins.
 - **After every plan wave:** Run `pnpm --filter @scholar-scout/web run lint` and `pnpm --filter @scholar-scout/web run test`.
 - **Before `$gsd-verify-work`:** Lint, typecheck, and the full web test suite must be green.
-- **Max feedback latency:** 60 seconds.
+- **Maximum target-unit feedback latency:** 30 seconds.
 
 ---
 
@@ -38,20 +37,23 @@ created: 2026-09-22
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 09-01-01 | 01 | 1 | REG-01, REG-02, REG-03 | T-09-01 | Six regional boundary records and all 36 explicit coverage cells are valid; Kingston never carries a CBSA identifier. | unit | `pnpm --filter @scholar-scout/web run test -- catalogue-fixtures` | ❌ W0 | ⬜ pending |
-| 09-01-02 | 01 | 1 | EVID-01, EVID-02 | T-09-02 | Fact evidence requires attribution, dates, status, and verification action; stale/missing facts cannot become current. | unit | `pnpm --filter @scholar-scout/web run test -- catalogue-contract` | ❌ W0 | ⬜ pending |
-| 09-01-03 | 01 | 1 | EVID-05 | T-09-03 | Wage context is separately dated/source-linked and cannot encode a provider or personal pay promise. | unit | `pnpm --filter @scholar-scout/web run test -- catalogue-contract` | ❌ W0 | ⬜ pending |
+| 09-01-01 | 01 | 1 | REG-01, REG-02, REG-03, EVID-01, EVID-02 | T-09-01, T-09-02 | One region-to-coverage tracer has mandatory source metadata, explicit boundary version/ID, structured source date, and injected-clock freshness behavior. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | created by this task | ⬜ pending |
+| 09-01-02 | 01 | 1 | REG-01, REG-02, REG-03, EVID-01, EVID-02 | T-09-01, T-09-02 | Matrix failures and 731-day boundary freshness are deterministic; unavailable/malformed/future source dates are never current. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | created by 09-01-01 | ⬜ pending |
+| 09-02-01 | 02 | 2 | REG-01 | T-09-04, T-09-06 | Six source-bearing boundary/local-focus records have required source-date metadata, fixed source roster, and explicit Kingston no-CBSA value. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-fixtures.test.ts --runInBand` | created by this task | ⬜ pending |
+| 09-02-02 | 02 | 2 | REG-02, REG-03 | T-09-05 | All 36 explicit coverage cells are ordered `not-yet-verified` and never infer local availability. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-fixtures.test.ts --runInBand` | created by 09-02-01 | ⬜ pending |
+| 09-03-01 | 03 | 2 | EVID-01, EVID-02 | T-09-07 | Fact evidence requires authority, structured source/review dates, status, and verification action; unavailable or stale evidence cannot be current. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
+| 09-03-02 | 03 | 2 | EVID-01, EVID-02, EVID-05 | T-09-08, T-09-10 | Employer training and wage context have independently dated evidence and cannot encode a provider or personal pay promise. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
+| 09-03-03 | 03 | 2 | EVID-01, EVID-02, D-08 | T-09-11 | A non-sensitive opportunity record carries sourced or visibly unresolved location, pathway, taught skill, payer, cost/tuition, verification state, duration, and delivery facts. | unit | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts --runInBand` | extended by this task | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
 ---
 
-## Wave 0 Requirements
+## Test-Creation Ordering
 
-- [ ] `apps/web/__tests__/lib/catalogue-contract.test.ts` — contract, freshness, evidence, employer-paid-training, and wage-context cases.
-- [ ] `apps/web/__tests__/lib/catalogue-fixtures.test.ts` — six-region, full-coverage, and boundary/local-focus fixture cases.
-- [ ] `apps/web/lib/catalogue-contract.ts` — pure contract and validation helpers.
-- [ ] `apps/web/lib/catalogue-fixtures.ts` — safe representative fixture data.
+- Plan 09-01 Task 1 creates the contract module and its focused test file as a red-to-green tracer.
+- Plan 09-02 Task 1 creates the fixture module and its focused test file after Plan 09-01 exports the metadata/freshness interface.
+- Plan 09-03 extends the Plan 09-01 test file after Plan 09-01 completes; it has no fixture-plan dependency.
 
 ---
 
@@ -65,11 +67,11 @@ created: 2026-09-22
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verification or Wave 0 dependencies.
+- [x] Every executable task is mapped to its exact target-unit command and source files.
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verification.
-- [ ] Wave 0 covers all missing references.
+- [x] Test-creation ordering is explicit and no artificial Wave-0 prerequisite remains.
 - [ ] No watch-mode flags.
-- [ ] Feedback latency < 60s.
-- [ ] `nyquist_compliant: true` set in frontmatter.
+- [x] Fast target-unit feedback command and under-30-second cadence are specified for every commit.
+- [x] `nyquist_compliant: true` is set because task mapping and feedback cadence are complete.
 
 **Approval:** pending

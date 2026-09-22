@@ -336,6 +336,8 @@ if (!evidence.sourceUrl?.trim() || !isHttpUrl(evidence.sourceUrl)) {
 
 **Apply to:** Regional-boundary, downtown-anchor, material-fact, trainee-pay, employment-commitment, and occupation/area wage evidence. Phase 9 adds review-age rules: 183 days for operational facts and 731 days for boundary records, evaluated against an injected clock.
 
+`sourceDate` is a required discriminated value, never an optional property: validate a documented ISO calendar date, or retain an explicit unavailable branch that classifies the affected fact as non-current/unresolved and still requires a direct verification action. Apply the same metadata contract to official boundaries and local-focus anchors before fixture construction.
+
 ### Static-source test fixtures are assertion-driven
 
 **Sources:** `apps/web/__tests__/lib/outcome-profiles.test.ts:8-20`; `apps/web/__tests__/lib/western-new-york.test.ts:14-60`  
