@@ -34,7 +34,7 @@ export default function PlatformDashboard({
     <div className="space-y-6">
       <div>
         <Badge tone="brand">Operations</Badge>
-        <h1 className="mt-4 text-3xl font-extrabold text-ink-900">{title}</h1>
+        <h1 className="mt-4 text-3xl font-semibold text-ink-900">{title}</h1>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map(([label, value]) => (
@@ -42,7 +42,7 @@ export default function PlatformDashboard({
             <p className="text-xs font-semibold uppercase text-ink-500">
               {label}
             </p>
-            <p className="mt-2 text-3xl font-extrabold text-ink-900">
+            <p className="mt-2 text-3xl font-semibold text-ink-900">
               {value}
             </p>
           </Card>
@@ -50,7 +50,7 @@ export default function PlatformDashboard({
       </div>
       <Card className="p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-ink-900">Decision engine</h2>
+          <h2 className="text-base font-semibold text-ink-900">Decision engine</h2>
           <div className="flex gap-2">
             <Badge tone="success">{metrics.boostedContent} boosted</Badge>
             <Badge tone="danger">{metrics.removedContent} removed</Badge>
@@ -60,7 +60,7 @@ export default function PlatformDashboard({
           {metrics.decisions.map((decision) => (
             <div key={decision.id} className="py-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-ink-900">
+                <p className="text-sm font-semibold text-ink-900">
                   {decision.targetId}
                 </p>
                 <Badge

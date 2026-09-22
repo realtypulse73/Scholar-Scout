@@ -540,7 +540,7 @@ export default function ProgrammeAdminManager({
             <Badge tone="brand" className="mb-3">
               Governed data
             </Badge>
-            <h1 className="text-2xl font-extrabold text-ink-900">
+            <h1 className="text-2xl font-semibold text-ink-900">
               Programme editor
             </h1>
             <p className="mt-2 text-sm leading-6 text-ink-600">
@@ -834,7 +834,7 @@ export default function ProgrammeAdminManager({
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
-              className="inline-flex min-h-touch flex-1 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              className="inline-flex min-h-touch flex-1 items-center justify-center rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
             >
               Save record
             </button>
@@ -845,7 +845,7 @@ export default function ProgrammeAdminManager({
                 setConflict(null);
                 setMessage('');
               }}
-              className="inline-flex min-h-touch flex-1 items-center justify-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              className="inline-flex min-h-touch flex-1 items-center justify-center rounded-card border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
             >
               Clear form
             </button>
@@ -1166,7 +1166,7 @@ export default function ProgrammeAdminManager({
         <Card className="p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-xl font-extrabold text-ink-900">
+              <h2 className="text-xl font-semibold text-ink-900">
                 Programme records
               </h2>
               <p className="mt-2 text-sm text-ink-600">
