@@ -48,9 +48,13 @@ The product presents published facts and verification actions. It does not make 
 4. Missing, stale, or conflicting facts are visible as such and never become a confirmed fact, inferred availability, fit signal, salary promise, or fabricated offering.
 5. Wage information, if present, is structurally separate, dated occupation-and-area context rather than provider evidence or a personal forecast.
 
-**Plans:** 0/3 plans executed.
+**Plans:** 1/3 plans executed
 
 Plans:
+
+- [x] 09-01-PLAN.md
+- [ ] 09-02-PLAN.md
+- [ ] 09-03-PLAN.md
 
 - [ ] `09-01-PLAN.md` — Define and test the deterministic regional, ten-mile local-focus, and coverage contract.
 - [ ] `09-02-PLAN.md` — Freeze six regional fixtures and the complete 36-cell coverage matrix.

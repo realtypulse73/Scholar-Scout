@@ -7,14 +7,14 @@
 
 ### Regional catalogue scope
 
-- [ ] **REG-01**: A student can explicitly choose Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, or Greater Kingston, Jamaica and see the catalogue’s exact official regional boundary, authority, source, and boundary-release/check date.
-- [ ] **REG-02**: A student can browse university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information paths in every selected metro without one class being hidden by default.
-- [ ] **REG-03**: A student can see an honest coverage state for each metro and pathway class, including `Not yet verified`, rather than a fabricated or implied local offering.
+- [x] **REG-01**: A student can explicitly choose Greater Houston, Greater Chicago, Greater Buffalo, Greater Atlanta, Greater New Orleans, or Greater Kingston, Jamaica and see the catalogue’s exact official regional boundary, authority, source, and boundary-release/check date.
+- [x] **REG-02**: A student can browse university, community-college, trade/career-school, registered-apprenticeship, employer-linked-training, and military-information paths in every selected metro without one class being hidden by default.
+- [x] **REG-03**: A student can see an honest coverage state for each metro and pathway class, including `Not yet verified`, rather than a fabricated or implied local offering.
 
 ### Source evidence and freshness
 
-- [ ] **EVID-01**: Every material fact shown on an opportunity card or provider page has its own attributable source, authority type, source/review date, factual status, and direct verification action.
-- [ ] **EVID-02**: A student can distinguish `Current`, `Needs confirmation`, `Unknown`, and `Conflicting` facts; stale or conflicting facts never appear confirmed.
+- [x] **EVID-01**: Every material fact shown on an opportunity card or provider page has its own attributable source, authority type, source/review date, factual status, and direct verification action.
+- [x] **EVID-02**: A student can distinguish `Current`, `Needs confirmation`, `Unknown`, and `Conflicting` facts; stale or conflicting facts never appear confirmed.
 - [ ] **EVID-03**: A staff member can review an opportunity’s source, required evidence, freshness state, and claim boundaries before it becomes public.
 - [ ] **EVID-04**: The published catalogue is a deterministic, versioned reviewed snapshot; learner-facing requests do not scrape, aggregate, or depend on a live provider site.
 - [ ] **EVID-05**: If occupation-and-area wage context is shown, it is dated, source-linked context and clearly not a provider promise or personal salary forecast.
@@ -84,11 +84,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REG-01 | Phase 9 | Pending |
-| REG-02 | Phase 9 | Pending |
-| REG-03 | Phase 9 | Pending |
-| EVID-01 | Phase 9 | Pending |
-| EVID-02 | Phase 9 | Pending |
+| REG-01 | Phase 9 | Complete |
+| REG-02 | Phase 9 | Complete |
+| REG-03 | Phase 9 | Complete |
+| EVID-01 | Phase 9 | Complete |
+| EVID-02 | Phase 9 | Complete |
 | EVID-03 | Phase 10 | Pending |
 | EVID-04 | Phase 10 | Pending |
 | EVID-05 | Phase 9 | Pending |
