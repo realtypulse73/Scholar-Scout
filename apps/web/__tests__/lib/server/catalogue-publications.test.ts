@@ -8,7 +8,10 @@ import {
   importCatalogueCandidates,
   publishWeeklyCatalogueSnapshot,
   previewWeeklyCatalogueRelease,
+  publishEmergencyCatalogueSnapshot,
+  resolveCatalogueCandidateConflict,
   reviewCatalogueCandidate,
+  restoreCatalogueSnapshot,
   stageCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
 import {
@@ -541,6 +544,102 @@ describe('weekly catalogue publication', () => {
       now,
     });
   }
+});
+
+describe('catalogue conflict and recovery commands', () => {
+  let store: MemoryDataStore;
+
+  beforeEach(() => {
+    store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+  });
+
+  afterEach(() => setScholarScoutDataStoreForTests(null));
+
+  it('returns safe comparable values for a stale candidate and records a reason when retaining an older value', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await stageCatalogueCandidate({
+      actor: editor,
+      candidate: { ...validCandidate, title: 'Newer technical training' },
+      expectedRevision: 1,
+      now: NOW,
+    });
+
+    const stale = await resolveCatalogueCandidateConflict({
+      actor: editor,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      attempted: { title: validCandidate.title, claimBoundary: validCandidate.claimBoundary },
+      choices: { title: 'attempted', claimBoundary: 'current' },
+      reason: 'The official source still uses the original title.',
+      now: NOW,
+    });
+
+    expect(stale).toMatchObject({
+      status: 'conflict',
+      conflict: {
+        currentRevision: 2,
+        attemptedRevision: 1,
+        current: { title: 'Newer technical training' },
+        attempted: { title: validCandidate.title },
+        mergeChoices: ['current', 'attempted'],
+      },
+    });
+
+    const resolved = await resolveCatalogueCandidateConflict({
+      actor: editor,
+      candidateId: validCandidate.id,
+      expectedRevision: 2,
+      attempted: { title: validCandidate.title, claimBoundary: validCandidate.claimBoundary },
+      choices: { title: 'attempted', claimBoundary: 'current' },
+      reason: 'The official source still uses the original title.',
+      now: NOW,
+    });
+    expect(resolved).toMatchObject({ status: 'resolved', candidate: { title: validCandidate.title, revision: 3 } });
+    expect((await getCatalogueCandidateHistory(validCandidate.id))?.audit).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'conflict-resolution', reason: 'The official source still uses the original title.' }),
+    ]));
+  });
+
+  it('creates an audited emergency snapshot and restores a retained snapshot through a new append-only version', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({ actor: reviewer, candidateId: validCandidate.id, expectedRevision: 1, now: NOW });
+    const weekly = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+
+    const emergency = await publishEmergencyCatalogueSnapshot({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      candidate: { ...validCandidate, title: 'Corrected technical training' },
+      reason: 'Correct a time-sensitive factual error.',
+      now: new Date('2026-09-22T13:00:00.000Z'),
+    });
+    expect(emergency.snapshot).toMatchObject({
+      kind: 'emergency',
+      priorSnapshotId: weekly.snapshot.id,
+      records: [expect.objectContaining({ title: 'Corrected technical training' })],
+    });
+
+    const restored = await restoreCatalogueSnapshot({
+      actor: administrator,
+      targetSnapshotId: weekly.snapshot.id,
+      reason: 'Restore the last known safe catalogue version.',
+      now: new Date('2026-09-23T13:00:00.000Z'),
+    });
+    expect(restored.snapshot).toMatchObject({
+      kind: 'restore',
+      priorSnapshotId: emergency.snapshot.id,
+      restoredFromSnapshotId: weekly.snapshot.id,
+      records: [expect.objectContaining({ title: validCandidate.title })],
+    });
+    expect((await getCatalogueSnapshotHistory())).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'restore', lineage: expect.objectContaining({ restoredFromSnapshotId: weekly.snapshot.id }) }),
+    ]));
+  });
 });
 
 function evidence() {
