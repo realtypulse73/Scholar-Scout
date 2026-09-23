@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireActiveStaff } from '@/lib/server/active-staff';
 import {
   CatalogueCandidateOwnershipError,
+  CatalogueCandidateChecklistError,
+  CatalogueCandidateConflictReasonError,
   CatalogueCandidateReviewError,
   CatalogueCandidateRevisionConflictError,
   CataloguePublicationConflictError,
@@ -11,8 +13,11 @@ import {
   getCatalogueCandidateHistory,
   getCatalogueSnapshotHistory,
   previewWeeklyCatalogueRelease,
+  publishEmergencyCatalogueSnapshot,
   publishWeeklyCatalogueSnapshot,
+  resolveCatalogueCandidateConflict,
   reviewCatalogueCandidate,
+  restoreCatalogueSnapshot,
   stageCatalogueCandidate,
   submitCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
@@ -26,6 +31,12 @@ export async function POST(request: Request) {
   }
   if (action === 'preview-weekly' || action === 'publish-weekly') {
     return handleWeeklyReleaseAction(request, action);
+  }
+  if (action === 'resolve-conflict') {
+    return handleConflictResolutionAction(request);
+  }
+  if (action === 'emergency-correction' || action === 'restore-snapshot') {
+    return handleRecoveryAction(request, action);
   }
 
   const authorization = await requireActiveStaff({
@@ -91,12 +102,117 @@ function getPostAction(request: Request):
   | 'review'
   | 'submit'
   | 'preview-weekly'
-  | 'publish-weekly' {
+  | 'publish-weekly'
+  | 'resolve-conflict'
+  | 'emergency-correction'
+  | 'restore-snapshot' {
   const action = getQueryParameter(request, 'action');
   return action === 'review' || action === 'submit'
     || action === 'preview-weekly' || action === 'publish-weekly'
+    || action === 'resolve-conflict' || action === 'emergency-correction'
+    || action === 'restore-snapshot'
     ? action
     : 'stage';
+}
+
+async function handleConflictResolutionAction(request: Request) {
+  const authorization = await requireActiveStaff({
+    action: 'catalogue-publication:resolve-conflict',
+    route: ROUTE,
+    capability: 'editor',
+  });
+  if (!authorization.ok) return authorization.response;
+
+  let body: {
+    candidateId?: unknown;
+    expectedRevision?: unknown;
+    attempted?: { title?: unknown; claimBoundary?: unknown };
+    choices?: { title?: unknown; claimBoundary?: unknown };
+    reason?: unknown;
+  };
+  try {
+    body = await request.json() as typeof body;
+  } catch {
+    return NextResponse.json({ error: 'Invalid catalogue conflict request.' }, { status: 400 });
+  }
+  if (typeof body.candidateId !== 'string' || typeof body.expectedRevision !== 'number'
+    || !body.attempted || !body.choices) {
+    return NextResponse.json({ error: 'Invalid catalogue conflict request.' }, { status: 400 });
+  }
+  try {
+    const result = await resolveCatalogueCandidateConflict({
+      actor: authorization.actor,
+      candidateId: body.candidateId,
+      expectedRevision: body.expectedRevision,
+      attempted: body.attempted,
+      choices: body.choices,
+      reason: body.reason,
+    });
+    return NextResponse.json({ ok: true, ...result }, { status: result.status === 'conflict' ? 409 : 200 });
+  } catch (error) {
+    if (error instanceof CatalogueCandidateConflictReasonError) {
+      return NextResponse.json({ error: 'Explain why the older value should be retained.' }, { status: 400 });
+    }
+    if (error instanceof CatalogueCandidateReviewError || error instanceof CatalogueCandidateOwnershipError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (error instanceof CatalogueCandidateRevisionConflictError || error instanceof CataloguePublicationConflictError) {
+      return NextResponse.json({ error: 'This catalogue candidate changed. Review both values before resolving it.' }, { status: 409 });
+    }
+    throw error;
+  }
+}
+
+async function handleRecoveryAction(
+  request: Request,
+  action: 'emergency-correction' | 'restore-snapshot',
+) {
+  const authorization = await requireActiveStaff({
+    action: `catalogue-publication:${action}`,
+    route: ROUTE,
+    capability: action === 'emergency-correction' ? 'reviewer' : 'administrator',
+  });
+  if (!authorization.ok) return authorization.response;
+
+  let body: {
+    candidateId?: unknown;
+    expectedRevision?: unknown;
+    candidate?: unknown;
+    targetSnapshotId?: unknown;
+    reason?: unknown;
+  };
+  try {
+    body = await request.json() as typeof body;
+  } catch {
+    return NextResponse.json({ error: 'Invalid catalogue recovery request.' }, { status: 400 });
+  }
+  try {
+    const result = action === 'emergency-correction'
+      ? await publishEmergencyCatalogueSnapshot({
+        actor: authorization.actor,
+        candidateId: typeof body.candidateId === 'string' ? body.candidateId : '',
+        expectedRevision: typeof body.expectedRevision === 'number' ? body.expectedRevision : 0,
+        candidate: body.candidate,
+        reason: body.reason,
+      })
+      : await restoreCatalogueSnapshot({
+        actor: authorization.actor,
+        targetSnapshotId: typeof body.targetSnapshotId === 'string' ? body.targetSnapshotId : '',
+        reason: body.reason,
+      });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof CatalogueCandidateChecklistError || error instanceof CatalogueReleaseSelectionError) {
+      return NextResponse.json({ error: 'The catalogue recovery request needs correction before it can be released.' }, { status: 400 });
+    }
+    if (error instanceof CatalogueReleaseAuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (error instanceof CatalogueCandidateRevisionConflictError || error instanceof CataloguePublicationConflictError) {
+      return NextResponse.json({ error: 'This catalogue changed. Reload before making a recovery release.' }, { status: 409 });
+    }
+    throw error;
+  }
 }
 
 async function handleReviewAction(request: Request, action: 'review' | 'submit') {

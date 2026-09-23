@@ -27,13 +27,15 @@ export type CataloguePublicationCapability = 'editor' | 'reviewer' | 'administra
 export type CatalogueCandidateLifecycle = 'draft' | 'approved' | 'quarantined';
 export type CatalogueImportCorrectionCode = 'invalid-import';
 export type CatalogueCandidateAction = 'upsert' | 'retire';
-export type CatalogueSnapshotKind = 'weekly' | 'emergency';
+export type CatalogueSnapshotKind = 'weekly' | 'emergency' | 'restore';
 export type CataloguePublicationAuditAction =
   | 'stage'
   | 'edit'
   | 'submit'
   | 'approval'
-  | 'failure';
+  | 'failure'
+  | 'conflict-resolution'
+  | 'emergency-correction';
 export type MediaRightsKind =
   | 'scholarscout-owned'
   | 'licensed'
@@ -146,6 +148,7 @@ export interface CatalogueSnapshot {
   releasedAt: string;
   periodKey?: string;
   priorSnapshotId?: string;
+  restoredFromSnapshotId?: string;
   records: CataloguePublishedRecord[];
   contentDigest: string;
 }
@@ -167,6 +170,7 @@ export interface CatalogueSnapshotManifest {
   releasedAt: string;
   periodKey?: string;
   priorSnapshotId?: string;
+  restoredFromSnapshotId?: string;
   actorId: string;
   capability: CataloguePublicationCapability;
   action: 'release';
@@ -351,7 +355,8 @@ function isCatalogueSnapshot(value: unknown): value is CatalogueSnapshot {
     || !Array.isArray(value.records) || typeof value.contentDigest !== 'string') return false;
   return value.records.every(isCataloguePublishedRecord)
     && (value.periodKey === undefined || isPeriodKey(value.periodKey))
-    && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string');
+    && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string')
+    && (value.restoredFromSnapshotId === undefined || typeof value.restoredFromSnapshotId === 'string');
 }
 
 function isCatalogueSnapshotManifest(value: unknown): value is CatalogueSnapshotManifest {
@@ -366,6 +371,7 @@ function isCatalogueSnapshotManifest(value: unknown): value is CatalogueSnapshot
     && value.quarantined.every(isQuarantineEntry)
     && (value.periodKey === undefined || isPeriodKey(value.periodKey))
     && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string')
+    && (value.restoredFromSnapshotId === undefined || typeof value.restoredFromSnapshotId === 'string')
     && (value.reason === undefined || typeof value.reason === 'string');
 }
 
@@ -503,7 +509,8 @@ function isCapability(value: unknown): value is CataloguePublicationCapability {
 
 function isAuditAction(value: unknown): value is CataloguePublicationAuditAction {
   return value === 'stage' || value === 'edit' || value === 'submit'
-    || value === 'approval' || value === 'failure';
+    || value === 'approval' || value === 'failure' || value === 'conflict-resolution'
+    || value === 'emergency-correction';
 }
 
 function isStableId(value: unknown): value is string {
@@ -571,7 +578,7 @@ function isSequence(value: unknown): value is number {
 }
 
 function isSnapshotKind(value: unknown): value is CatalogueSnapshotKind {
-  return value === 'weekly' || value === 'emergency';
+  return value === 'weekly' || value === 'emergency' || value === 'restore';
 }
 
 function isPeriodKey(value: unknown): value is string {

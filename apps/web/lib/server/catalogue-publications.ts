@@ -59,6 +59,20 @@ export class CatalogueCandidateReviewError extends Error {
   }
 }
 
+export class CatalogueCandidateConflictReasonError extends Error {
+  constructor() {
+    super('catalogue-candidate-conflict-reason-required');
+    this.name = 'CatalogueCandidateConflictReasonError';
+  }
+}
+
+export class CatalogueCandidateChecklistError extends Error {
+  constructor() {
+    super('catalogue-candidate-checklist-failed');
+    this.name = 'CatalogueCandidateChecklistError';
+  }
+}
+
 export class CatalogueReleaseScheduleError extends Error {
   constructor(readonly code: 'outside-release-window' | 'weekly-period-already-published') {
     super(code);
@@ -78,6 +92,177 @@ export class CatalogueReleaseSelectionError extends Error {
     super('catalogue-release-selection-invalid');
     this.name = 'CatalogueReleaseSelectionError';
   }
+}
+
+export async function resolveCatalogueCandidateConflict(input: {
+  actor: ActiveStaffActor;
+  candidateId: string;
+  expectedRevision: number;
+  attempted: { title?: unknown; claimBoundary?: unknown };
+  choices: { title?: unknown; claimBoundary?: unknown };
+  reason?: unknown;
+  now?: Date;
+}): Promise<
+  | { status: 'conflict'; conflict: CatalogueCandidateConflictDto }
+  | { status: 'resolved'; candidate: CatalogueCandidate }
+> {
+  if (!hasCapability(input.actor, 'editor')) throw new CatalogueCandidateReviewError();
+  if (!boundedStableId(input.candidateId) || !isExpectedRevision(input.expectedRevision)) {
+    throw new CatalogueCandidateRevisionConflictError();
+  }
+
+  const current = await getCandidateForConflict(input.candidateId);
+  if (!current || current.creatorId !== input.actor.id || current.revision !== input.expectedRevision) {
+    return {
+      status: 'conflict',
+      conflict: toCandidateConflictDto(current, input.expectedRevision, input.attempted),
+    };
+  }
+
+  const attempted = normalizeConflictAttempt(input.attempted);
+  const choices = normalizeConflictChoices(input.choices);
+  const retainsOlderValue = (choices.title === 'attempted' && attempted.title !== current.title)
+    || (choices.claimBoundary === 'attempted' && attempted.claimBoundary !== current.claimBoundary);
+  const reason = normalizeReason(input.reason);
+  if (retainsOlderValue && !reason) throw new CatalogueCandidateConflictReasonError();
+
+  const now = input.now ?? new Date();
+  const timestamp = now.toISOString();
+  const result = await commitConditionalMutation((data) => {
+    const state = normalizeCataloguePublicationState(data.cataloguePublicationState);
+    const stored = state.candidates.find((candidate) => candidate.id === input.candidateId);
+    if (!stored || stored.creatorId !== input.actor.id || stored.revision !== input.expectedRevision) {
+      throw new CatalogueCandidateRevisionConflictError();
+    }
+    const candidateInput = {
+      ...stored,
+      title: choices.title === 'attempted' ? attempted.title : stored.title,
+      claimBoundary: choices.claimBoundary === 'attempted'
+        ? attempted.claimBoundary
+        : stored.claimBoundary,
+    } satisfies CatalogueCandidateInput;
+    const candidate: CatalogueCandidate = {
+      ...stored,
+      title: candidateInput.title ?? stored.title,
+      claimBoundary: candidateInput.claimBoundary ?? stored.claimBoundary,
+      revision: stored.revision + 1,
+      lifecycle: 'draft',
+      updatedAt: timestamp,
+      checklist: evaluateCatalogueChecklist(candidateInput, now),
+      approval: null,
+    };
+    const staged = replaceCandidate(
+      state,
+      candidate,
+      input.actor,
+      timestamp,
+      'conflict-resolution',
+      'editor',
+      reason,
+    );
+    data.cataloguePublicationState = staged.state;
+    return { status: 'resolved' as const, candidate: staged.candidate };
+  });
+  if (result.status === 'conflict') throw new CataloguePublicationConflictError();
+  return result.value;
+}
+
+/** Corrects one approved candidate and creates an append-only emergency snapshot. */
+export async function publishEmergencyCatalogueSnapshot(input: {
+  actor: ActiveStaffActor;
+  candidateId: string;
+  expectedRevision: number;
+  candidate: unknown;
+  reason: unknown;
+  now?: Date;
+}): Promise<{ snapshot: CatalogueSnapshot; manifest: CatalogueSnapshotManifest }> {
+  if (!hasCapability(input.actor, 'reviewer')) throw new CatalogueReleaseAuthorizationError();
+  const reason = normalizeReason(input.reason);
+  const candidateInput = toCandidateInput(input.candidate);
+  if (!reason || !boundedStableId(input.candidateId) || !isExpectedRevision(input.expectedRevision)) {
+    throw new CatalogueReleaseAuthorizationError();
+  }
+  const now = input.now ?? new Date();
+  const timestamp = now.toISOString();
+  const result = await commitConditionalMutation((data) => {
+    const state = getReleaseState(data.cataloguePublicationState);
+    const existing = state.candidates.find((candidate) => candidate.id === input.candidateId);
+    if (!existing || existing.revision !== input.expectedRevision) {
+      throw new CatalogueCandidateRevisionConflictError();
+    }
+    const checklist = evaluateCatalogueChecklist(candidateInput, now);
+    if (!checklist.passed) throw new CatalogueCandidateChecklistError();
+    const corrected: CatalogueCandidate = {
+      ...existing,
+      ...candidateInput,
+      id: existing.id,
+      title: candidateInput.title ?? '',
+      regionId: candidateInput.regionId as CatalogueCandidate['regionId'],
+      region: candidateInput.region as CatalogueCandidate['region'],
+      source: candidateInput.source as CatalogueCandidate['source'],
+      facts: candidateInput.facts as CatalogueCandidate['facts'],
+      claimBoundary: candidateInput.claimBoundary ?? '',
+      revision: existing.revision + 1,
+      lifecycle: 'approved',
+      updatedAt: timestamp,
+      checklist,
+      approval: { reviewerId: input.actor.id, reviewedAt: timestamp, revision: existing.revision + 1 },
+      retirementIntent: false,
+    };
+    const staged = replaceCandidate(
+      state,
+      corrected,
+      input.actor,
+      timestamp,
+      'emergency-correction',
+      'reviewer',
+      reason,
+    );
+    const snapshot = appendSnapshot({
+      state: getReleaseState(staged.state),
+      actor: input.actor,
+      kind: 'emergency',
+      reason,
+      timestamp,
+      replaceRecord: toPublishedRecord(corrected, checklist.mediaFallback),
+    });
+    data.cataloguePublicationState = snapshot.state;
+    return { snapshot: snapshot.snapshot, manifest: snapshot.manifest };
+  });
+  if (result.status === 'conflict') throw new CataloguePublicationConflictError();
+  return result.value;
+}
+
+/** Restores retained public records by appending a new snapshot; historic state is never repointed. */
+export async function restoreCatalogueSnapshot(input: {
+  actor: ActiveStaffActor;
+  targetSnapshotId: string;
+  reason: unknown;
+  now?: Date;
+}): Promise<{ snapshot: CatalogueSnapshot; manifest: CatalogueSnapshotManifest }> {
+  if (!hasCapability(input.actor, 'administrator')) throw new CatalogueReleaseAuthorizationError();
+  const reason = normalizeReason(input.reason);
+  if (!reason || !boundedStableId(input.targetSnapshotId)) throw new CatalogueReleaseAuthorizationError();
+  const now = input.now ?? new Date();
+  const timestamp = now.toISOString();
+  const result = await commitConditionalMutation((data) => {
+    const state = getReleaseState(data.cataloguePublicationState);
+    const target = state.snapshots.find((snapshot) => snapshot.id === input.targetSnapshotId);
+    if (!target) throw new CatalogueReleaseSelectionError();
+    const appended = appendSnapshot({
+      state,
+      actor: input.actor,
+      kind: 'restore',
+      reason,
+      timestamp,
+      restoredFromSnapshotId: target.id,
+      records: target.records,
+    });
+    data.cataloguePublicationState = appended.state;
+    return { snapshot: appended.snapshot, manifest: appended.manifest };
+  });
+  if (result.status === 'conflict') throw new CataloguePublicationConflictError();
+  return result.value;
 }
 
 export async function publishWeeklyCatalogueSnapshot(input: {
@@ -115,7 +300,6 @@ export async function publishWeeklyCatalogueSnapshot(input: {
       throw new CatalogueReleaseSelectionError();
     }
 
-    const final = selected as CatalogueCandidate[];
     const priorSnapshot = state.activeSnapshotId
       ? state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId)
       : undefined;
@@ -275,6 +459,7 @@ export async function getCatalogueSnapshotHistory() {
     lineage: {
       snapshotId: manifest.snapshotId,
       priorSnapshotId: manifest.priorSnapshotId ?? null,
+      restoredFromSnapshotId: manifest.restoredFromSnapshotId ?? null,
       contentDigest: manifest.contentDigest,
     },
   }));
@@ -482,6 +667,149 @@ export async function getCatalogueCandidateHistory(candidateId: string) {
   };
 }
 
+interface CatalogueCandidateConflictComparable {
+  title: string;
+  claimBoundary: string;
+  regionId: string;
+}
+
+interface CatalogueCandidateConflictDto {
+  candidateId: string;
+  currentRevision: number | null;
+  attemptedRevision: number;
+  current: CatalogueCandidateConflictComparable | null;
+  attempted: CatalogueCandidateConflictComparable;
+  mergeChoices: ['current', 'attempted'];
+}
+
+async function getCandidateForConflict(candidateId: string): Promise<CatalogueCandidate | null> {
+  const state = normalizeCataloguePublicationState((await readScholarScoutData()).cataloguePublicationState);
+  return state.candidates.find((candidate) => candidate.id === candidateId) ?? null;
+}
+
+function toCandidateConflictDto(
+  current: CatalogueCandidate | null,
+  attemptedRevision: number,
+  attempted: { title?: unknown; claimBoundary?: unknown },
+): CatalogueCandidateConflictDto {
+  const safeAttempt = normalizeConflictAttempt(attempted);
+  return {
+    candidateId: current?.id ?? '',
+    currentRevision: current?.revision ?? null,
+    attemptedRevision,
+    current: current ? toComparableCandidate(current) : null,
+    attempted: {
+      title: safeAttempt.title,
+      claimBoundary: safeAttempt.claimBoundary,
+      regionId: current?.regionId ?? '',
+    },
+    mergeChoices: ['current', 'attempted'],
+  };
+}
+
+function toComparableCandidate(candidate: CatalogueCandidate): CatalogueCandidateConflictComparable {
+  return {
+    title: candidate.title,
+    claimBoundary: candidate.claimBoundary,
+    regionId: candidate.regionId,
+  };
+}
+
+function normalizeConflictAttempt(value: { title?: unknown; claimBoundary?: unknown }): {
+  title: string;
+  claimBoundary: string;
+} {
+  return {
+    title: boundedText(value.title, 240) ?? '',
+    claimBoundary: boundedText(value.claimBoundary, 500) ?? '',
+  };
+}
+
+function normalizeConflictChoices(value: { title?: unknown; claimBoundary?: unknown }): {
+  title: 'current' | 'attempted';
+  claimBoundary: 'current' | 'attempted';
+} {
+  return {
+    title: value.title === 'attempted' ? 'attempted' : 'current',
+    claimBoundary: value.claimBoundary === 'attempted' ? 'attempted' : 'current',
+  };
+}
+
+function normalizeReason(value: unknown): string | null {
+  const reason = boundedText(value, 500);
+  return reason && reason.length >= 8 ? reason : null;
+}
+
+function appendSnapshot(input: {
+  state: CataloguePublicationState & Required<Pick<CataloguePublicationState,
+    'snapshots' | 'manifests' | 'activeSnapshotId'>>;
+  actor: ActiveStaffActor;
+  kind: 'emergency' | 'restore';
+  reason: string;
+  timestamp: string;
+  replaceRecord?: CataloguePublishedRecord;
+  records?: CataloguePublishedRecord[];
+  restoredFromSnapshotId?: string;
+}): {
+  state: CataloguePublicationState;
+  snapshot: CatalogueSnapshot;
+  manifest: CatalogueSnapshotManifest;
+} {
+  const priorSnapshot = input.state.activeSnapshotId
+    ? input.state.snapshots.find((snapshot) => snapshot.id === input.state.activeSnapshotId)
+    : undefined;
+  const records = input.records
+    ? clonePublicRecords(input.records)
+    : [...(priorSnapshot?.records ?? []).filter((record) => record.id !== input.replaceRecord?.id), input.replaceRecord]
+      .filter((record): record is CataloguePublishedRecord => Boolean(record));
+  const orderedRecords = records.sort((left, right) => left.id.localeCompare(right.id));
+  const sequence = input.state.snapshots.length + 1;
+  const snapshotId = `catalogue-snapshot-${sequence}`;
+  const contentDigest = getCatalogueSnapshotDigest(orderedRecords);
+  const snapshot: CatalogueSnapshot = {
+    id: snapshotId,
+    sequence,
+    kind: input.kind,
+    releasedAt: input.timestamp,
+    ...(priorSnapshot === undefined ? {} : { priorSnapshotId: priorSnapshot.id }),
+    ...(input.restoredFromSnapshotId === undefined
+      ? {}
+      : { restoredFromSnapshotId: input.restoredFromSnapshotId }),
+    records: orderedRecords,
+    contentDigest,
+  };
+  const manifest: CatalogueSnapshotManifest = {
+    id: `catalogue-manifest-${sequence}`,
+    snapshotId,
+    sequence,
+    kind: input.kind,
+    releasedAt: input.timestamp,
+    ...(priorSnapshot === undefined ? {} : { priorSnapshotId: priorSnapshot.id }),
+    ...(input.restoredFromSnapshotId === undefined
+      ? {}
+      : { restoredFromSnapshotId: input.restoredFromSnapshotId }),
+    actorId: input.actor.id,
+    capability: input.kind === 'restore' ? 'administrator' : 'reviewer',
+    action: 'release',
+    outcome: 'published',
+    reason: input.reason,
+    included: orderedRecords.map((record) => ({ id: record.id, revision: record.revision })),
+    retired: [],
+    quarantined: [],
+    contentDigest,
+  };
+  return {
+    state: {
+      ...input.state,
+      snapshots: [...input.state.snapshots, snapshot],
+      manifests: [...input.state.manifests, manifest],
+      activeSnapshotId: snapshot.id,
+    },
+    snapshot,
+    manifest,
+  };
+}
+
 function applyImportChange(input: {
   state: CataloguePublicationState;
   actor: ActiveStaffActor;
@@ -564,6 +892,7 @@ function replaceCandidate(
   timestamp: string,
   action: CataloguePublicationAuditAction,
   capability: CataloguePublicationCapability = 'editor',
+  reason?: string | null,
 ): { state: CataloguePublicationState; candidate: CatalogueCandidate } {
   const prior = state.candidates.find((item) => item.id === candidate.id);
   const candidates = prior
@@ -584,6 +913,7 @@ function replaceCandidate(
           timestamp,
           outcome: candidate.checklist.passed ? 'passed-checklist' : 'needs-correction',
           version: candidate.revision,
+          ...(reason === null || reason === undefined ? {} : { reason }),
           correctionCodes: candidate.checklist.correctionCodes,
           reviewStatus: candidate.lifecycle,
         },
@@ -705,6 +1035,10 @@ function toCandidateInput(value: unknown): CatalogueCandidateInput {
 
 function boundedStableId(value: unknown): string | undefined {
   return typeof value === 'string' && /^[a-zA-Z0-9:_-]{1,160}$/.test(value) ? value : undefined;
+}
+
+function isExpectedRevision(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1;
 }
 
 function boundedText(value: unknown, maximum: number): string | undefined {

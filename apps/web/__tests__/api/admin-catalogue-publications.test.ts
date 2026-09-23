@@ -146,6 +146,25 @@ describe('admin catalogue publication staging API', () => {
     expect(response.status).toBe(403);
     expect(json).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['conflict resolution', 'resolve-conflict', ['reviewer']],
+    ['emergency correction', 'emergency-correction', ['editor']],
+    ['snapshot restore', 'restore-snapshot', ['reviewer']],
+  ])('checks exact capability for %s before parsing the request', async (_, action, capabilities) => {
+    const json = jest.fn();
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': capabilities,
+    });
+
+    const response = await POST({
+      url: `http://localhost/api/admin/catalogue-publications?action=${action}`,
+      json,
+    } as unknown as Request);
+
+    expect(response.status).toBe(403);
+    expect(json).not.toHaveBeenCalled();
+  });
 });
 
 class MemoryDataStore implements ScholarScoutDataStore {
