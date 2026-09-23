@@ -307,20 +307,60 @@ export function isCataloguePublicationState(value: unknown): value is CatalogueP
     || (value.activeSnapshotId !== undefined && value.activeSnapshotId !== null
       && typeof value.activeSnapshotId !== 'string')) return false;
 
-  return value.candidates.every(isCatalogueCandidate)
-    && value.auditEvents.every(isCataloguePublicationAuditEvent)
-    && (value.snapshots ?? []).every(isCatalogueSnapshot)
-    && (value.manifests ?? []).every(isCatalogueSnapshotManifest);
+  const snapshots = value.snapshots ?? [];
+  const manifests = value.manifests ?? [];
+  if (!value.candidates.every(isCatalogueCandidate)
+    || !value.auditEvents.every(isCataloguePublicationAuditEvent)
+    || !snapshots.every(isCatalogueSnapshot)
+    || !manifests.every(isCatalogueSnapshotManifest)
+    || !hasUnique(value.candidates.map((candidate) => candidate.id))
+    || !hasUnique(snapshots.map((snapshot) => snapshot.id))
+    || !hasUnique(snapshots.map((snapshot) => String(snapshot.sequence)))
+    || !hasUnique(manifests.map((manifest) => manifest.id))
+    || !hasUnique(manifests.map((manifest) => manifest.snapshotId))) return false;
+
+  if (snapshots.length !== manifests.length) return false;
+  const snapshotsById = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+  const candidatesById = new Map(value.candidates.map((candidate) => [candidate.id, candidate]));
+  for (const snapshot of snapshots) {
+    if (!isCanonicalSnapshot(snapshot, snapshotsById)) return false;
+    const manifest = manifests.find((item) => item.snapshotId === snapshot.id);
+    if (!manifest || !matchesSnapshotManifest(snapshot, manifest, snapshotsById, candidatesById)) return false;
+  }
+  return value.activeSnapshotId === undefined || value.activeSnapshotId === null
+    || snapshotsById.has(value.activeSnapshotId);
 }
 
 function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
-  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.title !== 'string'
-    || typeof value.creatorId !== 'string' || typeof value.revision !== 'number'
+  if (!isRecord(value) || !isStableId(value.id) || typeof value.title !== 'string'
+    || !isStableId(value.creatorId) || !isCandidateRevision(value.revision)
     || !isLifecycle(value.lifecycle) || typeof value.createdAt !== 'string'
-    || typeof value.updatedAt !== 'string' || !isCandidateApproval(value.approval)) return false;
+    || typeof value.updatedAt !== 'string' || !isIsoTimestamp(value.createdAt)
+    || !isIsoTimestamp(value.updatedAt) || !isCandidateApproval(value.approval)
+    || !isCandidateStoredFields(value)
+    || (value.retirementIntent === undefined || typeof value.retirementIntent !== 'boolean')) return false;
 
-  return isChecklist(value.checklist)
-    && (value.retirementIntent === undefined || typeof value.retirementIntent === 'boolean');
+  const candidateInput: CatalogueCandidateInput = {
+    id: value.id,
+    title: value.title,
+    ...(value.regionId === undefined ? {} : { regionId: value.regionId as CatalogueRegionId }),
+    ...(value.region === undefined ? {} : { region: value.region as CatalogueRegion }),
+    ...(value.source === undefined ? {} : { source: value.source as SourceMetadata }),
+    ...(value.facts === undefined ? {} : { facts: value.facts as CatalogueOpportunityCardFacts }),
+    ...(value.claimBoundary === undefined ? {} : { claimBoundary: value.claimBoundary as string }),
+    ...(value.media === undefined ? {} : { media: value.media as { url?: string; alt?: string } }),
+    ...(value.mediaRights === undefined ? {} : { mediaRights: value.mediaRights as CatalogueMediaRights }),
+  };
+  const expectedChecklist = evaluateCatalogueChecklist(candidateInput, new Date(value.updatedAt));
+  if (!isChecklist(value.checklist) || canonicalJson(value.checklist) !== canonicalJson(expectedChecklist)) {
+    return false;
+  }
+  if (value.lifecycle === 'approved') {
+    return expectedChecklist.passed && isCompleteCandidateInput(value)
+      && value.approval !== null && value.approval.revision === value.revision
+      && isStableId(value.approval.reviewerId) && isIsoTimestamp(value.approval.reviewedAt);
+  }
+  return value.approval === null;
 }
 
 function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePublicationAuditEvent {
@@ -350,9 +390,9 @@ function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePub
 }
 
 function isCatalogueSnapshot(value: unknown): value is CatalogueSnapshot {
-  if (!isRecord(value) || typeof value.id !== 'string' || !isSequence(value.sequence)
+  if (!isRecord(value) || !isStableId(value.id) || !isSequence(value.sequence)
     || !isSnapshotKind(value.kind) || typeof value.releasedAt !== 'string'
-    || !Array.isArray(value.records) || typeof value.contentDigest !== 'string') return false;
+    || !isIsoTimestamp(value.releasedAt) || !Array.isArray(value.records) || !isDigest(value.contentDigest)) return false;
   return value.records.every(isCataloguePublishedRecord)
     && (value.periodKey === undefined || isPeriodKey(value.periodKey))
     && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string')
@@ -360,12 +400,13 @@ function isCatalogueSnapshot(value: unknown): value is CatalogueSnapshot {
 }
 
 function isCatalogueSnapshotManifest(value: unknown): value is CatalogueSnapshotManifest {
-  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.snapshotId !== 'string'
+  if (!isRecord(value) || !isStableId(value.id) || !isStableId(value.snapshotId)
     || !isSequence(value.sequence) || !isSnapshotKind(value.kind)
     || typeof value.releasedAt !== 'string' || typeof value.actorId !== 'string'
     || !isCapability(value.capability) || value.action !== 'release' || value.outcome !== 'published'
     || !Array.isArray(value.included) || !Array.isArray(value.retired)
-    || !Array.isArray(value.quarantined) || typeof value.contentDigest !== 'string') return false;
+    || !Array.isArray(value.quarantined) || !isDigest(value.contentDigest)
+    || !isIsoTimestamp(value.releasedAt) || !isStableId(value.actorId)) return false;
   return value.included.every(isManifestEntry)
     && value.retired.every(isManifestEntry)
     && value.quarantined.every(isQuarantineEntry)
@@ -380,7 +421,95 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
     || typeof value.title !== 'string' || typeof value.regionId !== 'string'
     || !isRecord(value.region) || !isRecord(value.source) || !isRecord(value.facts)
     || typeof value.claimBoundary !== 'string' || typeof value.mediaFallback !== 'boolean') return false;
-  return value.media === undefined || isRecord(value.media);
+  if (!isBoundedRequiredText(value.title, 240) || !isBoundedRequiredText(value.regionId, 80)
+    || !isBoundedClaim(value.claimBoundary)
+    || validateCatalogueRegion(value.region as unknown as CatalogueRegion).length > 0
+    || (value.region as unknown as CatalogueRegion).id !== value.regionId
+    || validateSourceMetadata(value.source as unknown as SourceMetadata).length > 0
+    || validateCatalogueOpportunityCardFacts(value.facts as unknown as CatalogueOpportunityCardFacts, new Date()).length > 0) {
+    return false;
+  }
+  return value.media === undefined || isMedia(value.media);
+}
+
+function isCandidateStoredFields(value: Record<string, unknown>): boolean {
+  return (value.regionId === undefined || typeof value.regionId === 'string')
+    && (value.region === undefined || isRecord(value.region))
+    && (value.source === undefined || isRecord(value.source))
+    && (value.facts === undefined || isRecord(value.facts))
+    && (value.claimBoundary === undefined || typeof value.claimBoundary === 'string')
+    && (value.media === undefined || isMedia(value.media))
+    && (value.mediaRights === undefined || isMediaRights(value.mediaRights));
+}
+
+function isCanonicalSnapshot(
+  snapshot: CatalogueSnapshot,
+  snapshotsById: Map<string, CatalogueSnapshot>,
+): boolean {
+  if (!hasUnique(snapshot.records.map((record) => record.id))
+    || snapshot.records.some((record, index) => index > 0
+      && snapshot.records[index - 1].id.localeCompare(record.id) > 0)
+    || snapshot.contentDigest !== getCatalogueSnapshotDigest(snapshot.records)) return false;
+  if (snapshot.kind === 'weekly' ? snapshot.periodKey === undefined : snapshot.periodKey !== undefined) {
+    return false;
+  }
+  return hasEarlierReference(snapshot.priorSnapshotId, snapshot, snapshotsById)
+    && hasEarlierReference(snapshot.restoredFromSnapshotId, snapshot, snapshotsById)
+    && (snapshot.kind !== 'restore' || snapshot.restoredFromSnapshotId !== undefined);
+}
+
+function matchesSnapshotManifest(
+  snapshot: CatalogueSnapshot,
+  manifest: CatalogueSnapshotManifest,
+  snapshotsById: Map<string, CatalogueSnapshot>,
+  candidatesById: Map<string, CatalogueCandidate>,
+): boolean {
+  if (manifest.sequence !== snapshot.sequence || manifest.kind !== snapshot.kind
+    || manifest.releasedAt !== snapshot.releasedAt || manifest.periodKey !== snapshot.periodKey
+    || manifest.priorSnapshotId !== snapshot.priorSnapshotId
+    || manifest.restoredFromSnapshotId !== snapshot.restoredFromSnapshotId
+    || manifest.contentDigest !== snapshot.contentDigest
+    || !hasEarlierReference(manifest.priorSnapshotId, snapshot, snapshotsById)
+    || !hasEarlierReference(manifest.restoredFromSnapshotId, snapshot, snapshotsById)) return false;
+
+  const recordRevisions = new Map(snapshot.records.map((record) => [record.id, record.revision]));
+  return hasUnique(manifest.included.map((entry) => entry.id))
+    && hasUnique(manifest.retired.map((entry) => entry.id))
+    && hasUnique(manifest.quarantined.map((entry) => entry.id))
+    && manifest.included.every((entry) => recordRevisions.get(entry.id) === entry.revision)
+    && manifest.retired.every((entry) => candidatesById.get(entry.id)?.revision === entry.revision)
+    && manifest.quarantined.every((entry) => candidatesById.get(entry.id)?.revision === entry.revision);
+}
+
+function hasEarlierReference(
+  referenceId: string | undefined,
+  snapshot: CatalogueSnapshot,
+  snapshotsById: Map<string, CatalogueSnapshot>,
+): boolean {
+  if (referenceId === undefined) return true;
+  const reference = snapshotsById.get(referenceId);
+  return Boolean(reference && reference.id !== snapshot.id && reference.sequence < snapshot.sequence);
+}
+
+function isMedia(value: unknown): boolean {
+  return isRecord(value) && (value.url === undefined || isHttpUrl(value.url))
+    && (value.alt === undefined || typeof value.alt === 'string')
+    && Object.keys(value).every((key) => key === 'url' || key === 'alt');
+}
+
+function isMediaRights(value: unknown): boolean {
+  return isRecord(value) && isMediaRightsKind(value.kind) && isHttpUrl(value.sourceUrl)
+    && (value.expiresAt === undefined || (typeof value.expiresAt === 'string' && isIsoDate(value.expiresAt)))
+    && (value.status === undefined || value.status === 'valid' || value.status === 'revoked' || value.status === 'uncertain')
+    && Object.keys(value).every((key) => ['kind', 'sourceUrl', 'expiresAt', 'status'].includes(key));
+}
+
+function hasUnique(values: string[]): boolean {
+  return new Set(values).size === values.length;
+}
+
+function isDigest(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 }
 
 function isManifestEntry(value: unknown): value is CatalogueSnapshotManifestEntry {
@@ -591,6 +720,10 @@ function isHttpUrl(value: unknown): boolean {
 
 function isIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+function isIsoTimestamp(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

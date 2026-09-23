@@ -274,5 +274,14 @@ describe('catalogue publication recovery coherence', () => {
       ...state,
       snapshots: [{ ...state.snapshots[0], contentDigest: 'altered-digest' }],
     })).toBe(false);
+    expect(isCataloguePublicationState({
+      ...state,
+      manifests: [{ ...state.manifests[0], snapshotId: 'missing-snapshot' }],
+    })).toBe(false);
+    expect(isCataloguePublicationState({ ...state, activeSnapshotId: 'missing-snapshot' })).toBe(false);
+    expect(isCataloguePublicationState({
+      ...state,
+      candidates: [{ ...candidate, checklist: { ...checklist, passed: false } }],
+    })).toBe(false);
   });
 });
