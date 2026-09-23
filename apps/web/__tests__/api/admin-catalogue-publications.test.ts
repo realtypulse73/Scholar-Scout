@@ -171,6 +171,21 @@ describe('admin catalogue publication staging API', () => {
     expect(json).not.toHaveBeenCalled();
   });
 
+  it('returns a redacted snapshot history DTO for an active staff caller', async () => {
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['administrator'],
+    });
+
+    const response = await GET(new Request(
+      'http://localhost/api/admin/catalogue-publications?view=snapshot-history',
+    ));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ ok: true, history: [] });
+    expect(JSON.stringify(body)).not.toContain('candidate');
+  });
+
   it.each([
     ['conflict resolution', 'resolve-conflict', ['reviewer']],
     ['emergency correction', 'emergency-correction', ['editor']],

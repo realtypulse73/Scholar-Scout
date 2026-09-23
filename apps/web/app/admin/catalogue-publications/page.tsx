@@ -4,7 +4,7 @@ import StaffGate from '@/components/auth/StaffGate';
 
 export const metadata = {
   title: 'Catalogue Publication | ScholarScout',
-  description: 'Stage, correct, and independently review private catalogue candidates.',
+  description: 'Stage, review, release, recover, and audit governed catalogue snapshots.',
 };
 
 export default function CataloguePublicationsPage() {

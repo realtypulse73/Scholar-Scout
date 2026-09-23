@@ -65,6 +65,68 @@ describe('CataloguePublicationManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /keep attempted title/i }));
     fireEvent.click(screen.getByRole('button', { name: /save conflict decision/i }));
     expect(screen.getByText(/explain why the older value/i)).toBeInTheDocument();
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows a non-mutating administrator weekly preview, release controls, and redacted release history', async () => {
+    let requestCount = 0;
+    global.fetch = jest.fn().mockImplementation(async (input: string) => {
+      requestCount += 1;
+      if (input.includes('view=candidate-intake')) {
+        return {
+          ok: true,
+          json: async () => ({
+            ok: true,
+            capabilities: ['editor', 'reviewer', 'administrator'],
+            candidates: [{ ...candidate, lifecycle: 'approved', correctionCodes: [] }],
+          }),
+        };
+      }
+      if (input.includes('view=snapshot-history')) {
+        return {
+          ok: true,
+          json: async () => ({
+            ok: true,
+            history: [{
+              actor: 'administrator-1',
+              capability: 'administrator',
+              action: 'release',
+              timestamp: '2026-09-21T13:00:00.000Z',
+              outcome: 'published',
+              version: 1,
+              kind: 'weekly',
+              periodKey: '2026-W39',
+              correctionStatus: 'all-selected-passed',
+              reviewStatus: 'approved-release',
+              lineage: { snapshotId: 'catalogue-snapshot-1', priorSnapshotId: null, restoredFromSnapshotId: null, contentDigest: 'digest' },
+            }],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          eligibility: { periodKey: '2026-W39', withinWindow: true, alreadyPublished: false, eligible: true },
+          selected: [{ id: candidate.id, revision: candidate.revision }],
+          quarantined: [],
+          mediaFallbackIds: [candidate.id],
+        }),
+      };
+    });
+
+    render(<CataloguePublicationManager />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /preview weekly release/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /preview weekly release/i }));
+
+    await waitFor(() => expect(screen.getAllByText(/preview only — nothing has been published/i)).not.toHaveLength(0));
+    expect(screen.getAllByText(/2026-W39/)).not.toHaveLength(0);
+    expect(screen.getByText(/media falls back to factual text/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /publish weekly/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /emergency correction/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /restore snapshot/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/catalogue-snapshot-1/)).not.toHaveLength(0);
+    expect(requestCount).toBeGreaterThanOrEqual(3);
   });
 });

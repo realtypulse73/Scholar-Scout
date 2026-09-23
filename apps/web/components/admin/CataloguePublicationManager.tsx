@@ -40,6 +40,38 @@ interface ConflictDto {
   mergeChoices: ['current', 'attempted'];
 }
 
+interface WeeklyPreview {
+  eligibility: {
+    periodKey: string;
+    withinWindow: boolean;
+    alreadyPublished: boolean;
+    eligible: boolean;
+  };
+  selected: Array<{ id: string; revision: number }>;
+  quarantined: Array<{ id: string; revision: number; correctionCodes: string[] }>;
+  mediaFallbackIds: string[];
+}
+
+interface SnapshotHistoryEntry {
+  actor: string;
+  capability: Capability;
+  action: string;
+  timestamp: string;
+  outcome: string;
+  version: number;
+  kind: 'weekly' | 'emergency' | 'restore';
+  periodKey?: string;
+  reason?: string;
+  correctionStatus: string;
+  reviewStatus: string;
+  lineage: {
+    snapshotId: string;
+    priorSnapshotId: string | null;
+    restoredFromSnapshotId: string | null;
+    contentDigest: string;
+  };
+}
+
 const checklistLabels: Record<string, string> = {
   source: 'source',
   'material-evidence': 'material evidence',
@@ -60,9 +92,18 @@ export default function CataloguePublicationManager() {
   const [titleChoice, setTitleChoice] = useState<'current' | 'attempted'>('current');
   const claimChoice: 'current' | 'attempted' = 'current';
   const [conflictReason, setConflictReason] = useState('');
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  const [weeklyPreview, setWeeklyPreview] = useState<WeeklyPreview | null>(null);
+  const [snapshotHistory, setSnapshotHistory] = useState<SnapshotHistoryEntry[]>([]);
+  const [recoveryCandidateId, setRecoveryCandidateId] = useState('');
+  const [recoveryCandidateText, setRecoveryCandidateText] = useState('');
+  const [emergencyReason, setEmergencyReason] = useState('');
+  const [restoreSnapshotId, setRestoreSnapshotId] = useState('');
+  const [restoreReason, setRestoreReason] = useState('');
 
   const canEdit = capabilities.includes('editor');
   const canReview = capabilities.includes('reviewer');
+  const canAdminister = capabilities.includes('administrator');
 
   async function loadCandidates() {
     const response = await fetch('/api/admin/catalogue-publications?view=candidate-intake');
@@ -77,11 +118,29 @@ export default function CataloguePublicationManager() {
     }
     setCapabilities(body.capabilities ?? []);
     setCandidates(body.candidates ?? []);
+    setSelectedCandidateIds((current) => current.length > 0
+      ? current.filter((id) => (body.candidates ?? []).some((candidate) => candidate.id === id))
+      : (body.candidates ?? [])
+        .filter((candidate) => candidate.lifecycle === 'approved')
+        .map((candidate) => candidate.id));
     setStatus('Private catalogue candidates loaded.');
+  }
+
+  async function loadSnapshotHistory() {
+    const response = await fetch('/api/admin/catalogue-publications?view=snapshot-history');
+    const body = await response.json() as { history?: SnapshotHistoryEntry[]; error?: string };
+    if (!response.ok) {
+      setStatus(body.error ?? 'Unable to load catalogue release history.');
+      return;
+    }
+    const history = body.history ?? [];
+    setSnapshotHistory(history);
+    setRestoreSnapshotId((current) => current || history[0]?.lineage.snapshotId || '');
   }
 
   useEffect(() => {
     void loadCandidates();
+    void loadSnapshotHistory();
   }, []);
 
   async function sendAction(action: string, body: Record<string, unknown>) {
@@ -157,6 +216,98 @@ export default function CataloguePublicationManager() {
     });
   }
 
+  function toggleReleaseCandidate(candidateId: string) {
+    setSelectedCandidateIds((current) => current.includes(candidateId)
+      ? current.filter((id) => id !== candidateId)
+      : [...current, candidateId]);
+    setWeeklyPreview(null);
+  }
+
+  async function previewWeeklyRelease() {
+    const response = await fetch('/api/admin/catalogue-publications?action=preview-weekly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ candidateIds: selectedCandidateIds }),
+    });
+    const body = await response.json() as WeeklyPreview & { error?: string };
+    if (!response.ok) {
+      setStatus(body.error ?? 'The weekly preview is unavailable.');
+      return;
+    }
+    setWeeklyPreview(body);
+    setStatus('Preview only — nothing has been published. The server calculated this release window and ISO-week period.');
+  }
+
+  async function publishWeeklyRelease() {
+    const response = await fetch('/api/admin/catalogue-publications?action=publish-weekly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ candidateIds: selectedCandidateIds }),
+    });
+    const body = await response.json() as { error?: string; manifest?: { id?: string } };
+    if (!response.ok) {
+      setStatus(body.error ?? 'The weekly release could not be published. Reload the preview and try again.');
+      return;
+    }
+    setWeeklyPreview(null);
+    setStatus(`Weekly release published${body.manifest?.id ? ` (${body.manifest.id})` : ''}. The server rechecked eligibility before writing.`);
+    await Promise.all([loadCandidates(), loadSnapshotHistory()]);
+  }
+
+  async function publishEmergencyCorrection() {
+    const selected = candidates.find((candidate) => candidate.id === recoveryCandidateId);
+    if (!selected || !emergencyReason.trim() || !recoveryCandidateText.trim()) {
+      setStatus('Choose a candidate, provide the corrected candidate JSON, and explain the emergency correction.');
+      return;
+    }
+    let correctedCandidate: unknown;
+    try {
+      correctedCandidate = JSON.parse(recoveryCandidateText);
+    } catch {
+      setStatus('The emergency correction must be valid candidate JSON.');
+      return;
+    }
+    const response = await fetch('/api/admin/catalogue-publications?action=emergency-correction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidateId: selected.id,
+        expectedRevision: selected.revision,
+        candidate: correctedCandidate,
+        reason: emergencyReason,
+      }),
+    });
+    const body = await response.json() as { error?: string; manifest?: { id?: string } };
+    if (!response.ok) {
+      setStatus(body.error ?? 'The emergency correction could not be released.');
+      return;
+    }
+    setStatus(`Emergency correction published${body.manifest?.id ? ` (${body.manifest.id})` : ''}. It does not use a weekly release slot.`);
+    setRecoveryCandidateText('');
+    setEmergencyReason('');
+    await Promise.all([loadCandidates(), loadSnapshotHistory()]);
+  }
+
+  async function restoreSnapshot() {
+    if (!restoreSnapshotId || !restoreReason.trim()) {
+      setStatus('Choose a retained snapshot and provide a restore reason.');
+      return;
+    }
+    const response = await fetch('/api/admin/catalogue-publications?action=restore-snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetSnapshotId: restoreSnapshotId, reason: restoreReason }),
+    });
+    const body = await response.json() as { error?: string; manifest?: { id?: string } };
+    if (!response.ok) {
+      setStatus(body.error ?? 'The catalogue snapshot could not be restored.');
+      return;
+    }
+    setStatus(`A new restore snapshot was published${body.manifest?.id ? ` (${body.manifest.id})` : ''}; the retained history was not overwritten.`);
+    setRestoreReason('');
+    await Promise.all([loadCandidates(), loadSnapshotHistory()]);
+  }
+
   return (
     <section className="space-y-6" aria-labelledby="catalogue-publication-title">
       <header className="rounded-card border border-silver-200 bg-white p-6 shadow-soft">
@@ -215,6 +366,66 @@ export default function CataloguePublicationManager() {
             </details>
           </article>
         ))}
+      </section>
+
+      {canAdminister ? (
+        <section className="rounded-card border border-silver-200 bg-white p-6 shadow-soft" aria-labelledby="catalogue-release-title">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Release and recovery</p>
+          <h2 id="catalogue-release-title" className="mt-2 text-xl font-semibold text-ink-900">Weekly catalogue release</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-700">Preview is non-mutating. The server, not this page, decides whether it is Monday 09:00–17:00 America/New_York and whether this ISO week already has a normal release.</p>
+          <fieldset className="mt-4 space-y-2">
+            <legend className="text-sm font-semibold text-ink-800">Approved records for this release</legend>
+            {candidates.filter((candidate) => candidate.lifecycle === 'approved').map((candidate) => (
+              <label key={candidate.id} className="flex items-center gap-2 text-sm text-ink-800">
+                <input type="checkbox" checked={selectedCandidateIds.includes(candidate.id)} onChange={() => toggleReleaseCandidate(candidate.id)} />
+                {candidate.title} (revision {candidate.revision})
+              </label>
+            ))}
+          </fieldset>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button type="button" onClick={() => void previewWeeklyRelease()} className="min-h-touch rounded-card border border-brand-700 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Preview weekly release</button>
+            <button type="button" onClick={() => void publishWeeklyRelease()} className="min-h-touch rounded-card bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Publish weekly</button>
+          </div>
+          {weeklyPreview ? (
+            <div className="mt-5 rounded-card bg-ink-50 p-4 text-sm text-ink-800" aria-label="Weekly release preview">
+              <p className="font-semibold">Preview only — nothing has been published.</p>
+              <p className="mt-1">ISO-week: {weeklyPreview.eligibility.periodKey}. Window eligible: {weeklyPreview.eligibility.withinWindow ? 'yes' : 'no'}. Already published this period: {weeklyPreview.eligibility.alreadyPublished ? 'yes' : 'no'}.</p>
+              <p className="mt-1">Selected stable order: {weeklyPreview.selected.map((entry) => `${entry.id} (r${entry.revision})`).join(', ') || 'none'}.</p>
+              <p className="mt-1">Quarantined corrections: {weeklyPreview.quarantined.map((entry) => `${entry.id}: ${entry.correctionCodes.join(', ')}`).join('; ') || 'none'}.</p>
+              <p className="mt-1">{weeklyPreview.mediaFallbackIds.length > 0 ? `Media falls back to factual text and sources for: ${weeklyPreview.mediaFallbackIds.join(', ')}.` : 'No selected record needs a media fallback.'}</p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {canReview ? (
+        <section className="rounded-card border border-silver-200 bg-white p-6" aria-labelledby="catalogue-emergency-title">
+          <h2 id="catalogue-emergency-title" className="text-xl font-semibold text-ink-900">Emergency correction</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-700">This creates a separately audited emergency snapshot after the same checklist. It is exempt from the normal weekly schedule, not from evidence requirements.</p>
+          <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="emergency-candidate">Approved candidate<select id="emergency-candidate" value={recoveryCandidateId} onChange={(event) => setRecoveryCandidateId(event.target.value)} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm"><option value="">Choose a candidate</option>{candidates.filter((candidate) => candidate.lifecycle === 'approved').map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title} (revision {candidate.revision})</option>)}</select></label>
+          <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="emergency-candidate-json">Corrected candidate JSON<textarea id="emergency-candidate-json" value={recoveryCandidateText} onChange={(event) => setRecoveryCandidateText(event.target.value)} className="mt-1 min-h-32 w-full rounded-card border border-silver-300 p-2 font-mono text-xs" /></label>
+          <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="emergency-reason">Emergency reason<textarea id="emergency-reason" value={emergencyReason} onChange={(event) => setEmergencyReason(event.target.value)} className="mt-1 min-h-20 w-full rounded-card border border-silver-300 p-2 text-sm" /></label>
+          <button type="button" onClick={() => void publishEmergencyCorrection()} className="mt-4 min-h-touch rounded-card bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Emergency correction</button>
+        </section>
+      ) : null}
+
+      {canAdminister ? (
+        <section className="rounded-card border border-silver-200 bg-white p-6" aria-labelledby="catalogue-restore-title">
+          <h2 id="catalogue-restore-title" className="text-xl font-semibold text-ink-900">Restore retained snapshot</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-700">Restoring adds a new snapshot from the retained version; it never rewrites an earlier manifest.</p>
+          <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="restore-snapshot">Retained snapshot<select id="restore-snapshot" value={restoreSnapshotId} onChange={(event) => setRestoreSnapshotId(event.target.value)} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm"><option value="">Choose a retained snapshot</option>{snapshotHistory.map((entry) => <option key={entry.lineage.snapshotId} value={entry.lineage.snapshotId}>{entry.lineage.snapshotId} (version {entry.version})</option>)}</select></label>
+          <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="restore-reason">Restore reason<textarea id="restore-reason" value={restoreReason} onChange={(event) => setRestoreReason(event.target.value)} className="mt-1 min-h-20 w-full rounded-card border border-silver-300 p-2 text-sm" /></label>
+          <button type="button" onClick={() => void restoreSnapshot()} className="mt-4 min-h-touch rounded-card border border-brand-700 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Restore snapshot</button>
+        </section>
+      ) : null}
+
+      <section className="rounded-card border border-silver-200 bg-white p-6" aria-labelledby="catalogue-history-title">
+        <h2 id="catalogue-history-title" className="text-xl font-semibold text-ink-900">Snapshot audit history</h2>
+        <p className="mt-2 text-sm text-ink-700">This view contains release evidence and manifest lineage only. It never includes candidates, imports, learner data, provider-private material, or secrets.</p>
+        <ul className="mt-4 space-y-3" aria-label="Redacted snapshot history">
+          {snapshotHistory.map((entry) => <li key={entry.lineage.snapshotId} className="rounded-card bg-ink-50 p-3 text-sm text-ink-800"><p className="font-semibold">{entry.lineage.snapshotId} · version {entry.version} · {entry.kind}</p><p>{entry.timestamp}: {entry.action} by {entry.capability}; {entry.outcome}. {entry.correctionStatus}; {entry.reviewStatus}.</p><p>Lineage: prior {entry.lineage.priorSnapshotId ?? 'none'}, restored from {entry.lineage.restoredFromSnapshotId ?? 'none'}, digest {entry.lineage.contentDigest}.</p>{entry.periodKey ? <p>Normal-release period: {entry.periodKey}.</p> : null}{entry.reason ? <p>Reason: {entry.reason}</p> : null}</li>)}
+          {snapshotHistory.length === 0 ? <li className="text-sm text-ink-600">No release snapshots have been published yet.</li> : null}
+        </ul>
       </section>
 
       {conflict ? (
