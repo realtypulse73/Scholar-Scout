@@ -178,6 +178,24 @@ describe('catalogue candidate import envelope', () => {
       schemaVersion: 1,
       changes: [{ action: 'publish', candidate: validCandidate }],
     }],
+    ['incomplete candidate', {
+      schemaVersion: 1,
+      changes: [{ action: 'upsert', candidate: { id: validCandidate.id } }],
+    }],
+    ['oversized value', {
+      schemaVersion: 1,
+      changes: [{
+        action: 'upsert',
+        candidate: { ...validCandidate, title: 'x'.repeat(4_001) },
+      }],
+    }],
+    ['deep value', {
+      schemaVersion: 1,
+      changes: [{
+        action: 'upsert',
+        candidate: { ...validCandidate, facts: deeplyNestedFacts() },
+      }],
+    }],
   ])('returns safe correction feedback for %s', (_, envelope) => {
     expect(parseCatalogueCandidateImport(envelope)).toEqual({
       ok: false,
@@ -185,3 +203,9 @@ describe('catalogue candidate import envelope', () => {
     });
   });
 });
+
+function deeplyNestedFacts(): Record<string, unknown> {
+  let value: Record<string, unknown> = {};
+  for (let index = 0; index < 33; index += 1) value = { value };
+  return value;
+}

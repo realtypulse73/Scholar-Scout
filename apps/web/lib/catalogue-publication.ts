@@ -24,6 +24,14 @@ export const CATALOGUE_CHECKLIST_CATEGORIES = [
 export type CatalogueChecklistCategory = (typeof CATALOGUE_CHECKLIST_CATEGORIES)[number];
 export type CataloguePublicationCapability = 'editor' | 'reviewer' | 'administrator';
 export type CatalogueCandidateLifecycle = 'draft' | 'approved' | 'quarantined';
+export type CatalogueImportCorrectionCode = 'invalid-import';
+export type CatalogueCandidateAction = 'upsert' | 'retire';
+export type CataloguePublicationAuditAction =
+  | 'stage'
+  | 'edit'
+  | 'submit'
+  | 'approval'
+  | 'failure';
 export type MediaRightsKind =
   | 'scholarscout-owned'
   | 'licensed'
@@ -72,13 +80,41 @@ export interface CatalogueCandidate extends Required<Pick<CatalogueCandidateInpu
   media?: { url?: string; alt?: string };
   mediaRights?: CatalogueMediaRights;
   checklist: CatalogueChecklistResult;
-  approval: null;
+  approval: CatalogueCandidateApproval | null;
+  retirementIntent?: boolean;
 }
+
+export interface CatalogueCandidateApproval {
+  reviewerId: string;
+  reviewedAt: string;
+  revision: number;
+}
+
+export interface CatalogueCandidateImportUpsert {
+  action: 'upsert';
+  id: string;
+  candidate: CatalogueCandidateInput;
+  expectedRevision?: number;
+}
+
+export interface CatalogueCandidateImportRetire {
+  action: 'retire';
+  id: string;
+  expectedRevision: number;
+}
+
+export type CatalogueCandidateImportChange =
+  | CatalogueCandidateImportUpsert
+  | CatalogueCandidateImportRetire;
+
+export type CatalogueCandidateImportParseResult =
+  | { ok: true; changes: CatalogueCandidateImportChange[] }
+  | { ok: false; correctionCodes: CatalogueImportCorrectionCode[] };
 
 export interface CataloguePublicationAuditEvent {
   actorId: string;
   capability: CataloguePublicationCapability;
-  action: 'stage';
+  action: CataloguePublicationAuditAction;
   timestamp: string;
   outcome: 'passed-checklist' | 'needs-correction';
   version: number;
@@ -95,6 +131,30 @@ export interface CataloguePublicationState {
 
 export function createEmptyCataloguePublicationState(): CataloguePublicationState {
   return { schemaVersion: 1, candidates: [], auditEvents: [] };
+}
+
+/**
+ * Parses the bounded, versioned staff intake envelope. This is deliberately
+ * structural: the checklist separately reports editorial corrections without
+ * allowing a malformed batch to partially mutate the catalogue state.
+ */
+export function parseCatalogueCandidateImport(value: unknown): CatalogueCandidateImportParseResult {
+  if (!isBoundedImportValue(value) || !isRecord(value) || value.schemaVersion !== 1
+    || !Array.isArray(value.changes) || value.changes.length < 1
+    || value.changes.length > 25) {
+    return invalidImport();
+  }
+
+  const ids = new Set<string>();
+  const changes: CatalogueCandidateImportChange[] = [];
+  for (const rawChange of value.changes) {
+    const change = parseImportChange(rawChange);
+    if (!change || ids.has(change.id)) return invalidImport();
+    ids.add(change.id);
+    changes.push(change);
+  }
+
+  return { ok: true, changes };
 }
 
 /** Evaluates editorial completeness only; it never asserts provider truth or learner eligibility. */
@@ -155,14 +215,15 @@ function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.title !== 'string'
     || typeof value.creatorId !== 'string' || typeof value.revision !== 'number'
     || !isLifecycle(value.lifecycle) || typeof value.createdAt !== 'string'
-    || typeof value.updatedAt !== 'string' || value.approval !== null) return false;
+    || typeof value.updatedAt !== 'string' || !isCandidateApproval(value.approval)) return false;
 
-  return isChecklist(value.checklist);
+  return isChecklist(value.checklist)
+    && (value.retirementIntent === undefined || typeof value.retirementIntent === 'boolean');
 }
 
 function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePublicationAuditEvent {
   if (!isRecord(value) || typeof value.actorId !== 'string' || !isCapability(value.capability)
-    || value.action !== 'stage' || typeof value.timestamp !== 'string'
+    || !isAuditAction(value.action) || typeof value.timestamp !== 'string'
     || (value.outcome !== 'passed-checklist' && value.outcome !== 'needs-correction')
     || typeof value.version !== 'number' || !isLifecycle(value.reviewStatus)
     || !Array.isArray(value.correctionCodes)) return false;
@@ -195,6 +256,65 @@ function isChecklist(value: unknown): value is CatalogueChecklistResult {
       && (item.status === 'passed' || item.status === 'needs-correction' || item.status === 'fallback'));
 }
 
+function parseImportChange(value: unknown): CatalogueCandidateImportChange | null {
+  if (!isRecord(value) || (value.action !== 'upsert' && value.action !== 'retire')) return null;
+
+  if (value.action === 'retire') {
+    return isStableId(value.id) && isCandidateRevision(value.expectedRevision)
+      ? { action: 'retire', id: value.id, expectedRevision: value.expectedRevision }
+      : null;
+  }
+
+  if (!isRecord(value.candidate) || !isCompleteCandidateInput(value.candidate)) return null;
+  const expectedRevision = value.expectedRevision;
+  if (expectedRevision !== undefined && !isExpectedCandidateRevision(expectedRevision)) return null;
+  return {
+    action: 'upsert',
+    id: value.candidate.id as string,
+    candidate: value.candidate as CatalogueCandidateInput,
+    ...(expectedRevision === undefined ? {} : { expectedRevision }),
+  };
+}
+
+function isCompleteCandidateInput(value: Record<string, unknown>): boolean {
+  return isStableId(value.id)
+    && isBoundedRequiredText(value.title, 240)
+    && isBoundedRequiredText(value.regionId, 80)
+    && isRecord(value.region)
+    && isRecord(value.source)
+    && isRecord(value.facts)
+    && isBoundedRequiredText(value.claimBoundary, 500);
+}
+
+function invalidImport(): CatalogueCandidateImportParseResult {
+  return { ok: false, correctionCodes: ['invalid-import'] };
+}
+
+function isBoundedImportValue(value: unknown): boolean {
+  try {
+    return JSON.stringify(value).length <= 250_000 && isBoundedValue(value, 0);
+  } catch {
+    return false;
+  }
+}
+
+function isBoundedValue(value: unknown, depth: number): boolean {
+  if (depth > 32) return false;
+  if (value === null || typeof value === 'boolean' || typeof value === 'number') return true;
+  if (typeof value === 'string') return value.length <= 4_000;
+  if (Array.isArray(value)) return value.length <= 64
+    && value.every((item) => isBoundedValue(item, depth + 1));
+  if (!isRecord(value) || Object.keys(value).length > 64) return false;
+  return Object.values(value).every((item) => isBoundedValue(item, depth + 1));
+}
+
+function isCandidateApproval(value: unknown): value is CatalogueCandidateApproval | null {
+  if (value === null) return true;
+  return isRecord(value) && typeof value.reviewerId === 'string'
+    && typeof value.reviewedAt === 'string' && isCandidateRevision(value.revision)
+    && Object.keys(value).every((key) => ['reviewerId', 'reviewedAt', 'revision'].includes(key));
+}
+
 function isUsableMedia(
   media: CatalogueCandidateInput['media'],
   rights: CatalogueMediaRights | undefined,
@@ -220,6 +340,27 @@ function isChecklistCategory(value: unknown): value is CatalogueChecklistCategor
 
 function isCapability(value: unknown): value is CataloguePublicationCapability {
   return value === 'editor' || value === 'reviewer' || value === 'administrator';
+}
+
+function isAuditAction(value: unknown): value is CataloguePublicationAuditAction {
+  return value === 'stage' || value === 'edit' || value === 'submit'
+    || value === 'approval' || value === 'failure';
+}
+
+function isStableId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
+}
+
+function isCandidateRevision(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+function isExpectedCandidateRevision(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isBoundedRequiredText(value: unknown, maximum: number): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= maximum;
 }
 
 function isMediaRightsKind(value: unknown): value is MediaRightsKind {

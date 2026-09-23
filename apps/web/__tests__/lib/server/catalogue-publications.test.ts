@@ -10,7 +10,11 @@ import {
 } from '@/lib/server/data-store';
 
 const NOW = new Date('2026-09-22T12:00:00.000Z');
-const editor = { id: 'editor-1', email: 'editor@example.com', capabilities: ['editor'] as const };
+const editor = {
+  id: 'editor-1',
+  email: 'editor@example.com',
+  capabilities: new Set(['editor'] as const),
+};
 
 const validCandidate = {
   id: 'catalogue:training',
@@ -134,6 +138,45 @@ describe('private catalogue candidate staging', () => {
       cataloguePublicationState: { candidates: [] },
     });
   });
+
+  it('keeps a malformed import from changing an existing private candidate', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    const before = await store.read();
+
+    await expect(importCatalogueCandidates({
+      actor: editor,
+      envelope: { schemaVersion: 1, changes: [{ action: 'publish' }] },
+      now: NOW,
+    })).rejects.toThrow('catalogue-candidate-import-invalid');
+
+    expect(await store.read()).toEqual(before);
+  });
+
+  it('creates a new private revision and clears its prior approval on correction', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+
+    const result = await importCatalogueCandidates({
+      actor: editor,
+      envelope: {
+        schemaVersion: 1,
+        changes: [{
+          action: 'upsert',
+          candidate: { ...validCandidate, title: 'Corrected technical training' },
+          expectedRevision: 1,
+        }],
+      },
+      now: NOW,
+    });
+
+    expect(result.candidates).toEqual([
+      expect.objectContaining({
+        revision: 2,
+        lifecycle: 'draft',
+        approval: null,
+        title: 'Corrected technical training',
+      }),
+    ]);
+  });
 });
 
 function evidence() {
@@ -155,6 +198,11 @@ class MemoryDataStore implements ScholarScoutDataStore {
     shortlists: {},
     programmeRecords: [],
     auditEvents: [],
+    cataloguePublicationState: {
+      schemaVersion: 1,
+      candidates: [],
+      auditEvents: [],
+    },
   };
   private version = 'memory-0';
   conflictNextWrite = false;
