@@ -167,6 +167,19 @@ function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePub
     || typeof value.version !== 'number' || !isLifecycle(value.reviewStatus)
     || !Array.isArray(value.correctionCodes)) return false;
 
+  const allowedKeys = new Set([
+    'actorId',
+    'capability',
+    'action',
+    'timestamp',
+    'outcome',
+    'version',
+    'reason',
+    'correctionCodes',
+    'reviewStatus',
+  ]);
+  if (Object.keys(value).some((key) => !allowedKeys.has(key))) return false;
+
   return value.correctionCodes.every(isChecklistCategory)
     && (value.reason === undefined || typeof value.reason === 'string');
 }
@@ -198,7 +211,7 @@ function isUsableMedia(
 
 function isBoundedClaim(value: unknown): value is string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > 500) return false;
-  return !/\b(eligible|guarantee|guaranteed|admission|will earn|will make|outcome)\b/i.test(value);
+  return !/\b(eligib(?:ility|le)|guarantee(?:d)?|admission|will earn|will make|outcome)\b/i.test(value);
 }
 
 function isChecklistCategory(value: unknown): value is CatalogueChecklistCategory {
