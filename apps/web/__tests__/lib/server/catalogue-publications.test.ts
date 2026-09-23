@@ -1,6 +1,7 @@
 import {
   CatalogueCandidateReviewError,
   CataloguePublicationConflictError,
+  CatalogueReleaseScheduleError,
   getCatalogueCandidateHistory,
   importCatalogueCandidates,
   publishWeeklyCatalogueSnapshot,
@@ -306,6 +307,181 @@ describe('weekly catalogue publication', () => {
       included: [{ id: validCandidate.id, revision: 1 }],
     });
   });
+
+  it('rejects an out-of-window or duplicate normal release but accepts the next ISO week', async () => {
+    await approve(validCandidate);
+
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-20T13:00:00.000Z'),
+    })).rejects.toMatchObject({ code: 'outside-release-window' } satisfies Partial<CatalogueReleaseScheduleError>);
+
+    await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T14:00:00.000Z'),
+    })).rejects.toMatchObject({ code: 'weekly-period-already-published' } satisfies Partial<CatalogueReleaseScheduleError>);
+
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-28T13:00:00.000Z'),
+    })).resolves.toMatchObject({ snapshot: { periodKey: '2026-W40' } });
+  });
+
+  it('keeps emergency releases separately auditable without consuming a weekly slot', async () => {
+    await approve(validCandidate);
+
+    const emergency = await publishWeeklyCatalogueSnapshot({
+      actor: reviewer,
+      candidateIds: [validCandidate.id],
+      kind: 'emergency',
+      reason: 'Correct a time-sensitive factual error.',
+      now: new Date('2026-09-27T13:00:00.000Z'),
+    });
+    expect((await store.read()).cataloguePublicationState?.candidates).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: validCandidate.id,
+        lifecycle: 'approved',
+        approval: expect.objectContaining({ revision: 1 }),
+      }),
+    ]));
+    const weekly = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-28T13:00:00.000Z'),
+    });
+
+    expect(emergency.manifest).toMatchObject({ kind: 'emergency', reason: 'Correct a time-sensitive factual error.' });
+    expect(emergency.snapshot.periodKey).toBeUndefined();
+    expect(weekly.manifest).toMatchObject({ kind: 'weekly', periodKey: '2026-W40' });
+  });
+
+  it('sorts equivalent selected records by stable ID regardless of input order', async () => {
+    const earlier = { ...validCandidate, id: 'catalogue:a-training', title: 'A training' };
+    const later = { ...validCandidate, id: 'catalogue:z-training', title: 'Z training' };
+    await approve(earlier);
+    await approve(later);
+
+    const result = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [later.id, earlier.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+
+    expect(result.snapshot.records.map((record) => record.id)).toEqual([earlier.id, later.id]);
+    expect(result.manifest.included.map((record) => record.id)).toEqual([earlier.id, later.id]);
+    expect(result.snapshot.contentDigest).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('quarantines only a stale final recheck and continues publishing an unaffected candidate', async () => {
+    const stale = {
+      ...validCandidate,
+      id: 'catalogue:stale-training',
+      source: { ...validCandidate.source, sourceDate: { state: 'documented' as const, value: '2026-09-20' } },
+    };
+    const releaseNow = new Date('2027-04-05T13:00:00.000Z');
+    const current = {
+      ...validCandidate,
+      id: 'catalogue:current-training',
+      source: {
+        ...validCandidate.source,
+        sourceDate: { state: 'documented' as const, value: '2027-04-01' },
+        checkedAt: '2027-04-01',
+      },
+      facts: Object.fromEntries(Object.entries(validCandidate.facts).map(([key, fact]) => [key, {
+        ...fact,
+        evidence: {
+          ...fact.evidence,
+          sourceDate: { state: 'documented' as const, value: '2027-04-01' },
+          reviewedAt: '2027-04-01',
+        },
+      }])) as typeof validCandidate.facts,
+    };
+    await approve(stale);
+    await approve(current, releaseNow);
+
+    const result = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [stale.id, current.id],
+      now: releaseNow,
+    });
+
+    expect(result.snapshot.records).toEqual([expect.objectContaining({ id: current.id })]);
+    expect(result.quarantined).toEqual([{
+      id: stale.id,
+      revision: 1,
+      correctionCodes: ['material-evidence', 'freshness'],
+    }]);
+    expect((await store.read()).cataloguePublicationState?.candidates).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: stale.id, lifecycle: 'quarantined', approval: null }),
+    ]));
+  });
+
+  it('removes an approved retirement only from the new active snapshot and preserves the prior version', async () => {
+    await approve(validCandidate);
+    const first = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+    await importCatalogueCandidates({
+      actor: editor,
+      envelope: {
+        schemaVersion: 1,
+        changes: [{ action: 'retire', id: validCandidate.id, expectedRevision: 1 }],
+      },
+      now: new Date('2026-09-22T12:00:00.000Z'),
+    });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 2,
+      now: new Date('2026-09-22T12:00:00.000Z'),
+    });
+
+    const retired = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-28T13:00:00.000Z'),
+    });
+    const state = (await store.read()).cataloguePublicationState!;
+
+    expect(retired.snapshot.records).toEqual([]);
+    expect(retired.manifest.retired).toEqual([{ id: validCandidate.id, revision: 2 }]);
+    expect(state.snapshots?.find((snapshot) => snapshot.id === first.snapshot.id)?.records).toEqual([
+      expect.objectContaining({ id: validCandidate.id }),
+    ]);
+  });
+
+  it('reports a conditional-write release conflict without retrying', async () => {
+    await approve(validCandidate);
+    store.conflictNextWrite = true;
+
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    })).rejects.toBeInstanceOf(CataloguePublicationConflictError);
+    expect(store.writeAttempts).toBe(3);
+  });
+
+  async function approve(candidate: typeof validCandidate, now = NOW) {
+    await stageCatalogueCandidate({ actor: editor, candidate, now });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: candidate.id,
+      expectedRevision: 1,
+      now,
+    });
+  }
 });
 
 function evidence() {

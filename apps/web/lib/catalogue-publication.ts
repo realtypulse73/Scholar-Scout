@@ -8,6 +8,7 @@ import {
   type CatalogueRegionId,
   type SourceMetadata,
 } from '@/lib/catalogue-contract';
+import { createHash } from 'node:crypto';
 
 export const CATALOGUE_CHECKLIST_DISCLOSURE =
   'A pass means editorial completeness, not verified real-world provider truth.';
@@ -26,6 +27,7 @@ export type CataloguePublicationCapability = 'editor' | 'reviewer' | 'administra
 export type CatalogueCandidateLifecycle = 'draft' | 'approved' | 'quarantined';
 export type CatalogueImportCorrectionCode = 'invalid-import';
 export type CatalogueCandidateAction = 'upsert' | 'retire';
+export type CatalogueSnapshotKind = 'weekly' | 'emergency';
 export type CataloguePublicationAuditAction =
   | 'stage'
   | 'edit'
@@ -124,14 +126,103 @@ export interface CataloguePublicationAuditEvent {
   reviewStatus: CatalogueCandidateLifecycle;
 }
 
+export interface CataloguePublishedRecord {
+  id: string;
+  revision: number;
+  title: string;
+  regionId: CatalogueRegionId;
+  region: CatalogueRegion;
+  source: SourceMetadata;
+  facts: CatalogueOpportunityCardFacts;
+  claimBoundary: string;
+  media?: { url?: string; alt?: string };
+  mediaFallback: boolean;
+}
+
+export interface CatalogueSnapshot {
+  id: string;
+  sequence: number;
+  kind: CatalogueSnapshotKind;
+  releasedAt: string;
+  periodKey?: string;
+  priorSnapshotId?: string;
+  records: CataloguePublishedRecord[];
+  contentDigest: string;
+}
+
+export interface CatalogueSnapshotManifestEntry {
+  id: string;
+  revision: number;
+}
+
+export interface CatalogueSnapshotQuarantineEntry extends CatalogueSnapshotManifestEntry {
+  correctionCodes: CatalogueChecklistCategory[];
+}
+
+export interface CatalogueSnapshotManifest {
+  id: string;
+  snapshotId: string;
+  sequence: number;
+  kind: CatalogueSnapshotKind;
+  releasedAt: string;
+  periodKey?: string;
+  priorSnapshotId?: string;
+  actorId: string;
+  capability: CataloguePublicationCapability;
+  action: 'release';
+  outcome: 'published';
+  reason?: string;
+  included: CatalogueSnapshotManifestEntry[];
+  retired: CatalogueSnapshotManifestEntry[];
+  quarantined: CatalogueSnapshotQuarantineEntry[];
+  contentDigest: string;
+}
+
 export interface CataloguePublicationState {
   schemaVersion: 1;
   candidates: CatalogueCandidate[];
   auditEvents: CataloguePublicationAuditEvent[];
+  snapshots?: CatalogueSnapshot[];
+  manifests?: CatalogueSnapshotManifest[];
+  activeSnapshotId?: string | null;
 }
 
 export function createEmptyCataloguePublicationState(): CataloguePublicationState {
-  return { schemaVersion: 1, candidates: [], auditEvents: [] };
+  return {
+    schemaVersion: 1,
+    candidates: [],
+    auditEvents: [],
+    snapshots: [],
+    manifests: [],
+    activeSnapshotId: null,
+  };
+}
+
+export const NORMAL_WEEKLY_RELEASE_TIME_ZONE = 'America/New_York';
+
+/** Returns the ISO week for the release instant's fixed New York calendar date. */
+export function getWeeklyReleasePeriodKey(now: Date): string {
+  const parts = getNewYorkDateParts(now);
+  const calendarDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const weekday = calendarDate.getUTCDay() || 7;
+  calendarDate.setUTCDate(calendarDate.getUTCDate() + 4 - weekday);
+  const isoYear = calendarDate.getUTCFullYear();
+  const firstThursday = new Date(Date.UTC(isoYear, 0, 4));
+  const firstWeekday = firstThursday.getUTCDay() || 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() + 4 - firstWeekday);
+  const week = 1 + Math.round((calendarDate.getTime() - firstThursday.getTime()) / 604_800_000);
+  return `${isoYear}-W${String(week).padStart(2, '0')}`;
+}
+
+/** Normal releases are limited to Monday 09:00–17:00 in the fixed New York time zone. */
+export function isWithinNormalWeeklyReleaseWindow(now: Date): boolean {
+  const parts = getNewYorkDateParts(now);
+  return parts.weekday === 'Mon' && parts.hour >= 9 && parts.hour < 17;
+}
+
+/** Builds a non-secret digest over a recursively key-sorted public snapshot payload. */
+export function getCatalogueSnapshotDigest(records: CataloguePublishedRecord[]): string {
+  return createHash('sha256').update(canonicalJson(records)).digest('hex');
 }
 
 /**
@@ -206,10 +297,16 @@ export function evaluateCatalogueChecklist(
 
 export function isCataloguePublicationState(value: unknown): value is CataloguePublicationState {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Array.isArray(value.candidates)
-    || !Array.isArray(value.auditEvents)) return false;
+    || !Array.isArray(value.auditEvents)
+    || (value.snapshots !== undefined && !Array.isArray(value.snapshots))
+    || (value.manifests !== undefined && !Array.isArray(value.manifests))
+    || (value.activeSnapshotId !== undefined && value.activeSnapshotId !== null
+      && typeof value.activeSnapshotId !== 'string')) return false;
 
   return value.candidates.every(isCatalogueCandidate)
-    && value.auditEvents.every(isCataloguePublicationAuditEvent);
+    && value.auditEvents.every(isCataloguePublicationAuditEvent)
+    && (value.snapshots ?? []).every(isCatalogueSnapshot)
+    && (value.manifests ?? []).every(isCatalogueSnapshotManifest);
 }
 
 function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
@@ -246,6 +343,50 @@ function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePub
   return (value.candidateId === undefined || isStableId(value.candidateId))
     && value.correctionCodes.every(isChecklistCategory)
     && (value.reason === undefined || typeof value.reason === 'string');
+}
+
+function isCatalogueSnapshot(value: unknown): value is CatalogueSnapshot {
+  if (!isRecord(value) || typeof value.id !== 'string' || !isSequence(value.sequence)
+    || !isSnapshotKind(value.kind) || typeof value.releasedAt !== 'string'
+    || !Array.isArray(value.records) || typeof value.contentDigest !== 'string') return false;
+  return value.records.every(isCataloguePublishedRecord)
+    && (value.periodKey === undefined || isPeriodKey(value.periodKey))
+    && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string');
+}
+
+function isCatalogueSnapshotManifest(value: unknown): value is CatalogueSnapshotManifest {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.snapshotId !== 'string'
+    || !isSequence(value.sequence) || !isSnapshotKind(value.kind)
+    || typeof value.releasedAt !== 'string' || typeof value.actorId !== 'string'
+    || !isCapability(value.capability) || value.action !== 'release' || value.outcome !== 'published'
+    || !Array.isArray(value.included) || !Array.isArray(value.retired)
+    || !Array.isArray(value.quarantined) || typeof value.contentDigest !== 'string') return false;
+  return value.included.every(isManifestEntry)
+    && value.retired.every(isManifestEntry)
+    && value.quarantined.every(isQuarantineEntry)
+    && (value.periodKey === undefined || isPeriodKey(value.periodKey))
+    && (value.priorSnapshotId === undefined || typeof value.priorSnapshotId === 'string')
+    && (value.reason === undefined || typeof value.reason === 'string');
+}
+
+function isCataloguePublishedRecord(value: unknown): value is CataloguePublishedRecord {
+  if (!isRecord(value) || !isStableId(value.id) || !isCandidateRevision(value.revision)
+    || typeof value.title !== 'string' || typeof value.regionId !== 'string'
+    || !isRecord(value.region) || !isRecord(value.source) || !isRecord(value.facts)
+    || typeof value.claimBoundary !== 'string' || typeof value.mediaFallback !== 'boolean') return false;
+  return value.media === undefined || isRecord(value.media);
+}
+
+function isManifestEntry(value: unknown): value is CatalogueSnapshotManifestEntry {
+  return isRecord(value) && isStableId(value.id) && isCandidateRevision(value.revision)
+    && Object.keys(value).every((key) => key === 'id' || key === 'revision');
+}
+
+function isQuarantineEntry(value: unknown): value is CatalogueSnapshotQuarantineEntry {
+  const entry = value as Record<string, unknown>;
+  return isManifestEntry(value) && Array.isArray(entry.correctionCodes)
+    && entry.correctionCodes.every(isChecklistCategory)
+    && Object.keys(value).every((key) => key === 'id' || key === 'revision' || key === 'correctionCodes');
 }
 
 function isChecklist(value: unknown): value is CatalogueChecklistResult {
@@ -388,6 +529,53 @@ function isMediaRightsKind(value: unknown): value is MediaRightsKind {
 
 function isLifecycle(value: unknown): value is CatalogueCandidateLifecycle {
   return value === 'draft' || value === 'approved' || value === 'quarantined';
+}
+
+function getNewYorkDateParts(now: Date): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  weekday: string;
+} {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: NORMAL_WEEKLY_RELEASE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+    weekday: 'short',
+  });
+  const values = Object.fromEntries(formatter.formatToParts(now)
+    .filter((part) => part.type !== 'literal')
+    .map((part) => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    weekday: values.weekday,
+  };
+}
+
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(',')}}`;
+}
+
+function isSequence(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+function isSnapshotKind(value: unknown): value is CatalogueSnapshotKind {
+  return value === 'weekly' || value === 'emergency';
+}
+
+function isPeriodKey(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-W\d{2}$/.test(value);
 }
 
 function isHttpUrl(value: unknown): boolean {
