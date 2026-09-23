@@ -15,15 +15,15 @@
 
 - [x] **EVID-01**: Every material fact shown on an opportunity card or provider page has its own attributable source, authority type, source/review date, factual status, and direct verification action.
 - [x] **EVID-02**: A student can distinguish `Current`, `Needs confirmation`, `Unknown`, and `Conflicting` facts; stale or conflicting facts never appear confirmed.
-- [ ] **EVID-03**: A staff member can review an opportunity’s source, required evidence, freshness state, and claim boundaries before it becomes public.
+- [x] **EVID-03**: A staff member can review an opportunity’s source, required evidence, freshness state, and claim boundaries before it becomes public.
 - [ ] **EVID-04**: The published catalogue is a deterministic, versioned reviewed snapshot; learner-facing requests do not scrape, aggregate, or depend on a live provider site.
 - [x] **EVID-05**: If occupation-and-area wage context is shown, it is dated, source-linked context and clearly not a provider promise or personal salary forecast.
 
 ### Governed publication
 
-- [ ] **PUB-01**: Only active authorized staff can create, revise, publish, retire, or restore catalogue records, with validation and audit evidence for each state-changing action.
-- [ ] **PUB-02**: A source, claim, boundary, or media-rights failure blocks publication and gives staff a recoverable correction path without silently discarding a valid current record.
-- [ ] **PUB-03**: Staff can publish a small validated batch with conflict-safe recovery rather than rewriting an unbounded shared document or automatically publishing imported content.
+- [x] **PUB-01**: Only active authorized staff can create, revise, publish, retire, or restore catalogue records, with validation and audit evidence for each state-changing action.
+- [x] **PUB-02**: A source, claim, boundary, or media-rights failure blocks publication and gives staff a recoverable correction path without silently discarding a valid current record.
+- [x] **PUB-03**: Staff can publish a small validated batch with conflict-safe recovery rather than rewriting an unbounded shared document or automatically publishing imported content.
 
 ### Choice-preserving discovery
 
@@ -89,12 +89,12 @@
 | REG-03 | Phase 9 | Complete |
 | EVID-01 | Phase 9 | Complete |
 | EVID-02 | Phase 9 | Complete |
-| EVID-03 | Phase 10 | Pending |
+| EVID-03 | Phase 10 | Complete |
 | EVID-04 | Phase 10 | Pending |
 | EVID-05 | Phase 9 | Complete |
-| PUB-01 | Phase 10 | Pending |
-| PUB-02 | Phase 10 | Pending |
-| PUB-03 | Phase 10 | Pending |
+| PUB-01 | Phase 10 | Complete |
+| PUB-02 | Phase 10 | Complete |
+| PUB-03 | Phase 10 | Complete |
 | DISC-01 | Phase 11 | Pending |
 | DISC-02 | Phase 11 | Pending |
 | DISC-03 | Phase 11 | Pending |
