@@ -115,6 +115,8 @@ describe('private catalogue candidate staging', () => {
       now: NOW,
     });
 
+    expect(result.status).toBe('staged');
+    if (result.status !== 'staged') throw new Error('Expected staged import.');
     expect(result.candidates).toEqual([
       expect.objectContaining({
         id: validCandidate.id,
@@ -222,6 +224,8 @@ describe('private catalogue candidate staging', () => {
       now: NOW,
     });
 
+    expect(result.status).toBe('staged');
+    if (result.status !== 'staged') throw new Error('Expected staged import.');
     expect(result.candidates).toEqual([
       expect.objectContaining({
         revision: 2,

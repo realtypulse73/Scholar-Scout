@@ -90,7 +90,7 @@ export default function CataloguePublicationManager() {
   const [attemptedTitle, setAttemptedTitle] = useState('');
   const [attemptedClaimBoundary, setAttemptedClaimBoundary] = useState('');
   const [titleChoice, setTitleChoice] = useState<'current' | 'attempted'>('current');
-  const claimChoice: 'current' | 'attempted' = 'current';
+  const [claimChoice, setClaimChoice] = useState<'current' | 'attempted'>('current');
   const [conflictReason, setConflictReason] = useState('');
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
   const [weeklyPreview, setWeeklyPreview] = useState<WeeklyPreview | null>(null);
@@ -183,7 +183,17 @@ export default function CataloguePublicationManager() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(envelope),
     });
-    const result = await response.json() as { error?: string };
+    const result = await response.json() as { error?: string; conflict?: ConflictDto };
+    if (response.status === 409 && result.conflict) {
+      setConflict(result.conflict);
+      setAttemptedTitle(result.conflict.attempted.title);
+      setAttemptedClaimBoundary(result.conflict.attempted.claimBoundary);
+      setTitleChoice('current');
+      setClaimChoice('current');
+      setConflictReason('');
+      setStatus('This candidate changed. Compare both values before choosing what to keep.');
+      return;
+    }
     setStatus(response.ok ? 'Private import staged for correction or review.' : result.error ?? 'The import was not staged.');
     if (response.ok) {
       setImportText('');
@@ -358,7 +368,6 @@ export default function CataloguePublicationManager() {
             <div className="mt-4 flex flex-wrap gap-3">
               {canEdit ? <button type="button" onClick={() => void sendAction('submit', { candidateId: candidate.id, expectedRevision: candidate.revision })} className="min-h-touch rounded-card border border-brand-700 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Submit for review</button> : null}
               {canReview ? <button type="button" onClick={() => void sendAction('review', { candidateId: candidate.id, expectedRevision: candidate.revision })} className="min-h-touch rounded-card bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Approve candidate</button> : null}
-              {canEdit ? <button type="button" onClick={() => { setConflict({ candidateId: candidate.id, currentRevision: candidate.revision, attemptedRevision: candidate.revision - 1, current: { title: candidate.title, claimBoundary: '', regionId: '' }, attempted: { title: candidate.title, claimBoundary: '', regionId: '' }, mergeChoices: ['current', 'attempted'] }); setAttemptedTitle(candidate.title); setAttemptedClaimBoundary(''); }} className="min-h-touch rounded-card border border-silver-400 px-4 text-sm font-semibold text-ink-800 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Resolve conflict</button> : null}
             </div>
             <details className="mt-5 rounded-card bg-ink-50 p-3">
               <summary className="cursor-pointer text-sm font-semibold text-ink-800">Safe candidate audit</summary>
@@ -434,9 +443,14 @@ export default function CataloguePublicationManager() {
           <p className="mt-2 text-sm text-ink-700">Compare the current and attempted values. Keeping an older attempted value requires an audit reason.</p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="block text-sm font-semibold text-ink-800">Current title<input readOnly value={conflict.current?.title ?? 'No current candidate'} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
-            <label className="block text-sm font-semibold text-ink-800">Attempted title<input value={attemptedTitle} onChange={(event) => setAttemptedTitle(event.target.value)} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
+            <label className="block text-sm font-semibold text-ink-800">Attempted title<input readOnly value={attemptedTitle} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
           </div>
           <div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={() => setTitleChoice('current')} className="min-h-touch rounded-card border border-silver-400 px-3 text-sm font-semibold text-ink-800">Keep current title</button><button type="button" onClick={() => setTitleChoice('attempted')} className="min-h-touch rounded-card border border-silver-400 px-3 text-sm font-semibold text-ink-800">Keep attempted title</button></div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="block text-sm font-semibold text-ink-800">Current claim boundary<input readOnly value={conflict.current?.claimBoundary ?? 'No current candidate'} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
+            <label className="block text-sm font-semibold text-ink-800">Attempted claim boundary<input readOnly value={attemptedClaimBoundary} className="mt-1 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={() => setClaimChoice('current')} className="min-h-touch rounded-card border border-silver-400 px-3 text-sm font-semibold text-ink-800">Keep current claim boundary</button><button type="button" onClick={() => setClaimChoice('attempted')} className="min-h-touch rounded-card border border-silver-400 px-3 text-sm font-semibold text-ink-800">Keep attempted claim boundary</button></div>
           <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="catalogue-conflict-reason">Reason when retaining an older value<textarea id="catalogue-conflict-reason" value={conflictReason} onChange={(event) => setConflictReason(event.target.value)} className="mt-1 min-h-24 w-full rounded-card border border-silver-300 bg-white p-2 text-sm" /></label>
           <button type="button" onClick={() => void resolveConflict()} className="mt-4 min-h-touch rounded-card bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Save conflict decision</button>
         </section>

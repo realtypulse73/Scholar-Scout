@@ -66,7 +66,7 @@ describe('CataloguePublicationManager', () => {
   });
 
   it('opens a real stale import comparison and sends both chosen fields for resolution', async () => {
-    global.fetch = jest.fn().mockImplementation(async (input: string, init?: RequestInit) => {
+    global.fetch = jest.fn().mockImplementation(async (input: string) => {
       if (input.includes('view=candidate-intake')) {
         return { ok: true, json: async () => ({ capabilities: ['editor'], candidates: [candidate] }) };
       }

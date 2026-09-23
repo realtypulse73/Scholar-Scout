@@ -514,9 +514,25 @@ export async function importCatalogueCandidates(input: {
   actor: ActiveStaffActor;
   envelope: unknown;
   now?: Date;
-}) {
+}): Promise<
+  | { status: 'staged'; candidates: CatalogueCandidate[] }
+  | { status: 'stale'; conflict: CatalogueCandidateConflictDto }
+> {
   const parsed = parseCatalogueCandidateImport(input.envelope);
   if (!parsed.ok) throw new CatalogueCandidateImportError();
+
+  // Only a one-record upsert has one unambiguous comparison. Batches remain
+  // all-or-nothing and keep the existing non-retry conflict behavior.
+  if (parsed.changes.length === 1 && parsed.changes[0].action === 'upsert') {
+    const change = parsed.changes[0];
+    const current = await getCandidateForConflict(change.id);
+    if (current && change.expectedRevision !== current.revision) {
+      return {
+        status: 'stale',
+        conflict: toCandidateConflictDto(current, change.expectedRevision ?? 0, change.candidate),
+      };
+    }
+  }
 
   const now = input.now ?? new Date();
   const timestamp = now.toISOString();
@@ -534,7 +550,7 @@ export async function importCatalogueCandidates(input: {
       candidates.push(staged.candidate);
     }
     data.cataloguePublicationState = state;
-    return { candidates };
+    return { status: 'staged' as const, candidates };
   });
 
   if (result.status === 'conflict') throw new CataloguePublicationConflictError();
@@ -710,7 +726,7 @@ interface CatalogueCandidateConflictComparable {
   regionId: string;
 }
 
-interface CatalogueCandidateConflictDto {
+export interface CatalogueCandidateConflictDto {
   candidateId: string;
   currentRevision: number | null;
   attemptedRevision: number;
@@ -727,7 +743,7 @@ async function getCandidateForConflict(candidateId: string): Promise<CatalogueCa
 function toCandidateConflictDto(
   current: CatalogueCandidate | null,
   attemptedRevision: number,
-  attempted: { title?: unknown; claimBoundary?: unknown },
+  attempted: { title?: unknown; claimBoundary?: unknown; regionId?: unknown },
 ): CatalogueCandidateConflictDto {
   const safeAttempt = normalizeConflictAttempt(attempted);
   return {
@@ -738,7 +754,7 @@ function toCandidateConflictDto(
     attempted: {
       title: safeAttempt.title,
       claimBoundary: safeAttempt.claimBoundary,
-      regionId: current?.regionId ?? '',
+      regionId: boundedText(attempted.regionId, 80) ?? current?.regionId ?? '',
     },
     mergeChoices: ['current', 'attempted'],
   };

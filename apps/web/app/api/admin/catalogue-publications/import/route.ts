@@ -30,6 +30,15 @@ export async function POST(request: Request) {
       actor: authorization.actor,
       envelope: body,
     });
+    if (result.status === 'stale') {
+      return NextResponse.json(
+        {
+          error: 'This catalogue candidate changed. Compare values before resolving.',
+          conflict: result.conflict,
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof CatalogueCandidateImportError) {
