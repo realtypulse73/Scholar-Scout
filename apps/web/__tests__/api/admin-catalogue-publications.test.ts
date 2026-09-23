@@ -1,13 +1,15 @@
 /** @jest-environment node */
 
 import { POST } from '@/app/api/admin/catalogue-publications/route';
-import { requireActiveStaff } from '@/lib/server/active-staff';
-import { stageCatalogueCandidate } from '@/lib/server/catalogue-publications';
+import { getServerSession } from 'next-auth';
+import {
+  setScholarScoutDataStoreForTests,
+  type ScholarScoutData,
+  type ScholarScoutDataStore,
+} from '@/lib/server/data-store';
 
-jest.mock('@/lib/server/active-staff', () => ({ requireActiveStaff: jest.fn() }));
-jest.mock('@/lib/server/catalogue-publications', () => ({
-  stageCatalogueCandidate: jest.fn(),
-}));
+jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
+jest.mock('@/auth', () => ({ authOptions: {} }), { virtual: true });
 
 const candidate = {
   id: 'catalogue:sample-training',
@@ -16,8 +18,21 @@ const candidate = {
 };
 
 describe('admin catalogue publication staging API', () => {
+  const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
+  const originalCapabilities = process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES;
+
   beforeEach(() => {
-    jest.resetAllMocks();
+    setScholarScoutDataStoreForTests(new MemoryDataStore());
+    jest.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'staff-1', email: 'editor@example.com' },
+    } as never);
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'editor@example.com';
+  });
+
+  afterEach(() => {
+    setScholarScoutDataStoreForTests(null);
+    restoreEnvironment('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
+    restoreEnvironment('SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES', originalCapabilities);
   });
 
   it.each([
@@ -25,25 +40,9 @@ describe('admin catalogue publication staging API', () => {
     ['reviewer and editor', ['reviewer', 'editor']],
     ['administrator and editor', ['administrator', 'editor']],
   ])('stages a private candidate for an active %s actor', async (_, capabilities) => {
-    jest.mocked(requireActiveStaff).mockResolvedValue({
-      ok: true,
-      actor: {
-        id: 'staff-1',
-        email: 'editor@example.com',
-        capabilities: new Set(capabilities),
-      },
-    } as never);
-    jest.mocked(stageCatalogueCandidate).mockResolvedValue({
-      candidate: {
-        ...candidate,
-        lifecycle: 'draft',
-        correctionCodes: [],
-      },
-      checklist: {
-        passed: true,
-        correctionCodes: [],
-      },
-    } as never);
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': capabilities,
+    });
 
     const response = await POST(new Request('http://localhost/api/admin/catalogue-publications', {
       method: 'POST',
@@ -56,53 +55,24 @@ describe('admin catalogue publication staging API', () => {
       ok: true,
       candidate: expect.objectContaining({ lifecycle: 'draft' }),
     });
-    expect(requireActiveStaff).toHaveBeenCalledWith({
-      action: 'catalogue-publication:stage',
-      route: '/api/admin/catalogue-publications',
-      capability: 'editor',
-    });
-    expect(stageCatalogueCandidate).toHaveBeenCalledWith({
-      actor: expect.objectContaining({
-        id: 'staff-1',
-        email: 'editor@example.com',
-        capabilities: expect.any(Set),
-      }),
-      candidate,
-    });
   });
 
   it('denies an inactive actor before body parsing or staging', async () => {
-    const denial = new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
     const json = jest.fn();
-    jest.mocked(requireActiveStaff).mockResolvedValue({ ok: false, response: denial } as never);
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['reviewer'],
+    });
 
     const response = await POST({ json } as unknown as Request);
 
     expect(response.status).toBe(403);
     expect(json).not.toHaveBeenCalled();
-    expect(stageCatalogueCandidate).not.toHaveBeenCalled();
   });
 
   it('keeps an incomplete candidate private with ordered correction codes', async () => {
-    jest.mocked(requireActiveStaff).mockResolvedValue({
-      ok: true,
-      actor: {
-        id: 'staff-1',
-        email: 'editor@example.com',
-        capabilities: new Set(['editor']),
-      },
-    } as never);
-    jest.mocked(stageCatalogueCandidate).mockResolvedValue({
-      candidate: {
-        ...candidate,
-        lifecycle: 'draft',
-        correctionCodes: ['source', 'material-evidence', 'freshness'],
-      },
-      checklist: {
-        passed: false,
-        correctionCodes: ['source', 'material-evidence', 'freshness'],
-      },
-    } as never);
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['editor'],
+    });
 
     const response = await POST(new Request('http://localhost/api/admin/catalogue-publications', {
       method: 'POST',
@@ -115,8 +85,40 @@ describe('admin catalogue publication staging API', () => {
       ok: true,
       candidate: {
         lifecycle: 'draft',
-        correctionCodes: ['source', 'material-evidence', 'freshness'],
+        checklist: {
+          correctionCodes: ['source', 'material-evidence', 'freshness', 'claim-boundary', 'regional-boundary'],
+        },
       },
     });
   });
 });
+
+class MemoryDataStore implements ScholarScoutDataStore {
+  private data: ScholarScoutData = {
+    users: [],
+    onboardingProfiles: {},
+    shortlists: {},
+    programmeRecords: [],
+    auditEvents: [],
+  };
+  private version = 'memory-0';
+
+  async read() { return cloneData(this.data); }
+  async write(data: ScholarScoutData) { this.data = cloneData(data); }
+  async readVersioned() { return { data: cloneData(this.data), version: this.version }; }
+  async writeVersioned(data: ScholarScoutData, expectedVersion: string | null) {
+    if (expectedVersion !== this.version) return { status: 'conflict' as const };
+    this.data = cloneData(data);
+    this.version = `memory-${Number(this.version.split('-')[1]) + 1}`;
+    return { status: 'applied' as const, version: this.version };
+  }
+}
+
+function cloneData(data: ScholarScoutData): ScholarScoutData {
+  return JSON.parse(JSON.stringify(data)) as ScholarScoutData;
+}
+
+function restoreEnvironment(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}

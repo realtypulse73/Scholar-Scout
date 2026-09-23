@@ -40,6 +40,11 @@ import {
 } from '@/lib/campus-community';
 import type { Programme } from '@/lib/programmes';
 import type { ShortlistPlanMap, ShortlistProgrammePlan } from '@/lib/shortlist';
+import {
+  createEmptyCataloguePublicationState,
+  isCataloguePublicationState,
+  type CataloguePublicationState,
+} from '@/lib/catalogue-publication';
 
 export type AccountRole = 'student' | 'staff';
 
@@ -133,6 +138,7 @@ export interface ScholarScoutData {
   privilegedOperationAuditEvents?: PrivilegedOperationAuditEvent[];
   recoveryLifecycleEvents?: RecoveryLifecycleEvent[];
   recoveryPlanOutcomes?: RecoveryPlanOutcome[];
+  cataloguePublicationState?: CataloguePublicationState;
 }
 
 export interface RecoveryLifecycleEvent {
@@ -278,6 +284,7 @@ const INITIAL_DATA: ScholarScoutData = {
   privilegedOperationAuditEvents: [],
   recoveryLifecycleEvents: [],
   recoveryPlanOutcomes: [],
+  cataloguePublicationState: createEmptyCataloguePublicationState(),
 };
 
 const dataFilePath =
@@ -799,6 +806,12 @@ export function validateScholarScoutDataImport(
         errors.push(`Audit event ${index + 1} is missing required fields.`);
       }
     });
+  }
+
+  if ('cataloguePublicationState' in data
+    && data.cataloguePublicationState !== undefined
+    && !isCataloguePublicationState(data.cataloguePublicationState)) {
+    errors.push('Catalogue publication state is invalid.');
   }
 
   if (
@@ -1703,6 +1716,9 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     privilegedOperationAuditEvents: Array.isArray(data.privilegedOperationAuditEvents)
       ? (data.privilegedOperationAuditEvents as PrivilegedOperationAuditEvent[])
       : [],
+    cataloguePublicationState: data.cataloguePublicationState === undefined
+      ? createEmptyCataloguePublicationState()
+      : data.cataloguePublicationState as CataloguePublicationState,
   };
 }
 
@@ -1735,6 +1751,7 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
     recoveryPlanOutcomes: Array.isArray(data.recoveryPlanOutcomes)
       ? data.recoveryPlanOutcomes.filter(isRecoveryPlanOutcome)
       : [],
+    cataloguePublicationState: data.cataloguePublicationState ?? createEmptyCataloguePublicationState(),
   };
 }
 

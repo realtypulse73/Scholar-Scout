@@ -7,11 +7,14 @@ import {
   appendPrivilegedOperationAudit,
   getPrivilegedOperationAuditEvents,
 } from '@/lib/server/data-store';
+import type { CataloguePublicationCapability } from '@/lib/catalogue-publication';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface ActiveStaffActor {
   id: string;
+  email?: string;
+  capabilities?: Set<CataloguePublicationCapability>;
 }
 
 export type ActiveStaffAuthorization =
@@ -22,6 +25,7 @@ export type ActiveStaffAuthorization =
 export async function requireActiveStaff(input: {
   action: string;
   route: string;
+  capability?: CataloguePublicationCapability;
 }): Promise<ActiveStaffAuthorization> {
   const session = await getServerSession(authOptions);
   const actorId = session?.user?.id?.trim() || 'anonymous';
@@ -29,11 +33,17 @@ export async function requireActiveStaff(input: {
   const allowedEmails = parseActiveStaffEmails(
     process.env.SCHOLARSCOUT_STAFF_EMAILS,
   );
+  const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : '';
+  const capabilities = isAllowedForEmail(
+    normalizedEmail,
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES,
+  );
   const isAllowed =
     actorId !== 'anonymous' &&
     typeof email === 'string' &&
     allowedEmails !== null &&
-    allowedEmails.has(normalizeEmail(email));
+    allowedEmails.has(normalizedEmail) &&
+    (!input.capability || capabilities?.has(input.capability));
 
   await appendPrivilegedOperationAudit({
     actorId,
@@ -49,7 +59,14 @@ export async function requireActiveStaff(input: {
     };
   }
 
-  return { ok: true, actor: { id: actorId } };
+  return {
+    ok: true,
+    actor: {
+      id: actorId,
+      email: normalizedEmail,
+      capabilities: capabilities ?? new Set(),
+    },
+  };
 }
 
 export { getPrivilegedOperationAuditEvents };
@@ -70,4 +87,36 @@ function parseActiveStaffEmails(value: string | undefined): Set<string> | null {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function isAllowedForEmail(
+  email: string,
+  value: string | undefined,
+): Set<CataloguePublicationCapability> | null {
+  if (!value || !value.trim()) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  const normalizedKeys = entries.map(([key]) => normalizeEmail(key));
+  if (normalizedKeys.some((key) => !EMAIL_PATTERN.test(key))
+    || new Set(normalizedKeys).size !== normalizedKeys.length) return null;
+
+  const matched = entries.find(([key]) => normalizeEmail(key) === email)?.[1];
+  if (!Array.isArray(matched) || matched.length === 0) return null;
+  const capabilities = new Set<CataloguePublicationCapability>();
+  for (const capability of matched) {
+    if (capability !== 'editor' && capability !== 'reviewer' && capability !== 'administrator') {
+      return null;
+    }
+    if (capabilities.has(capability)) return null;
+    capabilities.add(capability);
+  }
+  return capabilities;
 }
