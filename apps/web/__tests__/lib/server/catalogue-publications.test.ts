@@ -128,11 +128,11 @@ describe('private catalogue candidate staging', () => {
     });
   });
 
-  it('rejects a stale candidate revision without an automatic retry or partial write', async () => {
+  it('returns a redacted comparison for one stale import without an automatic retry or partial write', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
     const before = await store.read();
 
-    await expect(importCatalogueCandidates({
+    const result = await importCatalogueCandidates({
       actor: editor,
       envelope: {
         schemaVersion: 1,
@@ -143,8 +143,29 @@ describe('private catalogue candidate staging', () => {
         }],
       },
       now: NOW,
-    })).rejects.toThrow('catalogue-candidate-revision-conflict');
+    });
 
+    expect(result).toEqual({
+      status: 'stale',
+      conflict: {
+        candidateId: validCandidate.id,
+        currentRevision: 1,
+        attemptedRevision: 0,
+        current: {
+          title: validCandidate.title,
+          claimBoundary: validCandidate.claimBoundary,
+          regionId: validCandidate.regionId,
+        },
+        attempted: {
+          title: 'Updated training',
+          claimBoundary: validCandidate.claimBoundary,
+          regionId: validCandidate.regionId,
+        },
+        mergeChoices: ['current', 'attempted'],
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain('sourceUrl');
+    expect(JSON.stringify(result)).not.toContain('mediaRights');
     expect(await store.read()).toEqual(before);
   });
 

@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import { GET, POST } from '@/app/api/admin/catalogue-publications/route';
+import { POST as importPOST } from '@/app/api/admin/catalogue-publications/import/route';
 import { getServerSession } from 'next-auth';
 import {
   setScholarScoutDataStoreForTests,
@@ -15,6 +16,23 @@ const candidate = {
   id: 'catalogue:sample-training',
   title: 'Sample workforce training',
   regionId: 'greater-houston',
+};
+
+const importCandidate = {
+  id: 'catalogue:import-training',
+  title: 'Import technical training',
+  regionId: 'greater-houston',
+  region: {
+    id: 'greater-houston', label: 'Greater Houston',
+    officialBoundary: { authority: 'us-census-omb-cbsa', boundaryId: '26420', boundaryVersion: '2023', sourceLabel: 'Official boundary', sourceUrl: 'https://www.census.gov/example', sourceDate: { state: 'documented', value: '2026-09-01' }, checkedAt: '2026-09-21' },
+    localFocus: { authority: 'City of Houston', anchorLabel: 'Houston City Hall', latitude: 29.7604, longitude: -95.3698, radiusMiles: 10, sourceLabel: 'Official city page', sourceUrl: 'https://www.houstontx.gov', sourceDate: { state: 'documented', value: '2026-09-01' }, checkedAt: '2026-09-21' },
+  },
+  source: { sourceLabel: 'Official programme page', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, checkedAt: '2026-09-21' },
+  facts: Object.fromEntries(['location', 'pathway', 'skillTaught', 'trainingPayer', 'costOrTuition', 'duration', 'delivery'].map((key) => [key, {
+    value: key === 'pathway' ? 'trade-career-school' : 'Documented training detail',
+    evidence: { status: 'current', authority: 'provider-official', sourceLabel: 'Official programme page', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, reviewedAt: '2026-09-21', verificationAction: 'Review the official programme page before publication.' },
+  }])),
+  claimBoundary: 'Factual programme details from the official source.',
 };
 
 describe('admin catalogue publication staging API', () => {
@@ -67,6 +85,35 @@ describe('admin catalogue publication staging API', () => {
 
     expect(response.status).toBe(403);
     expect(json).not.toHaveBeenCalled();
+  });
+
+  it('returns only a bounded stale-import comparison after editor authorization', async () => {
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['editor'],
+    });
+    const stage = await importPOST(new Request('http://localhost/api/admin/catalogue-publications/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schemaVersion: 1, changes: [{ action: 'upsert', candidate: importCandidate }] }),
+    }));
+    expect(stage.status).toBe(200);
+
+    const response = await importPOST(new Request('http://localhost/api/admin/catalogue-publications/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schemaVersion: 1, changes: [{ action: 'upsert', candidate: { ...importCandidate, title: 'Attempted older title' }, expectedRevision: 0 }] }),
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toMatchObject({
+      conflict: {
+        candidateId: importCandidate.id,
+        currentRevision: 1,
+        attemptedRevision: 0,
+        mergeChoices: ['current', 'attempted'],
+      },
+    });
+    expect(Object.keys(body.conflict)).toEqual(['candidateId', 'currentRevision', 'attemptedRevision', 'current', 'attempted', 'mergeChoices']);
+    expect(JSON.stringify(body)).not.toContain('sourceUrl');
   });
 
   it('keeps an incomplete candidate private with ordered correction codes', async () => {

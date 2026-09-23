@@ -58,16 +58,64 @@ describe('CataloguePublicationManager', () => {
     expect(screen.getAllByText(/source/i)).not.toHaveLength(0);
   });
 
-  it('requires a reason before sending an older conflict value and exposes server correction feedback', async () => {
+  it('does not fabricate a conflict before a stale import response', async () => {
     render(<CataloguePublicationManager />);
     await waitFor(() => expect(screen.getByText('Technical training')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /resolve conflict/i }));
-    fireEvent.change(screen.getByLabelText('Attempted title'), { target: { value: 'Earlier technical training' } });
+    expect(screen.queryByRole('button', { name: /^resolve conflict$/i })).not.toBeInTheDocument();
+  });
+
+  it('opens a real stale import comparison and sends both chosen fields for resolution', async () => {
+    global.fetch = jest.fn().mockImplementation(async (input: string, init?: RequestInit) => {
+      if (input.includes('view=candidate-intake')) {
+        return { ok: true, json: async () => ({ capabilities: ['editor'], candidates: [candidate] }) };
+      }
+      if (input.includes('snapshot-history')) {
+        return { ok: true, json: async () => ({ history: [] }) };
+      }
+      if (input.includes('/import')) {
+        return {
+          ok: false,
+          status: 409,
+          json: async () => ({
+            error: 'This catalogue candidate changed. Compare values before resolving.',
+            conflict: {
+              candidateId: candidate.id,
+              currentRevision: 2,
+              attemptedRevision: 1,
+              current: { title: 'Current training', claimBoundary: 'Current factual claim.', regionId: 'greater-houston' },
+              attempted: { title: 'Earlier training', claimBoundary: 'Earlier factual claim.', regionId: 'greater-houston' },
+              mergeChoices: ['current', 'attempted'],
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({ ok: true }) };
+    });
+
+    render(<CataloguePublicationManager />);
+    await waitFor(() => expect(screen.getByText('Technical training')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/import json/i), {
+      target: { value: JSON.stringify({ schemaVersion: 1, changes: [{ action: 'upsert' }] }) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /stage private import/i }));
+
+    await waitFor(() => expect(screen.getByText('Resolve candidate conflict')).toBeInTheDocument());
+    expect(screen.getByDisplayValue('Current factual claim.')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Earlier factual claim.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /keep attempted title/i }));
+    fireEvent.click(screen.getByRole('button', { name: /keep attempted claim boundary/i }));
     fireEvent.click(screen.getByRole('button', { name: /save conflict decision/i }));
-    expect(screen.getByText(/explain why the older value/i)).toBeInTheDocument();
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('status')).toHaveTextContent(/explain why the older value/i);
+    fireEvent.change(screen.getByLabelText(/reason when retaining an older value/i), {
+      target: { value: 'The source correction retains the earlier wording.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save conflict decision/i }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('action=resolve-conflict'),
+      expect.objectContaining({ body: expect.stringContaining('"claimBoundary":"attempted"') }),
+    ));
   });
 
   it('shows a non-mutating administrator weekly preview, release controls, and redacted release history', async () => {
