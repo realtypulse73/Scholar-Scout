@@ -52,7 +52,9 @@ describe('CataloguePublicationManager', () => {
     expect(screen.getByText('media rights')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /submit for review/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /approve candidate/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /emergency correction/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /publish weekly/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restore snapshot/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/source/i)).not.toHaveLength(0);
   });
 

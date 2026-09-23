@@ -535,6 +535,28 @@ describe('weekly catalogue publication', () => {
     expect(JSON.stringify(history)).not.toContain('verificationAction');
   });
 
+  it('serves the reviewed stored snapshot without a provider-network request', async () => {
+    await approve(validCandidate);
+    await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+    const originalFetch = globalThis.fetch;
+    const fetchMock = jest.fn();
+    globalThis.fetch = fetchMock as typeof globalThis.fetch;
+
+    try {
+      await expect(getPublishedCatalogueSnapshot()).resolves.toMatchObject({
+        status: 'published',
+        records: [expect.objectContaining({ id: validCandidate.id })],
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   async function approve(candidate: typeof validCandidate, now = NOW) {
     await stageCatalogueCandidate({ actor: editor, candidate, now });
     await reviewCatalogueCandidate({
