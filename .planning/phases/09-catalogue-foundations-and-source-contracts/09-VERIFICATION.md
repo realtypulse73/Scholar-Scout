@@ -1,30 +1,25 @@
 ---
 phase: 09-catalogue-foundations-and-source-contracts
-verified: 2026-09-22T23:53:46Z
-status: gaps_found
-score: 5/6 must-haves verified
+verified: 2026-09-23T00:10:11Z
+status: passed
+score: 6/6 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "The great-circle helper returns a deterministic numeric distance for every valid latitude/longitude pair, so the documented local-focus inclusion check is reproducible."
-    status: failed
-    reason: "The Haversine intermediate is not clamped to [0, 1]. Valid near-antipodal coordinates make Math.sqrt(1 - haversine) NaN, violating calculateGreatCircleMiles()'s number | null contract."
-    artifacts:
-      - path: "apps/web/lib/catalogue-contract.ts"
-        issue: "Lines 520-524 calculate the central angle from an unclamped Haversine value."
-      - path: "apps/web/__tests__/lib/catalogue-contract.test.ts"
-        issue: "No near-antipodal regression exercises the public helper."
-    missing:
-      - "Clamp the Haversine value before both square-root calculations."
-      - "Add a regression proving valid near-antipodal inputs return a finite distance."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 5/6
+  gaps_closed:
+    - "The great-circle helper returns a deterministic numeric distance for every valid latitude/longitude pair, so the documented local-focus inclusion check is reproducible."
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 9: Catalogue Foundations and Source Contracts Verification Report
 
 **Phase Goal:** Establish a deterministic, source-first catalogue foundation for the six approved regional areas that represents trustworthy facts and visible uncertainty without inventing availability or coverage.
-**Verified:** 2026-09-22T23:53:46Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-23T00:10:11Z
+**Status:** passed
+**Re-verification:** Yes — after gap closure
 
 ## Goal Achievement
 
@@ -32,98 +27,84 @@ gaps:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | Six approved areas have explicit, frozen official boundaries, authority, source/check metadata, a distinct ten-mile civic local focus, and coverage state for every pathway. | ✓ VERIFIED | `catalogueRegions` declares all six areas; `catalogueCoverage` derives 36 ordered explicit cells. Focused fixture tests prove the roster and matrix. |
-| 2 | The six required pathway classes are controlled vocabulary rather than inferred inventory. | ✓ VERIFIED | `CATALOGUE_PATHWAYS` contains the exact six IDs and fixture coverage contains every region/pathway pair. |
-| 3 | Material facts have attributable source, dates, state, and verification action; the four factual states remain distinct. | ✓ VERIFIED | `FactEvidence` and `validateFactEvidence` require each field and fixed-clock regressions cover current, needs-confirmation, unknown, and conflicting evidence. |
-| 4 | Missing, stale, conflicting, and unverified information cannot become confirmed availability, fit, salary, placement, or outcome claims. | ✓ VERIFIED | Explicit `not-yet-verified` discriminator rejects source/evidence fields; non-current source dates and invalid clocks fail closed; scope scan found no routes, fetches, inventory, ranking, or sensitive fields. |
-| 5 | Wage context, if represented, is dated occupation-and-area context, not a provider offer or personal forecast. | ✓ VERIFIED | `OccupationAreaWageContext` requires independent evidence and the fixed informational-only label; focused tests reject omitted/invalid evidence and prohibited output fields. |
-| 6 | The great-circle local-focus check is deterministic for every valid coordinate pair. | ✗ FAILED | Directly invoking `calculateGreatCircleMiles` with the final-review near-antipodal coordinates returned `NaN`; the implementation at line 522 uses an unclamped Haversine value. |
+| 1 | Six approved areas have explicit, frozen official boundaries, authority, source/check metadata, a distinct ten-mile civic local focus, and coverage state for every pathway. | ✓ VERIFIED | `catalogueRegions` holds the ordered six-area roster; `catalogueCoverage` creates all 36 controlled cells. Focused fixture tests assert the five OMB July 2023 CBSA records, the STATIN Kingston record, dates, anchors, and 36-cell order. |
+| 2 | The six required pathway classes are controlled vocabulary rather than inferred inventory. | ✓ VERIFIED | `CATALOGUE_PATHWAYS` is the exact six-item union, and fixture/contract tests exercise every region/pathway pair. No discovery, filtering, provider inventory, or ranking surface was added. |
+| 3 | Material facts have attributable source, dates, state, and verification action; the four factual states remain distinct. | ✓ VERIFIED | `FactEvidence` plus `validateFactEvidence` require authority, label, URL, structured source date, review date, state, and action. Fixed-clock tests exercise `current`, `needs-confirmation`, `unknown`, and `conflicting`. |
+| 4 | Missing, stale, conflicting, and unverified information cannot become confirmed availability, fit, salary, placement, or outcome claims. | ✓ VERIFIED | `not-yet-verified` coverage rejects own evidence/source fields; current facts require current documented evidence; invalid/future clocks fail closed. Scope scan found no fetch, route, persistence, inventory, rank, eligibility, sensitive, forecast, or outcome implementation. |
+| 5 | Wage context, if represented, is dated occupation-and-area context rather than provider evidence or a personal forecast. | ✓ VERIFIED | `OccupationAreaWageContext` validates independently sourced wage evidence and requires the fixed `Occupation-and-area wage context only — not an offer or forecast.` label; tests reject the invalid label and prohibited semantic fields. |
+| 6 | The great-circle local-focus check is deterministic for every valid coordinate pair. | ✓ VERIFIED | `calculateGreatCircleMiles` validates coordinate bounds, clamps its finite Haversine intermediate to `[0, 1]` before both roots, and the public near-antipodal regression passes with a finite π-radius result. |
 
-**Score:** 5/6 truths verified (0 present, behavior-unverified)
-
-## Locked Decision Coverage
-
-| Decision | Status | Codebase evidence |
-| --- | --- | --- |
-| D-01: official boundary and ten-mile local focus are separate | ✓ VERIFIED | Separate `OfficialBoundary` / `LocalFocus` contracts and six frozen records. |
-| D-02: employer-paid training is factual and no employment promise is inferred | ✓ VERIFIED | `EmployerTrainingFacts` constrains payer, evidence, and commitment states. |
-| D-03: all six pathway classes remain controlled and visible | ✓ VERIFIED | Exact six-pathway constant and a complete explicit matrix; no rank/filter code was added. |
-| D-04: uncertain facts carry neutral actionable provenance | ✓ VERIFIED | Non-current evidence states require a verification action; tests retain `needs-confirmation`, `unknown`, and `conflicting`. |
-| D-05: coverage never implies unreviewed local inventory | ✓ VERIFIED | All 36 fixture rows are source-free `not-yet-verified`; verified rows require current attributable evidence. UI ordering is deliberately deferred to Phase 11. |
-| D-06: 183-day operational and 731-day boundary policies are deterministic | ✓ VERIFIED | Exported policy and fixed-clock threshold tests. |
-| D-07: re-entry/participation-policy claims are absent | ✓ VERIFIED | Contract/fixtures contain no such fields; no sensitive/referral input, storage, or route was added. |
-| D-08: first-view facts are sourced or visibly unresolved and non-sensitive | ✓ VERIFIED | `CatalogueOpportunityCardFacts` validates the required factual fields and derived status. |
+**Score:** 6/6 truths verified (0 present, behavior-unverified)
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `apps/web/lib/catalogue-contract.ts` | Pure vocabulary, provenance, evidence, freshness, coverage, wage, and card contracts | ⚠️ PARTIAL | Exists, substantive, imported by fixtures/tests, and receives real fixture data; its unclamped great-circle calculation fails a valid-coordinate edge case. |
-| `apps/web/lib/catalogue-fixtures.ts` | Frozen six-area regional roster and 36-cell baseline | ✓ VERIFIED | Deep-freezes nested data; generates all six-by-six explicit `not-yet-verified` cells from controlled constants. |
-| `apps/web/__tests__/lib/catalogue-contract.test.ts` | Contract regressions | ⚠️ PARTIAL | 76 contract tests pass in the focused suite, but no test covers the final-review near-antipodal input. |
-| `apps/web/__tests__/lib/catalogue-fixtures.test.ts` | Fixture/matrix regressions | ✓ VERIFIED | 7 tests pass; verifies literal roster, 36-cell order, deep freeze, and distinct source-date objects. |
+| `apps/web/lib/catalogue-contract.ts` | Pure regional, source/evidence, freshness, coverage, wage, card, and local-focus contracts | ✓ VERIFIED | Substantive pure module. It exports all plan-declared validators/constants; all Phase 09 key-link queries pass. The former Haversine defect is repaired at lines 520–526. |
+| `apps/web/lib/catalogue-fixtures.ts` | Frozen six-region roster and baseline coverage | ✓ VERIFIED | Imports controlled vocabulary, deeply freezes all nested data, and generates exactly 36 explicit `not-yet-verified` cells from the six-by-six controlled matrix. |
+| `apps/web/__tests__/lib/catalogue-contract.test.ts` | Public contract and edge-case regressions | ✓ VERIFIED | 77 focused tests directly invoke public validators and `calculateGreatCircleMiles`, including the exact near-antipodal reproduction. |
+| `apps/web/__tests__/lib/catalogue-fixtures.test.ts` | Fixture, provenance, completeness, and immutability regressions | ✓ VERIFIED | 7 focused tests validate source records, Kingston's null CBSA ID, coverage order/completeness, and deep immutability. |
+| `.planning/phases/09-catalogue-foundations-and-source-contracts/09-VALIDATION.md` | Repair traceability for Plans 05–06 | ✓ VERIFIED | Exists and is substantive; its planned test/quality-gate entries correspond to the current public validation tests. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| `catalogue-fixtures.ts` | `catalogue-contract.ts` | imported controlled constants/types | ✓ WIRED | Independent key-link check reports the expected import pattern. |
-| fixture regions/coverage | `validateCatalogueRegion` / `validateCoverageMatrix` | focused fixture tests | ✓ WIRED | The frozen roster and all 36 baseline cells validate under an injected clock. |
-| evidence/card/wage contracts | later reviewed-import boundary | named pure validators | ✓ WIRED | Exports are substantive and key-link check found `validateFactEvidence` / `getFreshnessStatus`; Phase 10 will consume them. |
+| `catalogue-fixtures.ts` | `catalogue-contract.ts` | Controlled constants/types and coverage contract imports | ✓ WIRED | Direct imports and the Phase 09 artifact verifier confirm this link for Plans 01, 02, 04, and 06. |
+| frozen regions/coverage | public validators | Focused fixture tests | ✓ WIRED | `validateCatalogueRegion` and `validateCoverageMatrix` accept the six frozen records and 36 baseline cells with an injected clock. |
+| evidence/card/wage validators | later reviewed-import boundary | Named pure exports | ✓ WIRED | Every Plan 03–09 key-link query is verified; the domain module exposes the intended validation boundary without prematurely adding a route or publication consumer. |
+| `catalogue-contract.test.ts` | `calculateGreatCircleMiles` | Direct public near-antipodal call | ✓ WIRED | The named regression passed independently: 1/1 selected test, 76 skipped. |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | --- | --- | --- | --- | --- |
-| `catalogue-fixtures.ts` | `catalogueRegions` | Frozen reviewed source roster | Six declared regions with official/civic provenance | ✓ FLOWING |
-| `catalogue-fixtures.ts` | `catalogueCoverage` | Controlled region × pathway constants | 36 explicit `not-yet-verified` baseline records | ✓ FLOWING |
+| `catalogue-fixtures.ts` | `catalogueRegions` | Frozen declared source roster | Six distinct region records with official-boundary and local-focus provenance | ✓ FLOWING |
+| `catalogue-fixtures.ts` | `catalogueCoverage` | `CATALOGUE_REGION_IDS × CATALOGUE_PATHWAYS` | 36 explicit, ordered `not-yet-verified` baseline cells | ✓ FLOWING |
 
-These are intentionally static Phase 9 foundations. There is no provider inventory, route, client fetch, live aggregation, persistence, or UI in scope; later phases own reviewed imports and discovery.
+These deliberately static values are the Phase 09 foundation. No live provider aggregation, runtime scraping, persistence, route, or UI data flow belongs in this phase; reviewed import and publication are explicitly Phase 10 work.
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Contract and fixture regression suite | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts __tests__/lib/catalogue-fixtures.test.ts --runInBand` | 2 suites, 83 tests passed | ✓ PASS |
-| Great-circle final-review edge case | workspace `ts-node` invocation of `calculateGreatCircleMiles` with `(-11.18571800391112, 139.73174389513332)` and `(11.18571800391112, -40.26825610486668)` | `NaN` | ✗ FAIL |
-| TypeScript | `pnpm --filter @scholar-scout/web run typecheck` | exit 0 | ✓ PASS |
-| Lint | `pnpm --filter @scholar-scout/web run lint` | exit 0 | ✓ PASS |
-| Full web Jest suite | `pnpm --filter @scholar-scout/web run test --runInBand` | exit 0 | ✓ PASS |
+| Reproduced valid near-antipodal distance | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts -t "returns a finite deterministic distance for valid near-antipodal coordinates" --runInBand` | 1 selected test passed; public result is finite and π-radius-close | ✓ PASS |
+| Catalogue contracts and frozen fixture matrix | `pnpm --filter @scholar-scout/web run test -- __tests__/lib/catalogue-contract.test.ts __tests__/lib/catalogue-fixtures.test.ts --runInBand` | 2 suites, 84 tests passed | ✓ PASS |
+| Type safety | `pnpm --filter @scholar-scout/web run typecheck` | Exit 0 | ✓ PASS |
+| Lint | `pnpm --filter @scholar-scout/web run lint` | Exit 0 | ✓ PASS |
 
-The commands emitted the existing Node 20 versus required Node 24 engine warning and Next.js multiple-lockfile warning. Neither caused a failed quality command. The passing suite does not disprove the geometry failure because it lacks the near-antipodal regression.
+The checks emit the existing Node 24 engine warning under local Node 20.20.2 and Next.js multiple-lockfile warning. They did not affect command exit status or the verified Phase 09 behavior.
+
+### Probe Execution
+
+No phase-declared or conventional `probe-*.sh` files were found. **SKIPPED (no probes declared).**
 
 ### Requirements Coverage
 
-| Requirement | Source Plans | Status | Evidence |
-| --- | --- | --- | --- |
-| REG-01 | 09-01, 02, 04–09 | ✓ SATISFIED | Exact controlled regions, authority/ID provenance, distinct official/local records, frozen six-area roster, and provenance-admitting coverage validation. |
-| REG-02 | 09-01, 02, 04–07, 09 | ✓ SATISFIED | Exact six pathway constants and 36 deterministic region/pathway cells; no suppression or discovery filter introduced. |
-| REG-03 | 09-01, 02, 04–09 | ✓ SATISFIED | Every fixture pair is explicit `not-yet-verified`; verified rows require current attributable evidence and valid region provenance. |
-| EVID-01 | 09-01, 03–09 | ✓ SATISFIED | Field-level authority/source/date/status/action validation, chronology checks, runtime-shape guards, and fail-closed invalid-clock handling. |
-| EVID-02 | 09-01, 03–07 | ✓ SATISFIED | Fixed-clock 183/731-day behavior and explicit current/needs-confirmation/unknown/conflicting states. |
-| EVID-05 | 09-03, 04 | ✓ SATISFIED | Dated `OccupationAreaWageContext` with a fixed context-only label and no offer/forecast fields. |
+| Requirement | Source Plans | Description | Status | Evidence |
+| --- | --- | --- | --- | --- |
+| REG-01 | 09-01, 02, 04–10 | Exact official region boundary and distinct local focus are reproducible. | ✓ SATISFIED | Controlled six-area boundary/local-focus records, exact authority/ID checks, 731-day policy, fixed-clock tests, and repaired finite local-focus geometry. |
+| REG-02 | 09-01, 02, 04–07 | All six pathway classes remain controlled and visible. | ✓ SATISFIED | Exact six-ID constant and six-by-six coverage matrix; no hide/filter logic exists in this domain-only phase. |
+| REG-03 | 09-01, 02, 04–09 | Each area/pathway pair has an honest coverage state. | ✓ SATISFIED | Explicit 36-cell `not-yet-verified` baseline; verified cells require current attributable evidence and valid supplied-region provenance. |
+| EVID-01 | 09-01, 03–09 | Every material fact has attributable metadata and action. | ✓ SATISFIED | Field-level evidence/card validators, deterministic runtime-shape errors, chronology checks, and invalid-clock fail-closed regressions. |
+| EVID-02 | 09-01, 03–07 | Evidence states remain visibly distinct and stale/conflicting facts do not become confirmed. | ✓ SATISFIED | Fixed-clock 183/731-day threshold tests and four-state evidence/card validation. |
+| EVID-05 | 09-03, 04 | Wage context is dated source-linked context, not a provider promise or forecast. | ✓ SATISFIED | Independent occupation/area wage evidence and fixed informational-only label with focused negative tests. |
 
-No Phase 9 requirement is orphaned: all six are declared across the plans and traced to substantive contract/fixture behavior.
+No Phase 09 requirement is orphaned: all six are declared by the plans and have code/test evidence. `REQUIREMENTS.md` still displays EVID-05 as pending in its traceability table even though the implementation and tests satisfy its conditional Phase 09 contract; this is a planning-status mismatch, not an unmet codebase behavior.
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
-| --- | --- | --- | --- |
-| `apps/web/lib/catalogue-contract.ts` | 522 | Unclamped Haversine value | 🛑 BLOCKER | Valid coordinates can produce `NaN`, contrary to the public numeric-distance contract. |
+| --- | --- | --- | --- | --- |
+| — | — | No `TBD`, `FIXME`, `XXX`, placeholder, empty implementation, console-only handler, or hardcoded user-visible empty-data stub found in Phase 09 owned code/tests. | ℹ️ Info | No anti-pattern blocker. |
 
-The phase-owned source/test files contain no `TBD`, `FIXME`, `XXX`, placeholder, empty implementation, live-fetch, persistence, route, ranking, sensitive-referral, or provider-inventory intrusion. Git history for the phase-owned files contains only the planned contract, fixture, regression, provenance, chronology, and clock-guard changes.
+## Re-verification Findings
 
-### Human Verification Required After Gap Closure
+The earlier blocker is closed. Commit `94b29fd` changes only the documented public arithmetic path and its regression: the raw Haversine value is bounded inclusively to the mathematical `[0, 1]` domain before both square roots. The independently run named regression reproduces the formerly failing coordinate pair through `calculateGreatCircleMiles` and passes. Existing ten-mile inclusion/exclusion and invalid-coordinate assertions remain unchanged and pass in the focused suite.
 
-The phase validation contract retains one manual release prerequisite: compare each frozen boundary/anchor source and any future real provider, wage, pay, support, or policy claim against its cited authority before publication. This phase deliberately ships no provider inventory or real wage/pay facts, so that review belongs before Phase 10 publishes a record.
-
-### Gaps Summary
-
-The source-first catalogue contracts, frozen six-area fixtures, explicit 36-cell coverage baseline, evidence/freshness rules, claim-safety restrictions, and Phase 9 scope boundary are implemented and tested. However, the public great-circle helper fails for valid near-antipodal coordinates because floating-point rounding is not bounded before a square root. This is a must-have contract failure and prevents a `passed` verdict despite green focused and full suites.
-
-Repair `calculateGreatCircleMiles` by clamping `haversine` to `[0, 1]` before computing `centralAngle`, then add the reproduced input as a regression. Re-run verification afterward.
+Disconfirmation checks found no partial must-have or misleading regression: the test uses the public helper rather than reimplementing its formula, and the clamp plus bounded finite inputs proves both square-root operands are non-negative for all valid coordinates. The scope scan also found no untested network, persistence, inventory, ranking, or sensitive-data path introduced by this phase.
 
 ---
 
-_Verified: 2026-09-22T23:53:46Z_
+_Verified: 2026-09-23T00:10:11Z_
 _Verifier: the agent (gsd-verifier)_

@@ -17,7 +17,7 @@
 - [x] **EVID-02**: A student can distinguish `Current`, `Needs confirmation`, `Unknown`, and `Conflicting` facts; stale or conflicting facts never appear confirmed.
 - [ ] **EVID-03**: A staff member can review an opportunity’s source, required evidence, freshness state, and claim boundaries before it becomes public.
 - [ ] **EVID-04**: The published catalogue is a deterministic, versioned reviewed snapshot; learner-facing requests do not scrape, aggregate, or depend on a live provider site.
-- [ ] **EVID-05**: If occupation-and-area wage context is shown, it is dated, source-linked context and clearly not a provider promise or personal salary forecast.
+- [x] **EVID-05**: If occupation-and-area wage context is shown, it is dated, source-linked context and clearly not a provider promise or personal salary forecast.
 
 ### Governed publication
 
@@ -91,7 +91,7 @@
 | EVID-02 | Phase 9 | Complete |
 | EVID-03 | Phase 10 | Pending |
 | EVID-04 | Phase 10 | Pending |
-| EVID-05 | Phase 9 | Pending |
+| EVID-05 | Phase 9 | Complete |
 | PUB-01 | Phase 10 | Pending |
 | PUB-02 | Phase 10 | Pending |
 | PUB-03 | Phase 10 | Pending |

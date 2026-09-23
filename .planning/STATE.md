@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Regional Opportunity Navigator
-current_phase: 09
-current_phase_name: Catalogue Foundations and Source Contracts
-status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-09-22T20:58:45.151Z"
+current_phase: 10
+current_phase_name: Curated Import and Governed Staff Publication
+status: planning
+stopped_at: Completed 09-08-PLAN.md
+last_updated: "2026-09-23T00:12:37.800Z"
 last_activity: 2026-09-22
-last_activity_desc: Added Greater Kingston, Jamaica as the sixth v1.1 regional area
+last_activity_desc: Phase 09 complete, transitioned to Phase 10
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 1
-  percent: 0
+  completed_phases: 1
+  total_plans: 10
+  completed_plans: 10
+  percent: 14
 ---
 
 # Project State
@@ -28,16 +28,16 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 
 ## Current Position
 
-Phase: 09 — Catalogue Foundations and Source Contracts
-Plan: —
-Status: Ready to execute
-Last activity: 2026-09-22 — Added Greater Kingston, Jamaica as the sixth v1.1 regional area
+Phase: 10 — Curated Import and Governed Staff Publication
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-22 — Phase 09 complete, transitioned to Phase 10
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 36
+- Total plans completed: 46
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -49,6 +49,7 @@ Last activity: 2026-09-22 — Added Greater Kingston, Jamaica as the sixth v1.1 
 | 02 | 13 | - | - |
 | 06 | 13 | - | - |
 | 07 | 4 | - | - |
+| 09 | 10 | - | - |
 
 **Recent Trend:**
 
@@ -103,6 +104,9 @@ Last activity: 2026-09-22 — Added Greater Kingston, Jamaica as the sixth v1.1 
 | Phase 07.1 P12 | 12m | 2 tasks | 8 files |
 | Phase 07.1 P13 | 10m | 2 tasks | 4 files |
 | Phase 09 P01 | 41min | 2 tasks | 2 files |
+| Phase 09 P02 | 13min | 2 tasks | 2 files |
+| Phase 09 P07 | 14min | 2 tasks | 2 files |
+| Phase 09 P08 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -179,6 +183,12 @@ Last activity: 2026-09-22 — Added Greater Kingston, Jamaica as the sixth v1.1 
 - [Phase ?]: Keep official boundaries and ten-mile local-focus anchors structurally distinct.
 - [Phase ?]: Treat unavailable, malformed, future, and stale source dates as non-current under an injected clock.
 - [Phase ?]: Require explicit coverage cells and derive missing-pair errors from controlled declaration order.
+- [Phase ?]: Freeze Phase 9 source dates as explicit unavailable metadata when the fixed source roster does not publish an ISO calendar date.
+- [Phase ?]: Keep all 36 Phase 9 coverage cells explicitly not-yet-verified until reviewed provider imports in Phase 10.
+- [Phase ?]: Require controlled coverage rows to reference a supplied region record regardless of state.
+- [Phase ?]: Compare documented source dates with checked dates while preserving unavailable-date semantics.
+- [Phase ?]: Forward every object-shaped supplied region validation error before coverage membership derivation.
+- [Phase ?]: Authorize controlled coverage only from regions with valid official-boundary and local-focus provenance.
 
 ### Roadmap Evolution
 
@@ -221,6 +231,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-22T20:58:45.134Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-09-22T23:22:16.545Z
+Stopped at: Completed 09-08-PLAN.md
 Resume file: None

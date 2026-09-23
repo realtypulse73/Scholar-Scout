@@ -20,7 +20,7 @@ The product presents published facts and verification actions. It does not make 
 
 **Phase Numbering:** Phase 9 continues the completed v1.0 numbering. Each phase begins with zero plans; plans are added only after phase planning.
 
-- [ ] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 0/3)
+- [x] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 10/10) (completed 2026-09-22)
 - [ ] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 0/0)
 - [ ] **Phase 11: Choice-Preserving Six-Area Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 0/0)
 - [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 0/0)
@@ -48,17 +48,20 @@ The product presents published facts and verification actions. It does not make 
 4. Missing, stale, or conflicting facts are visible as such and never become a confirmed fact, inferred availability, fit signal, salary promise, or fabricated offering.
 5. Wage information, if present, is structurally separate, dated occupation-and-area context rather than provider evidence or a personal forecast.
 
-**Plans:** 1/3 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 
-- [x] 09-01-PLAN.md
-- [ ] 09-02-PLAN.md
-- [ ] 09-03-PLAN.md
-
-- [ ] `09-01-PLAN.md` — Define and test the deterministic regional, ten-mile local-focus, and coverage contract.
-- [ ] `09-02-PLAN.md` — Freeze six regional fixtures and the complete 36-cell coverage matrix.
-- [ ] `09-03-PLAN.md` — Add field-level evidence, freshness, paid-training, and wage-context safeguards.
+- [x] `09-01-PLAN.md` — Define and test the deterministic regional, ten-mile local-focus, and coverage contract.
+- [x] `09-02-PLAN.md` — Freeze six regional fixtures and the complete 36-cell coverage matrix.
+- [x] `09-03-PLAN.md` — Add field-level evidence, freshness, paid-training, wage-context safeguards.
+- [x] `09-04-PLAN.md` — Repair the first source-governance review findings.
+- [x] `09-05-PLAN.md` — Harden malformed import-shape and coverage chronology validation.
+- [x] `09-06-PLAN.md` — Guard nested provenance and unverified-coverage runtime shapes.
+- [x] `09-07-PLAN.md` — Enforce supplied-region and source-check chronology constraints.
+- [x] `09-08-PLAN.md` — Require validated provenance before coverage authorization.
+- [x] `09-09-PLAN.md` — Fail closed when an injected validation clock is invalid.
+- [x] `09-10-PLAN.md` — Clamp the great-circle calculation at valid numerical limits.
 
 **Risk:** Incorrect regional/source definitions create false local coverage. Freeze the appropriate official boundary record for each country and validate fixtures before any public record or coverage claim ships.
 
