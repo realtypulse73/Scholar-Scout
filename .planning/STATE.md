@@ -4,16 +4,16 @@ milestone: v1.1
 milestone_name: Regional Opportunity Navigator
 current_phase: 10
 current_phase_name: Curated Import and Governed Staff Publication
-status: executing
-stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-09-23T12:53:43.024Z"
-last_activity: 2026-09-22
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
+status: ready_for_verification
+stopped_at: Completed 10-06-PLAN.md
+last_updated: "2026-09-23T23:40:50.060Z"
+last_activity: 2026-09-23
+last_activity_desc: Phase 10 Plan 06 completed recovery and stale-conflict gap closure
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 15
-  completed_plans: 12
+  total_plans: 16
+  completed_plans: 16
   percent: 14
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 ## Current Position
 
 Phase: 10 — Curated Import and Governed Staff Publication
-Plan: 02 of 05 complete
-Status: Executing
-Last activity: 2026-09-23 — Phase 10 Plan 02 completed private intake and independent review
+Plan: 06 of 06 complete
+Status: Ready for verification
+Last activity: 2026-09-23 — Phase 10 Plan 06 closed the recovery and stale-conflict verification gaps
 
 ## Performance Metrics
 
@@ -108,6 +108,7 @@ Last activity: 2026-09-23 — Phase 10 Plan 02 completed private intake and inde
 | Phase 09 P07 | 14min | 2 tasks | 2 files |
 | Phase 09 P08 | 5min | 2 tasks | 2 files |
 | Phase 10 P02 | 58min | 2 tasks | 9 files |
+| Phase 10 P06 | 1h 30m | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -193,6 +194,8 @@ Last activity: 2026-09-23 — Phase 10 Plan 02 completed private intake and inde
 - [Phase ?]: Catalogue intake accepts at most 25 schema-versioned private changes in one conditional mutation.
 - [Phase ?]: Ordinary approval requires another reviewer; only editor-plus-administrator actors may self-approve a passing revision.
 - [Phase ?]: Staff history exposes checklist status and concise lifecycle evidence, never raw candidates or configuration.
+- [Phase ?]: Use a bounded one-record stale-import DTO and preserve atomic non-retrying batch behavior.
+- [Phase ?]: Validate recovered publication candidates, manifests, lineage, active snapshot, and canonical public digest before persistence.
 
 ### Roadmap Evolution
 
@@ -235,6 +238,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T12:53:42.996Z
-Stopped at: Completed 10-02-PLAN.md
+Last session: 2026-09-23T23:40:50.034Z
+Stopped at: Completed 10-06-PLAN.md
 Resume file: None

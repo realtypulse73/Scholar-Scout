@@ -83,13 +83,15 @@ Plans:
 4. Missing/invalid source, claim, boundary, or media-rights evidence blocks publication without discarding the existing valid public record.
 5. A bounded validated batch can be previewed and recovered safely without an unbounded whole-document rewrite or automatic source publication.
 
-**Plans:** 2/5 plans executed
+**Plans:** 6/6 plans executed
+
+- [x] 10-06-PLAN.md
 
 - [x] 10-01-PLAN.md
 - [x] 10-02-PLAN.md
-- [ ] 10-03-PLAN.md
-- [ ] 10-04-PLAN.md
-- [ ] 10-05-PLAN.md
+- [x] 10-03-PLAN.md
+- [x] 10-04-PLAN.md
+- [x] 10-05-PLAN.md
 
 **Risk:** Broad imports can overwrite current data or normalize marketing claims. Use quarantined candidate files, strict validation, small batches, existing CAS/audit controls, and fixture-based recovery tests.
 
