@@ -667,6 +667,43 @@ export async function getCatalogueCandidateHistory(candidateId: string) {
   };
 }
 
+/** Returns the minimum staff-console lifecycle DTO; it deliberately omits raw candidates and imports. */
+export async function getCatalogueCandidateIntake() {
+  const state = normalizeCataloguePublicationState((await readScholarScoutData()).cataloguePublicationState);
+  return state.candidates
+    .map((candidate) => ({
+      id: candidate.id,
+      title: candidate.title,
+      lifecycle: candidate.lifecycle,
+      revision: candidate.revision,
+      correctionCodes: candidate.checklist.correctionCodes,
+      reviewStatus: candidate.lifecycle,
+      creatorId: candidate.creatorId,
+      reviewerId: candidate.approval?.reviewerId ?? null,
+      checklist: {
+        summary: candidate.checklist.summary.map((item) => ({
+          category: item.category,
+          status: item.status,
+        })),
+        passMeaning: CATALOGUE_CHECKLIST_DISCLOSURE,
+      },
+      audit: state.auditEvents
+        .filter((event) => event.candidateId === candidate.id)
+        .map((event) => ({
+          actor: event.actorId,
+          capability: event.capability,
+          action: event.action,
+          timestamp: event.timestamp,
+          outcome: event.outcome,
+          ...(event.reason === undefined ? {} : { reason: event.reason }),
+          correctionCodes: event.correctionCodes,
+          reviewStatus: event.reviewStatus,
+          candidateRevision: event.version,
+        })),
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
 interface CatalogueCandidateConflictComparable {
   title: string;
   claimBoundary: string;

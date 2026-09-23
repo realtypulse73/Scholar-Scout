@@ -124,6 +124,30 @@ describe('admin catalogue publication staging API', () => {
     });
   });
 
+  it('returns a safe candidate-intake DTO without raw candidate fields or configuration', async () => {
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['editor'],
+    });
+    await POST(new Request('http://localhost/api/admin/catalogue-publications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stage', candidate: { ...candidate, claimBoundary: 'Private notes must not be returned.' } }),
+    }));
+
+    const response = await GET(new Request(
+      'http://localhost/api/admin/catalogue-publications?view=candidate-intake',
+    ));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      capabilities: ['editor'],
+      candidates: [expect.objectContaining({ id: candidate.id, title: candidate.title })],
+    });
+    expect(JSON.stringify(body)).not.toContain('Private notes must not be returned.');
+    expect(JSON.stringify(body)).not.toContain('SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES');
+  });
+
   it('denies history before parsing caller-controlled query details', async () => {
     jest.mocked(getServerSession).mockResolvedValue(null as never);
 

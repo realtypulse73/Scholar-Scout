@@ -11,6 +11,7 @@ import {
   CatalogueReleaseScheduleError,
   CatalogueReleaseSelectionError,
   getCatalogueCandidateHistory,
+  getCatalogueCandidateIntake,
   getCatalogueSnapshotHistory,
   previewWeeklyCatalogueRelease,
   publishEmergencyCatalogueSnapshot,
@@ -83,6 +84,15 @@ export async function GET(request: Request) {
   if (!authorization.ok) return authorization.response;
 
   const view = getQueryParameter(request, 'view');
+  if (view === 'candidate-intake') {
+    return NextResponse.json({
+      ok: true,
+      capabilities: authorization.actor.capabilities instanceof Set
+        ? [...authorization.actor.capabilities].sort()
+        : [],
+      candidates: await getCatalogueCandidateIntake(),
+    });
+  }
   if (view === 'snapshot-history') {
     return NextResponse.json({ ok: true, history: await getCatalogueSnapshotHistory() });
   }
