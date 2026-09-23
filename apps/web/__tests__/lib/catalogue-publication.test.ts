@@ -2,6 +2,8 @@ import {
   CATALOGUE_CHECKLIST_CATEGORIES,
   CATALOGUE_CHECKLIST_DISCLOSURE,
   evaluateCatalogueChecklist,
+  getWeeklyReleasePeriodKey,
+  isWithinNormalWeeklyReleaseWindow,
   isCataloguePublicationState,
   parseCatalogueCandidateImport,
   type CatalogueCandidateInput,
@@ -137,6 +139,19 @@ describe('catalogue publication editorial checklist', () => {
         secret: 'must-not-persist',
       }],
     })).toBe(false);
+  });
+});
+
+describe('weekly catalogue release schedule', () => {
+  it('uses America/New_York Monday 09:00 inclusive through 17:00 exclusive', () => {
+    expect(isWithinNormalWeeklyReleaseWindow(new Date('2026-09-21T13:00:00.000Z'))).toBe(true);
+    expect(isWithinNormalWeeklyReleaseWindow(new Date('2026-09-21T21:00:00.000Z'))).toBe(false);
+    expect(isWithinNormalWeeklyReleaseWindow(new Date('2026-09-20T13:00:00.000Z'))).toBe(false);
+  });
+
+  it('derives a stable ISO period from the New York calendar date across DST and year boundaries', () => {
+    expect(getWeeklyReleasePeriodKey(new Date('2026-03-09T13:00:00.000Z'))).toBe('2026-W11');
+    expect(getWeeklyReleasePeriodKey(new Date('2027-01-04T14:00:00.000Z'))).toBe('2027-W01');
   });
 });
 

@@ -3,6 +3,7 @@ import {
   CataloguePublicationConflictError,
   getCatalogueCandidateHistory,
   importCatalogueCandidates,
+  publishWeeklyCatalogueSnapshot,
   reviewCatalogueCandidate,
   stageCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
@@ -27,6 +28,11 @@ const administratorEditor = {
   id: 'administrator-1',
   email: 'administrator@example.com',
   capabilities: new Set(['editor', 'administrator'] as const),
+};
+const administrator = {
+  id: 'administrator-2',
+  email: 'administrator-2@example.com',
+  capabilities: new Set(['administrator'] as const),
 };
 
 const validCandidate = {
@@ -262,6 +268,43 @@ describe('private catalogue candidate staging', () => {
       ]),
     });
     expect(JSON.stringify(await getCatalogueCandidateHistory(validCandidate.id))).not.toContain('Official programme page');
+  });
+});
+
+describe('weekly catalogue publication', () => {
+  let store: MemoryDataStore;
+
+  beforeEach(() => {
+    store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+  });
+
+  afterEach(() => setScholarScoutDataStoreForTests(null));
+
+  it('publishes an approved candidate as one deterministic weekly snapshot', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
+
+    const result = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+
+    expect(result.snapshot).toMatchObject({
+      kind: 'weekly',
+      periodKey: '2026-W39',
+      records: [expect.objectContaining({ id: validCandidate.id })],
+    });
+    expect(result.manifest).toMatchObject({
+      kind: 'weekly',
+      included: [{ id: validCandidate.id, revision: 1 }],
+    });
   });
 });
 
