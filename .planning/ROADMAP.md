@@ -21,7 +21,7 @@ The product presents published facts and verification actions. It does not make 
 **Phase Numbering:** Phase 9 continues the completed v1.0 numbering. Each phase begins with zero plans; plans are added only after phase planning.
 
 - [x] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 10/10) (completed 2026-09-22)
-- [ ] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 2/5)
+- [x] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 6/6) (completed 2026-09-23)
 - [ ] **Phase 11: Choice-Preserving Six-Area Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 0/0)
 - [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 0/0)
 - [ ] **Phase 13: Provider Detail, Transition Stories, and Media Safety** — Deliver factual provider pages and finite, inclusive, rights-safe, motion-safe Scholar Scout story-to-facts journeys. (Plans: 0/0)
@@ -83,15 +83,14 @@ Plans:
 4. Missing/invalid source, claim, boundary, or media-rights evidence blocks publication without discarding the existing valid public record.
 5. A bounded validated batch can be previewed and recovered safely without an unbounded whole-document rewrite or automatic source publication.
 
-**Plans:** 6/6 plans executed
+**Plans:** 6/6 plans complete
 
-- [x] 10-06-PLAN.md
-
-- [x] 10-01-PLAN.md
-- [x] 10-02-PLAN.md
-- [x] 10-03-PLAN.md
-- [x] 10-04-PLAN.md
-- [x] 10-05-PLAN.md
+- [x] `10-01-PLAN.md` — Validate and stage checked private catalogue drafts.
+- [x] `10-02-PLAN.md` — Add bounded private imports and independent review.
+- [x] `10-03-PLAN.md` — Publish deterministic weekly catalogue snapshots.
+- [x] `10-04-PLAN.md` — Add staff intake, conflict recovery, and snapshot recovery commands.
+- [x] `10-05-PLAN.md` — Deliver the release/recovery/audit console and full lifecycle regression matrix.
+- [x] `10-06-PLAN.md` — Close recovery validation and real stale-conflict workflow gaps.
 
 **Risk:** Broad imports can overwrite current data or normalize marketing claims. Use quarantined candidate files, strict validation, small batches, existing CAS/audit controls, and fixture-based recovery tests.
 
