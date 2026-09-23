@@ -2,6 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import {
+  CATALOGUE_CHECKLIST_DISCLOSURE,
   createEmptyCataloguePublicationState,
   evaluateCatalogueChecklist,
   parseCatalogueCandidateImport,
@@ -13,6 +14,7 @@ import {
   type CataloguePublicationState,
 } from '@/lib/catalogue-publication';
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
+import { readScholarScoutData } from '@/lib/server/data-store';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
 
 export class CataloguePublicationConflictError extends Error {
@@ -40,6 +42,13 @@ export class CatalogueCandidateImportError extends Error {
   constructor() {
     super('catalogue-candidate-import-invalid');
     this.name = 'CatalogueCandidateImportError';
+  }
+}
+
+export class CatalogueCandidateReviewError extends Error {
+  constructor() {
+    super('catalogue-candidate-review-forbidden');
+    this.name = 'CatalogueCandidateReviewError';
   }
 }
 
@@ -99,6 +108,132 @@ export async function importCatalogueCandidates(input: {
 
   if (result.status === 'conflict') throw new CataloguePublicationConflictError();
   return result.value;
+}
+
+export async function submitCatalogueCandidate(input: {
+  actor: ActiveStaffActor;
+  candidateId: string;
+  expectedRevision: number;
+  now?: Date;
+}) {
+  if (!hasCapability(input.actor, 'editor')) throw new CatalogueCandidateReviewError();
+  const timestamp = (input.now ?? new Date()).toISOString();
+  const result = await commitConditionalMutation((data) => {
+    const state = data.cataloguePublicationState ?? createEmptyCataloguePublicationState();
+    const existing = state.candidates.find((candidate) => candidate.id === input.candidateId);
+    if (!existing || existing.revision !== input.expectedRevision) {
+      throw new CatalogueCandidateRevisionConflictError();
+    }
+    if (existing.creatorId !== input.actor.id) throw new CatalogueCandidateOwnershipError();
+
+    const candidate: CatalogueCandidate = {
+      ...existing,
+      lifecycle: 'draft',
+      updatedAt: timestamp,
+      approval: null,
+      checklist: evaluateCatalogueChecklist(existing, new Date(timestamp)),
+    };
+    const staged = replaceCandidate(state, candidate, input.actor, timestamp, 'submit');
+    data.cataloguePublicationState = staged.state;
+    return { candidate: staged.candidate, checklist: staged.candidate.checklist };
+  });
+  if (result.status === 'conflict') throw new CataloguePublicationConflictError();
+  return result.value;
+}
+
+export async function reviewCatalogueCandidate(input: {
+  actor: ActiveStaffActor;
+  candidateId: string;
+  expectedRevision: number;
+  now?: Date;
+}) {
+  const timestamp = (input.now ?? new Date()).toISOString();
+  const result = await commitConditionalMutation((data) => {
+    const state = data.cataloguePublicationState ?? createEmptyCataloguePublicationState();
+    const existing = state.candidates.find((candidate) => candidate.id === input.candidateId);
+    if (!existing || existing.revision !== input.expectedRevision) {
+      throw new CatalogueCandidateRevisionConflictError();
+    }
+
+    const selfReview = existing.creatorId === input.actor.id;
+    const administratorException = selfReview
+      && hasCapability(input.actor, 'editor')
+      && hasCapability(input.actor, 'administrator');
+    if (!administratorException && (!hasCapability(input.actor, 'reviewer') || selfReview)) {
+      throw new CatalogueCandidateReviewError();
+    }
+
+    const checklist = evaluateCatalogueChecklist(existing, new Date(timestamp));
+    const candidate: CatalogueCandidate = checklist.passed
+      ? {
+        ...existing,
+        lifecycle: 'approved',
+        updatedAt: timestamp,
+        checklist,
+        approval: {
+          reviewerId: input.actor.id,
+          reviewedAt: timestamp,
+          revision: existing.revision,
+        },
+      }
+      : {
+        ...existing,
+        lifecycle: 'draft',
+        updatedAt: timestamp,
+        checklist,
+        approval: null,
+      };
+    const staged = replaceCandidate(
+      state,
+      candidate,
+      input.actor,
+      timestamp,
+      checklist.passed ? 'approval' : 'failure',
+      administratorException ? 'administrator' : 'reviewer',
+    );
+    data.cataloguePublicationState = staged.state;
+    return { candidate: staged.candidate, checklist: staged.candidate.checklist };
+  });
+  if (result.status === 'conflict') throw new CataloguePublicationConflictError();
+  return result.value;
+}
+
+/** Returns only concise staff-review metadata; candidates and raw imports never leave this seam. */
+export async function getCatalogueCandidateHistory(candidateId: string) {
+  const data = await readScholarScoutData();
+  const state = data.cataloguePublicationState ?? createEmptyCataloguePublicationState();
+  const candidate = state.candidates.find((item) => item.id === candidateId);
+  if (!candidate) return null;
+
+  return {
+    candidate: {
+      id: candidate.id,
+      lifecycle: candidate.lifecycle,
+      revision: candidate.revision,
+      correctionCodes: candidate.checklist.correctionCodes,
+      reviewStatus: candidate.lifecycle,
+      checklist: {
+        summary: candidate.checklist.summary.map((item) => ({
+          category: item.category,
+          status: item.status,
+        })),
+        passMeaning: CATALOGUE_CHECKLIST_DISCLOSURE,
+      },
+    },
+    audit: state.auditEvents
+      .filter((event) => event.candidateId === candidateId)
+      .map((event) => ({
+        actor: event.actorId,
+        capability: event.capability,
+        action: event.action,
+        timestamp: event.timestamp,
+        outcome: event.outcome,
+        ...(event.reason === undefined ? {} : { reason: event.reason }),
+        correctionCodes: event.correctionCodes,
+        reviewStatus: event.reviewStatus,
+        candidateRevision: event.version,
+      })),
+  };
 }
 
 function applyImportChange(input: {
@@ -182,6 +317,7 @@ function replaceCandidate(
   actor: ActiveStaffActor,
   timestamp: string,
   action: CataloguePublicationAuditAction,
+  capability: CataloguePublicationCapability = 'editor',
 ): { state: CataloguePublicationState; candidate: CatalogueCandidate } {
   const prior = state.candidates.find((item) => item.id === candidate.id);
   const candidates = prior
@@ -195,8 +331,9 @@ function replaceCandidate(
       auditEvents: [
         ...state.auditEvents,
         {
+          candidateId: candidate.id,
           actorId: actor.id,
-          capability: 'editor' as CataloguePublicationCapability,
+          capability,
           action,
           timestamp,
           outcome: candidate.checklist.passed ? 'passed-checklist' : 'needs-correction',
@@ -207,6 +344,13 @@ function replaceCandidate(
       ],
     },
   };
+}
+
+function hasCapability(
+  actor: ActiveStaffActor,
+  capability: CataloguePublicationCapability,
+): boolean {
+  return actor.capabilities instanceof Set && actor.capabilities.has(capability);
 }
 
 function toCandidateInput(value: unknown): CatalogueCandidateInput {

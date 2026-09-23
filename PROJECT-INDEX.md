@@ -56,6 +56,7 @@
 | [docs/vercel-docker-workaround.md](docs/vercel-docker-workaround.md) | Historical Vercel/Docker workaround. | Docker-related deployment issues only. |
 | [docs/http-data-adapter-runbook.md](docs/http-data-adapter-runbook.md) | HTTP persistence adapter contract and operations. | Using or operating the HTTP data adapter. |
 | [docs/vercel-blob-data-adapter.md](docs/vercel-blob-data-adapter.md) | Vercel Blob persistence adapter configuration. | Using or operating Blob-backed persistence. |
+| [docs/curated-catalogue-publication-runbook.md](docs/curated-catalogue-publication-runbook.md) | Staff-only bounded catalogue intake, review, and capability configuration. | Staging, reviewing, or operating curated catalogue records. |
 
 ## Identity, integrations, and handoffs
 

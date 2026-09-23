@@ -167,6 +167,12 @@ describe('private catalogue candidate staging', () => {
 
   it('creates a new private revision and clears its prior approval on correction', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
 
     const result = await importCatalogueCandidates({
       actor: editor,

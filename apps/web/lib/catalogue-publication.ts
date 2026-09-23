@@ -112,6 +112,7 @@ export type CatalogueCandidateImportParseResult =
   | { ok: false; correctionCodes: CatalogueImportCorrectionCode[] };
 
 export interface CataloguePublicationAuditEvent {
+  candidateId?: string;
   actorId: string;
   capability: CataloguePublicationCapability;
   action: CataloguePublicationAuditAction;
@@ -229,6 +230,7 @@ function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePub
     || !Array.isArray(value.correctionCodes)) return false;
 
   const allowedKeys = new Set([
+    'candidateId',
     'actorId',
     'capability',
     'action',
@@ -241,7 +243,8 @@ function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePub
   ]);
   if (Object.keys(value).some((key) => !allowedKeys.has(key))) return false;
 
-  return value.correctionCodes.every(isChecklistCategory)
+  return (value.candidateId === undefined || isStableId(value.candidateId))
+    && value.correctionCodes.every(isChecklistCategory)
     && (value.reason === undefined || typeof value.reason === 'string');
 }
 
