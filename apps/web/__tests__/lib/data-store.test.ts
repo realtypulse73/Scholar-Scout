@@ -91,6 +91,26 @@ function cloneData(data: ScholarScoutData) {
 }
 
 describe('ScholarScout data store adapter', () => {
+  it('preserves an empty publication state for a legacy document and rejects a malformed stored audit', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(readScholarScoutData()).resolves.toMatchObject({
+      cataloguePublicationState: { schemaVersion: 1, candidates: [], auditEvents: [] },
+    });
+    expect(validateScholarScoutDataImport({
+      ...initialData,
+      cataloguePublicationState: {
+        schemaVersion: 1,
+        candidates: [],
+        auditEvents: [{ actorId: 'staff-1', secret: 'not-allowed' }],
+      },
+    })).toMatchObject({
+      isValid: false,
+      errors: expect.arrayContaining(['Catalogue publication state is invalid.']),
+    });
+  });
+
   it('removes referral-only values when reading a legacy onboarding profile', async () => {
     const store = new MemoryDataStore();
     store.data.onboardingProfiles['student-one'] = {
