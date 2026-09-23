@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { POST } from '@/app/api/admin/catalogue-publications/route';
+import { GET, POST } from '@/app/api/admin/catalogue-publications/route';
 import { getServerSession } from 'next-auth';
 import {
   setScholarScoutDataStoreForTests,
@@ -90,6 +90,46 @@ describe('admin catalogue publication staging API', () => {
         },
       },
     });
+  });
+
+  it('returns only redacted candidate history to an authorized staff caller', async () => {
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['editor', 'reviewer'],
+    });
+    await POST(new Request('http://localhost/api/admin/catalogue-publications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stage', candidate }),
+    }));
+
+    const response = await GET(new Request(
+      `http://localhost/api/admin/catalogue-publications?candidateId=${candidate.id}`,
+    ));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      history: {
+        candidate: {
+          id: candidate.id,
+          checklist: {
+            summary: expect.arrayContaining([
+              expect.objectContaining({ category: 'source' }),
+              expect.objectContaining({ category: 'media-rights' }),
+            ]),
+            passMeaning: 'A pass means editorial completeness, not verified real-world provider truth.',
+          },
+        },
+      },
+    });
+  });
+
+  it('denies history before parsing caller-controlled query details', async () => {
+    jest.mocked(getServerSession).mockResolvedValue(null as never);
+
+    const response = await GET({ url: 'not a valid URL' } as unknown as Request);
+
+    expect(response.status).toBe(403);
   });
 });
 

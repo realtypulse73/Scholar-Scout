@@ -1,6 +1,9 @@
 import {
+  CatalogueCandidateReviewError,
   CataloguePublicationConflictError,
+  getCatalogueCandidateHistory,
   importCatalogueCandidates,
+  reviewCatalogueCandidate,
   stageCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
 import {
@@ -14,6 +17,16 @@ const editor = {
   id: 'editor-1',
   email: 'editor@example.com',
   capabilities: new Set(['editor'] as const),
+};
+const reviewer = {
+  id: 'reviewer-1',
+  email: 'reviewer@example.com',
+  capabilities: new Set(['reviewer'] as const),
+};
+const administratorEditor = {
+  id: 'administrator-1',
+  email: 'administrator@example.com',
+  capabilities: new Set(['editor', 'administrator'] as const),
 };
 
 const validCandidate = {
@@ -176,6 +189,73 @@ describe('private catalogue candidate staging', () => {
         title: 'Corrected technical training',
       }),
     ]);
+  });
+
+  it('requires an independent reviewer unless an editor is also an administrator', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+
+    await expect(reviewCatalogueCandidate({
+      actor: editor,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    })).rejects.toBeInstanceOf(CatalogueCandidateReviewError);
+
+    const approved = await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
+    expect(approved.candidate).toMatchObject({
+      lifecycle: 'approved',
+      approval: { reviewerId: reviewer.id, revision: 1 },
+    });
+
+    await stageCatalogueCandidate({
+      actor: administratorEditor,
+      candidate: { ...validCandidate, id: 'catalogue:admin-training' },
+      now: NOW,
+    });
+    await expect(reviewCatalogueCandidate({
+      actor: administratorEditor,
+      candidateId: 'catalogue:admin-training',
+      expectedRevision: 1,
+      now: NOW,
+    })).resolves.toMatchObject({
+      candidate: { lifecycle: 'approved', approval: { reviewerId: administratorEditor.id } },
+    });
+  });
+
+  it('returns a redacted reviewer history with only the six automated categories', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
+
+    expect(await getCatalogueCandidateHistory(validCandidate.id)).toEqual({
+      candidate: {
+        id: validCandidate.id,
+        lifecycle: 'approved',
+        revision: 1,
+        correctionCodes: [],
+        reviewStatus: 'approved',
+        checklist: {
+          summary: expect.arrayContaining([
+            expect.objectContaining({ category: 'source' }),
+            expect.objectContaining({ category: 'media-rights' }),
+          ]),
+          passMeaning: 'A pass means editorial completeness, not verified real-world provider truth.',
+        },
+      },
+      audit: expect.arrayContaining([
+        expect.objectContaining({ action: 'approval', capability: 'reviewer' }),
+      ]),
+    });
+    expect(JSON.stringify(await getCatalogueCandidateHistory(validCandidate.id))).not.toContain('Official programme page');
   });
 });
 
