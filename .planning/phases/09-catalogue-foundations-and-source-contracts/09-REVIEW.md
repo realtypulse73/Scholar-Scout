@@ -1,6 +1,6 @@
 ---
 phase: 09-catalogue-foundations-and-source-contracts
-reviewed: 2026-09-22T23:27:36Z
+reviewed: 2026-09-23T00:00:00Z
 depth: standard
 files_reviewed: 4
 files_reviewed_list:
@@ -9,8 +9,8 @@ files_reviewed_list:
   - apps/web/__tests__/lib/catalogue-contract.test.ts
   - apps/web/__tests__/lib/catalogue-fixtures.test.ts
 findings:
-  critical: 1
-  warning: 0
+  critical: 0
+  warning: 1
   info: 0
   total: 1
 status: issues_found
@@ -18,42 +18,40 @@ status: issues_found
 
 # Phase 09: Final Code Review Report
 
-**Reviewed:** 2026-09-22T23:27:36Z
+**Reviewed:** 2026-09-23T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-Plan 08 closes the prior provenance-admission blocker: each object-shaped supplied region now flows through `validateCatalogueRegion`, and only error-free records can authorize coverage membership. Its forged-boundary and malformed-local-focus regressions are present. The final focused suites pass (81 tests), as do web typecheck and lint.
+Reviewed the four Phase 09 contract, fixture, and focused-test files. The prior invalid-injected-clock blocker is fixed: each public validator now fails closed before evaluating source freshness, coverage, or facts. Provenance admission checks remain in place, and the focused Jest suites pass (83 tests).
 
-One import-integrity blocker remains. The injected clock is treated as optional validity information by both evidence and coverage validation. An invalid `Date` silently disables every future-date and freshness check, permitting a complete verified matrix with future evidence and coverage review dates to validate as current.
+No blockers remain. One numerical edge case can make the public great-circle helper return `NaN` for valid near-antipodal coordinates.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+## Warnings
 
-### CR-01: Invalid injected clock permits future evidence to validate as current
+### WR-01: Great-circle helper can return `NaN` for valid antipodal coordinates
 
-**Classification:** BLOCKER (P1)
+**Classification:** WARNING
 
-**File:** `apps/web/lib/catalogue-contract.ts:282-302, 606-619`
+**File:** `apps/web/lib/catalogue-contract.ts:520-524`
+**Issue:** The Haversine intermediate is not clamped to its mathematical range of `[0, 1]` before `Math.sqrt(1 - haversine)`. Floating-point rounding can make it `1.0000000000000002` for valid near-antipodal coordinates (for example, `(-11.18571800391112, 139.73174389513332)` to `(11.18571800391112, -40.26825610486668)`), so the helper returns `NaN` instead of a numeric distance. This violates its `number | null` contract for valid inputs and can surprise future consumers beyond the current ten-mile check.
 
-**Issue:** `validateFactEvidence` and `validateCoverageMatrix` only apply future-date and current-freshness checks when `isValidDate(now)` is true. When a Phase 10 caller supplies `new Date('invalid')`, a `current` fact with `sourceDate` and `reviewedAt` in 2099 produces no evidence errors; the matrix likewise accepts future `reviewedAt` values. A complete verified matrix can therefore pass the Phase 09 import boundary and represent future, unreviewed material as current. This contradicts the fixed-clock contract that future evidence must never be current.
-
-**Fix:** Fail closed at each public validation boundary when the supplied clock is invalid, and add a regression for a complete verified matrix and a direct current-evidence call using `new Date('invalid')`.
+**Fix:** Clamp the Haversine value before calculating the central angle and add a near-antipodal regression.
 
 ```ts
-if (!isValidDate(now)) {
-  return ['Validation clock must be a valid Date.'];
-}
-
-// validateCoverageMatrix can add the same deterministic error before
-// evaluating row dates, while retaining other shape errors if desired.
+const boundedHaversine = Math.min(1, Math.max(0, haversine));
+const centralAngle = 2 * Math.atan2(
+  Math.sqrt(boundedHaversine),
+  Math.sqrt(1 - boundedHaversine),
+);
 ```
 
 ---
 
-_Reviewed: 2026-09-22T23:27:36Z_
+_Reviewed: 2026-09-23T00:00:00Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
