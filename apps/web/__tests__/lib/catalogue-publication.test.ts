@@ -3,6 +3,7 @@ import {
   CATALOGUE_CHECKLIST_DISCLOSURE,
   evaluateCatalogueChecklist,
   isCataloguePublicationState,
+  parseCatalogueCandidateImport,
   type CatalogueCandidateInput,
 } from '@/lib/catalogue-publication';
 import type { FactEvidence } from '@/lib/catalogue-contract';
@@ -136,5 +137,51 @@ describe('catalogue publication editorial checklist', () => {
         secret: 'must-not-persist',
       }],
     })).toBe(false);
+  });
+});
+
+describe('catalogue candidate import envelope', () => {
+  it('accepts one through twenty-five unique, schema-versioned changes', () => {
+    const result = parseCatalogueCandidateImport({
+      schemaVersion: 1,
+      changes: Array.from({ length: 25 }, (_, index) => ({
+        action: 'upsert',
+        candidate: { ...validCandidate, id: `catalogue:training-${index}` },
+      })),
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      changes: expect.arrayContaining([
+        expect.objectContaining({ action: 'upsert', id: 'catalogue:training-0' }),
+      ]),
+    });
+  });
+
+  it.each([
+    ['unsupported schema', { schemaVersion: 2, changes: [] }],
+    ['twenty-sixth change', {
+      schemaVersion: 1,
+      changes: Array.from({ length: 26 }, (_, index) => ({
+        action: 'upsert',
+        candidate: { ...validCandidate, id: `catalogue:too-many-${index}` },
+      })),
+    }],
+    ['duplicate stable id', {
+      schemaVersion: 1,
+      changes: [
+        { action: 'upsert', candidate: validCandidate },
+        { action: 'upsert', candidate: validCandidate },
+      ],
+    }],
+    ['unsupported action', {
+      schemaVersion: 1,
+      changes: [{ action: 'publish', candidate: validCandidate }],
+    }],
+  ])('returns safe correction feedback for %s', (_, envelope) => {
+    expect(parseCatalogueCandidateImport(envelope)).toEqual({
+      ok: false,
+      correctionCodes: expect.arrayContaining(['invalid-import']),
+    });
   });
 });
