@@ -46,6 +46,12 @@ import {
   type PlatformData,
 } from '@/lib/server/platform-store';
 import { programmes } from '@/lib/programmes';
+import {
+  getPublishedCatalogueSnapshot,
+  publishWeeklyCatalogueSnapshot,
+  reviewCatalogueCandidate,
+  stageCatalogueCandidate,
+} from '@/lib/server/catalogue-publications';
 
 jest.mock('@vercel/blob', () => ({
   BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
@@ -60,6 +66,23 @@ const initialData: ScholarScoutData = {
   shortlists: {},
   programmeRecords: [],
   auditEvents: [],
+};
+
+const publicationCandidate = {
+  id: 'catalogue:recovery-training',
+  title: 'Recovery technical training',
+  regionId: 'greater-houston',
+  region: {
+    id: 'greater-houston', label: 'Greater Houston',
+    officialBoundary: { authority: 'us-census-omb-cbsa', boundaryId: '26420', boundaryVersion: '2023', sourceLabel: 'Official boundary', sourceUrl: 'https://www.census.gov/example', sourceDate: { state: 'documented', value: '2026-09-01' }, checkedAt: '2026-09-21' },
+    localFocus: { authority: 'City of Houston', anchorLabel: 'Houston City Hall', latitude: 29.7604, longitude: -95.3698, radiusMiles: 10, sourceLabel: 'Official city page', sourceUrl: 'https://www.houstontx.gov', sourceDate: { state: 'documented', value: '2026-09-01' }, checkedAt: '2026-09-21' },
+  },
+  source: { sourceLabel: 'Official programme page', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, checkedAt: '2026-09-21' },
+  facts: Object.fromEntries(['location', 'pathway', 'skillTaught', 'trainingPayer', 'costOrTuition', 'duration', 'delivery'].map((key) => [key, {
+    value: key === 'pathway' ? 'trade-career-school' : key === 'delivery' ? 'in-person' : 'Documented training detail',
+    evidence: { status: 'current', authority: 'provider-official', sourceLabel: 'Official programme page', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, reviewedAt: '2026-09-21', verificationAction: 'Review the official programme page before publication.' },
+  }])),
+  claimBoundary: 'Factual programme details from the official source.',
 };
 
 class MemoryDataStore implements ScholarScoutDataStore {
@@ -922,6 +945,30 @@ describe('ScholarScout data store adapter', () => {
 
     expect(store.data.users[0].id).toBe('current-user');
     expect(store.data.restoreBackups).toBeUndefined();
+  });
+
+  it('rejects an incoherent recovered snapshot before it can replace the active learner model', async () => {
+    const store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+    const editor = { id: 'editor-1', email: 'editor@example.com', capabilities: new Set(['editor'] as const) };
+    const reviewer = { id: 'reviewer-1', email: 'reviewer@example.com', capabilities: new Set(['reviewer'] as const) };
+    const administrator = { id: 'administrator-1', email: 'administrator@example.com', capabilities: new Set(['administrator'] as const) };
+    const releaseTime = new Date('2026-09-21T13:00:00.000Z');
+
+    await stageCatalogueCandidate({ actor: editor, candidate: publicationCandidate, now: releaseTime });
+    await reviewCatalogueCandidate({ actor: reviewer, candidateId: publicationCandidate.id, expectedRevision: 1, now: releaseTime });
+    await publishWeeklyCatalogueSnapshot({ actor: administrator, candidateIds: [publicationCandidate.id], now: releaseTime });
+    const before = await getPublishedCatalogueSnapshot();
+    const malformed = await store.read();
+    malformed.cataloguePublicationState!.snapshots![0].contentDigest = '0'.repeat(64);
+
+    expect(validateScholarScoutDataImport(malformed)).toMatchObject({
+      isValid: false,
+      errors: expect.arrayContaining(['Catalogue publication state is invalid.']),
+    });
+    await expect(restoreScholarScoutDataFromImport({ actorUserId: 'administrator-1', snapshot: malformed }))
+      .rejects.toMatchObject({ validation: expect.objectContaining({ isValid: false }) });
+    await expect(getPublishedCatalogueSnapshot()).resolves.toEqual(before);
   });
 
   it('rejects a stale compatibility import without replacing current data', async () => {

@@ -2,6 +2,7 @@ import {
   CATALOGUE_CHECKLIST_CATEGORIES,
   CATALOGUE_CHECKLIST_DISCLOSURE,
   evaluateCatalogueChecklist,
+  getCatalogueSnapshotDigest,
   getWeeklyReleasePeriodKey,
   isWithinNormalWeeklyReleaseWindow,
   isCataloguePublicationState,
@@ -224,3 +225,54 @@ function deeplyNestedFacts(): Record<string, unknown> {
   for (let index = 0; index < 33; index += 1) value = { value };
   return value;
 }
+describe('catalogue publication recovery coherence', () => {
+  it('rejects an altered public snapshot digest even when its shallow shape is valid', () => {
+    const checklist = evaluateCatalogueChecklist(validCandidate, now);
+    const candidate = {
+      ...validCandidate,
+      creatorId: 'editor-1',
+      revision: 1,
+      lifecycle: 'approved',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      checklist,
+      approval: { reviewerId: 'reviewer-1', reviewedAt: now.toISOString(), revision: 1 },
+      retirementIntent: false,
+    };
+    const record = {
+      id: candidate.id,
+      revision: candidate.revision,
+      title: candidate.title,
+      regionId: candidate.regionId,
+      region: candidate.region,
+      source: candidate.source,
+      facts: candidate.facts,
+      claimBoundary: candidate.claimBoundary,
+      mediaFallback: false,
+    };
+    const digest = getCatalogueSnapshotDigest([record] as never);
+    const state = {
+      schemaVersion: 1,
+      candidates: [candidate],
+      auditEvents: [],
+      snapshots: [{
+        id: 'catalogue-snapshot-1', sequence: 1, kind: 'weekly',
+        releasedAt: now.toISOString(), periodKey: '2026-W39', records: [record], contentDigest: digest,
+      }],
+      manifests: [{
+        id: 'catalogue-manifest-1', snapshotId: 'catalogue-snapshot-1', sequence: 1,
+        kind: 'weekly', releasedAt: now.toISOString(), periodKey: '2026-W39',
+        actorId: 'administrator-1', capability: 'administrator', action: 'release', outcome: 'published',
+        included: [{ id: candidate.id, revision: 1 }], retired: [], quarantined: [], contentDigest: digest,
+      }],
+      activeSnapshotId: 'catalogue-snapshot-1',
+    };
+
+    expect(isCataloguePublicationState({ ...state, snapshots: [], manifests: [], activeSnapshotId: null })).toBe(true);
+    expect(isCataloguePublicationState(state)).toBe(true);
+    expect(isCataloguePublicationState({
+      ...state,
+      snapshots: [{ ...state.snapshots[0], contentDigest: 'altered-digest' }],
+    })).toBe(false);
+  });
+});
