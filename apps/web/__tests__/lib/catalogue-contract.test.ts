@@ -185,6 +185,16 @@ describe('catalogue contract', () => {
     })).toContain('Local focus coordinates must be finite latitude/longitude values.');
   });
 
+  it('returns a finite deterministic distance for valid near-antipodal coordinates', () => {
+    const distance = calculateGreatCircleMiles(
+      { latitude: -11.18571800391112, longitude: 139.73174389513332 },
+      { latitude: 11.18571800391112, longitude: -40.26825610486668 },
+    );
+
+    expect(Number.isFinite(distance)).toBe(true);
+    expect(distance).toBeCloseTo(EARTH_RADIUS_MILES * Math.PI, 10);
+  });
+
   it('returns deterministic validation errors for empty, duplicate, unsupported, and missing coverage cells', () => {
     const completeCoverage = CATALOGUE_PATHWAYS.map((pathway) => ({
       ...coverage,

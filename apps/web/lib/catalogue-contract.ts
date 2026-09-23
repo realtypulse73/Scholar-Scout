@@ -519,7 +519,11 @@ export function calculateGreatCircleMiles(
   const toLatitudeValue = toRadians(to.latitude);
   const haversine = Math.sin(latitudeDelta / 2) ** 2
     + Math.cos(fromLatitude) * Math.cos(toLatitudeValue) * Math.sin(longitudeDelta / 2) ** 2;
-  const centralAngle = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  const boundedHaversine = Math.min(1, Math.max(0, haversine));
+  const centralAngle = 2 * Math.atan2(
+    Math.sqrt(boundedHaversine),
+    Math.sqrt(1 - boundedHaversine),
+  );
 
   return EARTH_RADIUS_MILES * centralAngle;
 }
