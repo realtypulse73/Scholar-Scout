@@ -3,8 +3,11 @@ import {
   CataloguePublicationConflictError,
   CatalogueReleaseScheduleError,
   getCatalogueCandidateHistory,
+  getCatalogueSnapshotHistory,
+  getPublishedCatalogueSnapshot,
   importCatalogueCandidates,
   publishWeeklyCatalogueSnapshot,
+  previewWeeklyCatalogueRelease,
   reviewCatalogueCandidate,
   stageCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
@@ -471,6 +474,56 @@ describe('weekly catalogue publication', () => {
       now: new Date('2026-09-21T13:00:00.000Z'),
     })).rejects.toBeInstanceOf(CataloguePublicationConflictError);
     expect(store.writeAttempts).toBe(3);
+  });
+
+  it('previews the current release outcome without a mutation and reports server-derived schedule eligibility', async () => {
+    await approve(validCandidate);
+    const writesBeforePreview = store.writeAttempts;
+
+    const preview = await previewWeeklyCatalogueRelease({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-20T13:00:00.000Z'),
+    });
+
+    expect(preview).toMatchObject({
+      eligibility: { periodKey: '2026-W38', withinWindow: false, eligible: false },
+      selected: [{ id: validCandidate.id, revision: 1 }],
+      quarantined: [],
+      mediaFallbackIds: [],
+    });
+    expect(store.writeAttempts).toBe(writesBeforePreview);
+  });
+
+  it('returns only a cloned active public snapshot and redacted manifest history', async () => {
+    expect(await getPublishedCatalogueSnapshot()).toEqual({ status: 'empty', records: [] });
+    await approve(validCandidate);
+    await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+
+    const snapshot = await getPublishedCatalogueSnapshot();
+    if (snapshot.status === 'published') snapshot.records[0].title = 'mutated caller copy';
+    const secondRead = await getPublishedCatalogueSnapshot();
+    const history = await getCatalogueSnapshotHistory();
+
+    expect(secondRead).toMatchObject({
+      status: 'published',
+      records: [expect.objectContaining({ id: validCandidate.id, title: validCandidate.title })],
+    });
+    expect(history).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        actor: administrator.id,
+        capability: 'administrator',
+        action: 'release',
+        version: 1,
+        lineage: { priorSnapshotId: null },
+      }),
+    ]));
+    expect(JSON.stringify(history)).not.toContain('Official programme page');
+    expect(JSON.stringify(history)).not.toContain('verificationAction');
   });
 
   async function approve(candidate: typeof validCandidate, now = NOW) {

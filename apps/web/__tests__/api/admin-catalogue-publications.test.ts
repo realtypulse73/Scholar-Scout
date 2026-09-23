@@ -131,6 +131,21 @@ describe('admin catalogue publication staging API', () => {
 
     expect(response.status).toBe(403);
   });
+
+  it('denies preview publication before parsing the request body when the actor lacks administrator capability', async () => {
+    const json = jest.fn();
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'editor@example.com': ['editor'],
+    });
+
+    const response = await POST({
+      url: 'http://localhost/api/admin/catalogue-publications?action=preview-weekly',
+      json,
+    } as unknown as Request);
+
+    expect(response.status).toBe(403);
+    expect(json).not.toHaveBeenCalled();
+  });
 });
 
 class MemoryDataStore implements ScholarScoutDataStore {
