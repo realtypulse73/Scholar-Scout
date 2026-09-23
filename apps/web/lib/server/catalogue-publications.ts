@@ -194,6 +194,110 @@ export async function publishWeeklyCatalogueSnapshot(input: {
   return result.value;
 }
 
+/** Calculates the exact normal-release outcome without writing a snapshot, audit, or candidate state. */
+export async function previewWeeklyCatalogueRelease(input: {
+  actor: ActiveStaffActor;
+  candidateIds: string[];
+  now?: Date;
+}): Promise<{
+  eligibility: {
+    periodKey: string;
+    withinWindow: boolean;
+    alreadyPublished: boolean;
+    eligible: boolean;
+  };
+  selected: CatalogueSnapshotManifest['included'];
+  quarantined: CatalogueSnapshotManifest['quarantined'];
+  mediaFallbackIds: string[];
+}> {
+  authorizeRelease(input.actor, 'weekly', undefined);
+  const candidateIds = normalizeReleaseSelection(input.candidateIds);
+  const now = input.now ?? new Date();
+  const state = getReleaseState((await readScholarScoutData()).cataloguePublicationState);
+  const periodKey = getWeeklyReleasePeriodKey(now);
+  const withinWindow = isWithinNormalWeeklyReleaseWindow(now);
+  const alreadyPublished = state.manifests.some((manifest) => (
+    manifest.kind === 'weekly' && manifest.periodKey === periodKey
+  ));
+  const selectedCandidates = candidateIds.map((id) => state.candidates.find((candidate) => candidate.id === id));
+  if (selectedCandidates.some((candidate) => !candidate || candidate.lifecycle !== 'approved'
+    || candidate.approval?.revision !== candidate.revision)) {
+    throw new CatalogueReleaseSelectionError();
+  }
+
+  const selected: CatalogueSnapshotManifest['included'] = [];
+  const quarantined: CatalogueSnapshotManifest['quarantined'] = [];
+  const mediaFallbackIds: string[] = [];
+  for (const candidate of selectedCandidates as CatalogueCandidate[]) {
+    const checklist = evaluateCatalogueChecklist(candidate, now);
+    if (!checklist.passed) {
+      quarantined.push({
+        id: candidate.id,
+        revision: candidate.revision,
+        correctionCodes: checklist.correctionCodes,
+      });
+      continue;
+    }
+    selected.push({ id: candidate.id, revision: candidate.revision });
+    if (checklist.mediaFallback) mediaFallbackIds.push(candidate.id);
+  }
+
+  return {
+    eligibility: {
+      periodKey,
+      withinWindow,
+      alreadyPublished,
+      eligible: withinWindow && !alreadyPublished,
+    },
+    selected: selected.sort(compareEntries),
+    quarantined: quarantined.sort(compareEntries),
+    mediaFallbackIds: mediaFallbackIds.sort(),
+  };
+}
+
+/** Returns concise staff-only release lineage, never raw candidates or provider-private evidence. */
+export async function getCatalogueSnapshotHistory() {
+  const state = getReleaseState((await readScholarScoutData()).cataloguePublicationState);
+  return state.manifests.map((manifest) => ({
+    actor: manifest.actorId,
+    capability: manifest.capability,
+    action: manifest.action,
+    timestamp: manifest.releasedAt,
+    outcome: manifest.outcome,
+    version: manifest.sequence,
+    kind: manifest.kind,
+    ...(manifest.periodKey === undefined ? {} : { periodKey: manifest.periodKey }),
+    ...(manifest.reason === undefined ? {} : { reason: manifest.reason }),
+    correctionStatus: manifest.quarantined.length === 0 ? 'all-selected-passed' : 'quarantined-records',
+    reviewStatus: manifest.included.length === 0 && manifest.retired.length > 0
+      ? 'retirement-release'
+      : 'approved-release',
+    lineage: {
+      snapshotId: manifest.snapshotId,
+      priorSnapshotId: manifest.priorSnapshotId ?? null,
+      contentDigest: manifest.contentDigest,
+    },
+  }));
+}
+
+/** Returns a cloned public snapshot DTO only; it has no provider or candidate lookup path. */
+export async function getPublishedCatalogueSnapshot(): Promise<
+  | { status: 'empty'; records: [] }
+  | { status: 'published'; snapshotId: string; version: number; records: CataloguePublishedRecord[] }
+> {
+  const state = getReleaseState((await readScholarScoutData()).cataloguePublicationState);
+  const active = state.activeSnapshotId
+    ? state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId)
+    : undefined;
+  if (!active) return { status: 'empty', records: [] };
+  return {
+    status: 'published',
+    snapshotId: active.id,
+    version: active.sequence,
+    records: clonePublicRecords(active.records),
+  };
+}
+
 export async function stageCatalogueCandidate(input: {
   actor: ActiveStaffActor;
   candidate: unknown;
@@ -541,6 +645,10 @@ function compareEntries(
   right: { id: string },
 ): number {
   return left.id.localeCompare(right.id);
+}
+
+function clonePublicRecords(records: CataloguePublishedRecord[]): CataloguePublishedRecord[] {
+  return JSON.parse(JSON.stringify(records)) as CataloguePublishedRecord[];
 }
 
 function normalizeCataloguePublicationState(

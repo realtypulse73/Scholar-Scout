@@ -12,6 +12,7 @@ import {
   readScholarScoutData,
 } from '@/lib/server/data-store';
 import { getConfiguredE2eFixtureId } from '@/lib/server/e2e-fixture-config';
+import { getPublishedCatalogueSnapshot as getStoredPublishedCatalogueSnapshot } from '@/lib/server/catalogue-publications';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
 
 export class ProgrammeRevisionConflictError extends Error {
@@ -116,4 +117,12 @@ export function mergeProgrammes(seedProgrammes: Programme[], records: Programme[
     ...records,
     ...seedProgrammes.filter((programme) => !recordIds.has(programme.id)),
   ].map(normalizeProgrammeForGovernance);
+}
+
+/**
+ * Future learner discovery reads only this stored, reviewed catalogue snapshot.
+ * Legacy programme surfaces continue using getGovernedProgrammes until Phase 11.
+ */
+export async function getPublishedCatalogueSnapshot() {
+  return getStoredPublishedCatalogueSnapshot();
 }

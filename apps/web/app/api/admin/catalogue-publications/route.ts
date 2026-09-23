@@ -5,7 +5,13 @@ import {
   CatalogueCandidateReviewError,
   CatalogueCandidateRevisionConflictError,
   CataloguePublicationConflictError,
+  CatalogueReleaseAuthorizationError,
+  CatalogueReleaseScheduleError,
+  CatalogueReleaseSelectionError,
   getCatalogueCandidateHistory,
+  getCatalogueSnapshotHistory,
+  previewWeeklyCatalogueRelease,
+  publishWeeklyCatalogueSnapshot,
   reviewCatalogueCandidate,
   stageCatalogueCandidate,
   submitCatalogueCandidate,
@@ -17,6 +23,9 @@ export async function POST(request: Request) {
   const action = getPostAction(request);
   if (action === 'review' || action === 'submit') {
     return handleReviewAction(request, action);
+  }
+  if (action === 'preview-weekly' || action === 'publish-weekly') {
+    return handleWeeklyReleaseAction(request, action);
   }
 
   const authorization = await requireActiveStaff({
@@ -62,7 +71,12 @@ export async function GET(request: Request) {
   });
   if (!authorization.ok) return authorization.response;
 
-  const candidateId = new URL(request.url).searchParams.get('candidateId');
+  const view = getQueryParameter(request, 'view');
+  if (view === 'snapshot-history') {
+    return NextResponse.json({ ok: true, history: await getCatalogueSnapshotHistory() });
+  }
+
+  const candidateId = getQueryParameter(request, 'candidateId');
   if (!candidateId || candidateId.length > 160) {
     return NextResponse.json({ error: 'Catalogue candidate history was not found.' }, { status: 404 });
   }
@@ -72,13 +86,17 @@ export async function GET(request: Request) {
     : NextResponse.json({ error: 'Catalogue candidate history was not found.' }, { status: 404 });
 }
 
-function getPostAction(request: Request): 'stage' | 'review' | 'submit' {
-  try {
-    const action = new URL(request.url).searchParams.get('action');
-    return action === 'review' || action === 'submit' ? action : 'stage';
-  } catch {
-    return 'stage';
-  }
+function getPostAction(request: Request):
+  | 'stage'
+  | 'review'
+  | 'submit'
+  | 'preview-weekly'
+  | 'publish-weekly' {
+  const action = getQueryParameter(request, 'action');
+  return action === 'review' || action === 'submit'
+    || action === 'preview-weekly' || action === 'publish-weekly'
+    ? action
+    : 'stage';
 }
 
 async function handleReviewAction(request: Request, action: 'review' | 'submit') {
@@ -125,5 +143,59 @@ async function handleReviewAction(request: Request, action: 'review' | 'submit')
       );
     }
     throw error;
+  }
+}
+
+async function handleWeeklyReleaseAction(
+  request: Request,
+  action: 'preview-weekly' | 'publish-weekly',
+) {
+  const authorization = await requireActiveStaff({
+    action: `catalogue-publication:${action}`,
+    route: ROUTE,
+    capability: 'administrator',
+  });
+  if (!authorization.ok) return authorization.response;
+
+  let body: { candidateIds?: unknown };
+  try {
+    body = await request.json() as { candidateIds?: unknown };
+  } catch {
+    return NextResponse.json({ error: 'Invalid catalogue publication request.' }, { status: 400 });
+  }
+  if (!Array.isArray(body.candidateIds) || body.candidateIds.some((id) => typeof id !== 'string')) {
+    return NextResponse.json({ error: 'Invalid catalogue publication request.' }, { status: 400 });
+  }
+
+  try {
+    const result = action === 'preview-weekly'
+      ? await previewWeeklyCatalogueRelease({
+        actor: authorization.actor,
+        candidateIds: body.candidateIds,
+      })
+      : await publishWeeklyCatalogueSnapshot({
+        actor: authorization.actor,
+        candidateIds: body.candidateIds,
+      });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof CatalogueReleaseAuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (error instanceof CatalogueReleaseScheduleError || error instanceof CatalogueReleaseSelectionError) {
+      return NextResponse.json({ error: 'This catalogue release is not currently eligible. Review and try again.' }, { status: 400 });
+    }
+    if (error instanceof CataloguePublicationConflictError) {
+      return NextResponse.json({ error: 'This catalogue release changed. Reload and try again.' }, { status: 409 });
+    }
+    throw error;
+  }
+}
+
+function getQueryParameter(request: Request, name: string): string | null {
+  try {
+    return new URL(request.url).searchParams.get(name);
+  } catch {
+    return null;
   }
 }

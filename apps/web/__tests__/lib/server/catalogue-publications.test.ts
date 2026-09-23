@@ -16,6 +16,7 @@ import {
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import { getPublishedCatalogueSnapshot as getGovernedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 const NOW = new Date('2026-09-22T12:00:00.000Z');
 const editor = {
@@ -317,7 +318,7 @@ describe('weekly catalogue publication', () => {
     await expect(publishWeeklyCatalogueSnapshot({
       actor: administrator,
       candidateIds: [validCandidate.id],
-      now: new Date('2026-09-20T13:00:00.000Z'),
+      now: new Date('2026-09-27T13:00:00.000Z'),
     })).rejects.toMatchObject({ code: 'outside-release-window' } satisfies Partial<CatalogueReleaseScheduleError>);
 
     await publishWeeklyCatalogueSnapshot({
@@ -483,11 +484,11 @@ describe('weekly catalogue publication', () => {
     const preview = await previewWeeklyCatalogueRelease({
       actor: administrator,
       candidateIds: [validCandidate.id],
-      now: new Date('2026-09-20T13:00:00.000Z'),
+      now: new Date('2026-09-27T13:00:00.000Z'),
     });
 
     expect(preview).toMatchObject({
-      eligibility: { periodKey: '2026-W38', withinWindow: false, eligible: false },
+      eligibility: { periodKey: '2026-W39', withinWindow: false, eligible: false },
       selected: [{ id: validCandidate.id, revision: 1 }],
       quarantined: [],
       mediaFallbackIds: [],
@@ -507,11 +508,16 @@ describe('weekly catalogue publication', () => {
     const snapshot = await getPublishedCatalogueSnapshot();
     if (snapshot.status === 'published') snapshot.records[0].title = 'mutated caller copy';
     const secondRead = await getPublishedCatalogueSnapshot();
+    const governedRead = await getGovernedCatalogueSnapshot();
     const history = await getCatalogueSnapshotHistory();
 
     expect(secondRead).toMatchObject({
       status: 'published',
       records: [expect.objectContaining({ id: validCandidate.id, title: validCandidate.title })],
+    });
+    expect(governedRead).toMatchObject({
+      status: 'published',
+      records: [expect.objectContaining({ id: validCandidate.id })],
     });
     expect(history).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -519,7 +525,7 @@ describe('weekly catalogue publication', () => {
         capability: 'administrator',
         action: 'release',
         version: 1,
-        lineage: { priorSnapshotId: null },
+        lineage: expect.objectContaining({ priorSnapshotId: null }),
       }),
     ]));
     expect(JSON.stringify(history)).not.toContain('Official programme page');
