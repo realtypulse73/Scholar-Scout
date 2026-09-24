@@ -15,11 +15,27 @@ const snapshotRecord: CataloguePublishedRecord = {
   claimBoundary: 'Factual programme details from the official source.', mediaFallback: false,
 };
 
+const buffaloSnapshotRecord: CataloguePublishedRecord = {
+  ...snapshotRecord,
+  id: 'buffalo-reviewed-id',
+  title: 'Buffalo Reviewed Academy',
+  regionId: 'greater-buffalo',
+  region: {
+    ...snapshotRecord.region,
+    id: 'greater-buffalo',
+    label: 'Greater Buffalo',
+  },
+  facts: {
+    ...snapshotRecord.facts,
+    location: fact('Buffalo, New York'),
+  },
+};
+
 function fact<T>(value: T) { return { value, evidence: { status: 'current' as const, authority: 'provider-official' as const, sourceLabel: 'Snapshot official source', sourceUrl: 'https://example.edu/snapshot', sourceDate: { state: 'documented' as const, value: '2026-09-20' }, reviewedAt: '2026-09-20', verificationAction: 'Verify with the official source.' } }; }
 
 describe('programme detail page', () => {
   beforeEach(() => {
-    jest.mocked(getPublishedCatalogueSnapshot).mockResolvedValue({ status: 'published', snapshotId: 'snapshot-1', version: 1, records: [snapshotRecord] });
+    jest.mocked(getPublishedCatalogueSnapshot).mockResolvedValue({ status: 'published', snapshotId: 'snapshot-1', version: 1, records: [snapshotRecord, buffaloSnapshotRecord] });
   });
 
   it('uses a snapshot record absent from legacy seeds for page and metadata', async () => {
@@ -31,5 +47,12 @@ describe('programme detail page', () => {
   it('does not fall back to a legacy seed-only ID', async () => {
     await expect(ProgrammeDetailPage({ params: Promise.resolve({ id: 'buffalo-state-community-health' }), searchParams: Promise.resolve({ metro: 'greater-houston' }) })).rejects.toThrow('NOT_FOUND');
     await expect(generateMetadata({ params: Promise.resolve({ id: 'buffalo-state-community-health' }) })).resolves.toMatchObject({ title: 'Opportunity Not Found | Scholar Scout' });
+  });
+
+  it('resolves a reviewed non-Houston record when its controlled metro is supplied', async () => {
+    render(await ProgrammeDetailPage({ params: Promise.resolve({ id: 'buffalo-reviewed-id' }), searchParams: Promise.resolve({ metro: 'greater-buffalo' }) }));
+
+    expect(screen.getByRole('heading', { name: /buffalo reviewed academy/i })).toBeInTheDocument();
+    expect(screen.getByText(/greater buffalo.*buffalo, new york/i)).toBeInTheDocument();
   });
 });

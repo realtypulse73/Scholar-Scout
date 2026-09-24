@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CatalogueComparison from '@/components/catalogue/CatalogueComparison';
-import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
+import {
+  buildCatalogueDetailHref,
+  type CatalogueDiscoveryItem,
+} from '@/lib/catalogue-discovery';
+import type { CatalogueRegionId } from '@/lib/catalogue-contract';
 
 jest.mock('next-auth/react', () => ({
   useSession: () => ({ data: null }),
@@ -22,10 +26,14 @@ const fact = <Value,>(value: Value, status: 'current' | 'needs-confirmation' | '
   evidence: evidence(status),
 });
 
-const item = (id = 'catalogue:one', title = 'Welding pathway'): CatalogueDiscoveryItem => ({
+const item = (
+  id = 'catalogue:one',
+  title = 'Welding pathway',
+  regionId: CatalogueRegionId = 'greater-houston',
+): CatalogueDiscoveryItem => ({
   id,
   providerTitle: title,
-  regionId: 'greater-houston',
+  regionId,
   regionLabel: 'Greater Houston',
   pathway: 'trade-career-school',
   place: fact('Houston, Texas'),
@@ -122,5 +130,41 @@ describe('CatalogueComparison', () => {
     expect(screen.getByRole('link', { name: /official verification for welding pathway.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toHaveAttribute('type', 'button');
     expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(7);
+  });
+
+  it('renders every saved factual reason with its complete evidence', async () => {
+    const reviewed = item();
+    reviewed.reasonsToConsider = [
+      { label: 'Skill taught', value: 'Welding', state: 'current', evidence: evidence() },
+      { label: 'Training payer', value: 'Student', state: 'needs-confirmation', evidence: evidence('needs-confirmation') },
+    ];
+    window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one']));
+
+    render(<CatalogueComparison items={[reviewed]} />);
+
+    const reasons = await screen.findByRole('region', { name: /factual reasons to consider for welding pathway/i });
+    expect(reasons).toHaveTextContent(/skill taught.*welding/i);
+    expect(reasons).toHaveTextContent(/training payer.*student/i);
+    expect(reasons).toHaveTextContent(/needs confirmation.*official programme source.*2026-09-20/i);
+    expect(reasons).toHaveTextContent(/verify on the official programme page/i);
+    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(9);
+  });
+
+  it.each([
+    'greater-houston',
+    'greater-chicago',
+    'greater-buffalo',
+    'greater-atlanta',
+    'greater-new-orleans',
+    'greater-kingston-jamaica',
+  ] as CatalogueRegionId[])('builds the controlled %s detail URL for its saved record', async (regionId) => {
+    window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one']));
+
+    render(<CatalogueComparison items={[item('catalogue:one', 'Welding pathway', regionId)]} />);
+
+    expect(await screen.findByRole('link', { name: /details for welding pathway/i })).toHaveAttribute(
+      'href',
+      buildCatalogueDetailHref('catalogue:one', { metro: regionId, pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }),
+    );
   });
 });
