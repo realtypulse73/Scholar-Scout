@@ -34,4 +34,42 @@ describe('qualification record contract', () => {
       }),
     ).toBeNull();
   });
+
+  it('rejects duplicate, oversized, malformed, and non-private input forms', () => {
+    expect(
+      parseQualificationRecord({
+        ...completeRecord,
+        keywords: ['health care', ' Health   Care '],
+      }),
+    ).toBeNull();
+    expect(
+      parseQualificationRecord({
+        ...completeRecord,
+        note: 'x'.repeat(501),
+      }),
+    ).toBeNull();
+    expect(
+      parseQualificationRecord({
+        ...completeRecord,
+        keywords: ['x'.repeat(41)],
+      }),
+    ).toBeNull();
+    expect(
+      parseQualificationRecord({
+        ...completeRecord,
+        structured: ['degree', 'degree'],
+      }),
+    ).toBeNull();
+    expect(
+      parseQualificationRecord({
+        ...completeRecord,
+        testScore: 100,
+      }),
+    ).toBeNull();
+    expect(parseQualificationRecord({ structured: [], note: '', keywords: [] })).toEqual({
+      structured: [],
+      note: '',
+      keywords: [],
+    });
+  });
 });

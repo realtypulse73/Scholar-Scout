@@ -64,4 +64,69 @@ describe('account qualification routes', () => {
     expect(getQualificationRecordMock).toHaveBeenCalledWith(account.storageKey);
     expect(saveQualificationRecordMock).toHaveBeenCalledWith(account.storageKey, record);
   });
+
+  it('denies anonymous and guest actors without reading or writing a record', async () => {
+    resolveStudentActorMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      kind: 'guest',
+      guestId: 'guest-one',
+      storageKey: 'guest:guest-one',
+    });
+
+    const anonymousResponse = await GET();
+    const guestResponse = await POST(
+      new Request('https://scholar-scout.test/api/account/qualifications', {
+        method: 'POST',
+        body: JSON.stringify(record),
+      }),
+    );
+
+    expect(anonymousResponse.status).toBe(401);
+    expect(guestResponse.status).toBe(401);
+    expect(getQualificationRecordMock).not.toHaveBeenCalled();
+    expect(saveQualificationRecordMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a safe conflict response without replacing the account record', async () => {
+    const { PersistenceConflictError } = jest.requireMock(
+      '../../lib/server/data-store',
+    );
+    resolveStudentActorMock.mockResolvedValue({
+      kind: 'account',
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    });
+    saveQualificationRecordMock.mockRejectedValue(new PersistenceConflictError());
+
+    const response = await POST(
+      new Request('https://scholar-scout.test/api/account/qualifications', {
+        method: 'POST',
+        body: JSON.stringify(record),
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Student data changed. Reload and try again.',
+      category: 'conflict',
+      action: 'reload',
+    });
+  });
+
+  it('rejects oversized payloads before persistence', async () => {
+    resolveStudentActorMock.mockResolvedValue({
+      kind: 'account',
+      accountId: 'student-one',
+      storageKey: 'account:student-one',
+    });
+
+    const response = await POST(
+      new Request('https://scholar-scout.test/api/account/qualifications', {
+        method: 'POST',
+        body: JSON.stringify({ ...record, note: 'x'.repeat(5_000) }),
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    expect(saveQualificationRecordMock).not.toHaveBeenCalled();
+  });
 });

@@ -1,4 +1,7 @@
 import {
+  getQualificationRecord,
+  readScholarScoutData,
+  saveQualificationRecord,
   saveOnboardingProfile,
   saveShortlistState,
   setScholarScoutDataStoreForTests,
@@ -6,6 +9,7 @@ import {
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
 import { createStudentAccountRecord } from '@/lib/server/student-records';
+import { migrateGuestOwnedRecords } from '@/lib/server/platform-store';
 import type { OrdinaryOnboardingProfile } from '@/lib/onboarding-types';
 
 const initialData: ScholarScoutData = {
@@ -159,6 +163,82 @@ describe('bounded student records', () => {
       supportNeeds: ['financial-aid'],
     });
     expect(JSON.stringify(store.data.auditEvents)).not.toContain('housing');
+  });
+
+  it('keeps qualification records account-isolated, legacy-compatible, and audit-private', async () => {
+    const store = new MemoryDataStore();
+    store.data.qualificationProfiles = {
+      'account:student-two': {
+        structured: ['degree'],
+        note: 'Existing private note.',
+        keywords: ['existing keyword'],
+      },
+    };
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(getQualificationRecord('account:student-one')).resolves.toBeNull();
+    await saveQualificationRecord('account:student-one', {
+      structured: ['prior-work'],
+      note: 'Private note for one.',
+      keywords: ['customer service'],
+    });
+
+    expect(store.data.qualificationProfiles).toMatchObject({
+      'account:student-one': {
+        structured: ['prior-work'],
+        note: 'Private note for one.',
+        keywords: ['customer service'],
+      },
+      'account:student-two': {
+        structured: ['degree'],
+      },
+    });
+    expect(JSON.stringify(store.data.auditEvents)).not.toContain('Private note for one.');
+    expect(JSON.stringify(store.data.auditEvents)).not.toContain('customer service');
+
+    const normalized = await readScholarScoutData();
+    expect(normalized.qualificationProfiles).toEqual(store.data.qualificationProfiles);
+  });
+
+  it('does not transfer qualification records during guest migration', async () => {
+    const store = new MemoryDataStore();
+    const guestId = 'guest-one';
+    const accountId = 'account:student-one';
+    const guestKey = `guest:${guestId}`;
+    const before = {
+      [guestKey]: {
+        structured: ['diploma-credits'],
+        note: 'Guest record must remain separate.',
+        keywords: ['forklift'],
+      },
+      [accountId]: {
+        structured: ['degree'],
+        note: 'Account record stays private.',
+        keywords: ['nursing'],
+      },
+    } as const;
+    store.data.qualificationProfiles = JSON.parse(JSON.stringify(before));
+    store.data.guestLifecycles = [{
+      id: guestId,
+      credentialHash: 'hash',
+      quotaWindowId: 'window-one',
+      createdAt: '2026-09-24T00:00:00.000Z',
+      expiresAt: '2026-09-25T00:00:00.000Z',
+    }];
+    setScholarScoutDataStoreForTests(store);
+
+    await expect(
+      migrateGuestOwnedRecords({
+        guestId,
+        accountId,
+        now: new Date('2026-09-24T12:00:00.000Z'),
+      }),
+    ).resolves.toMatchObject({ migrated: true });
+
+    expect(store.data.qualificationProfiles).toEqual(before);
+    expect(store.data.guestMigrationAuditRecords?.[0]?.transferredCollections).not.toContain(
+      'qualificationProfiles',
+    );
   });
 
   it('commits shortlist IDs and plans atomically for one student', async () => {
