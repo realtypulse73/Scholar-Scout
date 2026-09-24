@@ -5,15 +5,15 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 12
 current_phase_name: Qualification Lens and Explanation Governance
 status: in_progress
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-09-24T20:48:57.793Z"
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-09-24T21:06:49.475Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 12 Plan 12-02 completed; Plan 12-03 is ready to execute
+last_activity_desc: Phase 12 Plan 12-03 completed; Plan 12-05 is ready to execute
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 26
-  completed_plans: 24
+  completed_plans: 25
   percent: 43
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 ## Current Position
 
 Phase: 12 — Qualification Lens and Explanation Governance
-Plan: 3/5 plans complete — next: 12-03
+Plan: 4/5 plans complete — next: 12-05
 Status: In progress
-Last activity: 2026-09-24 — Phase 12 Plan 12-02 completed; Plan 12-03 is ready to execute
+Last activity: 2026-09-24 — Phase 12 Plan 12-03 completed; Plan 12-05 is ready to execute
 
 ## Performance Metrics
 
@@ -116,6 +116,7 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-02 completed; Plan 12-03 is ready
 | Phase 12 P01 | 70m | 3 tasks | 10 files |
 | Phase 12 P04 | 35m | 2 tasks | 8 files |
 | Phase 12 P02 | 22m | 3 tasks | 4 files |
+| Phase 12 P03 | 34m | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -213,6 +214,8 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-02 completed; Plan 12-03 is ready
 - [Phase 12]: Keep supplied catalogue qualification evidence source-backed and exact-keyed; preserve valid non-current facts for verification.
 - [Phase ?]: Keep qualification lens inputs limited to structured keys and explicit keywords; notes and proxy fields are rejected.
 - [Phase ?]: Keep all reviewed discovery options visible while ordering by current checked facts, literal keyword connections, then public ID.
+- [Phase ?]: Keep normal catalogue order as the Programmes default; qualifications-first is a transient all-visible presentation choice.
+- [Phase ?]: Render qualification uncertainty as visible source/date/action verification work, never as a student or opportunity verdict.
 
 ### Roadmap Evolution
 
@@ -257,6 +260,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T20:48:57.759Z
-Stopped at: Completed 12-02-PLAN.md
-Resume file: .planning/phases/12-qualification-lens-and-explanation-governance/12-03-PLAN.md
+Last session: 2026-09-24T21:06:49.442Z
+Stopped at: Completed 12-03-PLAN.md
+Resume file: .planning/phases/12-qualification-lens-and-explanation-governance/12-05-PLAN.md
