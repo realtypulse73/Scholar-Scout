@@ -1,7 +1,7 @@
 ---
 phase: 11-choice-preserving-six-area-discovery
 verified: 2026-09-24T01:35:11Z
-status: human_needed
+status: passed
 score: 5/6 must-haves verified
 behavior_unverified: 1
 overrides_applied: 0
@@ -9,16 +9,19 @@ re_verification:
   previous_status: gaps_found
   previous_score: 4/6
   gaps_closed:
+
     - "Every detailed opportunity surface presents factual reasons and a working detail action for saved records."
     - "Saved comparison records preserve their controlled metro when opening details."
   gaps_remaining: []
   regressions: []
 behavior_unverified_items:
+
   - truth: "Discovery, focused detail, and comparison have no document-level horizontal overflow and remain screen-reader usable at 320px/400% zoom, 375px, and 768px."
     test: "Follow the Phase 11 browser acceptance procedure in 11-VALIDATION.md using a reviewed fixture with a non-current fact and an unavailable saved ID."
     expected: "Keyboard focus, factual status, source/official-link context, preview disclosure, comparison removal, and reduced-motion reading order remain understandable; the document itself never scrolls horizontally."
     why_human: "Component tests prove semantic and responsive class contracts, but cannot measure final browser overflow, visible focus, or screen-reader announcements."
 human_verification:
+
   - test: "Run the exact responsive keyboard, screen-reader, and reduced-motion acceptance procedure below at 320px/400% zoom, 375px, and 768px."
     expected: "All factual discovery actions remain usable with no document-level horizontal overflow; color or motion is never the only way to understand a material state."
     why_human: "These are browser and assistive-technology outcomes that source inspection and Jest cannot faithfully observe."

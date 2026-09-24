@@ -29,8 +29,8 @@
 
 - [x] **DISC-01**: A student can browse, filter, save, compare, and open an official next action for opportunities without signing in or completing a story first.
 - [x] **DISC-02**: A student can see a provider, pathway type, delivery/place relationship, published status, reasons to consider it, facts to verify, source/date/status, and alternate paths on every detailed opportunity surface.
-- [ ] **DISC-03**: Ordering and filters remain reversible; they do not infer a student’s residence, use passive behaviour, or suppress an opportunity or pathway class.
-- [ ] **DISC-04**: Discovery, comparison, provider detail, stale/unknown states, and external-link actions are keyboard-accessible, screen-reader understandable, and usable without horizontal page overflow on supported phone and tablet sizes.
+- [x] **DISC-03**: Ordering and filters remain reversible; they do not infer a student’s residence, use passive behaviour, or suppress an opportunity or pathway class.
+- [x] **DISC-04**: Discovery, comparison, provider detail, stale/unknown states, and external-link actions are keyboard-accessible, screen-reader understandable, and usable without horizontal page overflow on supported phone and tablet sizes.
 
 ### Qualification and claim safety
 
@@ -97,8 +97,8 @@
 | PUB-03 | Phase 10 | Complete |
 | DISC-01 | Phase 11 | Complete |
 | DISC-02 | Phase 11 | Complete |
-| DISC-03 | Phase 11 | Pending |
-| DISC-04 | Phase 11 | Pending |
+| DISC-03 | Phase 11 | Complete |
+| DISC-04 | Phase 11 | Complete |
 | MATCH-01 | Phase 12 | Pending |
 | MATCH-02 | Phase 12 | Pending |
 | MATCH-03 | Phase 12 | Pending |

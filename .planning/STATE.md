@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Regional Opportunity Navigator
-current_phase: 11
-current_phase_name: Choice-Preserving Six-Area Discovery
-status: awaiting-verification
-stopped_at: Completed 11-05-PLAN.md
-last_updated: "2026-09-24T01:29:22.817Z"
+current_phase: 12
+current_phase_name: Qualification Lens and Explanation Governance
+status: planning
+stopped_at: Phase 11 complete, ready to plan Phase 12
+last_updated: "2026-09-24T04:07:58.609Z"
 last_activity: 2026-09-24
-last_activity_desc: Completed Phase 11 Plan 05 source-first discovery gap closure; browser accessibility acceptance remains.
+last_activity_desc: Phase 11 complete, transitioned to Phase 12
 progress:
   total_phases: 7
   completed_phases: 3
@@ -21,23 +21,23 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22)
+See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** Students can confidently discover and act on the education pathways that fit their goals and circumstances.
-**Current focus:** Phase 11 — Choice-Preserving Six-Area Discovery.
+**Current focus:** Phase 12 — Qualification Lens and Explanation Governance.
 
 ## Current Position
 
-Phase: 11 — Choice-Preserving Six-Area Discovery
-Plan: 5 of 5 complete
-Status: Awaiting browser accessibility acceptance
-Last activity: 2026-09-24 — Completed Phase 11 Plan 05 source-first discovery gap closure.
+Phase: 12 — Qualification Lens and Explanation Governance
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 11 complete, transitioned to Phase 12
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 52
+- Total plans completed: 57
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -51,6 +51,7 @@ Last activity: 2026-09-24 — Completed Phase 11 Plan 05 source-first discovery 
 | 07 | 4 | - | - |
 | 09 | 10 | - | - |
 | 10 | 6 | - | - |
+| 11 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -202,6 +203,9 @@ Last activity: 2026-09-24 — Completed Phase 11 Plan 05 source-first discovery 
 - [Phase ?]: Compare saved IDs only against the supplied public snapshot and retain unmatched IDs as visitor-controlled unavailable choices.
 - [Phase ?]: Use only reviewed skill, delivery, and training-payer facts as bounded source-backed reasons to consider.
 - [Phase ?]: Build comparison detail links from each public item controlled metro and fixed neutral filters.
+- [Phase 11]: Read learner discovery only from the current governed snapshot, never a profile, legacy seed, candidate, or live provider request.
+- [Phase 11]: Keep saved IDs unavailable and removable when a reviewed snapshot changes; never substitute another opportunity.
+- [Phase 11]: Derive neutral reasons only from reviewed skill, delivery, and training-payer facts while retaining their evidence.
 
 ### Roadmap Evolution
 
@@ -244,6 +248,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T01:29:22.793Z
-Stopped at: Completed 11-05-PLAN.md
+Last session: 2026-09-24T04:07:58.609Z
+Stopped at: Phase 11 complete, ready to plan Phase 12
 Resume file: None

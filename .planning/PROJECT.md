@@ -26,6 +26,7 @@ Students can confidently discover and act on the education pathways that fit the
 - ✓ Staff-managed programme catalogue foundation — existing
 - ✓ Complete and validate the in-progress school, peer-community, campus-community, and Western New York product work — Phase 5
 - ✓ Restore reliable CI, candidate-quality, and Preview rehearsal signals for release decisions — Phase 6
+- ✓ Provide snapshot-only, source-first discovery with reversible six-area filters and visitor-controlled comparison — Phase 11
 
 ### Active
 
@@ -64,6 +65,9 @@ Phases 5–7 established governed programme evidence, choice-preserving matching
 | Use the appropriate official statistical boundary authority for each regional catalogue area | A stable public definition prevents ambiguous area coverage; U.S. CBSAs do not govern Greater Kingston, Jamaica | — Pending research verification |
 | Treat military pathways as factual exploration and human verification, not recruitment targeting or eligibility determination | Minors and adults need accurate official information without pressure or unsupported conclusions | — Pending |
 | Keep personal circumstances separate from matching | Support can be offered with voluntary, purpose-specific consent without turning sensitive data into a ranking signal | Phase 7 foundation passed |
+| Read public discovery only from the governed reviewed snapshot | Prevent legacy seeds, profiles, candidate data, and live provider requests from affecting what a learner sees | Phase 11 passed |
+| Retain unavailable saved IDs as removable choices | A changed catalogue must not silently replace or erase a visitor’s saved option | Phase 11 passed |
+| Derive reasons only from reviewed facts with preserved evidence | Source-backed explanation must not become a personal recommendation or outcome claim | Phase 11 passed |
 
 ## Current Milestone: v1.1 Regional Opportunity Navigator
 
@@ -92,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 after starting milestone v1.1*
+*Last updated: 2026-09-24 after Phase 11*
