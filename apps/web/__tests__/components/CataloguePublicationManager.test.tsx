@@ -58,6 +58,14 @@ describe('CataloguePublicationManager', () => {
     expect(screen.getAllByText(/source/i)).not.toHaveLength(0);
   });
 
+  it('guides editors to place reviewed qualification evidence in the existing private import', async () => {
+    render(<CataloguePublicationManager />);
+
+    await waitFor(() => expect(screen.getByText('Technical training')).toBeInTheDocument());
+    expect(screen.getByText(/publishedRequirements.*reviewedDescription.*documentedSupport/i)).toBeInTheDocument();
+    expect(screen.getByText(/stage privately, submit for independent review, then release/i)).toBeInTheDocument();
+  });
+
   it('does not fabricate a conflict before a stale import response', async () => {
     render(<CataloguePublicationManager />);
     await waitFor(() => expect(screen.getByText('Technical training')).toBeInTheDocument());
