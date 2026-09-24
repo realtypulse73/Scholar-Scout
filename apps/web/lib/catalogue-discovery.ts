@@ -6,6 +6,8 @@ import {
   type CataloguePathway,
   type FactEvidence,
   type FactStatus,
+  type PublishedRequirement,
+  type SourcedFact,
   type SourceMetadata,
 } from '@/lib/catalogue-contract';
 import { catalogueCoverage, catalogueRegions } from '@/lib/catalogue-fixtures';
@@ -54,6 +56,9 @@ export interface CatalogueDiscoveryItem {
     duration: CatalogueDiscoveryFact<string>;
   };
   reasonsToConsider: CatalogueDiscoveryReason[];
+  publishedRequirements?: PublishedRequirement[];
+  reviewedDescription?: SourcedFact<string>;
+  documentedSupport?: SourcedFact<string>;
   factState: FactStatus;
   source: { label: string; date: string | null; state: 'current' | 'needs-confirmation' | 'unknown' };
   officialVerificationUrl: string;
@@ -177,6 +182,13 @@ function mapPublishedRecord(record: CataloguePublishedRecord, now: Date): Catalo
       delivery,
       trainingPayer: facts.trainingPayer,
     }),
+    publishedRequirements: record.publishedRequirements ?? [],
+    ...(record.reviewedDescription === undefined
+      ? {}
+      : { reviewedDescription: record.reviewedDescription }),
+    ...(record.documentedSupport === undefined
+      ? {}
+      : { documentedSupport: record.documentedSupport }),
     factState: aggregateFactState([place.state, delivery.state, ...Object.values(facts).map((fact) => fact.state)]),
     source: mapSource(record.source, now),
     officialVerificationUrl: record.source.sourceUrl,
