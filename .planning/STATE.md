@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Regional Opportunity Navigator
 current_phase: 11
 current_phase_name: Choice-Preserving Six-Area Discovery
-status: planning
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-09-24T00:43:32.385Z"
-last_activity: 2026-09-23
-last_activity_desc: Phase 10 complete, transitioned to Phase 11
+status: awaiting-verification
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-09-24T01:29:22.817Z"
+last_activity: 2026-09-24
+last_activity_desc: Completed Phase 11 Plan 05 source-first discovery gap closure; browser accessibility acceptance remains.
 progress:
   total_phases: 7
-  completed_phases: 2
-  total_plans: 20
-  completed_plans: 18
-  percent: 29
+  completed_phases: 3
+  total_plans: 21
+  completed_plans: 21
+  percent: 43
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 ## Current Position
 
 Phase: 11 — Choice-Preserving Six-Area Discovery
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-23 — Phase 10 complete, transitioned to Phase 11
+Plan: 5 of 5 complete
+Status: Awaiting browser accessibility acceptance
+Last activity: 2026-09-24 — Completed Phase 11 Plan 05 source-first discovery gap closure.
 
 ## Performance Metrics
 
@@ -111,6 +111,7 @@ Last activity: 2026-09-23 — Phase 10 complete, transitioned to Phase 11
 | Phase 10 P02 | 58min | 2 tasks | 9 files |
 | Phase 10 P06 | 1h 30m | 2 tasks | 9 files |
 | Phase 11 P03 | 25min | 2 tasks | 3 files |
+| Phase 11 P05 | 12min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -199,6 +200,8 @@ Last activity: 2026-09-23 — Phase 10 complete, transitioned to Phase 11
 - [Phase ?]: Use a bounded one-record stale-import DTO and preserve atomic non-retrying batch behavior.
 - [Phase ?]: Validate recovered publication candidates, manifests, lineage, active snapshot, and canonical public digest before persistence.
 - [Phase ?]: Compare saved IDs only against the supplied public snapshot and retain unmatched IDs as visitor-controlled unavailable choices.
+- [Phase ?]: Use only reviewed skill, delivery, and training-payer facts as bounded source-backed reasons to consider.
+- [Phase ?]: Build comparison detail links from each public item controlled metro and fixed neutral filters.
 
 ### Roadmap Evolution
 
@@ -241,6 +244,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T00:43:32.354Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-09-24T01:29:22.793Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None
