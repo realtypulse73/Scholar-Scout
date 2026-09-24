@@ -112,7 +112,13 @@ Plans:
 4. Unknown, stale, conflicting, empty-coverage, and external-link states provide a clear next action and cannot look confirmed.
 5. Discovery and comparison work with keyboard/screen reader and supported phone/tablet layouts without horizontal page overflow.
 
-**Plans:** 0/0 plans executed.
+**Plans:** 4 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Replace legacy profile-ranked browsing with the public snapshot discovery model and reversible six-area filters.
+- [ ] 11-02-PLAN.md — Build source-first cards plus the finite focused detail and media-ready preview boundary.
+- [ ] 11-03-PLAN.md — Move student-controlled save and factual comparison to the governed public snapshot.
+- [ ] 11-04-PLAN.md — Harden keyboard, screen-reader, reflow, and reduced-motion behavior and close the regression matrix.
 
 **Risk:** A polished surface can conceal uncertainty or use convenience filtering as exclusion. Treat source/status/verify content and all-visible ranking assertions as core UI/test contracts.
 
