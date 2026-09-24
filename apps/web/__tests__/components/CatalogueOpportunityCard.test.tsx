@@ -54,4 +54,15 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open comparison/i })).toHaveAttribute('href', '/shortlist');
   });
+
+  it('uses named native actions and a wrapping card layout without color-only fact states', () => {
+    render(<CatalogueOpportunityCard item={item} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} />);
+
+    expect(screen.getByRole('article', { name: /northside welding institute/i })).toHaveClass('min-w-0', 'max-w-full');
+    expect(screen.getByText(/facts: needs confirmation/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
+    expect(screen.getByRole('link', { name: /official verification for northside welding institute.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /see all facts and sources for northside welding institute/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
+    expect(screen.getByTestId('catalogue-card-actions')).toHaveClass('flex-wrap');
+  });
 });

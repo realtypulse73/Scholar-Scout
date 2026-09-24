@@ -15,6 +15,7 @@ const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
 
 export default function CatalogueDiscoveryOverview({ model }: { model: CatalogueDiscoveryModel }) {
   const { filters, region } = model;
+  const activeFilters = describeActiveFilters(filters);
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <section className="border-y border-ink-200 bg-white">
@@ -24,8 +25,8 @@ export default function CatalogueDiscoveryOverview({ model }: { model: Catalogue
           <p className="mt-3 max-w-3xl text-sm leading-6 text-ink-600 sm:text-base">Browse factual records from the current reviewed snapshot. Your controls narrow this list only; they do not assess eligibility or rank you.</p>
         </div>
       </section>
-      <div className="mx-auto grid max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
-        <aside className="lg:sticky lg:top-4 lg:self-start">
+      <div data-testid="catalogue-overview-layout" className="mx-auto grid w-full min-w-0 max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
           <form action="/programmes" className="space-y-5 rounded-card border border-ink-200 bg-white p-5 shadow-sm" aria-label="Catalogue filters">
             <FilterSelect label="Metro area" name="metro" value={filters.metro}>{catalogueRegions.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}</FilterSelect>
             <FilterSelect label="Pathway type" name="pathway" value={filters.pathway}><option value="all">All pathway types</option>{CATALOGUE_PATHWAYS.map((pathway) => <option key={pathway} value={pathway}>{pathwayLabels[pathway]}</option>)}</FilterSelect>
@@ -39,9 +40,12 @@ export default function CatalogueDiscoveryOverview({ model }: { model: Catalogue
         <section aria-labelledby="catalogue-results-heading" className="min-w-0 space-y-5">
           <div className="rounded-card border border-ink-200 bg-white p-5">
             <h2 id="catalogue-results-heading" className="text-xl font-semibold">Reviewed cards</h2>
-            <p className="mt-1 text-sm text-ink-600" role="status">{model.items.length} result{model.items.length === 1 ? '' : 's'}. {model.sortSummary}</p>
+            <p className="mt-1 text-sm text-ink-600" role="status" aria-live="polite">
+              {model.items.length} result{model.items.length === 1 ? '' : 's'}. {model.sortSummary}
+              {activeFilters ? ` Active filters: ${activeFilters}.` : ' No additional filters are active.'}
+            </p>
             <p className="mt-3 text-sm font-semibold text-ink-700">Coverage for {region.label}</p>
-            <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2" aria-label="Pathway coverage">
+            <ul data-testid="catalogue-coverage" className="mt-2 grid min-w-0 gap-2 text-sm sm:grid-cols-2" aria-label="Pathway coverage">
               {model.coverage.map((coverage) => <li key={coverage.pathway} className="rounded-control border border-ink-200 px-3 py-2"><span className="font-medium">{pathwayLabels[coverage.pathway]}</span>: {coverage.state === 'verified' ? 'Verified coverage' : 'Not yet verified'} <span className="text-ink-500">(reviewed {coverage.reviewedAt})</span></li>)}
             </ul>
           </div>
@@ -54,6 +58,17 @@ export default function CatalogueDiscoveryOverview({ model }: { model: Catalogue
 
 function FilterSelect({ label, name, value, children }: { label: string; name: string; value: string; children: React.ReactNode }) {
   return <div><label htmlFor={name} className="text-sm font-semibold text-ink-800">{label}</label><select id={name} name={name} defaultValue={value} className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-focus">{children}</select></div>;
+}
+
+function describeActiveFilters(filters: CatalogueDiscoveryModel['filters']): string {
+  const descriptions = [
+    filters.pathway !== 'all' ? `Pathway type: ${pathwayLabels[filters.pathway]}` : null,
+    filters.delivery !== 'all' ? `Delivery: ${filters.delivery.replaceAll('-', ' ')}` : null,
+    filters.status !== 'all' ? `Fact status: ${filters.status.replaceAll('-', ' ')}` : null,
+    filters.q ? `Search: ${filters.q}` : null,
+  ].filter((description): description is string => description !== null);
+
+  return descriptions.join('; ');
 }
 function EmptyState({ model }: { model: CatalogueDiscoveryModel }) {
   const message = model.emptyState === 'filters-empty' ? 'Your active filters removed all reviewed cards. Reset or widen the filters to return to this metro’s reviewed snapshot.' : model.emptyState === 'coverage-not-yet-verified' ? 'This pathway’s coverage is not yet verified for this metro, so no availability or exclusion is implied.' : 'The current reviewed snapshot has no published cards for this metro. This does not mean no opportunities exist.';

@@ -43,13 +43,13 @@ export default function CatalogueOpportunityCard({
   });
 
   return (
-    <article className="rounded-card border border-ink-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <article className="min-w-0 max-w-full rounded-card border border-ink-200 bg-white p-5 shadow-sm" aria-labelledby={`catalogue-card-${item.id}`}>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-brand-700">
             {item.pathway ? pathwayLabels[item.pathway] : 'Pathway needs confirmation'}
           </p>
-          <h3 className="mt-1 text-xl font-semibold">{item.providerTitle}</h3>
+          <h3 id={`catalogue-card-${item.id}`} className="mt-1 break-words text-xl font-semibold">{item.providerTitle}</h3>
           <p className="mt-1 text-sm text-ink-600">
             {item.place.value ?? 'Location needs confirmation'} · {formatValue(item.delivery.value) ?? 'Delivery needs confirmation'}
           </p>
@@ -59,7 +59,7 @@ export default function CatalogueOpportunityCard({
         </span>
       </div>
 
-      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+      <dl className="mt-4 grid min-w-0 gap-3 text-sm sm:grid-cols-2">
         <Fact label="Cost or tuition" value={item.facts.costOrTuition.value} state={item.facts.costOrTuition.state} />
         <Fact label="Skill taught" value={item.facts.skillTaught.value} state={item.facts.skillTaught.state} />
       </dl>
@@ -79,8 +79,8 @@ export default function CatalogueOpportunityCard({
         </section>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Link href={buildCatalogueDetailHref(item.id, filters)} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+      <div data-testid="catalogue-card-actions" className="mt-5 flex min-w-0 flex-wrap gap-3">
+        <Link href={buildCatalogueDetailHref(item.id, filters)} aria-label={`See all facts and sources for ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
           See all facts and sources
         </Link>
         <ShortlistButton programmeId={item.id} />
@@ -90,7 +90,7 @@ export default function CatalogueOpportunityCard({
         <Link href={alternateHref} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
           Alternate routes: {pathwayLabels[alternatePathway]}
         </Link>
-        <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+        <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" aria-label={`Official verification for ${item.providerTitle} (opens a new tab)`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
           Official verification (opens a new tab)
         </a>
       </div>

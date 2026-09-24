@@ -30,4 +30,30 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByRole('link', { name: /open comparison/i })).toHaveAttribute('href', '/shortlist');
     expect(screen.getAllByText(/not yet verified/i)).not.toHaveLength(0);
   });
+
+  it('announces active filters with labelled native controls and bounded result content', () => {
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: {
+        metro: 'greater-houston',
+        pathway: 'trade-career-school',
+        delivery: 'in-person',
+        status: 'current',
+        q: 'welding',
+      },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Metro area')).toHaveValue('greater-houston');
+    expect(screen.getByLabelText('Pathway type')).toHaveValue('trade-career-school');
+    expect(screen.getByLabelText('Delivery')).toHaveValue('in-person');
+    expect(screen.getByLabelText('Fact status')).toHaveValue('current');
+    expect(screen.getByLabelText('Search reviewed records')).toHaveValue('welding');
+    expect(screen.getByRole('status')).toHaveTextContent(/active filters: pathway type: trade or career school/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/fact status: current/i);
+    expect(screen.getByTestId('catalogue-overview-layout')).toHaveClass('w-full', 'min-w-0', 'max-w-6xl');
+    expect(screen.getByTestId('catalogue-coverage')).toHaveTextContent(/not yet verified/i);
+  });
 });
