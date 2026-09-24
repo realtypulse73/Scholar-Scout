@@ -16,7 +16,7 @@ const labels: Record<QualificationKind, string> = {
   'voluntary-military-history': 'Voluntary military history',
 };
 
-export default function QualificationRecordForm() {
+export default function QualificationRecordForm({ onClose }: { onClose?: () => void }) {
   const [record, setRecord] = useState<QualificationRecord>(EMPTY_QUALIFICATION_RECORD);
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState('Loading your private qualifications.');
@@ -89,6 +89,7 @@ export default function QualificationRecordForm() {
       setRecord(nextRecord);
       setCanReload(false);
       setStatus(action === 'clear' ? 'Qualifications cleared.' : 'Qualifications saved.');
+      onClose?.();
     } catch {
       setError(action === 'clear'
         ? 'We could not clear your qualifications. Please try again.'
@@ -136,6 +137,7 @@ export default function QualificationRecordForm() {
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
         <button type="button" onClick={() => void save()} className="min-h-touch rounded-card border border-brand-600 bg-brand-600 px-4 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Save qualifications</button>
+        {onClose ? <button type="button" onClick={onClose} className="min-h-touch rounded-card border border-ink-300 px-4 text-sm font-semibold text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Close qualifications</button> : null}
         <button type="button" onClick={() => setShowClearConfirmation(true)} className="min-h-touch rounded-card border border-danger-300 px-4 text-sm font-semibold text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Clear saved qualifications</button>
         {canReload ? <button type="button" onClick={() => void load()} className="min-h-touch rounded-card border border-ink-300 px-4 text-sm font-semibold text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Reload saved qualifications</button> : null}
       </div>

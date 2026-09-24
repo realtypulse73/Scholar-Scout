@@ -1,5 +1,9 @@
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/auth';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import { buildQualificationLensModel } from '@/lib/qualification-lens';
+import { getQualificationRecord } from '@/lib/server/data-store';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 interface PageProps {
@@ -20,6 +24,14 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
     records: snapshot.records,
     searchParams: (await searchParams) ?? {},
   });
+  const session = await getServerSession(authOptions);
+  const qualificationRecord = session?.user?.id
+    ? await getQualificationRecord(session.user.id)
+    : null;
+  const qualificationLens = buildQualificationLensModel(model.items, {
+    structured: qualificationRecord?.structured ?? [],
+    keywords: qualificationRecord?.keywords ?? [],
+  });
 
-  return <CatalogueDiscoveryOverview model={model} />;
+  return <CatalogueDiscoveryOverview model={model} qualificationLens={qualificationLens} canEditQualifications={Boolean(session?.user?.id)} />;
 }

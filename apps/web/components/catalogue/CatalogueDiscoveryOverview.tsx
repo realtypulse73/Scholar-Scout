@@ -1,7 +1,12 @@
+'use client';
+
 import Link from 'next/link';
+import { useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
+import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
 import { type CatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
+import { orderQualificationsFirst, type QualificationLensModel } from '@/lib/qualification-lens';
 import { catalogueRegions } from '@/lib/catalogue-fixtures';
 
 const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
@@ -13,9 +18,34 @@ const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
   'military-information': 'Military information',
 };
 
-export default function CatalogueDiscoveryOverview({ model }: { model: CatalogueDiscoveryModel }) {
+interface CatalogueDiscoveryOverviewProps {
+  model: CatalogueDiscoveryModel;
+  qualificationLens?: QualificationLensModel;
+  canEditQualifications?: boolean;
+}
+
+export default function CatalogueDiscoveryOverview({
+  model,
+  qualificationLens,
+  canEditQualifications = false,
+}: CatalogueDiscoveryOverviewProps) {
   const { filters, region } = model;
   const activeFilters = describeActiveFilters(filters);
+  const [order, setOrder] = useState<'normal' | 'qualifications'>('normal');
+  const [showQualificationEditor, setShowQualificationEditor] = useState(false);
+  const qualificationTrigger = useRef<HTMLButtonElement>(null);
+  const lensEntries = qualificationLens?.items ?? [];
+  const displayedEntries = order === 'qualifications' && qualificationLens
+    ? orderQualificationsFirst(lensEntries)
+    : model.items.map((item) => ({ item, explanation: undefined }));
+  const resultCount = displayedEntries.length;
+  const orderLabel = order === 'qualifications' ? 'Qualifications first' : 'Normal catalogue';
+
+  function closeQualificationEditor() {
+    setShowQualificationEditor(false);
+    window.setTimeout(() => qualificationTrigger.current?.focus(), 0);
+  }
+
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <section className="border-y border-ink-200 bg-white">
@@ -41,15 +71,33 @@ export default function CatalogueDiscoveryOverview({ model }: { model: Catalogue
           <div className="rounded-card border border-ink-200 bg-white p-5">
             <h2 id="catalogue-results-heading" className="text-xl font-semibold">Reviewed cards</h2>
             <p className="mt-1 text-sm text-ink-600" role="status" aria-live="polite">
-              {model.items.length} result{model.items.length === 1 ? '' : 's'}. {model.sortSummary}
+              Showing {resultCount} reviewed opportunit{resultCount === 1 ? 'y' : 'ies'}. {orderLabel} order. Every opportunity is still shown. {model.sortSummary}
               {activeFilters ? ` Active filters: ${activeFilters}.` : ' No additional filters are active.'}
             </p>
+            <fieldset className="mt-5 min-w-0 rounded-card border border-ink-200 bg-ink-50 p-3">
+              <legend className="px-1 text-sm font-semibold text-ink-900">Order opportunities</legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <label className="flex min-h-touch items-center gap-3 rounded-control border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-800">
+                  <input type="radio" name="catalogue-order" value="normal" checked={order === 'normal'} onChange={() => setOrder('normal')} />
+                  Normal catalogue
+                </label>
+                <label className="flex min-h-touch items-center gap-3 rounded-control border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-800">
+                  <input type="radio" name="catalogue-order" value="qualifications" checked={order === 'qualifications'} disabled={!qualificationLens} onChange={() => setOrder('qualifications')} />
+                  Qualifications first
+                </label>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-ink-700">Every reviewed opportunity stays in the list. This changes order only.</p>
+              {!qualificationLens ? <p className="mt-2 text-sm text-ink-600">Qualifications first is unavailable right now. You can still browse every opportunity.</p> : null}
+              {qualificationLens && lensEntries.every((entry) => entry.explanation.checkedRequirements.length === 0 && entry.explanation.keywordConnections.length === 0) ? <p className="mt-2 text-sm text-ink-600">Add qualifications to check published requirements.</p> : null}
+              {canEditQualifications ? <button ref={qualificationTrigger} type="button" onClick={() => setShowQualificationEditor(true)} className="mt-3 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Edit qualifications</button> : <Link href="/auth/sign-in" className="mt-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Sign in to edit qualifications</Link>}
+              {showQualificationEditor ? <div className="mt-4"><QualificationRecordForm onClose={closeQualificationEditor} /></div> : null}
+            </fieldset>
             <p className="mt-3 text-sm font-semibold text-ink-700">Coverage for {region.label}</p>
             <ul data-testid="catalogue-coverage" className="mt-2 grid min-w-0 gap-2 text-sm sm:grid-cols-2" aria-label="Pathway coverage">
               {model.coverage.map((coverage) => <li key={coverage.pathway} className="rounded-control border border-ink-200 px-3 py-2"><span className="font-medium">{pathwayLabels[coverage.pathway]}</span>: {coverage.state === 'verified' ? 'Verified coverage' : 'Not yet verified'} <span className="text-ink-500">(reviewed {coverage.reviewedAt})</span></li>)}
             </ul>
           </div>
-          {model.items.length > 0 ? model.items.map((item) => <CatalogueOpportunityCard key={item.id} item={item} filters={filters} />) : <EmptyState model={model} />}
+          {displayedEntries.length > 0 ? displayedEntries.map(({ item, explanation }) => <CatalogueOpportunityCard key={item.id} item={item} filters={filters} qualificationExplanation={order === 'qualifications' ? explanation : undefined} />) : <EmptyState model={model} />}
         </section>
       </div>
     </main>

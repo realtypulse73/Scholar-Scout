@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
+import QualificationExplanation from '@/components/qualifications/QualificationExplanation';
 import {
   buildCatalogueDetailHref,
   buildCatalogueDiscoveryHref,
@@ -7,6 +8,7 @@ import {
   type CatalogueDiscoveryItem,
 } from '@/lib/catalogue-discovery';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
+import type { QualificationExplanation as QualificationExplanationModel } from '@/lib/qualification-lens';
 
 const pathwayLabels: Record<NonNullable<CatalogueDiscoveryItem['pathway']>, string> = {
   university: 'University',
@@ -20,12 +22,14 @@ const pathwayLabels: Record<NonNullable<CatalogueDiscoveryItem['pathway']>, stri
 interface CatalogueOpportunityCardProps {
   item: CatalogueDiscoveryItem;
   filters: CatalogueDiscoveryFilters;
+  qualificationExplanation?: QualificationExplanationModel;
 }
 
 /** A scan-friendly public record card that keeps its evidence and next action visible. */
 export default function CatalogueOpportunityCard({
   item,
   filters,
+  qualificationExplanation,
 }: CatalogueOpportunityCardProps) {
   const factsToVerify = Object.entries({
     'Location': item.place,
@@ -67,6 +71,13 @@ export default function CatalogueOpportunityCard({
       <p className="mt-4 text-sm text-ink-600">
         Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {formatState(item.source.state)}
       </p>
+
+      {qualificationExplanation ? (
+        <QualificationExplanation
+          explanation={qualificationExplanation}
+          officialVerificationUrl={item.officialVerificationUrl}
+        />
+      ) : null}
 
       {item.reasonsToConsider[0] ? (
         <section className="mt-4 rounded-card border border-brand-200 bg-brand-50 p-3" aria-label="Reason to consider">
