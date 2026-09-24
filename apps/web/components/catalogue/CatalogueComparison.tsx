@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import QualificationExplanation from '@/components/qualifications/QualificationExplanation';
 import {
   SHORTLIST_STORAGE_KEY,
   parseShortlist,
@@ -14,9 +15,11 @@ import type {
   CatalogueDiscoveryFact,
   CatalogueDiscoveryItem,
 } from '@/lib/catalogue-discovery';
+import type { QualificationExplanation as QualificationExplanationModel } from '@/lib/qualification-lens';
 
 interface CatalogueComparisonProps {
   items: CatalogueDiscoveryItem[];
+  qualificationExplanations?: Record<string, QualificationExplanationModel>;
 }
 
 const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
@@ -29,7 +32,10 @@ const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
 };
 
 /** Compares only visitor-saved IDs against the supplied public catalogue snapshot. */
-export default function CatalogueComparison({ items }: CatalogueComparisonProps) {
+export default function CatalogueComparison({
+  items,
+  qualificationExplanations = {},
+}: CatalogueComparisonProps) {
   const { data: session } = useSession();
   const [shortlistIds, setShortlistIds] = useState<string[]>([]);
 
@@ -94,7 +100,12 @@ export default function CatalogueComparison({ items }: CatalogueComparisonProps)
 
       <section aria-label="Saved opportunity comparison cards" className="grid w-full min-w-0 max-w-full gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resolvedChoices.map(({ id, item }) => item ? (
-          <ComparisonCard key={id} item={item} onRemove={removeChoice} />
+          <ComparisonCard
+            key={id}
+            item={item}
+            onRemove={removeChoice}
+            qualificationExplanation={qualificationExplanations[id]}
+          />
         ) : (
           <UnavailableChoice key={id} id={id} onRemove={removeChoice} />
         ))}
@@ -103,7 +114,15 @@ export default function CatalogueComparison({ items }: CatalogueComparisonProps)
   );
 }
 
-function ComparisonCard({ item, onRemove }: { item: CatalogueDiscoveryItem; onRemove: (id: string) => void }) {
+function ComparisonCard({
+  item,
+  onRemove,
+  qualificationExplanation,
+}: {
+  item: CatalogueDiscoveryItem;
+  onRemove: (id: string) => void;
+  qualificationExplanation?: QualificationExplanationModel;
+}) {
   const pathway = item.pathway ? pathwayLabels[item.pathway] : 'Needs confirmation';
   const detailHref = buildCatalogueDetailHref(item.id, {
     metro: item.regionId,
@@ -126,6 +145,7 @@ function ComparisonCard({ item, onRemove }: { item: CatalogueDiscoveryItem; onRe
         <FactRow label="Cost or tuition" fact={item.facts.costOrTuition} />
         <FactRow label="Duration" fact={item.facts.duration} />
       </dl>
+      {qualificationExplanation ? <QualificationExplanation explanation={qualificationExplanation} officialVerificationUrl={item.officialVerificationUrl} /> : null}
       <section className="mt-5 border-t border-border pt-5" aria-label={`Factual reasons to consider for ${item.providerTitle}`}>
         <h3 className="text-sm font-semibold text-ink-900">Reasons to consider</h3>
         {item.reasonsToConsider.length === 0 ? (

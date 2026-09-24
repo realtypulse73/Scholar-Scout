@@ -1,10 +1,14 @@
 import Link from 'next/link';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/auth';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import CatalogueComparison from '@/components/catalogue/CatalogueComparison';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
 import { catalogueRegions } from '@/lib/catalogue-fixtures';
+import { buildQualificationLensModel } from '@/lib/qualification-lens';
+import { getQualificationRecord } from '@/lib/server/data-store';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 export const metadata = {
@@ -22,6 +26,16 @@ export default async function ShortlistPage() {
     records: snapshot.records,
     searchParams: { metro: region.id },
   }).items);
+  const session = await getServerSession(authOptions);
+  const qualificationRecord = session?.user?.id
+    ? await getQualificationRecord(session.user.id)
+    : null;
+  const qualificationExplanations = Object.fromEntries(
+    buildQualificationLensModel(items, {
+      structured: qualificationRecord?.structured ?? [],
+      keywords: qualificationRecord?.keywords ?? [],
+    }).items.map(({ item, explanation }) => [item.id, explanation]),
+  );
 
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
@@ -46,7 +60,7 @@ export default async function ShortlistPage() {
 
       <section className="border-y border-border bg-white">
         <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8">
-          <CatalogueComparison items={items} />
+          <CatalogueComparison items={items} qualificationExplanations={qualificationExplanations} />
         </div>
       </section>
     </main>

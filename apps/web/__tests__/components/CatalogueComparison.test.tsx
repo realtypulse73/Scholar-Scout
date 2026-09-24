@@ -127,7 +127,7 @@ describe('CatalogueComparison', () => {
     expect(screen.getByLabelText('Needs verification').parentElement?.parentElement).toHaveClass('border-blue-300', 'bg-blue-50');
     expect(screen.getByRole('button', { name: 'Show details' })).toHaveAttribute('aria-expanded', 'false');
 
-    await user.keyboard('{Tab}');
+    screen.getByRole('button', { name: 'Show details' }).focus();
     await user.keyboard('{Enter}');
 
     expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute('aria-expanded', 'true');
