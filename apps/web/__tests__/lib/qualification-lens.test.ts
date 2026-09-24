@@ -1,5 +1,5 @@
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
-import { buildQualificationLensModel } from '@/lib/qualification-lens';
+import { buildQualificationLensModel, orderQualificationsFirst } from '@/lib/qualification-lens';
 import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
 
 const NOW = new Date('2026-09-23T00:00:00.000Z');
@@ -96,5 +96,90 @@ describe('qualification lens', () => {
         text: 'Hands-on welding instruction for entry-level learners.',
       })],
     });
+  });
+
+  it('orders only the existing discovery items by checked count, then keyword connection, then public ID', () => {
+    const checked = record('catalogue:checked');
+    const keywordOnly = record('catalogue:keyword');
+    keywordOnly.publishedRequirements = [];
+    const noConnection = record('catalogue:explore');
+    noConnection.publishedRequirements = [];
+    noConnection.reviewedDescription = {
+      value: 'Hands-on fabrication instruction for entry-level learners.',
+      evidence: evidence(),
+    };
+    const items = buildCatalogueDiscoveryModel({
+      records: [noConnection, keywordOnly, checked],
+      searchParams: { metro: 'greater-houston' },
+      now: NOW,
+    }).items;
+    const model = buildQualificationLensModel(items, {
+      structured: ['diploma-credits'],
+      keywords: ['welding'],
+    });
+
+    const ordered = orderQualificationsFirst(model.items);
+
+    expect(ordered.map((entry) => entry.item.id)).toEqual([
+      'catalogue:checked',
+      'catalogue:keyword',
+      'catalogue:explore',
+    ]);
+    expect(ordered).toHaveLength(model.items.length);
+    expect(new Set(ordered.map((entry) => entry.item.id))).toEqual(new Set(model.items.map((entry) => entry.item.id)));
+  });
+
+  it('keeps non-current requirements as source-backed verification work without changing the connection count', () => {
+    const reviewed = record('catalogue:verify');
+    reviewed.publishedRequirements = [{
+      text: 'A high school diploma or equivalent is required.',
+      qualificationKeys: ['diploma-credits'],
+      evidence: evidence('needs-confirmation'),
+    }];
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [reviewed],
+      searchParams: { metro: 'greater-houston' },
+      now: NOW,
+    }).items;
+
+    const model = buildQualificationLensModel([item], {
+      structured: ['diploma-credits'],
+      keywords: [],
+    });
+
+    expect(model.items[0].explanation).toEqual(expect.objectContaining({
+      checkedRequirements: [],
+      verificationRows: [expect.objectContaining({
+        label: 'Needs verification',
+        state: 'needs-confirmation',
+        sourceDate: '2026-09-20',
+        evidence: expect.objectContaining({
+          verificationAction: 'Review the official admissions page before making a decision.',
+        }),
+      })],
+    }));
+  });
+
+  it('requires literal whole-token keywords and rejects private or proxy-shaped inputs', () => {
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [record('catalogue:tokens')],
+      searchParams: { metro: 'greater-houston' },
+      now: NOW,
+    }).items;
+
+    expect(buildQualificationLensModel([item], {
+      structured: [],
+      keywords: ['weld'],
+    }).items[0].explanation.keywordConnections).toEqual([]);
+    expect(() => buildQualificationLensModel([item], {
+      structured: [],
+      keywords: [],
+      note: 'Private note that must never reach the lens.',
+    } as unknown as { structured: []; keywords: [] })).toThrow('qualification-lens-input-invalid');
+    expect(() => buildQualificationLensModel([item], {
+      structured: [],
+      keywords: [],
+      gpa: '4.0',
+    } as unknown as { structured: []; keywords: [] })).toThrow('qualification-lens-input-invalid');
   });
 });
