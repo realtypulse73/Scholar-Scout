@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 4
 waived_count: 0
 fixed_count: 0
-total_count: 3
-last_updated: 2026-09-22T23:02:16.769Z
+total_count: 4
+last_updated: 2026-09-24T15:43:19.371Z
 ---
 
 # Broken Windows Ledger
@@ -18,6 +18,7 @@ last_updated: 2026-09-22T23:02:16.769Z
 | 1 | 09 | deviation | apps/web/lib/catalogue-contract.ts |  | Added the missing great-circle angle conversion helper after the tracer exposed it. | open |  | 2026-09-22T20:59:05.494Z |  |
 | 2 | 09 | deviation | apps/web/__tests__/lib/catalogue-contract.test.ts | 646 | Corrected the isolated documented-source chronology regression setup so it tests the required later source date. | open |  | 2026-09-22T22:15:36.081Z |  |
 | 3 | 09 | deviation | apps/web/lib/catalogue-contract.ts |  | Narrowed source-date guard to a type predicate for the chronology validation. | open |  | 2026-09-22T23:02:16.769Z |  |
+| 4 | quick | deviation | apps/web/__tests__/api/register.test.ts |  | Corrected the registration test environment fixture so strict TypeScript accepts the planned local and Vercel cases. | open |  | 2026-09-24T15:43:19.371Z |  |
 
 ````json
 [
@@ -55,6 +56,18 @@ last_updated: 2026-09-22T23:02:16.769Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-22T23:02:16.769Z",
+    "resolved_at": null
+  },
+  {
+    "id": 4,
+    "kind": "deviation",
+    "phase": "quick",
+    "file": "apps/web/__tests__/api/register.test.ts",
+    "line": null,
+    "description": "Corrected the registration test environment fixture so strict TypeScript accepts the planned local and Vercel cases.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-24T15:43:19.371Z",
     "resolved_at": null
   }
 ]

@@ -48,3 +48,7 @@ Added a server-derived local-development registration exception that works only 
 
 - `82c8b4e` — `feat(260924-ftn): allow safe local development registration`
 
+## Self-Check: PASSED
+
+- All six implementation and test files exist in the worktree.
+- `82c8b4e` and `622643e` are present in git history.
