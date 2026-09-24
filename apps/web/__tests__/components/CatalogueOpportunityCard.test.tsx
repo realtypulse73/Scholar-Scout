@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
 import type { QualificationExplanation } from '@/lib/qualification-lens';
@@ -103,5 +104,55 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent is required.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
     expect(explanation.compareDocumentPosition(screen.getByRole('region', { name: /reason to consider/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
+  });
+
+  it('keeps keyword, uncertainty, and documented support factual while revealing extra requirement details on request', async () => {
+    const user = userEvent.setup();
+    const qualificationExplanation: QualificationExplanation = {
+      checkedRequirements: [
+        'A high school diploma or equivalent is required.',
+        'A current licence is required for this long reviewed training route.',
+        'Prior work experience is listed in the reviewed programme requirements.',
+      ].map((text) => ({
+        label: 'Checked published requirement' as const,
+        text,
+        qualificationKeys: ['diploma-credits'],
+        evidence: fact('Welding', 'current').evidence,
+      })),
+      keywordConnections: [{
+        label: 'Keyword connection',
+        keyword: 'welding',
+        text: 'Hands-on welding instruction for entry-level learners.',
+        source: 'reviewed-description',
+        evidence: fact('Welding', 'current').evidence,
+      }],
+      verificationRows: [{
+        label: 'Needs verification',
+        text: 'A dated requirement needs a current source.',
+        state: 'needs-confirmation',
+        sourceDate: '2026-09-20',
+        evidence: fact('Welding', 'needs-confirmation').evidence,
+      }],
+      documentedSupport: {
+        label: 'Documented support',
+        text: 'career advising',
+        sourceDate: '2026-09-20',
+        evidence: fact('Welding', 'current').evidence,
+      },
+    };
+
+    render(<CatalogueOpportunityCard item={item} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} qualificationExplanation={qualificationExplanation} />);
+
+    expect(screen.getByText('Keyword connection: welding appears in this reviewed text.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Needs verification')).toBeInTheDocument();
+    expect(screen.getByText(/this programme lists career advising.*ask the programme/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show details' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Prior work experience is listed in the reviewed programme requirements.')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Show details' }));
+
+    expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Prior work experience is listed in the reviewed programme requirements.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /verify this requirement.*opens a new tab/i })).toBeInTheDocument();
   });
 });
