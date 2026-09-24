@@ -1,5 +1,6 @@
 import type { FactEvidence, FactStatus, PublishedRequirement } from '@/lib/catalogue-contract';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
+import { QUALIFICATION_KINDS } from '@/lib/qualification-record';
 import type { QualificationKind } from '@/lib/qualification-record';
 
 /** The deliberately limited private inputs permitted to affect lens ordering. */
@@ -54,12 +55,37 @@ export function buildQualificationLensModel(
   items: CatalogueDiscoveryItem[],
   record: QualificationLensRecord,
 ): QualificationLensModel {
+  if (!isQualificationLensRecord(record)) {
+    throw new Error('qualification-lens-input-invalid');
+  }
+
   return {
     items: items.map((item) => ({
       item,
       explanation: explainQualificationConnection(item, record),
     })),
   };
+}
+
+/**
+ * Returns every discovery item in a stable, transparent qualifications-first
+ * order. It only compares documented lens connections; it never filters a
+ * pathway or makes a conclusion about a student's outcome.
+ */
+export function orderQualificationsFirst(
+  items: QualificationLensItem[],
+): QualificationLensItem[] {
+  return [...items].sort((left, right) => {
+    const checkedDifference = right.explanation.checkedRequirements.length
+      - left.explanation.checkedRequirements.length;
+    if (checkedDifference !== 0) return checkedDifference;
+
+    const keywordDifference = Number(right.explanation.keywordConnections.length > 0)
+      - Number(left.explanation.keywordConnections.length > 0);
+    if (keywordDifference !== 0) return keywordDifference;
+
+    return left.item.id.localeCompare(right.item.id);
+  });
 }
 
 function explainQualificationConnection(
@@ -141,7 +167,36 @@ function isNonCurrentRequirement(requirement: PublishedRequirement): boolean {
 }
 
 function hasWholeToken(text: string, keyword: string): boolean {
-  const normalizedKeyword = keyword.trim().toLocaleLowerCase();
+  const normalizedKeyword = normalizeTokens(keyword);
   if (!normalizedKeyword) return false;
-  return text.toLocaleLowerCase().split(/[^\p{L}\p{N}]+/u).includes(normalizedKeyword);
+  return ` ${normalizeTokens(text)} `.includes(` ${normalizedKeyword} `);
+}
+
+function normalizeTokens(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .join(' ');
+}
+
+function isQualificationLensRecord(value: unknown): value is QualificationLensRecord {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  const keys = Object.keys(candidate).sort();
+  if (keys.length !== 2 || keys[0] !== 'keywords' || keys[1] !== 'structured') return false;
+  if (!Array.isArray(candidate.structured) || !Array.isArray(candidate.keywords)) return false;
+  if (candidate.structured.length > QUALIFICATION_KINDS.length
+    || candidate.keywords.length > 12) return false;
+
+  const structured = candidate.structured;
+  const keywords = candidate.keywords;
+  if (structured.some((item) => !QUALIFICATION_KINDS.includes(item as QualificationKind))
+    || new Set(structured).size !== structured.length) return false;
+  if (keywords.some((item) => typeof item !== 'string'
+    || normalizeTokens(item).length === 0
+    || item.trim().length > 40)
+    || new Set(keywords).size !== keywords.length) return false;
+
+  return true;
 }
