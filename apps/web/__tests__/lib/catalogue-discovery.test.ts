@@ -1,4 +1,5 @@
 import {
+  buildCatalogueDetailHref,
   buildCatalogueDiscoveryModel,
   parseCatalogueDiscoveryFilters,
 } from '@/lib/catalogue-discovery';
@@ -43,5 +44,14 @@ describe('catalogue discovery model', () => {
     expect(filtered.items).toEqual([]);
     expect(filtered.emptyState).toBe('filters-empty');
     expect(filtered.resetHref).toBe('/programmes?metro=greater-houston');
+  });
+
+  it('builds a canonical detail return link from controlled filters only', () => {
+    const filters = parseCatalogueDiscoveryFilters({
+      metro: 'greater-houston', pathway: 'trade-career-school', q: 'welding', profile: 'ignored',
+    });
+    expect(buildCatalogueDetailHref('catalogue:one', filters)).toBe(
+      '/programmes/catalogue%3Aone?metro=greater-houston&pathway=trade-career-school&q=welding',
+    );
   });
 });
