@@ -18,8 +18,8 @@ jest.mock('@/lib/server/data-store', () => ({
 
 jest.mock('@/lib/server/request-ip', () => ({
   getTrustedRequestIp: jest.fn(),
-  isLocalDevelopmentRegistrationEnvironment:
-    jest.requireActual('@/lib/server/request-ip').isLocalDevelopmentRegistrationEnvironment,
+  isLocalDevelopmentAuthenticationEnvironment:
+    jest.requireActual('@/lib/server/request-ip').isLocalDevelopmentAuthenticationEnvironment,
 }));
 
 jest.mock('@/lib/server/rate-limit', () => ({

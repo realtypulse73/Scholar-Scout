@@ -1,6 +1,6 @@
 import {
   getTrustedRequestIp,
-  isLocalDevelopmentRegistrationEnvironment,
+  isLocalDevelopmentAuthenticationEnvironment,
 } from '@/lib/server/request-ip';
 
 describe('trusted request IP resolution', () => {
@@ -43,7 +43,7 @@ describe('trusted request IP resolution', () => {
     ['a Vercel-marked process', { NODE_ENV: 'development', VERCEL: '1' }, false],
     ['Vercel production', { NODE_ENV: 'development', VERCEL_ENV: 'production' }, false],
     ['Vercel Preview', { NODE_ENV: 'development', VERCEL_ENV: 'preview' }, false],
-  ])('permits the local registration branch only for %s', (_name, env, expected) => {
-    expect(isLocalDevelopmentRegistrationEnvironment(env)).toBe(expected);
+  ])('permits the local authentication branch only for %s', (_name, env, expected) => {
+    expect(isLocalDevelopmentAuthenticationEnvironment(env)).toBe(expected);
   });
 });

@@ -23,6 +23,7 @@ import {
   setAtomicReservationLimiterForTests,
   type AtomicReservationLimiter,
 } from '@/lib/server/rate-limit';
+import { getTrustedRequestIp } from '@/lib/server/request-ip';
 
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),
@@ -36,12 +37,24 @@ jest.mock('@/auth', () => ({
   authOptions: {},
 }), { virtual: true });
 
+jest.mock('@/lib/server/request-ip', () => ({
+  getTrustedRequestIp: jest.fn(),
+  isLocalDevelopmentAuthenticationEnvironment:
+    jest.requireActual('@/lib/server/request-ip').isLocalDevelopmentAuthenticationEnvironment,
+}));
+
 const initialData: ScholarScoutData = {
   users: [],
   onboardingProfiles: {},
   shortlists: {},
   programmeRecords: [],
   auditEvents: [],
+};
+
+type CredentialEnvironment = {
+  NODE_ENV: 'development' | 'production' | 'test';
+  VERCEL?: '1';
+  VERCEL_ENV?: string;
 };
 
 class MemoryDataStore implements ScholarScoutDataStore {
@@ -218,6 +231,8 @@ describe('student actor controls', () => {
 });
 
 describe('credential exchange controls', () => {
+  const originalEnv = process.env;
+  const getTrustedRequestIpMock = jest.mocked(getTrustedRequestIp);
   const credentialProvider = authOptions.providers?.[0] as {
     options: {
       authorize: (credentials: Record<string, string> | undefined) => Promise<unknown>;
@@ -225,10 +240,20 @@ describe('credential exchange controls', () => {
   };
 
   beforeEach(() => {
+    process.env = { ...originalEnv, NODE_ENV: 'test' };
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+    getTrustedRequestIpMock.mockReset();
+    getTrustedRequestIpMock.mockReturnValue({
+      status: 'available',
+      ip: '203.0.113.7',
+    });
     setScholarScoutDataStoreForTests(new MemoryDataStore());
   });
 
   afterEach(() => {
+    process.env = originalEnv;
+    getTrustedRequestIpMock.mockReset();
     setAtomicReservationLimiterForTests(null);
     setScholarScoutDataStoreForTests(null);
   });
@@ -259,14 +284,56 @@ describe('credential exchange controls', () => {
     const unavailableLimiter = await exchangeCredentials(createCredentialsRequest());
     expect(unavailableLimiter.status).toBe(503);
 
-    const missingTrustedIp = await exchangeCredentials(
-      new Request('http://localhost/api/auth/credentials', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.4' },
-        body: JSON.stringify({ email: 'student@example.com', password: 'not-the-password' }),
-      }),
-    );
+    getTrustedRequestIpMock.mockReturnValueOnce({ status: 'unavailable' });
+    const missingTrustedIp = await exchangeCredentials(createCredentialsRequest());
     expect(missingTrustedIp.status).toBe(503);
+  });
+
+  it('allows only a plain local development credential exchange without reading forwarded headers or reserving', async () => {
+    process.env = { ...originalEnv, NODE_ENV: 'development' };
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+    const limiter = createFixedWindowLimiter(5);
+    setAtomicReservationLimiterForTests(limiter);
+    await createUser({
+      email: 'student@example.com',
+      name: 'Student',
+      password: 'secure-password',
+      role: 'student',
+    });
+
+    const response = await exchangeCredentials(createCredentialsRequest(
+      { password: 'secure-password' },
+      {
+        forwarded: 'for=198.51.100.2',
+        'x-forwarded-for': '198.51.100.2',
+      },
+      false,
+    ));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ grant: expect.any(String) });
+    expect(getTrustedRequestIpMock).not.toHaveBeenCalled();
+    expect(limiter.reserve).not.toHaveBeenCalled();
+  });
+
+  it.each<[string, CredentialEnvironment]>([
+    ['Vercel production', { NODE_ENV: 'production', VERCEL: '1', VERCEL_ENV: 'production' }],
+    ['Vercel Preview', { NODE_ENV: 'development', VERCEL: '1', VERCEL_ENV: 'preview' }],
+  ])('keeps %s fail-closed when trusted IP or atomic reservation is unavailable', async (_name, env) => {
+    process.env = { ...originalEnv, ...env };
+    getTrustedRequestIpMock.mockReturnValueOnce({ status: 'unavailable' });
+
+    expect((await exchangeCredentials(createCredentialsRequest())).status).toBe(503);
+
+    const limiter = createFixedWindowLimiter(5);
+    setAtomicReservationLimiterForTests(limiter);
+    getTrustedRequestIpMock.mockReturnValueOnce({
+      status: 'available',
+      ip: '203.0.113.7',
+    });
+    setAtomicReservationLimiterForTests(null);
+    expect((await exchangeCredentials(createCredentialsRequest())).status).toBe(503);
   });
 
   it('issues a single-use grant after asynchronous verification and rejects raw credential callbacks', async () => {
@@ -300,12 +367,17 @@ describe('credential exchange controls', () => {
   });
 });
 
-function createCredentialsRequest(input?: { password?: string }): Request {
+function createCredentialsRequest(
+  input?: { password?: string },
+  headers: Record<string, string> = {},
+  includeTrustedVercelHeader = true,
+): Request {
   return new Request('http://localhost/api/auth/credentials', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-vercel-forwarded-for': '203.0.113.7',
+      ...(includeTrustedVercelHeader ? { 'x-vercel-forwarded-for': '203.0.113.7' } : {}),
+      ...headers,
     },
     body: JSON.stringify({
       email: 'student@example.com',

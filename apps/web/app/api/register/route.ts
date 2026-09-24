@@ -3,7 +3,7 @@ import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import { createUser, getAccountRoleForEmail } from '@/lib/server/data-store';
 import {
   getTrustedRequestIp,
-  isLocalDevelopmentRegistrationEnvironment,
+  isLocalDevelopmentAuthenticationEnvironment,
 } from '@/lib/server/request-ip';
 import { reserveRegistration } from '@/lib/server/rate-limit';
 
@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  if (!isLocalDevelopmentRegistrationEnvironment()) {
+  if (!isLocalDevelopmentAuthenticationEnvironment()) {
     const trustedIp = getTrustedRequestIp(request.headers);
 
     if (trustedIp.status !== 'available') {

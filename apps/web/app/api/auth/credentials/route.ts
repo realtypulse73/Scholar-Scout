@@ -4,7 +4,10 @@ import {
   issueCredentialGrant,
   verifyUserCredentials,
 } from '@/lib/server/data-store';
-import { getTrustedRequestIp } from '@/lib/server/request-ip';
+import {
+  getTrustedRequestIp,
+  isLocalDevelopmentAuthenticationEnvironment,
+} from '@/lib/server/request-ip';
 import { reserveSignInAttempt } from '@/lib/server/rate-limit';
 
 const MAX_CREDENTIAL_BODY_BYTES = 1_024;
@@ -25,29 +28,35 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid-credentials' }, { status: 400 });
   }
 
-  const trustedIp = getTrustedRequestIp(request.headers);
+  let credentialIp = 'local-development';
 
-  if (trustedIp.status !== 'available') {
-    return unavailableResponse();
-  }
+  if (!isLocalDevelopmentAuthenticationEnvironment()) {
+    const trustedIp = getTrustedRequestIp(request.headers);
 
-  const reservation = await reserveSignInAttempt({
-    email: parsed.value.email,
-    ip: trustedIp.ip,
-  });
+    if (trustedIp.status !== 'available') {
+      return unavailableResponse();
+    }
 
-  if (reservation.status === 'unavailable') {
-    return unavailableResponse();
-  }
+    const reservation = await reserveSignInAttempt({
+      email: parsed.value.email,
+      ip: trustedIp.ip,
+    });
 
-  if (reservation.status === 'denied') {
-    return NextResponse.json(
-      { error: 'rate-limited', resetAt: reservation.resetAt.toISOString() },
-      {
-        status: 429,
-        headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
-      },
-    );
+    if (reservation.status === 'unavailable') {
+      return unavailableResponse();
+    }
+
+    if (reservation.status === 'denied') {
+      return NextResponse.json(
+        { error: 'rate-limited', resetAt: reservation.resetAt.toISOString() },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
+        },
+      );
+    }
+
+    credentialIp = trustedIp.ip;
   }
 
   const result = await verifyUserCredentials(
@@ -62,7 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   return NextResponse.json({
     grant: issueCredentialGrant({
       email: parsed.value.email,
-      ip: trustedIp.ip,
+      ip: credentialIp,
       user: result.user,
     }),
   });
