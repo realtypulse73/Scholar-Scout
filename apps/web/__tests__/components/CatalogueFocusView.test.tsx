@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import CatalogueFocusView from '@/components/catalogue/CatalogueFocusView';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
+import type { QualificationExplanation } from '@/lib/qualification-lens';
 
 jest.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
 
@@ -27,6 +28,49 @@ function fact<T extends string>(value: T, state: CatalogueDiscoveryItem['factSta
 }
 
 describe('CatalogueFocusView', () => {
+  it('renders the same factual qualification explanation before general reasons', () => {
+    const qualificationExplanation: QualificationExplanation = {
+      checkedRequirements: [{
+        label: 'Checked published requirement',
+        text: 'A high school diploma or equivalent is required.',
+        qualificationKeys: ['diploma-credits'],
+        evidence: fact('Electrical work', 'current').evidence,
+      }],
+      keywordConnections: [{
+        label: 'Keyword connection',
+        keyword: 'electrical',
+        text: 'Electrical instruction appears in this reviewed description.',
+        source: 'reviewed-description',
+        evidence: fact('Electrical work', 'current').evidence,
+      }],
+      verificationRows: [{
+        label: 'Needs verification',
+        text: 'A dated requirement needs a current source.',
+        state: 'needs-confirmation',
+        sourceDate: '2026-09-20',
+        evidence: fact('Electrical work', 'needs-confirmation').evidence,
+      }],
+      documentedSupport: {
+        label: 'Documented support',
+        text: 'career advising',
+        sourceDate: '2026-09-20',
+        evidence: fact('Electrical work', 'current').evidence,
+      },
+    };
+
+    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" qualificationExplanation={qualificationExplanation} />);
+
+    const explanation = screen.getByRole('region', { name: /qualification details/i });
+    expect(explanation).toHaveTextContent('1 published requirement checked');
+    expect(explanation).toHaveTextContent('Keyword connection: electrical appears in this reviewed text.');
+    expect(explanation).toHaveTextContent('Needs verification');
+    expect(explanation).toHaveTextContent('This programme lists career advising. Ask the programme if it is available to you.');
+    expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent is required.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(screen.getByRole('link', { name: /official verification/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
+    expect(explanation.compareDocumentPosition(screen.getByRole('region', { name: /reasons to consider/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('keeps complete evidence and finite visitor-controlled navigation visible without media', () => {
     render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
