@@ -18,7 +18,7 @@
 | Hybrid | Begin with a practical overview, then open a focused, paced opportunity view. | ✓ |
 
 **User's choice:** “My goal is to have a mixture of the two.”
-**Notes:** Preserve factual source/status/verification information in both views. The focused experience is finite and motion-safe rather than an infinite autoplay feed.
+**Notes:** Preserve factual source/status/verification information in both views. The focused experience is finite and motion-safe rather than an infinite autoplay feed. Each choice needs an engaging moving preview eventually; Phase 11 reserves the preview structure, while Phase 13 owns approved campus, Google Earth, or consented student media after rights, attribution, moderation, captions, and fallback safeguards are in place.
 
 ---
 

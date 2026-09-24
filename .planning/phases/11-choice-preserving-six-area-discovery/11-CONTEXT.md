@@ -17,15 +17,16 @@ Give students an accessible, source-first way to browse, filter, save, compare, 
 - **D-01:** Use a deliberate hybrid of Realtor-style exploration and a TikTok-like focused view. Students begin with a scannable card-and-filter overview, then open one opportunity into a focused, vertically paced detail/story view. Both views must present the same governed factual record, source, review date/state, and direct verification action.
 - **D-02:** The overview prioritizes quick visual orientation, clear pathway type, provider, location/delivery, and the practical facts a student needs before acting. It must not turn verified facts into an admissions, job, salary, enlistment, funding, or outcome prediction.
 - **D-03:** The focused view may use the established Scholar Scout bright red, white, and silver visual system and motion-safe polish, but nonessential motion remains optional, finite, controllable, and respects reduced-motion preferences. It is not an infinite or autoplay feed. — **Reversibility:** costly — changing this presentation contract later touches the shared discovery cards, detail route, and accessibility expectations.
+- **D-04:** Each opportunity needs a visible, media-ready preview space so the eventual experience feels alive rather than like a static listing. In this phase, it is a controlled non-media slot and finite focus navigation only. Actual campus/Google Earth/student-uploaded video or embeds are deferred until their rights, attribution, consent, moderation, caption, transcript, and factual-fallback rules are implemented in Phase 13.
 
 ### Student choice and transparent filtering
-- **D-04:** Students can select or change a covered metro, browse every pathway type before signing in or sharing personal information, and apply reversible filters. A filter can narrow the current view but must never suppress an entire pathway class or imply that omitted results are unavailable.
-- **D-05:** Ordering is deterministic and factual. It may use the student-selected metro and explicit filters, but not ZIP/residence inference, GPA, test scores, prestige, passive behavior, sensitive circumstances, or engagement/conversion signals. Explain the visible sort/filter state in plain language.
-- **D-06:** Unknown, stale, conflicting, empty-coverage, and external-link states must look materially different from confirmed facts and provide the next safe verification action.
+- **D-05:** Students can select or change a covered metro, browse every pathway type before signing in or sharing personal information, and apply reversible filters. A filter can narrow the current view but must never suppress an entire pathway class or imply that omitted results are unavailable.
+- **D-06:** Ordering is deterministic and factual. It may use the student-selected metro and explicit filters, but not ZIP/residence inference, GPA, test scores, prestige, passive behavior, sensitive circumstances, or engagement/conversion signals. Explain the visible sort/filter state in plain language.
+- **D-07:** Unknown, stale, conflicting, empty-coverage, and external-link states must look materially different from confirmed facts and provide the next safe verification action.
 
 ### Comparison and action
-- **D-07:** Keep saving and comparison as student-controlled tools. The comparison surface presents source-backed facts side by side and retains every saved route; it does not label any option eligible, ineligible, safe, realistic, best, or guaranteed.
-- **D-08:** Every opportunity offers a factual official-next-action link plus a visible source/date/status. Source-first evidence is not hidden behind a decorative interaction or a card flip.
+- **D-08:** Keep saving and comparison as student-controlled tools. The comparison surface presents source-backed facts side by side and retains every saved route; it does not label any option eligible, ineligible, safe, realistic, best, or guaranteed.
+- **D-09:** Every opportunity offers a factual official-next-action link plus a visible source/date/status. Source-first evidence is not hidden behind a decorative interaction or a card flip.
 
 ### the agent's Discretion
 - Select the exact responsive card/grid, filter controls, empty states, focused-detail pacing, and route composition while preserving the hybrid interaction, all-visible pathway classes, source-first verification, keyboard operation, screen-reader support, and no-horizontal-overflow contract.
@@ -50,6 +51,7 @@ Give students an accessible, source-first way to browse, filter, save, compare, 
 - `.planning/phases/10-curated-import-and-governed-staff-publication/10-VERIFICATION.md` — verified stored-snapshot read boundary and recovery safeguards.
 - `.planning/phases/07.1-futuristic-student-journey-visual-system/07.1-CONTEXT.md` — Space Grotesk and bright red-white-silver, motion-safe presentation decisions.
 - `apps/web/lib/catalogue-contract.ts` — controlled catalogue/evidence/freshness vocabulary.
+- `.planning/phases/11-choice-preserving-six-area-discovery/11-RESEARCH.md` — implementation evidence and the Phase 11 / Phase 13 media boundary.
 - `apps/web/lib/server/programme-records.ts` — governed learner read seam and stored published-snapshot access.
 
 </canonical_refs>
@@ -79,6 +81,7 @@ Give students an accessible, source-first way to browse, filter, save, compare, 
 ## Specific Ideas
 
 - The student experience should feel like a mixture of Realtor.com and TikTok: a practical overview first, then an immersive but finite one-opportunity-at-a-time view.
+- Every option should ultimately have a moving, video-like preview rather than a static image. Phase 11 creates the dedicated preview place; Phase 13 adds actual approved campus, Scholar Scout-owned, or consented student media.
 - The app’s Scholar Scout journey visuals tell the transition/new-beginning story; provider pages and opportunity facts remain factual, source-led, and specific to the selected school or training route.
 
 </specifics>
