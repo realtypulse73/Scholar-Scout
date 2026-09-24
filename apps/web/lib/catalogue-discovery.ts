@@ -98,6 +98,15 @@ export function buildCatalogueDiscoveryHref(filters: CatalogueDiscoveryFilters):
   return `/programmes?${query.toString()}`;
 }
 
+/** Carries only canonical public controls into a factual record route. */
+export function buildCatalogueDetailHref(
+  itemId: string,
+  filters: CatalogueDiscoveryFilters,
+): string {
+  const query = buildCatalogueDiscoveryHref(filters).split('?')[1] ?? '';
+  return `/programmes/${encodeURIComponent(itemId)}?${query}`;
+}
+
 /** Maps Phase 10's public snapshot into a neutral, deterministic learner view. */
 export function buildCatalogueDiscoveryModel({
   records,

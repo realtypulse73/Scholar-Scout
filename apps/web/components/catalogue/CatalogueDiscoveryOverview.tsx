@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
-import type { CatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import {
+  buildCatalogueDetailHref,
+  type CatalogueDiscoveryModel,
+} from '@/lib/catalogue-discovery';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
 import { catalogueRegions } from '@/lib/catalogue-fixtures';
 
@@ -50,7 +53,7 @@ export default function CatalogueDiscoveryOverview({ model }: { model: Catalogue
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><Fact label="Skill taught" value={item.facts.skillTaught.value} state={item.facts.skillTaught.state} /><Fact label="Training payer" value={item.facts.trainingPayer.value} state={item.facts.trainingPayer.state} /><Fact label="Cost or tuition" value={item.facts.costOrTuition.value} state={item.facts.costOrTuition.state} /><Fact label="Duration" value={item.facts.duration.value} state={item.facts.duration.state} /></dl>
             <p className="mt-4 text-sm text-ink-600">Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {item.source.state.replace('-', ' ')}</p>
             <p className="mt-2 text-sm text-ink-600">Visual preview is reserved for rights review; this card intentionally does not display provider or learner media.</p>
-            <div className="mt-5 flex flex-wrap gap-3"><Link href={`/programmes/${encodeURIComponent(item.id)}?metro=${encodeURIComponent(filters.metro)}`} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">See all facts and sources</Link><ShortlistButton programmeId={item.id} /><Link href="/shortlist" className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open comparison</Link><a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Official verification (opens a new tab)</a></div>
+            <div className="mt-5 flex flex-wrap gap-3"><Link href={buildCatalogueDetailHref(item.id, filters)} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">See all facts and sources</Link><ShortlistButton programmeId={item.id} /><Link href="/shortlist" className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open comparison</Link><a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Official verification (opens a new tab)</a></div>
           </article>) : <EmptyState model={model} />}
         </section>
       </div>
