@@ -88,4 +88,22 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getAllByRole('article')).toHaveLength(1);
     expect(screen.getByText('1 published requirement checked')).toBeInTheDocument();
   });
+
+  it('keeps normal browsing available while saved qualifications are loading or unavailable', () => {
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: { metro: 'greater-houston' },
+    });
+    const { rerender } = render(<CatalogueDiscoveryOverview model={model} qualificationLensState="loading" />);
+
+    expect(screen.getByText('Loading your saved qualifications…')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Qualifications first' })).toBeDisabled();
+    expect(screen.getByRole('article', { name: /welding pathway/i })).toBeInTheDocument();
+
+    rerender(<CatalogueDiscoveryOverview model={model} qualificationLensState="error" />);
+
+    expect(screen.getByText('Qualifications first is unavailable right now. You can still browse every opportunity.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry qualifications first' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Normal catalogue' })).toBeChecked();
+  });
 });

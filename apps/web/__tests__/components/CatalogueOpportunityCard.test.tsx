@@ -155,4 +155,20 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByText('Prior work experience is listed in the reviewed programme requirements.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /verify this requirement.*opens a new tab/i })).toBeInTheDocument();
   });
+
+  it('keeps long factual text wrapped and offers no outcome conclusion when no reviewed requirement exists', () => {
+    const emptyExplanation: QualificationExplanation = {
+      checkedRequirements: [],
+      keywordConnections: [],
+      verificationRows: [],
+    };
+
+    render(<CatalogueOpportunityCard item={item} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} qualificationExplanation={emptyExplanation} />);
+
+    const explanation = screen.getByRole('region', { name: /qualification details/i });
+    expect(explanation).toHaveClass('min-w-0');
+    expect(explanation).toHaveTextContent('No reviewed requirements are listed yet. Verify with the programme.');
+    expect(screen.getByRole('link', { name: 'Verify with the programme (opens a new tab)' })).toHaveAttribute('target', '_blank');
+    expect(explanation.textContent?.toLocaleLowerCase()).not.toMatch(/eligible|admission|outcome|safe|salary/);
+  });
 });
