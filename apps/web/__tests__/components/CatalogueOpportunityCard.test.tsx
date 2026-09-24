@@ -71,4 +71,14 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('link', { name: /see all facts and sources for northside welding institute/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByTestId('catalogue-card-actions')).toHaveClass('flex-wrap');
   });
+
+  it('shows one source-backed factual reason with a direct fact source separate from details', () => {
+    render(<CatalogueOpportunityCard item={item} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} />);
+
+    expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/skill taught.*welding/i);
+    expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/current.*northside official catalogue.*2026-09-20/i);
+    expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/confirm this detail directly with northside/i);
+    expect(screen.getByRole('link', { name: /open source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
+    expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
+  });
 });

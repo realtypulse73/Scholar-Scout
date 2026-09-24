@@ -13,6 +13,11 @@ const item: CatalogueDiscoveryItem = {
     value: 'Electrical work',
     state: 'current',
     evidence: fact('Electrical work', 'current').evidence,
+  }, {
+    label: 'Training payer',
+    value: 'Student',
+    state: 'needs-confirmation',
+    evidence: fact('Student', 'needs-confirmation').evidence,
   }],
   factState: 'conflicting', source: { label: 'Bayou official catalogue', date: '2026-09-20', state: 'current' }, officialVerificationUrl: 'https://example.edu/bayou', mediaState: 'reserved-for-rights-review',
 };
@@ -48,5 +53,23 @@ describe('CatalogueFocusView', () => {
     expect(screen.getByRole('link', { name: /open source for training payer.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
     expect(screen.getByTestId('catalogue-focus-decoration')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('renders every factual reason with source evidence, state, date, and a direct verification path', () => {
+    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    const reasons = screen.getByRole('region', { name: /reasons to consider/i });
+    expect(reasons).toHaveTextContent(/skill taught.*electrical work/i);
+    expect(reasons).toHaveTextContent(/training payer.*student/i);
+    expect(reasons).toHaveTextContent(/needs confirmation.*bayou official catalogue.*2026-09-20/i);
+    expect(reasons).toHaveTextContent(/confirm this detail directly with bayou/i);
+    expect(screen.getByRole('link', { name: /open source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(screen.getByRole('link', { name: /open source for training payer.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+  });
+
+  it('states when no reviewed factual reasons are available', () => {
+    render(<CatalogueFocusView item={{ ...item, reasonsToConsider: [] }} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    expect(screen.getByRole('region', { name: /reasons to consider/i })).toHaveTextContent(/no reviewed factual reasons are currently listed/i);
   });
 });
