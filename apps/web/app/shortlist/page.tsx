@@ -13,6 +13,9 @@ export const metadata = {
     'Compare saved ScholarScout programmes by cost, entry flexibility, pathway, support, and delivery.',
 };
 
+// Saved IDs must resolve against the current reviewed snapshot on every request.
+export const dynamic = 'force-dynamic';
+
 export default async function ShortlistPage() {
   const snapshot = await getPublishedCatalogueSnapshot();
   const items = catalogueRegions.flatMap((region) => buildCatalogueDiscoveryModel({

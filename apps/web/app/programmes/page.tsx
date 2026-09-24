@@ -11,6 +11,9 @@ export const metadata = {
   description: 'Browse the current reviewed Scholar Scout opportunity catalogue by metro and pathway.',
 };
 
+// The active reviewed snapshot can change without a source edit; never cache a stale catalogue view.
+export const dynamic = 'force-dynamic';
+
 export default async function ProgrammesPage({ searchParams }: PageProps) {
   const snapshot = await getPublishedCatalogueSnapshot();
   const model = buildCatalogueDiscoveryModel({
