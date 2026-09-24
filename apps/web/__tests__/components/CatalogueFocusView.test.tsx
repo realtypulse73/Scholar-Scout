@@ -20,9 +20,9 @@ describe('CatalogueFocusView', () => {
     render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
     expect(screen.getByRole('heading', { name: /bayou skills academy/i })).toBeInTheDocument();
-    expect(screen.getByText(/training payer/i)).toBeInTheDocument();
+    expect(screen.getByText('Training payer', { exact: true })).toBeInTheDocument();
     expect(screen.getByText(/needs confirmation/i)).toBeInTheDocument();
-    expect(screen.getByText(/confirm this detail directly with bayou/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/confirm this detail directly with bayou/i)).toHaveLength(6);
     expect(screen.getByRole('link', { name: /back to results/i })).toHaveAttribute('href', '/programmes?metro=greater-new-orleans');
     expect(screen.getByRole('link', { name: /previous opportunity/i })).toHaveAttribute('href', '/programmes/previous?metro=greater-new-orleans');
     expect(screen.getByRole('link', { name: /next opportunity/i })).toHaveAttribute('href', '/programmes/next?metro=greater-new-orleans');

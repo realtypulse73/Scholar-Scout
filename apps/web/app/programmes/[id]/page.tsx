@@ -1,247 +1,61 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
-import ProgrammeFitPanel from '@/components/programmes/ProgrammeFitPanel';
-import ShortlistButton from '@/components/shortlist/ShortlistButton';
-import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
-import { Badge, Card } from '@/components/ui';
+import CatalogueFocusView from '@/components/catalogue/CatalogueFocusView';
 import {
-  INTEREST_LABELS,
-  SUPPORT_NEED_LABELS,
-} from '@/lib/onboarding-types';
-import {
-  PROGRAMME_PATHWAY_LABELS,
-  getProgrammeById,
-  getRelatedProgrammes,
-  programmes,
-} from '@/lib/programmes';
-import { getGovernedProgrammes } from '@/lib/server/programme-records';
+  buildCatalogueDetailHref,
+  buildCatalogueDiscoveryHref,
+  buildCatalogueDiscoveryModel,
+} from '@/lib/catalogue-discovery';
+import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
+import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 interface PageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export function generateStaticParams() {
-  return programmes.map((programme) => ({
-    id: programme.id,
-  }));
-}
+export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const programme =
-    (await getGovernedProgrammes()).find((item) => item.id === id) ??
-    getProgrammeById(id);
+  const model = await getDiscoveryModel((await searchParams) ?? {});
+  const item = model.items.find((candidate) => candidate.id === id);
 
-  if (!programme) {
-    return {
-      title: 'Programme Not Found | ScholarScout',
-    };
-  }
+  if (!item) return { title: 'Opportunity Not Found | Scholar Scout' };
 
   return {
-    title: `${programme.name} | ScholarScout`,
-    description: `${programme.name} at ${programme.school}: tuition, entry flexibility, support services, location, and practical next steps.`,
+    title: `${item.providerTitle} | Scholar Scout`,
+    description: `Reviewed opportunity facts, sources, and a direct verification action for ${item.providerTitle}.`,
   };
 }
 
-export default async function ProgrammeDetailPage({ params }: PageProps) {
+export default async function ProgrammeDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const allProgrammes = await getGovernedProgrammes();
-  const programme = allProgrammes.find((item) => item.id === id);
+  const model = await getDiscoveryModel((await searchParams) ?? {});
+  const index = model.items.findIndex((candidate) => candidate.id === id);
+  if (index === -1) notFound();
 
-  if (!programme) {
-    notFound();
-  }
-
-  const related = getRelatedProgrammes(programme).filter((item) =>
-    allProgrammes.some((record) => record.id === item.id),
-  );
+  const item = model.items[index];
+  const previous = index > 0 ? model.items[index - 1] : null;
+  const next = index < model.items.length - 1 ? model.items[index + 1] : null;
+  const alternatePathway = CATALOGUE_PATHWAYS.find((pathway) => pathway !== item.pathway) ?? 'university';
+  const alternateHref = buildCatalogueDiscoveryHref({
+    ...model.filters,
+    pathway: alternatePathway,
+    page: 1,
+  });
 
   return (
-    <main className="min-h-screen bg-ink-50 text-ink-900">
-      <nav
-        className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
-        aria-label="Programme detail navigation"
-      >
-        <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-          <ScholarScoutBrandMark size="compact" />
-        </Link>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Link
-            href="/programmes"
-            className="text-sm font-semibold text-ink-600 hover:text-brand-700"
-          >
-            Programmes
-          </Link>
-          <ShortlistCountLink />
-        </div>
-      </nav>
-
-      <section className="border-y border-ink-200 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
-          <div>
-            <div className="flex flex-wrap gap-2">
-              <Badge tone="success">{programme.matchScore}% fit</Badge>
-              <Badge>{PROGRAMME_PATHWAY_LABELS[programme.pathway]}</Badge>
-              <Badge>{programme.delivery}</Badge>
-              <Badge tone="brand">{programme.credential}</Badge>
-            </div>
-            <h1 className="mt-5 text-3xl font-semibold leading-tight text-ink-900 sm:text-4xl">
-              {programme.name}
-            </h1>
-            <p className="mt-2 text-base font-semibold text-ink-600">
-              {programme.school} - {programme.city}, {programme.state}
-            </p>
-            <p className="mt-5 max-w-3xl text-base leading-7 text-ink-600">
-              {programme.overview}
-            </p>
-            <div className="mt-6">
-              <ShortlistButton
-                programmeId={programme.id}
-                className="inline-flex min-h-12 items-center rounded-card border border-brand-600 bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-              />
-            </div>
-          </div>
-
-          <Card className="p-5">
-            <h2 className="text-sm font-semibold uppercase text-ink-500">
-              Snapshot
-            </h2>
-            <dl className="mt-4 grid grid-cols-2 gap-4">
-              <Metric label="Annual tuition" value={`$${programme.annualTuition.toLocaleString()}`} />
-              <Metric
-                label="Entry flexibility"
-                value={`${programme.acceptanceRate}%`}
-                note="Not an admission prediction"
-              />
-              <Metric label="Duration" value={programme.duration} />
-              <Metric label="Delivery" value={programme.delivery} />
-            </dl>
-          </Card>
-        </div>
-      </section>
-
-      <div className="mx-auto grid max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
-        <div className="space-y-6">
-          <ProgrammeFitPanel programme={programme} />
-
-          <Card className="p-5">
-            <h2 className="text-xl font-semibold">Fit factors</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              {programme.highlights.map((highlight) => (
-                <div
-                  key={highlight}
-                  className="rounded-card border border-border bg-silver p-4"
-                >
-                  <p className="text-sm font-semibold text-ink-900">{highlight}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <h2 className="text-xl font-semibold">Support services</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-600">
-              These are the support signals currently attached to this
-              programme. They are intended to help students compare practical
-              fit before applying.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {programme.support.map((support) => (
-                <Badge key={support} tone="brand">
-                  {SUPPORT_NEED_LABELS[support]}
-                </Badge>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <h2 className="text-xl font-semibold">Next steps</h2>
-            <ol className="mt-4 space-y-3">
-              {programme.nextSteps.map((step, index) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800">
-                    {index + 1}
-                  </span>
-                  <span className="pt-1 text-sm font-medium text-ink-700">
-                    {step}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </Card>
-        </div>
-
-        <aside className="space-y-6">
-          <Card className="p-5">
-            <h2 className="text-lg font-semibold">Programme profile</h2>
-            <dl className="mt-4 space-y-4">
-              <Detail label="Pathway" value={PROGRAMME_PATHWAY_LABELS[programme.pathway]} />
-              <Detail label="Credential" value={programme.credential} />
-              <Detail label="Location" value={`${programme.city}, ${programme.state}`} />
-              <Detail label="Delivery" value={programme.delivery} />
-              <Detail
-                label="Interest areas"
-                value={programme.interests
-                  .map((interest) => INTEREST_LABELS[interest])
-                  .join(', ')}
-              />
-            </dl>
-          </Card>
-
-          <Card className="p-5">
-            <h2 className="text-lg font-semibold">Related options</h2>
-            <div className="mt-4 space-y-3">
-              {related.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/programmes/${item.id}`}
-                  className="block rounded-card border border-border p-3 transition-colors hover:border-brand-300 hover:bg-brand-50"
-                >
-                  <p className="text-sm font-semibold text-ink-900">{item.name}</p>
-                  <p className="mt-1 text-xs font-semibold text-ink-500">
-                    {item.school}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </Card>
-        </aside>
-      </div>
-    </main>
+    <CatalogueFocusView
+      item={item}
+      backHref={model.canonicalHref}
+      previousHref={previous ? buildCatalogueDetailHref(previous.id, model.filters) : undefined}
+      nextHref={next ? buildCatalogueDetailHref(next.id, model.filters) : undefined}
+      alternateHref={alternateHref}
+    />
   );
 }
 
-function Metric({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note?: string;
-}) {
-  return (
-    <div>
-      <dt className="text-xs font-semibold uppercase text-ink-500">{label}</dt>
-      <dd className="mt-1 text-xl font-semibold text-ink-900">{value}</dd>
-      {note ? (
-        <dd className="mt-1 text-xs font-medium leading-4 text-ink-500">
-          {note}
-        </dd>
-      ) : null}
-    </div>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-semibold uppercase text-ink-500">{label}</dt>
-      <dd className="mt-1 text-sm font-semibold leading-6 text-ink-800">{value}</dd>
-    </div>
-  );
+async function getDiscoveryModel(searchParams: Record<string, string | string[] | undefined>) {
+  const snapshot = await getPublishedCatalogueSnapshot();
+  return buildCatalogueDiscoveryModel({ records: snapshot.records, searchParams });
 }
