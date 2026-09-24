@@ -69,9 +69,9 @@ describe('CatalogueComparison', () => {
     expect(await screen.findByRole('heading', { name: 'Welding pathway' })).toBeInTheDocument();
     expect(screen.getByText('Trade or career school')).toBeInTheDocument();
     expect(screen.getByText('Houston, Texas')).toBeInTheDocument();
-    expect(screen.getByText('Welding')).toBeInTheDocument();
+    expect(screen.getAllByText('Welding')).toHaveLength(2);
     expect(screen.getByText(/needs confirmation/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /details for welding pathway/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone');
+    expect(screen.getByRole('link', { name: /details for welding pathway/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByRole('link', { name: /official verification for welding pathway/i })).toHaveAttribute('href', 'https://example.edu/programme');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toBeInTheDocument();
     expect(screen.queryByText(/best|winner|eligible|fit/i)).not.toBeInTheDocument();
@@ -114,8 +114,8 @@ describe('CatalogueComparison', () => {
     await screen.findByRole('heading', { name: 'Welding pathway' });
     expect(screen.getByText((_, node) => node?.textContent === 'Status: unknown')).toBeInTheDocument();
     expect(screen.getByText((_, node) => node?.textContent === 'Status: conflicting')).toBeInTheDocument();
-    expect(screen.getAllByText((_, node) => node?.textContent === 'Source date: 2026-09-20')).toHaveLength(7);
-    expect(screen.getAllByRole('link', { name: /verify this fact/i })).toHaveLength(7);
+    expect(screen.getAllByText((_, node) => node?.textContent === 'Source date: 2026-09-20')).toHaveLength(8);
+    expect(screen.getAllByRole('link', { name: /verify this fact/i })).toHaveLength(8);
   });
 
   it('keeps current and unavailable choices in a labelled stacked comparison region with native actions', async () => {
@@ -129,7 +129,7 @@ describe('CatalogueComparison', () => {
     expect(screen.getByRole('status', { name: /retired:one is unavailable/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /official verification for welding pathway.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toHaveAttribute('type', 'button');
-    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(7);
+    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(8);
   });
 
   it('renders every saved factual reason with its complete evidence', async () => {

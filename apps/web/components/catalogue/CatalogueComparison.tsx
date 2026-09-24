@@ -9,6 +9,7 @@ import {
   toggleShortlistId,
 } from '@/lib/shortlist';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
+import { buildCatalogueDetailHref } from '@/lib/catalogue-discovery';
 import type {
   CatalogueDiscoveryFact,
   CatalogueDiscoveryItem,
@@ -104,7 +105,14 @@ export default function CatalogueComparison({ items }: CatalogueComparisonProps)
 
 function ComparisonCard({ item, onRemove }: { item: CatalogueDiscoveryItem; onRemove: (id: string) => void }) {
   const pathway = item.pathway ? pathwayLabels[item.pathway] : 'Needs confirmation';
-  const detailHref = `/programmes/${encodeURIComponent(item.id)}`;
+  const detailHref = buildCatalogueDetailHref(item.id, {
+    metro: item.regionId,
+    pathway: 'all',
+    delivery: 'all',
+    status: 'all',
+    q: '',
+    page: 1,
+  });
   return (
     <article className="min-w-0 rounded-card border border-border bg-white p-5 shadow-card" aria-labelledby={`choice-${item.id}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{item.regionLabel}</p>
@@ -118,6 +126,16 @@ function ComparisonCard({ item, onRemove }: { item: CatalogueDiscoveryItem; onRe
         <FactRow label="Cost or tuition" fact={item.facts.costOrTuition} />
         <FactRow label="Duration" fact={item.facts.duration} />
       </dl>
+      <section className="mt-5 border-t border-border pt-5" aria-label={`Factual reasons to consider for ${item.providerTitle}`}>
+        <h3 className="text-sm font-semibold text-ink-900">Reasons to consider</h3>
+        {item.reasonsToConsider.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-600">No reviewed factual reasons are currently listed.</p>
+        ) : (
+          <dl className="mt-3 space-y-4">
+            {item.reasonsToConsider.map((reason) => <FactRow key={reason.label} label={reason.label} fact={reason} />)}
+          </dl>
+        )}
+      </section>
       <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-5">
         <Link href={detailHref} aria-label={`Details for ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Details and sources</Link>
         <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" aria-label={`Official verification for ${item.providerTitle} (opens a new tab)`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Official verification</a>
@@ -138,6 +156,7 @@ function FactRow<Value>({ label, fact }: { label: string; fact: CatalogueDiscove
       <dd className="mt-2 text-xs text-ink-600"><span className="font-semibold">Status:</span> {state}</dd>
       <dd className="mt-1 break-words text-xs text-ink-600"><span className="font-semibold">Source:</span> {fact.evidence.sourceLabel}</dd>
       <dd className="mt-1 text-xs text-ink-600"><span className="font-semibold">Source date:</span> {sourceDate}</dd>
+      <dd className="mt-1 text-xs leading-5 text-ink-700">{fact.evidence.verificationAction}</dd>
       <dd className="mt-2"><a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Verify this fact (opens a new tab)</a></dd>
     </div>
   );
