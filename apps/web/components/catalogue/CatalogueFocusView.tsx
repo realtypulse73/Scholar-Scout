@@ -75,6 +75,25 @@ export default function CatalogueFocusView({
               ))}
             </dl>
           </section>
+          <section className="rounded-card border border-ink-200 bg-white p-5" aria-labelledby="reasons-heading">
+            <h2 id="reasons-heading" className="text-xl font-semibold">Reasons to consider</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-600">These are reviewed factual details to verify, not a statement about your eligibility, outcome, or fit.</p>
+            {item.reasonsToConsider.length === 0 ? (
+              <p className="mt-4 text-sm text-ink-700">No reviewed factual reasons are currently listed.</p>
+            ) : (
+              <dl className="mt-5 space-y-5">
+                {item.reasonsToConsider.map((reason) => (
+                  <div key={reason.label} className="min-w-0 border-t border-ink-100 pt-4 first:border-t-0 first:pt-0">
+                    <dt className="text-sm font-semibold text-ink-900">{reason.label}</dt>
+                    <dd className="mt-1 text-base text-ink-700">{formatValue(reason.value)}</dd>
+                    <dd className="mt-2 text-sm text-ink-600">Status: {formatState(reason.state)} · Source: {reason.evidence.sourceLabel} · Source date: {formatEvidenceDate(reason.evidence.sourceDate)}</dd>
+                    <dd className="mt-1 text-sm leading-6 text-ink-700">{reason.evidence.verificationAction}</dd>
+                    <dd className="mt-2"><a href={reason.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open reason source for {reason.label} (opens a new tab)</a></dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-5">
@@ -102,4 +121,8 @@ function formatState(value: string): string {
 
 function formatValue(value: string | number | null): string | number | null {
   return typeof value === 'string' ? value.replaceAll('-', ' ') : value;
+}
+
+function formatEvidenceDate(sourceDate: { state: string; value?: string | null }): string {
+  return sourceDate.state === 'documented' ? sourceDate.value ?? 'date unavailable' : 'date unavailable';
 }

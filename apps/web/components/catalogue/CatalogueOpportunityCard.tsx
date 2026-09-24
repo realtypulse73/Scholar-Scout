@@ -68,6 +68,16 @@ export default function CatalogueOpportunityCard({
         Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {formatState(item.source.state)}
       </p>
 
+      {item.reasonsToConsider[0] ? (
+        <section className="mt-4 rounded-card border border-brand-200 bg-brand-50 p-3" aria-label="Reason to consider">
+          <h4 className="text-sm font-semibold text-brand-800">Reason to consider</h4>
+          <p className="mt-1 text-sm text-ink-800"><span className="font-semibold">{item.reasonsToConsider[0].label}:</span> {formatValue(item.reasonsToConsider[0].value)}</p>
+          <p className="mt-1 text-sm text-ink-700">Status: {formatState(item.reasonsToConsider[0].state)} · Source: {item.reasonsToConsider[0].evidence.sourceLabel} · Source date: {formatEvidenceDate(item.reasonsToConsider[0].evidence.sourceDate)}</p>
+          <p className="mt-1 text-sm leading-6 text-ink-700">{item.reasonsToConsider[0].evidence.verificationAction}</p>
+          <a href={item.reasonsToConsider[0].evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Open source for ${item.reasonsToConsider[0].label} (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open source (opens a new tab)</a>
+        </section>
+      ) : null}
+
       {factsToVerify.length > 0 ? (
         <section className="mt-4 rounded-card border border-warning-200 bg-warning-50 p-3" aria-label="Facts to verify">
           <h4 className="text-sm font-semibold text-warning-700">Facts to verify</h4>
@@ -108,4 +118,8 @@ function formatState(value: string): string {
 
 function formatValue(value: string | null): string | null {
   return value ? value.replaceAll('-', ' ') : null;
+}
+
+function formatEvidenceDate(sourceDate: { state: string; value?: string | null }): string {
+  return sourceDate.state === 'documented' ? sourceDate.value ?? 'date unavailable' : 'date unavailable';
 }
