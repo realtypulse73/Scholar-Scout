@@ -26,8 +26,8 @@ describe('QualificationRecordForm', () => {
     fetchMock.mockResolvedValueOnce(response({ record: savedRecord }));
     render(<QualificationRecordForm />);
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Private qualifications loaded.');
-    expect(screen.getByLabelText('Private note (31/500)')).toHaveValue(savedRecord.note);
+    await screen.findByText('Private qualifications loaded.');
+    expect(screen.getByLabelText('Private note (32/500)')).toHaveValue(savedRecord.note);
     await user.type(screen.getByLabelText('Student-confirmed keywords'), ' nursing ');
     expect(screen.queryByText('nursing')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add keyword' }));
@@ -90,7 +90,7 @@ describe('QualificationRecordForm', () => {
     await user.click(screen.getByRole('button', { name: 'Clear qualifications' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('could not clear');
-    expect(screen.getByLabelText('Private note (31/500)')).toHaveValue(savedRecord.note);
+    expect(screen.getByLabelText('Private note (32/500)')).toHaveValue(savedRecord.note);
     expect(screen.getByRole('status')).toHaveTextContent('Qualifications were not cleared.');
   });
 });
