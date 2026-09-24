@@ -239,6 +239,7 @@ None yet.
 | 9 | Repair governed dashboard pathway scoring | 2026-09-21 | d9cd1d0 | — |
 | 260922-6jm | Add Greater Kingston, Jamaica to the v1.1 Regional Opportunity Navigator scope, research plan, requirements, and roadmap. | 2026-09-22 | 5e389ad | [260922-6jm-add-greater-kingston-jamaica-to-the-v1-1](./quick/260922-6jm-add-greater-kingston-jamaica-to-the-v1-1/) |
 | 260924-ftn | Allow safe local development registration without weakening Vercel production registration controls — verified | 2026-09-24 | a126265 | [260924-ftn-allow-safe-local-development-registratio](./quick/260924-ftn-allow-safe-local-development-registratio/) |
+| 260924-gl9 | Allow the local development credential exchange used immediately after registration without weakening Vercel production or Preview sign-in controls — verified | 2026-09-24 | c44eb98 | [260924-gl9-allow-the-local-development-credential-e](./quick/260924-gl9-allow-the-local-development-credential-e/) |
 
 ## Deferred Items
 
