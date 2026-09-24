@@ -11,7 +11,7 @@ const item: CatalogueDiscoveryItem = {
   regionLabel: 'Greater Houston',
   pathway: 'trade-career-school',
   place: fact('Houston, Texas', 'current'),
-  delivery: fact('in-person', 'current'),
+  delivery: fact('in-person' as const, 'current'),
   facts: {
     skillTaught: fact('Welding', 'current'),
     trainingPayer: fact('Student', 'needs-confirmation'),
@@ -24,7 +24,7 @@ const item: CatalogueDiscoveryItem = {
   mediaState: 'reserved-for-rights-review',
 };
 
-function fact(value: string, state: CatalogueDiscoveryItem['factState']) {
+function fact<T extends string>(value: T, state: CatalogueDiscoveryItem['factState']) {
   return {
     value,
     state,
@@ -49,7 +49,7 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByText(/northside official catalogue.*2026-09-20.*current/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/welding');
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
-    expect(screen.getByText(/facts to verify/i)).toHaveTextContent(/training payer/i);
+    expect(screen.getByRole('region', { name: /facts to verify/i })).toHaveTextContent(/training payer/i);
     expect(screen.getByRole('link', { name: /alternate routes/i })).toHaveAttribute('href', expect.stringContaining('pathway=university'));
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open comparison/i })).toHaveAttribute('href', '/shortlist');
