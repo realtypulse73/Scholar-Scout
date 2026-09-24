@@ -103,4 +103,18 @@ describe('CatalogueComparison', () => {
     expect(screen.getAllByText((_, node) => node?.textContent === 'Source date: 2026-09-20')).toHaveLength(7);
     expect(screen.getAllByRole('link', { name: /verify this fact/i })).toHaveLength(7);
   });
+
+  it('keeps current and unavailable choices in a labelled stacked comparison region with native actions', async () => {
+    window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one', 'retired:one']));
+
+    render(<CatalogueComparison items={[item()]} />);
+
+    await screen.findByRole('heading', { name: 'Welding pathway' });
+    expect(screen.getByRole('region', { name: /saved opportunity comparison cards/i })).toHaveClass('grid', 'max-w-full', 'md:grid-cols-2');
+    expect(screen.getByRole('article', { name: /welding pathway/i })).toHaveClass('min-w-0');
+    expect(screen.getByRole('status', { name: /retired:one is unavailable/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /official verification for welding pathway.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('button', { name: /remove welding pathway/i })).toHaveAttribute('type', 'button');
+    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(7);
+  });
 });

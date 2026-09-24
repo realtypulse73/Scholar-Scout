@@ -83,7 +83,7 @@ export default function CatalogueComparison({ items }: CatalogueComparisonProps)
   }
 
   return (
-    <section data-testid="catalogue-comparison-root" className="w-full max-w-full space-y-5" aria-labelledby="catalogue-comparison-heading">
+    <section data-testid="catalogue-comparison-root" className="w-full min-w-0 max-w-full space-y-5" aria-labelledby="catalogue-comparison-heading">
       <header className="rounded-card border border-border bg-white p-5 sm:p-6">
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Saved choices</p>
         <h1 id="catalogue-comparison-heading" className="mt-2 text-2xl font-semibold text-ink-900 sm:text-3xl">Compare reviewed opportunities</h1>
@@ -91,13 +91,13 @@ export default function CatalogueComparison({ items }: CatalogueComparisonProps)
         <Link href="/programmes" className="mt-5 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Browse more opportunities</Link>
       </header>
 
-      <div className="grid w-full max-w-full gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <section aria-label="Saved opportunity comparison cards" className="grid w-full min-w-0 max-w-full gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resolvedChoices.map(({ id, item }) => item ? (
           <ComparisonCard key={id} item={item} onRemove={removeChoice} />
         ) : (
           <UnavailableChoice key={id} id={id} onRemove={removeChoice} />
         ))}
-      </div>
+      </section>
     </section>
   );
 }
