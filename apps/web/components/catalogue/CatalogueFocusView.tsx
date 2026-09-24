@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
+import QualificationExplanation from '@/components/qualifications/QualificationExplanation';
 import ShortlistButton from '@/components/shortlist/ShortlistButton';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
+import type { QualificationExplanation as QualificationExplanationModel } from '@/lib/qualification-lens';
 
 const pathwayLabels: Record<NonNullable<CatalogueDiscoveryItem['pathway']>, string> = {
   university: 'University',
@@ -18,6 +20,7 @@ interface CatalogueFocusViewProps {
   previousHref?: string;
   nextHref?: string;
   alternateHref: string;
+  qualificationExplanation?: QualificationExplanationModel;
 }
 
 /** Complete source-first detail for one item in a finite reviewed sequence. */
@@ -27,6 +30,7 @@ export default function CatalogueFocusView({
   previousHref,
   nextHref,
   alternateHref,
+  qualificationExplanation,
 }: CatalogueFocusViewProps) {
   const facts = [
     ['Place', item.place],
@@ -75,6 +79,7 @@ export default function CatalogueFocusView({
               ))}
             </dl>
           </section>
+          {qualificationExplanation ? <QualificationExplanation explanation={qualificationExplanation} officialVerificationUrl={item.officialVerificationUrl} /> : null}
           <section className="rounded-card border border-ink-200 bg-white p-5" aria-labelledby="reasons-heading">
             <h2 id="reasons-heading" className="text-xl font-semibold">Reasons to consider</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">These are reviewed factual details to verify, not a statement about your eligibility, outcome, or fit.</p>

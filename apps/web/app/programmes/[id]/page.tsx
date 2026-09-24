@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/auth';
 import CatalogueFocusView from '@/components/catalogue/CatalogueFocusView';
 import {
   buildCatalogueDetailHref,
@@ -6,6 +8,8 @@ import {
   buildCatalogueDiscoveryModel,
 } from '@/lib/catalogue-discovery';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
+import { buildQualificationLensModel } from '@/lib/qualification-lens';
+import { getQualificationRecord } from '@/lib/server/data-store';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 interface PageProps {
@@ -43,6 +47,14 @@ export default async function ProgrammeDetailPage({ params, searchParams }: Page
     pathway: alternatePathway,
     page: 1,
   });
+  const session = await getServerSession(authOptions);
+  const qualificationRecord = session?.user?.id
+    ? await getQualificationRecord(session.user.id)
+    : null;
+  const qualificationExplanation = buildQualificationLensModel([item], {
+    structured: qualificationRecord?.structured ?? [],
+    keywords: qualificationRecord?.keywords ?? [],
+  }).items[0]?.explanation;
 
   return (
     <CatalogueFocusView
@@ -51,6 +63,7 @@ export default async function ProgrammeDetailPage({ params, searchParams }: Page
       previousHref={previous ? buildCatalogueDetailHref(previous.id, model.filters) : undefined}
       nextHref={next ? buildCatalogueDetailHref(next.id, model.filters) : undefined}
       alternateHref={alternateHref}
+      qualificationExplanation={qualificationExplanation}
     />
   );
 }
