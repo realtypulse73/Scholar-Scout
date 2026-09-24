@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
+import type { QualificationExplanation } from '@/lib/qualification-lens';
 
 jest.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
 
@@ -80,5 +81,27 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/confirm this detail directly with northside/i);
     expect(screen.getByRole('link', { name: /open source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
+  });
+
+  it('renders a checked published requirement before general reasons with a direct verification action', () => {
+    const qualificationExplanation: QualificationExplanation = {
+      checkedRequirements: [{
+        label: 'Checked published requirement',
+        text: 'A high school diploma or equivalent is required.',
+        qualificationKeys: ['diploma-credits'],
+        evidence: fact('Welding', 'current').evidence,
+      }],
+      keywordConnections: [],
+      verificationRows: [],
+    };
+
+    render(<CatalogueOpportunityCard item={item} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} qualificationExplanation={qualificationExplanation} />);
+
+    const explanation = screen.getByRole('region', { name: /qualification details/i });
+    expect(explanation).toHaveTextContent('1 published requirement checked');
+    expect(explanation).toHaveTextContent('A high school diploma or equivalent is required.');
+    expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent is required.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
+    expect(explanation.compareDocumentPosition(screen.getByRole('region', { name: /reason to consider/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
   });
 });

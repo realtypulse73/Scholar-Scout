@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
 
 jest.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
@@ -17,6 +19,11 @@ const publishedRecord: CataloguePublishedRecord = {
   source: { sourceLabel: 'Official programme source', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, checkedAt: '2026-09-20' },
   facts: { location: fact('Houston, Texas'), pathway: fact('trade-career-school'), skillTaught: fact('Welding'), trainingPayer: fact('Student'), costOrTuition: fact('$500'), duration: fact('12 weeks'), delivery: fact('in-person') },
   claimBoundary: 'Factual programme details from the official source.', mediaFallback: false,
+  publishedRequirements: [{
+    text: 'A high school diploma or equivalent is required.',
+    qualificationKeys: ['diploma-credits'],
+    evidence,
+  }],
 };
 
 describe('CatalogueDiscoveryOverview', () => {
@@ -55,5 +62,30 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/fact status: current/i);
     expect(screen.getByTestId('catalogue-overview-layout')).toHaveClass('w-full', 'min-w-0', 'max-w-6xl');
     expect(screen.getByTestId('catalogue-coverage')).toHaveTextContent(/not yet verified/i);
+  });
+
+  it('keeps normal order by default and changes only local all-visible order after the labelled radio is selected', async () => {
+    const user = userEvent.setup();
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: { metro: 'greater-houston' },
+    });
+    const lens = buildQualificationLensModel(model.items, {
+      structured: ['diploma-credits'],
+      keywords: [],
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} qualificationLens={lens} canEditQualifications={false} />);
+
+    expect(screen.getByRole('radio', { name: 'Normal catalogue' })).toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('Showing 1 reviewed opportunity. Normal catalogue order. Every opportunity is still shown.');
+    expect(screen.getByText('Every reviewed opportunity stays in the list. This changes order only.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Qualifications first' }));
+
+    expect(screen.getByRole('radio', { name: 'Qualifications first' })).toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('Showing 1 reviewed opportunity. Qualifications first order. Every opportunity is still shown.');
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByText('1 published requirement checked')).toBeInTheDocument();
   });
 });
