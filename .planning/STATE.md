@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Regional Opportunity Navigator
 current_phase: 12
 current_phase_name: Qualification Lens and Explanation Governance
-status: in_progress
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-09-24T21:06:49.475Z"
+status: complete
+stopped_at: Completed Phase 12 qualification lens plans
+last_updated: "2026-09-24T21:14:38.706Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 12 Plan 12-03 completed; Plan 12-05 is ready to execute
+last_activity_desc: Phase 12 complete; ready for verification or Phase 13 planning
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 26
-  completed_plans: 25
-  percent: 43
+  completed_plans: 26
+  percent: 57
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 ## Current Position
 
 Phase: 12 — Qualification Lens and Explanation Governance
-Plan: 4/5 plans complete — next: 12-05
-Status: In progress
-Last activity: 2026-09-24 — Phase 12 Plan 12-03 completed; Plan 12-05 is ready to execute
+Plan: 5/5 plans complete
+Status: Complete
+Last activity: 2026-09-24 — Phase 12 complete; ready for verification or Phase 13 planning
 
 ## Performance Metrics
 
@@ -117,6 +117,7 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-03 completed; Plan 12-05 is ready
 | Phase 12 P04 | 35m | 2 tasks | 8 files |
 | Phase 12 P02 | 22m | 3 tasks | 4 files |
 | Phase 12 P03 | 34m | 3 tasks | 7 files |
+| Phase 12 P05 | 28m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -216,6 +217,8 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-03 completed; Plan 12-05 is ready
 - [Phase ?]: Keep all reviewed discovery options visible while ordering by current checked facts, literal keyword connections, then public ID.
 - [Phase ?]: Keep normal catalogue order as the Programmes default; qualifications-first is a transient all-visible presentation choice.
 - [Phase ?]: Render qualification uncertainty as visible source/date/action verification work, never as a student or opportunity verdict.
+- [Phase ?]: Build detail and comparison explanations server-side from only structured qualification keys and explicit keywords; private notes never become learner-surface props.
+- [Phase ?]: Reuse the shared factual explanation renderer across detail and comparison so source, date, verification, and non-predictive copy cannot drift.
 
 ### Roadmap Evolution
 
@@ -260,6 +263,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T21:06:49.442Z
-Stopped at: Completed 12-03-PLAN.md
-Resume file: .planning/phases/12-qualification-lens-and-explanation-governance/12-05-PLAN.md
+Last session: 2026-09-24T21:14:38.673Z
+Stopped at: Completed Phase 12 qualification lens plans
+Resume file: .planning/phases/13-provider-detail-transition-stories-and-media-safety
