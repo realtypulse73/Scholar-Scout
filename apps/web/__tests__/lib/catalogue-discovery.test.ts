@@ -18,6 +18,19 @@ const record = (id: string, title = id): CataloguePublishedRecord => ({
   source: { sourceLabel: 'Official programme source', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented', value: '2026-09-20' }, checkedAt: '2026-09-20' },
   facts: { location: fact('Houston, Texas'), pathway: fact('trade-career-school'), skillTaught: fact('Welding'), trainingPayer: fact('Student'), costOrTuition: fact('$500'), duration: fact('12 weeks'), delivery: fact('in-person') },
   claimBoundary: 'Factual programme details from the official source.', mediaFallback: false,
+  publishedRequirements: [{
+    text: 'A high school diploma or equivalent is required.',
+    qualificationKeys: ['diploma-credits'],
+    evidence: fact('unused').evidence,
+  }],
+  reviewedDescription: {
+    value: 'Hands-on welding instruction for entry-level learners.',
+    evidence: fact('unused').evidence,
+  },
+  documentedSupport: {
+    value: 'Career advising is available through the student support office.',
+    evidence: fact('unused').evidence,
+  },
 });
 
 function fact<T>(value: T) {
@@ -30,6 +43,16 @@ describe('catalogue discovery model', () => {
     expect(model.items.map((item) => item.id)).toEqual(['catalogue:a', 'catalogue:z']);
     expect(model.items[0]).toMatchObject({ providerTitle: 'catalogue:a', regionId: 'greater-houston', pathway: 'trade-career-school', officialVerificationUrl: 'https://example.edu/programme', mediaState: 'reserved-for-rights-review', source: { label: 'Official programme source', state: 'current' } });
     expect(model.items[0].facts.skillTaught).toMatchObject({ value: 'Welding', state: 'current' });
+    expect(model.items[0].publishedRequirements).toEqual([expect.objectContaining({
+      qualificationKeys: ['diploma-credits'],
+      evidence: expect.objectContaining({ sourceUrl: 'https://example.edu/programme' }),
+    })]);
+    expect(model.items[0].reviewedDescription).toMatchObject({
+      value: 'Hands-on welding instruction for entry-level learners.',
+    });
+    expect(model.items[0].documentedSupport).toMatchObject({
+      value: 'Career advising is available through the student support office.',
+    });
   });
 
   it('derives at most three neutral factual reasons from reviewed public facts with their original evidence', () => {
