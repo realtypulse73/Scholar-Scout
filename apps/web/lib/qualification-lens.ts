@@ -32,10 +32,18 @@ export interface QualificationVerificationRow {
   evidence: FactEvidence;
 }
 
+export interface QualificationDocumentedSupport {
+  label: 'Documented support';
+  text: string;
+  sourceDate: string | null;
+  evidence: FactEvidence;
+}
+
 export interface QualificationExplanation {
   checkedRequirements: QualificationCheckedRequirement[];
   keywordConnections: QualificationKeywordConnection[];
   verificationRows: QualificationVerificationRow[];
+  documentedSupport?: QualificationDocumentedSupport;
 }
 
 export interface QualificationLensItem {
@@ -101,8 +109,16 @@ function explainQualificationConnection(
   const verificationRows = publishedRequirements
     .filter(isNonCurrentRequirement)
     .map(toVerificationRow);
+  const documentedSupport = checkedRequirements.length === 0 || verificationRows.length > 0
+    ? toDocumentedSupport(item)
+    : undefined;
 
-  return { checkedRequirements, keywordConnections, verificationRows };
+  return {
+    checkedRequirements,
+    keywordConnections,
+    verificationRows,
+    ...(documentedSupport === undefined ? {} : { documentedSupport }),
+  };
 }
 
 function toCheckedRequirement(requirement: PublishedRequirement): QualificationCheckedRequirement {
@@ -159,6 +175,22 @@ function toVerificationRow(requirement: PublishedRequirement): QualificationVeri
       ? requirement.evidence.sourceDate.value
       : null,
     evidence: requirement.evidence,
+  };
+}
+
+function toDocumentedSupport(
+  item: CatalogueDiscoveryItem,
+): QualificationDocumentedSupport | undefined {
+  const support = item.documentedSupport;
+  if (!support?.value) return undefined;
+
+  return {
+    label: 'Documented support',
+    text: support.value,
+    sourceDate: support.evidence.sourceDate.state === 'documented'
+      ? support.evidence.sourceDate.value
+      : null,
+    evidence: support.evidence,
   };
 }
 
