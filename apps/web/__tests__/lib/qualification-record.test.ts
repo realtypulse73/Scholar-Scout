@@ -6,7 +6,7 @@ import {
 const completeRecord: QualificationRecord = {
   structured: ['diploma-credits', 'prior-work'],
   note: 'I completed a career technical programme.',
-  keywords: ['health care', 'customer service'],
+  keywords: ['customer service', 'health care'],
 };
 
 describe('qualification record contract', () => {

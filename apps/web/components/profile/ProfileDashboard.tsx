@@ -10,6 +10,7 @@ import {
 } from '@/lib/preference-matching';
 import { SHORTLIST_STORAGE_KEY, parseShortlist } from '@/lib/shortlist';
 import type { OnboardingData } from '@/lib/onboarding-types';
+import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
 
 export default function ProfileDashboard() {
   const { data: session } = useSession();
@@ -104,6 +105,8 @@ export default function ProfileDashboard() {
           href="/programmes"
         />
       </div>
+
+      <QualificationRecordForm />
 
       {session.user.role === 'staff' ? (
         <Card className="p-5">

@@ -22,6 +22,10 @@ import {
   type OrdinaryOnboardingProfile,
 } from '@/lib/onboarding-types';
 import {
+  parseQualificationRecord,
+  type QualificationRecord,
+} from '@/lib/qualification-record';
+import {
   validatePeerConnectionRequest,
   type CreatePeerConnectionRequest,
   type PeerConnectionRequest,
@@ -122,6 +126,7 @@ export interface PrivilegedOperationAuditEvent {
 export interface ScholarScoutData {
   users: StoredUser[];
   onboardingProfiles: Record<string, OrdinaryOnboardingProfile>;
+  qualificationProfiles?: Record<string, QualificationRecord>;
   shortlists: Record<string, string[]>;
   shortlistPlans?: Record<string, ShortlistPlanMap>;
   programmeRecords: Programme[];
@@ -268,6 +273,7 @@ const MAX_RESTORE_BACKUPS = 5;
 const INITIAL_DATA: ScholarScoutData = {
   users: [],
   onboardingProfiles: {},
+  qualificationProfiles: {},
   shortlists: {},
   shortlistPlans: {},
   programmeRecords: [],
@@ -692,6 +698,14 @@ export function validateScholarScoutDataImport(
 
   if (!isRecord(data.onboardingProfiles)) {
     errors.push('Snapshot onboarding profiles must be an object.');
+  }
+
+  if (
+    'qualificationProfiles' in data &&
+    data.qualificationProfiles !== undefined &&
+    !isQualificationProfiles(data.qualificationProfiles)
+  ) {
+    errors.push('Snapshot qualification profiles must be an object when present.');
   }
 
   if (!isRecord(data.shortlists)) {
@@ -1300,6 +1314,21 @@ export async function getOnboardingProfile(userId: string) {
   return data.onboardingProfiles[userId] ?? null;
 }
 
+export async function saveQualificationRecord(
+  userId: string,
+  record: QualificationRecord,
+) {
+  const { replaceStudentQualificationRecord } = await import(
+    '@/lib/server/student-records'
+  );
+  await replaceStudentQualificationRecord(userId, record);
+}
+
+export async function getQualificationRecord(userId: string) {
+  const data = await readScholarScoutData();
+  return data.qualificationProfiles?.[userId] ?? null;
+}
+
 export async function saveShortlist(userId: string, programmeIds: string[]) {
   const { replaceStudentShortlistIds } = await import(
     '@/lib/server/student-records'
@@ -1680,6 +1709,7 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
       string,
       OrdinaryOnboardingProfile
     >,
+    qualificationProfiles: normalizeQualificationProfiles(data.qualificationProfiles),
     shortlists: data.shortlists as Record<string, string[]>,
     shortlistPlans: isRecord(data.shortlistPlans)
       ? (data.shortlistPlans as Record<string, ShortlistPlanMap>)
@@ -1727,6 +1757,7 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
     ...INITIAL_DATA,
     ...data,
     onboardingProfiles: normalizeOnboardingProfiles(data.onboardingProfiles),
+    qualificationProfiles: normalizeQualificationProfiles(data.qualificationProfiles),
     campusNotes: Array.isArray(data.campusNotes)
       ? data.campusNotes.map((note) => isCampusNote(note)
         ? { ...note, status: note.status ?? 'public' }
@@ -1770,6 +1801,24 @@ function normalizeOnboardingProfiles(
           ),
         } as OrdinaryOnboardingProfile,
       ]),
+  );
+}
+
+function normalizeQualificationProfiles(
+  profiles: unknown,
+): Record<string, QualificationRecord> {
+  if (!isRecord(profiles)) return {};
+  return Object.fromEntries(
+    Object.entries(profiles).flatMap(([studentKey, record]) => {
+      const parsed = parseQualificationRecord(record);
+      return parsed ? [[studentKey, parsed]] : [];
+    }),
+  );
+}
+
+function isQualificationProfiles(value: unknown): boolean {
+  return isRecord(value) && Object.values(value).every((record) =>
+    parseQualificationRecord(record) !== null,
   );
 }
 

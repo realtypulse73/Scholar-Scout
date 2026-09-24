@@ -12,6 +12,10 @@ import {
   type StoredUser,
 } from '@/lib/server/data-store';
 import type { ShortlistPlanMap } from '@/lib/shortlist';
+import {
+  normalizeQualificationRecord,
+  type QualificationRecord,
+} from '@/lib/qualification-record';
 
 export async function createStudentAccountRecord(
   user: StoredUser,
@@ -88,6 +92,19 @@ export async function replaceStudentOnboardingProfile(
   if (result.status === 'conflict') {
     throw new PersistenceConflictError();
   }
+}
+
+export async function replaceStudentQualificationRecord(
+  studentKey: string,
+  record: QualificationRecord,
+): Promise<void> {
+  const snapshot = await readVersionedScholarScoutData();
+  snapshot.data.qualificationProfiles = snapshot.data.qualificationProfiles ?? {};
+  snapshot.data.qualificationProfiles[studentKey] = normalizeQualificationRecord(record);
+  snapshot.data.auditEvents.push(
+    createAuditEvent(studentKey, 'save', 'data', studentKey),
+  );
+  await commitSnapshot(snapshot.data, snapshot.version);
 }
 
 export async function replaceStudentShortlistState(
