@@ -40,10 +40,11 @@ export function parseQualificationRecord(value: unknown): QualificationRecord | 
   if (note.length > MAX_NOTE_LENGTH || value.keywords.length > MAX_KEYWORDS) return null;
   const keywords = value.keywords.map(normalizeKeyword);
   if (keywords.some((keyword) => keyword === null)) return null;
+  if (new Set(keywords).size !== keywords.length) return null;
   return {
     structured: [...structured].sort() as QualificationKind[],
     note,
-    keywords: Array.from(new Set(keywords as string[])).sort(),
+    keywords: (keywords as string[]).sort(),
   };
 }
 

@@ -15,7 +15,7 @@ describe('qualification record contract', () => {
       parseQualificationRecord({
         structured: ['prior-work', 'diploma-credits'],
         note: '  I completed a career technical programme.  ',
-        keywords: [' Customer   Service ', 'health care', 'customer service'],
+        keywords: [' Customer   Service ', 'health care'],
       }),
     ).toEqual(completeRecord);
   });
