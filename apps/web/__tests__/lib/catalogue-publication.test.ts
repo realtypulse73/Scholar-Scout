@@ -157,6 +157,48 @@ describe('weekly catalogue release schedule', () => {
 });
 
 describe('catalogue candidate import envelope', () => {
+  it('accepts ordered source-backed qualification requirements and reviewed statements', () => {
+    const requirementEvidence = evidence();
+    const result = parseCatalogueCandidateImport({
+      schemaVersion: 1,
+      changes: [{
+        action: 'upsert',
+        candidate: {
+          ...validCandidate,
+          publishedRequirements: [{
+            text: 'A high school diploma or equivalent is required.',
+            qualificationKeys: ['diploma-credits'],
+            evidence: requirementEvidence,
+          }],
+          reviewedDescription: {
+            value: 'Hands-on welding instruction for entry-level learners.',
+            evidence: requirementEvidence,
+          },
+          documentedSupport: {
+            value: 'Career advising is available through the student support office.',
+            evidence: requirementEvidence,
+          },
+        },
+      }],
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      changes: [expect.objectContaining({
+        action: 'upsert',
+        candidate: expect.objectContaining({
+          publishedRequirements: [{
+            text: 'A high school diploma or equivalent is required.',
+            qualificationKeys: ['diploma-credits'],
+            evidence: requirementEvidence,
+          }],
+          reviewedDescription: expect.objectContaining({ evidence: requirementEvidence }),
+          documentedSupport: expect.objectContaining({ evidence: requirementEvidence }),
+        }),
+      })],
+    });
+  });
+
   it('accepts one through twenty-five unique, schema-versioned changes', () => {
     const result = parseCatalogueCandidateImport({
       schemaVersion: 1,

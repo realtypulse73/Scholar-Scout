@@ -87,6 +87,19 @@ const validCandidate = {
     delivery: { value: 'in-person', evidence: evidence() },
   },
   claimBoundary: 'Factual programme details from the official source.',
+  publishedRequirements: [{
+    text: 'A high school diploma or equivalent is required.',
+    qualificationKeys: ['diploma-credits'],
+    evidence: evidence(),
+  }],
+  reviewedDescription: {
+    value: 'Hands-on welding instruction for entry-level learners.',
+    evidence: evidence(),
+  },
+  documentedSupport: {
+    value: 'Career advising is available through the student support office.',
+    evidence: evidence(),
+  },
 };
 
 describe('private catalogue candidate staging', () => {
@@ -332,7 +345,23 @@ describe('weekly catalogue publication', () => {
     expect(result.snapshot).toMatchObject({
       kind: 'weekly',
       periodKey: '2026-W39',
-      records: [expect.objectContaining({ id: validCandidate.id })],
+      records: [expect.objectContaining({
+        id: validCandidate.id,
+        publishedRequirements: [{
+          text: 'A high school diploma or equivalent is required.',
+          qualificationKeys: ['diploma-credits'],
+          evidence: expect.objectContaining({
+            sourceUrl: 'https://example.edu/programme',
+            verificationAction: 'Review the official programme page before publication.',
+          }),
+        }],
+        reviewedDescription: expect.objectContaining({
+          value: 'Hands-on welding instruction for entry-level learners.',
+        }),
+        documentedSupport: expect.objectContaining({
+          value: 'Career advising is available through the student support office.',
+        }),
+      })],
     });
     expect(result.manifest).toMatchObject({
       kind: 'weekly',
