@@ -21,13 +21,17 @@ const pathwayLabels: Record<(typeof CATALOGUE_PATHWAYS)[number], string> = {
 interface CatalogueDiscoveryOverviewProps {
   model: CatalogueDiscoveryModel;
   qualificationLens?: QualificationLensModel;
+  qualificationLensState?: 'ready' | 'loading' | 'error';
   canEditQualifications?: boolean;
+  onRetryQualificationLens?: () => void;
 }
 
 export default function CatalogueDiscoveryOverview({
   model,
   qualificationLens,
+  qualificationLensState = qualificationLens ? 'ready' : 'error',
   canEditQualifications = false,
+  onRetryQualificationLens,
 }: CatalogueDiscoveryOverviewProps) {
   const { filters, region } = model;
   const activeFilters = describeActiveFilters(filters);
@@ -35,7 +39,8 @@ export default function CatalogueDiscoveryOverview({
   const [showQualificationEditor, setShowQualificationEditor] = useState(false);
   const qualificationTrigger = useRef<HTMLButtonElement>(null);
   const lensEntries = qualificationLens?.items ?? [];
-  const displayedEntries = order === 'qualifications' && qualificationLens
+  const isLensReady = qualificationLensState === 'ready' && Boolean(qualificationLens);
+  const displayedEntries = order === 'qualifications' && isLensReady
     ? orderQualificationsFirst(lensEntries)
     : model.items.map((item) => ({ item, explanation: undefined }));
   const resultCount = displayedEntries.length;
@@ -82,13 +87,21 @@ export default function CatalogueDiscoveryOverview({
                   Normal catalogue
                 </label>
                 <label className="flex min-h-touch items-center gap-3 rounded-control border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-800">
-                  <input type="radio" name="catalogue-order" value="qualifications" checked={order === 'qualifications'} disabled={!qualificationLens} onChange={() => setOrder('qualifications')} />
+                  <input
+                    type="radio"
+                    name="catalogue-order"
+                    value="qualifications"
+                    checked={order === 'qualifications'}
+                    disabled={!isLensReady}
+                    onChange={() => setOrder('qualifications')}
+                  />
                   Qualifications first
                 </label>
               </div>
               <p className="mt-3 text-sm leading-6 text-ink-700">Every reviewed opportunity stays in the list. This changes order only.</p>
-              {!qualificationLens ? <p className="mt-2 text-sm text-ink-600">Qualifications first is unavailable right now. You can still browse every opportunity.</p> : null}
-              {qualificationLens && lensEntries.every((entry) => entry.explanation.checkedRequirements.length === 0 && entry.explanation.keywordConnections.length === 0) ? <p className="mt-2 text-sm text-ink-600">Add qualifications to check published requirements.</p> : null}
+              {qualificationLensState === 'loading' ? <><p className="mt-2 text-sm text-ink-600">Loading your saved qualifications…</p><div aria-hidden="true" className="mt-2 min-h-24 rounded-card border border-ink-200 bg-white" /></> : null}
+              {qualificationLensState === 'error' || !qualificationLens ? <><p className="mt-2 text-sm text-ink-600">Qualifications first is unavailable right now. You can still browse every opportunity.</p><button type="button" className="mt-2 text-sm font-semibold text-brand-red underline-offset-4 hover:underline" onClick={onRetryQualificationLens}>Retry qualifications first</button></> : null}
+              {isLensReady && lensEntries.every((entry) => entry.explanation.checkedRequirements.length === 0 && entry.explanation.keywordConnections.length === 0) ? <p className="mt-2 text-sm text-ink-600">Add qualifications to check published requirements.</p> : null}
               {canEditQualifications ? <button ref={qualificationTrigger} type="button" onClick={() => setShowQualificationEditor(true)} className="mt-3 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Edit qualifications</button> : <Link href="/auth/sign-in" className="mt-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Sign in to edit qualifications</Link>}
               {showQualificationEditor ? <div className="mt-4"><QualificationRecordForm onClose={closeQualificationEditor} /></div> : null}
             </fieldset>
@@ -97,7 +110,7 @@ export default function CatalogueDiscoveryOverview({
               {model.coverage.map((coverage) => <li key={coverage.pathway} className="rounded-control border border-ink-200 px-3 py-2"><span className="font-medium">{pathwayLabels[coverage.pathway]}</span>: {coverage.state === 'verified' ? 'Verified coverage' : 'Not yet verified'} <span className="text-ink-500">(reviewed {coverage.reviewedAt})</span></li>)}
             </ul>
           </div>
-          {displayedEntries.length > 0 ? displayedEntries.map(({ item, explanation }) => <CatalogueOpportunityCard key={item.id} item={item} filters={filters} qualificationExplanation={order === 'qualifications' ? explanation : undefined} />) : <EmptyState model={model} />}
+          {displayedEntries.length > 0 ? displayedEntries.map(({ item, explanation }) => <CatalogueOpportunityCard key={item.id} item={item} filters={filters} qualificationExplanation={order === 'qualifications' && isLensReady ? explanation : undefined} />) : <EmptyState model={model} />}
         </section>
       </div>
     </main>
