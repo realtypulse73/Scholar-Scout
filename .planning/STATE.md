@@ -5,15 +5,15 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 12
 current_phase_name: Qualification Lens and Explanation Governance
 status: in_progress
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-09-24T20:17:45.325Z"
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-09-24T20:32:20.288Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 12 Plan 12-01 completed; Plan 12-02 is ready to execute
+last_activity_desc: Phase 12 Plan 12-04 completed; Plan 12-02 is ready to execute
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 26
-  completed_plans: 22
+  completed_plans: 23
   percent: 43
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 ## Current Position
 
 Phase: 12 — Qualification Lens and Explanation Governance
-Plan: 1/5 plans complete — next: 12-02
+Plan: 2/5 plans complete — next: 12-02
 Status: In progress
-Last activity: 2026-09-24 — Phase 12 Plan 12-01 completed; Plan 12-02 is ready to execute
+Last activity: 2026-09-24 — Phase 12 Plan 12-04 completed; Plan 12-02 is ready to execute
 
 ## Performance Metrics
 
@@ -114,6 +114,7 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-01 completed; Plan 12-02 is ready
 | Phase 11 P03 | 25min | 2 tasks | 3 files |
 | Phase 11 P05 | 12min | 3 tasks | 9 files |
 | Phase 12 P01 | 70m | 3 tasks | 10 files |
+| Phase 12 P04 | 35m | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -208,6 +209,7 @@ Last activity: 2026-09-24 — Phase 12 Plan 12-01 completed; Plan 12-02 is ready
 - [Phase 11]: Keep saved IDs unavailable and removable when a reviewed snapshot changes; never substitute another opportunity.
 - [Phase 11]: Derive neutral reasons only from reviewed skill, delivery, and training-payer facts while retaining their evidence.
 - [Phase 12]: Reject duplicate normalized qualification keywords and preserve an all-empty private record as the explicit Account empty state.
+- [Phase 12]: Keep supplied catalogue qualification evidence source-backed and exact-keyed; preserve valid non-current facts for verification.
 
 ### Roadmap Evolution
 
@@ -252,6 +254,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T20:17:45.291Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-09-24T20:32:20.254Z
+Stopped at: Completed 12-04-PLAN.md
 Resume file: .planning/phases/12-qualification-lens-and-explanation-governance/12-02-PLAN.md

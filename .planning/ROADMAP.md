@@ -142,14 +142,14 @@ Plans:
 3. Every ranked result gives decomposable stated-preference/programme-verified reasons, a material verification step, a plain-language support statement, and a choice-preserving action.
 4. GPA, test scores, prestige, ZIP, click/passive behavior, and similar proxies are excluded from rank, visibility, and conclusions by contracts and regression tests.
 
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 
 - [x] 12-01-PLAN.md
 - [ ] 12-02-PLAN.md
 - [ ] 12-03-PLAN.md
-- [ ] 12-04-PLAN.md
+- [x] 12-04-PLAN.md
 - [ ] 12-05-PLAN.md
 
 - [x] `12-01-PLAN.md` — Add the private account-only qualification record, bounded editor, and ownership/privacy regressions.
