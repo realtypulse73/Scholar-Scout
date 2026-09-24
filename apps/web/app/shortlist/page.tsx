@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
-import ShortlistComparison from '@/components/shortlist/ShortlistComparison';
+import CatalogueComparison from '@/components/catalogue/CatalogueComparison';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
-import { getGovernedProgrammes } from '@/lib/server/programme-records';
+import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import { catalogueRegions } from '@/lib/catalogue-fixtures';
+import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 export const metadata = {
   title: 'Shortlist | ScholarScout',
@@ -12,7 +14,11 @@ export const metadata = {
 };
 
 export default async function ShortlistPage() {
-  const programmes = await getGovernedProgrammes();
+  const snapshot = await getPublishedCatalogueSnapshot();
+  const items = catalogueRegions.flatMap((region) => buildCatalogueDiscoveryModel({
+    records: snapshot.records,
+    searchParams: { metro: region.id },
+  }).items);
 
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
@@ -37,7 +43,7 @@ export default async function ShortlistPage() {
 
       <section className="border-y border-border bg-white">
         <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8">
-          <ShortlistComparison programmes={programmes} />
+          <CatalogueComparison items={items} />
         </div>
       </section>
     </main>
