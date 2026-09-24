@@ -182,4 +182,73 @@ describe('qualification lens', () => {
       gpa: '4.0',
     } as unknown as { structured: []; keywords: [] })).toThrow('qualification-lens-input-invalid');
   });
+
+  it('shows documented support only when the record does not have a checked requirement', () => {
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [record('catalogue:support')],
+      searchParams: { metro: 'greater-houston' },
+      now: NOW,
+    }).items;
+
+    const checked = buildQualificationLensModel([item], {
+      structured: ['diploma-credits'],
+      keywords: [],
+    });
+    const unchecked = buildQualificationLensModel([item], {
+      structured: [],
+      keywords: [],
+    });
+
+    expect(checked.items[0].explanation).not.toHaveProperty('documentedSupport');
+    expect(unchecked.items[0].explanation).toMatchObject({
+      documentedSupport: {
+        label: 'Documented support',
+        text: 'Career advising is available through the student support office.',
+        sourceDate: '2026-09-20',
+        evidence: expect.objectContaining({
+          sourceUrl: 'https://example.edu/admissions',
+          verificationAction: 'Review the official admissions page before making a decision.',
+        }),
+      },
+    });
+  });
+
+  it('keeps the explanation factual when documented support is absent or uncertain', () => {
+    const unavailable = record('catalogue:no-support');
+    unavailable.documentedSupport = undefined;
+    const uncertain = record('catalogue:uncertain-support');
+    uncertain.documentedSupport = {
+      value: 'Career advising is available through the student support office.',
+      evidence: evidence('needs-confirmation'),
+    };
+    const items = buildCatalogueDiscoveryModel({
+      records: [unavailable, uncertain],
+      searchParams: { metro: 'greater-houston' },
+      now: NOW,
+    }).items;
+
+    const model = buildQualificationLensModel(items, {
+      structured: [],
+      keywords: [],
+    });
+    expect(model.items[0].explanation).not.toHaveProperty('documentedSupport');
+    expect(model.items[1].explanation).toMatchObject({
+      documentedSupport: expect.objectContaining({
+        label: 'Documented support',
+        evidence: expect.objectContaining({ status: 'needs-confirmation' }),
+      }),
+    });
+    for (const explanation of model.items.map((entry) => entry.explanation)) {
+      expect(Object.keys(explanation).sort()).toEqual([
+        'checkedRequirements',
+        'documentedSupport',
+        'keywordConnections',
+        'verificationRows',
+      ].filter((key) => key !== 'documentedSupport' || 'documentedSupport' in explanation));
+      expect(explanation).not.toHaveProperty('eligible');
+      expect(explanation).not.toHaveProperty('admission');
+      expect(explanation).not.toHaveProperty('fit');
+      expect(explanation).not.toHaveProperty('rank');
+    }
+  });
 });
