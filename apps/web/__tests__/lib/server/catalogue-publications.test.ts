@@ -465,6 +465,30 @@ describe('weekly catalogue publication', () => {
           reviewedAt: '2027-04-01',
         },
       }])) as typeof validCandidate.facts,
+      publishedRequirements: validCandidate.publishedRequirements.map((requirement) => ({
+        ...requirement,
+        evidence: {
+          ...requirement.evidence,
+          sourceDate: { state: 'documented' as const, value: '2027-04-01' },
+          reviewedAt: '2027-04-01',
+        },
+      })),
+      reviewedDescription: {
+        ...validCandidate.reviewedDescription,
+        evidence: {
+          ...validCandidate.reviewedDescription.evidence,
+          sourceDate: { state: 'documented' as const, value: '2027-04-01' },
+          reviewedAt: '2027-04-01',
+        },
+      },
+      documentedSupport: {
+        ...validCandidate.documentedSupport,
+        evidence: {
+          ...validCandidate.documentedSupport.evidence,
+          sourceDate: { state: 'documented' as const, value: '2027-04-01' },
+          reviewedAt: '2027-04-01',
+        },
+      },
     };
     await approve(stale);
     await approve(current, releaseNow);

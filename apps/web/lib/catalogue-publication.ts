@@ -2,12 +2,16 @@ import {
   getFreshnessStatus,
   validateCatalogueOpportunityCardFacts,
   validateCatalogueRegion,
+  validateFactEvidence,
   validateSourceMetadata,
   type CatalogueOpportunityCardFacts,
   type CatalogueRegion,
   type CatalogueRegionId,
+  type PublishedRequirement,
+  type SourcedFact,
   type SourceMetadata,
 } from '@/lib/catalogue-contract';
+import { QUALIFICATION_KINDS, type QualificationKind } from '@/lib/qualification-record';
 import { createHash } from 'node:crypto';
 
 export const CATALOGUE_CHECKLIST_DISCLOSURE =
@@ -57,6 +61,9 @@ export interface CatalogueCandidateInput {
   source?: SourceMetadata;
   facts?: Partial<CatalogueOpportunityCardFacts>;
   claimBoundary?: string;
+  publishedRequirements?: PublishedRequirement[];
+  reviewedDescription?: SourcedFact<string>;
+  documentedSupport?: SourcedFact<string>;
   media?: { url?: string; alt?: string };
   mediaRights?: CatalogueMediaRights;
 }
@@ -83,6 +90,9 @@ export interface CatalogueCandidate extends Required<Pick<CatalogueCandidateInpu
   updatedAt: string;
   media?: { url?: string; alt?: string };
   mediaRights?: CatalogueMediaRights;
+  publishedRequirements?: PublishedRequirement[];
+  reviewedDescription?: SourcedFact<string>;
+  documentedSupport?: SourcedFact<string>;
   checklist: CatalogueChecklistResult;
   approval: CatalogueCandidateApproval | null;
   retirementIntent?: boolean;
@@ -137,6 +147,9 @@ export interface CataloguePublishedRecord {
   source: SourceMetadata;
   facts: CatalogueOpportunityCardFacts;
   claimBoundary: string;
+  publishedRequirements?: PublishedRequirement[];
+  reviewedDescription?: SourcedFact<string>;
+  documentedSupport?: SourcedFact<string>;
   media?: { url?: string; alt?: string };
   mediaFallback: boolean;
 }
@@ -266,6 +279,9 @@ export function evaluateCatalogueChecklist(
   if (!candidate.facts || validateCatalogueOpportunityCardFacts(candidate.facts, now).length > 0) {
     failed.add('material-evidence');
   }
+  if (!hasValidOptionalQualificationEvidence(candidate, now)) {
+    failed.add('material-evidence');
+  }
   if (!candidate.source || getFreshnessStatus(candidate.source, 'operational', now) !== 'current') {
     failed.add('freshness');
   }
@@ -348,6 +364,15 @@ function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
     ...(value.source === undefined ? {} : { source: value.source as SourceMetadata }),
     ...(value.facts === undefined ? {} : { facts: value.facts as CatalogueOpportunityCardFacts }),
     ...(value.claimBoundary === undefined ? {} : { claimBoundary: value.claimBoundary as string }),
+    ...(value.publishedRequirements === undefined
+      ? {}
+      : { publishedRequirements: value.publishedRequirements as PublishedRequirement[] }),
+    ...(value.reviewedDescription === undefined
+      ? {}
+      : { reviewedDescription: value.reviewedDescription as SourcedFact<string> }),
+    ...(value.documentedSupport === undefined
+      ? {}
+      : { documentedSupport: value.documentedSupport as SourcedFact<string> }),
     ...(value.media === undefined ? {} : { media: value.media as { url?: string; alt?: string } }),
     ...(value.mediaRights === undefined ? {} : { mediaRights: value.mediaRights as CatalogueMediaRights }),
   };
@@ -426,7 +451,18 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
     || validateCatalogueRegion(value.region as unknown as CatalogueRegion).length > 0
     || (value.region as unknown as CatalogueRegion).id !== value.regionId
     || validateSourceMetadata(value.source as unknown as SourceMetadata).length > 0
-    || validateCatalogueOpportunityCardFacts(value.facts as unknown as CatalogueOpportunityCardFacts, new Date()).length > 0) {
+    || validateCatalogueOpportunityCardFacts(value.facts as unknown as CatalogueOpportunityCardFacts, new Date()).length > 0
+    || !hasValidOptionalQualificationEvidence({
+      ...(value.publishedRequirements === undefined
+        ? {}
+        : { publishedRequirements: value.publishedRequirements as PublishedRequirement[] }),
+      ...(value.reviewedDescription === undefined
+        ? {}
+        : { reviewedDescription: value.reviewedDescription as SourcedFact<string> }),
+      ...(value.documentedSupport === undefined
+        ? {}
+        : { documentedSupport: value.documentedSupport as SourcedFact<string> }),
+    }, new Date())) {
     return false;
   }
   return value.media === undefined || isMedia(value.media);
@@ -438,6 +474,9 @@ function isCandidateStoredFields(value: Record<string, unknown>): boolean {
     && (value.source === undefined || isRecord(value.source))
     && (value.facts === undefined || isRecord(value.facts))
     && (value.claimBoundary === undefined || typeof value.claimBoundary === 'string')
+    && (value.publishedRequirements === undefined || Array.isArray(value.publishedRequirements))
+    && (value.reviewedDescription === undefined || isRecord(value.reviewedDescription))
+    && (value.documentedSupport === undefined || isRecord(value.documentedSupport))
     && (value.media === undefined || isMedia(value.media))
     && (value.mediaRights === undefined || isMediaRights(value.mediaRights));
 }
@@ -562,7 +601,38 @@ function isCompleteCandidateInput(value: Record<string, unknown>): boolean {
     && isRecord(value.region)
     && isRecord(value.source)
     && isRecord(value.facts)
-    && isBoundedRequiredText(value.claimBoundary, 500);
+    && isBoundedRequiredText(value.claimBoundary, 500)
+    && hasValidOptionalQualificationEvidence(value, new Date());
+}
+
+function hasValidOptionalQualificationEvidence(
+  value: Pick<CatalogueCandidateInput, 'publishedRequirements' | 'reviewedDescription' | 'documentedSupport'> | Record<string, unknown>,
+  now: Date,
+): boolean {
+  const requirements = value.publishedRequirements;
+  if (requirements !== undefined && (!Array.isArray(requirements)
+    || requirements.length > 20
+    || !requirements.every((requirement) => isPublishedRequirement(requirement, now)))) {
+    return false;
+  }
+  return isSourcedStatement(value.reviewedDescription, now)
+    && isSourcedStatement(value.documentedSupport, now);
+}
+
+function isPublishedRequirement(value: unknown, now: Date): value is PublishedRequirement {
+  if (!isRecord(value) || !isBoundedRequiredText(value.text, 500)
+    || !Array.isArray(value.qualificationKeys) || value.qualificationKeys.length < 1
+    || value.qualificationKeys.length > QUALIFICATION_KINDS.length
+    || !hasUnique(value.qualificationKeys.map(String))
+    || !value.qualificationKeys.every((key) => QUALIFICATION_KINDS.includes(key as QualificationKind))
+    || !isRecord(value.evidence)) return false;
+  return validateFactEvidence(value.evidence as unknown as PublishedRequirement['evidence'], now).length === 0;
+}
+
+function isSourcedStatement(value: unknown, now: Date): boolean {
+  if (value === undefined) return true;
+  return isRecord(value) && isBoundedRequiredText(value.value, 1_000) && isRecord(value.evidence)
+    && validateFactEvidence(value.evidence as unknown as SourcedFact<string>['evidence'], now).length === 0;
 }
 
 function invalidImport(): CatalogueCandidateImportParseResult {

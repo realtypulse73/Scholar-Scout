@@ -70,6 +70,13 @@ export interface SourcedFact<Value> {
   evidence: FactEvidence;
 }
 
+/** A reviewed admission or participation requirement linked to controlled student-record keys. */
+export interface PublishedRequirement {
+  text: string;
+  qualificationKeys: import('@/lib/qualification-record').QualificationKind[];
+  evidence: FactEvidence;
+}
+
 export type EmploymentCommitmentState =
   | 'no-published-guarantee'
   | 'published-provider-statement'

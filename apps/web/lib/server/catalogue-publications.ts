@@ -202,6 +202,9 @@ export async function publishEmergencyCatalogueSnapshot(input: {
       source: candidateInput.source as CatalogueCandidate['source'],
       facts: candidateInput.facts as CatalogueCandidate['facts'],
       claimBoundary: candidateInput.claimBoundary ?? '',
+      publishedRequirements: candidateInput.publishedRequirements,
+      reviewedDescription: candidateInput.reviewedDescription,
+      documentedSupport: candidateInput.documentedSupport,
       revision: existing.revision + 1,
       lifecycle: 'approved',
       updatedAt: timestamp,
@@ -1018,6 +1021,15 @@ function toPublishedRecord(
     source: candidate.source,
     facts: candidate.facts as CataloguePublishedRecord['facts'],
     claimBoundary: candidate.claimBoundary,
+    ...(candidate.publishedRequirements === undefined
+      ? {}
+      : { publishedRequirements: candidate.publishedRequirements }),
+    ...(candidate.reviewedDescription === undefined
+      ? {}
+      : { reviewedDescription: candidate.reviewedDescription }),
+    ...(candidate.documentedSupport === undefined
+      ? {}
+      : { documentedSupport: candidate.documentedSupport }),
     ...(!mediaFallback && candidate.media === undefined ? {} : !mediaFallback ? { media: candidate.media } : {}),
     mediaFallback,
   };
@@ -1072,6 +1084,15 @@ function toCandidateInput(value: unknown): CatalogueCandidateInput {
     source: isRecord(value.source) ? value.source as unknown as CatalogueCandidateInput['source'] : undefined,
     facts: isRecord(value.facts) ? value.facts as CatalogueCandidateInput['facts'] : undefined,
     claimBoundary: boundedText(value.claimBoundary, 500),
+    publishedRequirements: Array.isArray(value.publishedRequirements)
+      ? value.publishedRequirements as CatalogueCandidateInput['publishedRequirements']
+      : undefined,
+    reviewedDescription: isRecord(value.reviewedDescription)
+      ? value.reviewedDescription as unknown as CatalogueCandidateInput['reviewedDescription']
+      : undefined,
+    documentedSupport: isRecord(value.documentedSupport)
+      ? value.documentedSupport as unknown as CatalogueCandidateInput['documentedSupport']
+      : undefined,
     media: isRecord(value.media) ? {
       url: boundedText(value.media.url, 2_000),
       alt: boundedText(value.media.alt, 500),
