@@ -315,15 +315,15 @@ The catalogue's existing `FactEvidence` already preserves a fact's source label,
 
 ## Open Questions
 
-1. **What exact structured value vocabulary will each of the five qualification groups expose?**
-   - What we know: The groups and UI limits are locked. [VERIFIED: 12-CONTEXT.md] [VERIFIED: 12-UI-SPEC.md]
-   - What's unclear: Whether each group is a single broad declaration or a bounded set of more precise published terms.
-   - Recommendation: Start with a small product-reviewed controlled union and require the catalogue's requirement key to be equally precise; do not accept arbitrary structured text. [ASSUMED]
+1. **RESOLVED — Exact controlled qualification vocabulary.**
+   - Use these eight stable keys: high-school-diploma, postsecondary-credits, associate-degree, bachelor-degree, graduate-degree, professional-licence, prior-relevant-work, and voluntary-military-service.
+   - The first five terms implement D-01's diploma/credits and degree groups; the final three implement licence, prior work, and voluntary military history. A student selects only these literals and a published requirement may claim a checked connection only through the same literal. No grade, school, employer, duration, score, location, sensitive circumstance, synonym, or free-text structured value is accepted.
+   - This is the deliberately bounded vocabulary selected under the user's granted engineering discretion. It keeps D-03 literal and auditable and prevents a broad declaration from implying an unstated requirement.
 
-2. **How will staff author the new requirement/description/support evidence in the Phase 10 candidate flow?**
-   - What we know: The existing candidate input/snapshot contract has no such fields. [VERIFIED: codebase grep]
-   - What's unclear: Whether this phase needs a minimal staff form extension, structured import extension, fixtures only, or all of them.
-   - Recommendation: Extend the shared candidate/snapshot validation and import path first; add the smallest staff editor field set needed to create reviewed records, never a learner-time fetch. [VERIFIED: 10-CONTEXT.md]
+2. **RESOLVED — Existing governed candidate/import authoring path.**
+   - Extend CatalogueCandidateInput and the existing schema-versioned private JSON import consumed by importCatalogueCandidates with ordered publishedRequirements, optional reviewedDescription, and optional documentedSupport evidence.
+   - Staff continue to use the current CataloguePublicationManager Stage private import, submit, independent review, and release workflow. The implementation updates its existing JSON guidance and the curated publication runbook; it adds no staff page, role, route, or learner-time provider request.
+   - Every new authored fact carries the existing FactEvidence contract and passes current candidate validation, review, and published-snapshot guards. Reviewed fixtures stage, approve, and publish the fields before the learner lens reads them.
 
 ## Environment Availability
 
