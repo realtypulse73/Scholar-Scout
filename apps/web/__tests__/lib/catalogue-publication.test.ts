@@ -199,6 +199,61 @@ describe('catalogue candidate import envelope', () => {
     });
   });
 
+  it.each([
+    ['blank requirement text', {
+      publishedRequirements: [{
+        text: ' ',
+        qualificationKeys: ['diploma-credits'],
+        evidence: evidence(),
+      }],
+    }],
+    ['unapproved qualification key', {
+      publishedRequirements: [{
+        text: 'A high school diploma or equivalent is required.',
+        qualificationKeys: ['gpa'],
+        evidence: evidence(),
+      }],
+    }],
+    ['missing requirement evidence', {
+      publishedRequirements: [{
+        text: 'A high school diploma or equivalent is required.',
+        qualificationKeys: ['diploma-credits'],
+      }],
+    }],
+    ['missing support evidence', {
+      documentedSupport: {
+        value: 'Career advising is available through the student support office.',
+      },
+    }],
+  ])('rejects an import with %s atomically', (_, candidateEvidence) => {
+    expect(parseCatalogueCandidateImport({
+      schemaVersion: 1,
+      changes: [{
+        action: 'upsert',
+        candidate: { ...validCandidate, ...candidateEvidence },
+      }],
+    })).toEqual({ ok: false, correctionCodes: ['invalid-import'] });
+  });
+
+  it('preserves a non-current sourced requirement for later learner verification', () => {
+    const result = parseCatalogueCandidateImport({
+      schemaVersion: 1,
+      changes: [{
+        action: 'upsert',
+        candidate: {
+          ...validCandidate,
+          publishedRequirements: [{
+            text: 'A high school diploma or equivalent is required.',
+            qualificationKeys: ['diploma-credits'],
+            evidence: { ...evidence(), status: 'needs-confirmation' },
+          }],
+        },
+      }],
+    });
+
+    expect(result).toEqual(expect.objectContaining({ ok: true }));
+  });
+
   it('accepts one through twenty-five unique, schema-versioned changes', () => {
     const result = parseCatalogueCandidateImport({
       schemaVersion: 1,

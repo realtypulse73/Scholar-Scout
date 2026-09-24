@@ -215,6 +215,47 @@ describe('private catalogue candidate staging', () => {
     expect(await store.read()).toEqual(before);
   });
 
+  it('rejects an invalid qualification key without changing a published snapshot or private candidate', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
+    await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    });
+    const before = await store.read();
+
+    await expect(importCatalogueCandidates({
+      actor: editor,
+      envelope: {
+        schemaVersion: 1,
+        changes: [{
+          action: 'upsert',
+          candidate: {
+            ...validCandidate,
+            publishedRequirements: [{
+              ...validCandidate.publishedRequirements[0],
+              qualificationKeys: ['unapproved-key'],
+            }],
+          },
+          expectedRevision: 1,
+        }],
+      },
+      now: NOW,
+    })).rejects.toThrow('catalogue-candidate-import-invalid');
+
+    expect(await store.read()).toEqual(before);
+    await expect(getPublishedCatalogueSnapshot()).resolves.toMatchObject({
+      status: 'published',
+      records: [expect.objectContaining({ id: validCandidate.id })],
+    });
+  });
+
   it('creates a new private revision and clears its prior approval on correction', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
     await reviewCatalogueCandidate({

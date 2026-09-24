@@ -62,7 +62,9 @@ describe('CataloguePublicationManager', () => {
     render(<CataloguePublicationManager />);
 
     await waitFor(() => expect(screen.getByText('Technical training')).toBeInTheDocument());
-    expect(screen.getByText(/publishedRequirements.*reviewedDescription.*documentedSupport/i)).toBeInTheDocument();
+    expect(screen.getByText('publishedRequirements')).toBeInTheDocument();
+    expect(screen.getByText('reviewedDescription')).toBeInTheDocument();
+    expect(screen.getByText('documentedSupport')).toBeInTheDocument();
     expect(screen.getByText(/stage privately, submit for independent review, then release/i)).toBeInTheDocument();
   });
 

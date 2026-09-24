@@ -337,6 +337,7 @@ export default function CataloguePublicationManager() {
         <section className="rounded-card border border-silver-200 bg-white p-6" aria-labelledby="catalogue-intake-title">
           <h2 id="catalogue-intake-title" className="text-xl font-semibold text-ink-900">Structured candidate intake</h2>
           <p className="mt-2 text-sm text-ink-600">Paste a one-to-25 record JSON file, or load one from your computer. It is staged privately.</p>
+          <p className="mt-2 text-sm leading-6 text-ink-600">Put source-backed qualification claims in <code>publishedRequirements</code>, <code>reviewedDescription</code>, and <code>documentedSupport</code>. Each statement needs its own status, authority, source, date, review date, and verification action. Stage privately, submit for independent review, then release only the approved snapshot.</p>
           <label className="mt-4 block text-sm font-semibold text-ink-800" htmlFor="catalogue-import">Import JSON</label>
           <textarea id="catalogue-import" value={importText} onChange={(event) => setImportText(event.target.value)} className="mt-2 min-h-40 w-full rounded-card border border-silver-300 p-3 font-mono text-xs text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus" />
           <div className="mt-3 flex flex-wrap gap-3">

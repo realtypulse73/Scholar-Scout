@@ -39,12 +39,44 @@ Send one through 25 changes to `POST /api/admin/catalogue-publications/import`. 
         "region": { "...": "approved regional boundary metadata" },
         "source": { "...": "official source metadata" },
         "facts": { "...": "source-backed factual card fields" },
-        "claimBoundary": "Factual programme details from the official source."
+        "claimBoundary": "Factual programme details from the official source.",
+        "publishedRequirements": [
+          {
+            "text": "A high school diploma or equivalent is required.",
+            "qualificationKeys": ["diploma-credits"],
+            "evidence": {
+              "status": "current",
+              "authority": "provider-official",
+              "sourceLabel": "Official programme admissions page",
+              "sourceUrl": "https://example.edu/admissions",
+              "sourceDate": { "state": "documented", "value": "2026-09-20" },
+              "reviewedAt": "2026-09-21",
+              "verificationAction": "Review the official admissions page before publication."
+            }
+          }
+        ],
+        "reviewedDescription": {
+          "value": "Hands-on welding instruction for entry-level learners.",
+          "evidence": { "...": "its own complete FactEvidence" }
+        },
+        "documentedSupport": {
+          "value": "Career advising is available through the student support office.",
+          "evidence": { "...": "its own complete FactEvidence" }
+        }
       }
     }
   ]
 }
 ```
+
+`publishedRequirements` is ordered. Every requirement needs nonblank text, one or more exact
+controlled keys, and complete `FactEvidence`; do not invent a category or turn free-form text
+into a qualification claim. The allowed keys are `diploma-credits`, `degree`, `licence`,
+`prior-work`, and `voluntary-military-history`. `reviewedDescription` and
+`documentedSupport` are optional, but when present each needs its own complete evidence object
+with status, authority, source label and URL, source date, review date, and verification action.
+A non-current statement remains a verification item; it is not a reason to make an eligibility
+or outcome claim.
 
 An existing candidate needs its current `expectedRevision`. A `retire` change needs the existing stable ID and its current revision. It records a private retirement intent only; it does not delete or alter a public snapshot.
 
@@ -73,6 +105,11 @@ The server checks these six categories every time a record is staged, resubmitte
 **A pass means editorial completeness, not verified real-world provider truth.**
 
 When a check fails, keep the record private as a draft, correct the ordered list of flagged categories, and resubmit it. Any edit removes the previous approval and requires a new review. If provider-media rights are missing, expired, revoked, or uncertain, remove the media and keep the factual text plus official source links.
+
+For source-backed requirements, descriptions, or support: use the existing **Stage private
+import** control, correct the private draft, choose **Submit for review**, obtain independent
+review, then include the approved candidate in the existing release. Do not create a separate
+staff record or paste student information into candidate JSON or audit reasons.
 
 ## Weekly release: administrator procedure
 
