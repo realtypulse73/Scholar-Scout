@@ -31,4 +31,16 @@ describe('CatalogueFocusView', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/bayou');
   });
+
+  it('keeps named focus actions and the non-media preview readable with reduced motion or a narrow viewport', () => {
+    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    expect(screen.getByTestId('catalogue-focus-layout')).toHaveClass('catalogue-focus', 'min-w-0', 'max-w-full');
+    expect(screen.getByRole('navigation', { name: /opportunity detail navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /facts and sources/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/does not display provider or learner media yet/i);
+    expect(screen.getByRole('link', { name: /open source for training payer.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
+    expect(screen.getByTestId('catalogue-focus-decoration')).toHaveAttribute('aria-hidden', 'true');
+  });
 });

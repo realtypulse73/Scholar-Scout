@@ -45,6 +45,30 @@ body {
   animation: student-light-trail 9s ease-in-out infinite;
 }
 
+.catalogue-focus-decoration {
+  position: absolute;
+  inset: auto -6rem -7rem auto;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0));
+  animation: catalogue-focus-glow 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes catalogue-focus-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
 @keyframes student-journey {
   0%,
   100% {
@@ -83,5 +107,11 @@ body {
   .student-light-trail {
     animation: none;
     transform: none;
+  }
+
+  .catalogue-focus-decoration {
+    animation: none;
+    transform: none;
+    opacity: 0;
   }
 }

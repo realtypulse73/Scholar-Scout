@@ -6,7 +6,7 @@ export default function DiscoveryPreviewSlot() {
   return (
     <section
       aria-label="Media preview"
-      className="rounded-card border border-dashed border-brand-300 bg-brand-50 p-5"
+      className="min-w-0 rounded-card border border-dashed border-brand-300 bg-brand-50 p-5"
     >
       <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Media preview</p>
       <h2 className="mt-2 text-xl font-semibold text-ink-900">Visual media needs rights review</h2>
