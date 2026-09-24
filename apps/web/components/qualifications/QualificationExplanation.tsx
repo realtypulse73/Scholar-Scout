@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import type {
   QualificationExplanation as QualificationExplanationModel,
   QualificationKeywordConnection,
@@ -14,8 +17,28 @@ export default function QualificationExplanation({
   explanation,
   officialVerificationUrl,
 }: QualificationExplanationProps) {
+  const [showDetails, setShowDetails] = useState(false);
   const checkedCount = explanation.checkedRequirements.length;
   const hasConnection = checkedCount > 0 || explanation.keywordConnections.length > 0;
+  const checkedRows = explanation.checkedRequirements.map((requirement) => (
+      <RequirementRow
+        key={`${requirement.text}-${requirement.evidence.sourceUrl}`}
+        text={requirement.text}
+        evidence={requirement.evidence}
+        actionLabel={`Verify ${requirement.text}`}
+      />
+    ));
+  const hasDetails = checkedRows.length > 2;
+  const visibleCheckedRows = showDetails || !hasDetails ? checkedRows : checkedRows.slice(0, 2);
+  const rows = [
+    ...visibleCheckedRows,
+    ...explanation.keywordConnections.map((connection) => (
+      <KeywordRow key={`${connection.keyword}-${connection.text}`} connection={connection} />
+    )),
+    ...explanation.verificationRows.map((row) => (
+      <VerificationRow key={`${row.text}-${row.evidence.sourceUrl}`} row={row} />
+    )),
+  ];
 
   return (
     <section aria-label="Qualification details" className="mt-4 min-w-0 rounded-card border border-ink-200 bg-ink-50 p-3">
@@ -29,22 +52,9 @@ export default function QualificationExplanation({
       {!hasConnection && explanation.verificationRows.length === 0 ? (
         <p className="mt-2 text-sm leading-6 text-ink-700">No reviewed requirements are listed yet. Verify with the programme.</p>
       ) : null}
-      <div className="mt-3 space-y-3">
-        {explanation.checkedRequirements.map((requirement) => (
-          <RequirementRow
-            key={`${requirement.text}-${requirement.evidence.sourceUrl}`}
-            text={requirement.text}
-            evidence={requirement.evidence}
-            actionLabel={`Verify ${requirement.text}`}
-          />
-        ))}
-        {explanation.keywordConnections.map((connection) => (
-          <KeywordRow key={`${connection.keyword}-${connection.text}`} connection={connection} />
-        ))}
-        {explanation.verificationRows.map((row) => (
-          <VerificationRow key={`${row.text}-${row.evidence.sourceUrl}`} row={row} />
-        ))}
-      </div>
+      {checkedCount === 0 && rows.length > 0 ? <p className="mt-2 text-sm text-ink-700">Check this requirement with the programme.</p> : null}
+      <div className="mt-3 space-y-3">{rows}</div>
+      {hasDetails ? <button type="button" aria-expanded={showDetails} onClick={() => setShowDetails((current) => !current)} className="mt-3 inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">{showDetails ? 'Hide details' : 'Show details'}</button> : null}
       {explanation.documentedSupport ? (
         <p className="mt-3 break-words text-sm leading-6 text-ink-700">
           This programme lists {explanation.documentedSupport.text}. Ask the programme if it is available to you.
