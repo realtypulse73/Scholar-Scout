@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import CatalogueComparison from '@/components/catalogue/CatalogueComparison';
 import {
   buildCatalogueDetailHref,
   type CatalogueDiscoveryItem,
 } from '@/lib/catalogue-discovery';
 import type { CatalogueRegionId } from '@/lib/catalogue-contract';
+import type { QualificationExplanation } from '@/lib/qualification-lens';
 
 jest.mock('next-auth/react', () => ({
   useSession: () => ({ data: null }),
@@ -75,6 +77,66 @@ describe('CatalogueComparison', () => {
     expect(screen.getByRole('link', { name: /official verification for welding pathway/i })).toHaveAttribute('href', 'https://example.edu/programme');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toBeInTheDocument();
     expect(screen.queryByText(/best|winner|eligible|fit/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the shared factual qualification explanation without changing saved choice actions', async () => {
+    const user = userEvent.setup();
+    const qualificationExplanation: QualificationExplanation = {
+      checkedRequirements: [
+        'A high school diploma or equivalent is required for this long reviewed training pathway.',
+        'A current licence is listed in this reviewed programme requirement.',
+        'Prior work experience is listed in the reviewed programme requirement.',
+      ].map((text) => ({
+        label: 'Checked published requirement' as const,
+        text,
+        qualificationKeys: ['diploma-credits'],
+        evidence: evidence(),
+      })),
+      keywordConnections: [{
+        label: 'Keyword connection',
+        keyword: 'welding',
+        text: 'Hands-on welding instruction appears in this reviewed description.',
+        source: 'reviewed-description',
+        evidence: evidence(),
+      }],
+      verificationRows: [{
+        label: 'Needs verification',
+        text: 'A dated requirement needs a current source.',
+        state: 'unknown',
+        sourceDate: '2026-09-20',
+        evidence: evidence('unknown'),
+      }],
+      documentedSupport: {
+        label: 'Documented support',
+        text: 'career advising with a long reviewed support description',
+        sourceDate: '2026-09-20',
+        evidence: evidence(),
+      },
+    };
+    window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one']));
+
+    render(<CatalogueComparison items={[item()]} qualificationExplanations={{ 'catalogue:one': qualificationExplanation }} />);
+
+    await screen.findByRole('heading', { name: 'Welding pathway' });
+    const explanation = screen.getByRole('region', { name: /qualification details/i });
+    expect(explanation).toHaveTextContent('3 published requirements checked');
+    expect(explanation).toHaveTextContent('Keyword connection: welding appears in this reviewed text.');
+    expect(explanation).toHaveTextContent('Needs verification');
+    expect(explanation).toHaveTextContent(/this programme lists career advising with a long reviewed support description/i);
+    expect(explanation).toHaveClass('min-w-0');
+    expect(screen.getByLabelText('Needs verification').parentElement?.parentElement).toHaveClass('border-blue-300', 'bg-blue-50');
+    expect(screen.getByRole('button', { name: 'Show details' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.keyboard('{Tab}');
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Prior work experience is listed in the reviewed programme requirement.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/programme');
+    expect(screen.getByRole('link', { name: /details for welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /official verification for welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /remove welding pathway/i })).toBeInTheDocument();
+    expect(explanation.textContent?.toLocaleLowerCase()).not.toMatch(/eligible|admission|outcome|safe|salary|note|score/);
   });
 
   it('keeps missing IDs and cards in saved order, with each fact still carrying evidence', async () => {
