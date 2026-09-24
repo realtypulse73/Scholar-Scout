@@ -315,14 +315,14 @@ The link label must stay explicit; a generic image/card click is not an adequate
 | A1 | A stable public `id` ordering is an acceptable neutral default display order until a separately governed explicit sort is designed. | Pattern 2 | Product may prefer title order; change the comparator centrally without adding a profile signal. [ASSUMED] |
 | A2 | Phase 11 can evolve `/programmes` and `/shortlist` rather than create a parallel public route namespace. | Project structure | A planner should confirm through current-route tests before making route replacement irreversible. [ASSUMED] |
 
-## Open Questions
+## Resolved Planning Questions
 
-1. **Should source facts on the overview be limited to the top two practical facts or list all seven?**
-   - What we know: the full per-fact evidence belongs on every detailed surface; the card must remain scannable. [VERIFIED: requirements DISC-02, 11-CONTEXT.md]
-   - Recommendation: show pathway/location/delivery plus cost-or-tuition/status in the overview, with a visible “See all facts and sources” link; do not omit status/source action. [VERIFIED: 11-CONTEXT.md]
-2. **What content will fill the later preview slot?**
-   - What we know: the founder wants engaging moving/video previews for every opportunity. [VERIFIED: orchestrator instruction]
-   - Recommendation: defer all media selection and rendering to Phase 13, where rights, attribution, consent, moderation, captions/transcript, expiry, and fallback can be validated. [VERIFIED: orchestrator instruction]
+1. **Overview fact density is deliberately scannable.**
+   - Each overview card shows its provider/title, controlled pathway, local place/delivery, aggregate factual status, cost-or-tuition when recorded, and at most one additional decision-ready practical fact. It keeps the source/date/status and official verification action visible, then provides a clearly named **“See all facts and sources”** detail link for the complete per-fact evidence. [VERIFIED: requirements DISC-02, 11-CONTEXT.md]
+   - This resolves the card-density question without hiding evidence: detailed opportunity and comparison surfaces retain every material fact with its own source, date, state, and verification guidance. [VERIFIED: 11-CONTEXT.md]
+2. **The Phase 11 preview slot is intentionally empty and non-media.**
+   - `DiscoveryPreviewSlot` renders only a labelled rights-review disclosure and accessible visual treatment. It does not render a player, image, map, embed, media URL, provider asset, or learner-uploaded content. [VERIFIED: orchestrator instruction]
+   - Phase 13 may fill this structural boundary only after it can prove rights, attribution, consent/moderation where applicable, captions/transcript, expiry/revocation handling, and a factual fallback. [VERIFIED: orchestrator instruction]
 
 ## Environment Availability
 
