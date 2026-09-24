@@ -6,6 +6,19 @@ export type TrustedRequestIp =
   | { status: 'available'; ip: string }
   | { status: 'unavailable' };
 
+type RuntimeEnvironment = Readonly<Record<string, string | undefined>>;
+
+/**
+ * Allows the registration route to use local-only dependencies during next dev.
+ * Any Vercel-marked or non-development environment must retain the trusted-IP
+ * and atomic-reservation controls.
+ */
+export function isLocalDevelopmentRegistrationEnvironment(
+  env: RuntimeEnvironment = process.env,
+): boolean {
+  return env.NODE_ENV === 'development' && !env.VERCEL?.trim() && !env.VERCEL_ENV?.trim();
+}
+
 /**
  * Resolves the client IP only from Vercel's overwritten client-address header.
  * Caller-controlled forwarded headers are deliberately ignored.

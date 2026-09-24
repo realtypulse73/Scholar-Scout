@@ -176,6 +176,79 @@ describe('AuthForm', () => {
       redirect: false,
     });
   });
+
+  it.each([
+    ['malformed registration JSON', malformedJsonResponse()],
+    ['an unknown registration error', jsonResponse({
+      error: 'unexpected-registration-error',
+      detail: 'hostile registration internals',
+    }, 400)],
+  ])('uses generic safe registration copy for %s', async (_name, response) => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(response);
+
+    render(<AuthForm mode="sign-up" />);
+    await fillSignUpForm(user);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to create account. Please review your details and try again.',
+    );
+    expect(screen.queryByText('hostile registration internals')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(signInMock).not.toHaveBeenCalled();
+  });
+
+  it('uses generic safe registration copy after a registration network failure', async () => {
+    const user = userEvent.setup();
+    fetchMock.mockRejectedValueOnce(new Error('network failed'));
+
+    render(<AuthForm mode="sign-up" />);
+    await fillSignUpForm(user);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to create account. Please review your details and try again.',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(signInMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'registration-rate-limited',
+      429,
+      '2026-07-28T12:15:00.000Z',
+      'Too many registration attempts. Try again after 2026-07-28T12:15:00.000Z.',
+    ],
+    [
+      'registration-service-unavailable',
+      503,
+      undefined,
+      'Registration is temporarily unavailable. Please try again.',
+    ],
+  ])('maps known registration code %s to fixed safe guidance', async (
+    error,
+    status,
+    resetAt,
+    expectedMessage,
+  ) => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      error,
+      resetAt,
+      detail: 'hostile registration internals',
+    }, status));
+
+    render(<AuthForm mode="sign-up" />);
+    await fillSignUpForm(user);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(expectedMessage);
+    expect(screen.queryByText('hostile registration internals')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(signInMock).not.toHaveBeenCalled();
+  });
 });
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -183,5 +256,21 @@ function jsonResponse(body: unknown, status = 200): Response {
     ok: status >= 200 && status < 300,
     status,
     json: async () => body,
-  } as Response;
+  } as unknown as Response;
+}
+
+function malformedJsonResponse(): Response {
+  return {
+    ok: false,
+    status: 400,
+    json: async () => {
+      throw new Error('malformed JSON');
+    },
+  } as unknown as Response;
+}
+
+async function fillSignUpForm(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.type(screen.getByLabelText('Name'), 'Student');
+  await user.type(screen.getByLabelText('Email'), 'student@example.com');
+  await user.type(screen.getByLabelText('Password'), 'secure-password');
 }

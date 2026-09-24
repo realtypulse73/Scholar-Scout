@@ -14,6 +14,11 @@ interface CredentialExchangeResponse {
   resetAt?: string;
 }
 
+interface RegistrationResponse {
+  error?: string;
+  resetAt?: string;
+}
+
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -36,10 +41,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
     }
 
     if (mode === 'sign-up') {
-      const registered = await registerAccount({ email, name, password });
+      const registrationResult = await registerAccount({ email, name, password });
 
-      if (!registered) {
-        setError('Unable to create account. Please review your details and try again.');
+      if (!registrationResult.ok) {
+        setError(registrationResult.message);
         return;
       }
     }
@@ -163,18 +168,49 @@ async function registerAccount(input: {
   email: string;
   name: string;
   password: string;
-}): Promise<boolean> {
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  let response: Response;
+
   try {
-    const response = await fetch('/api/register', {
+    response = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     });
-
-    return response.ok;
   } catch {
-    return false;
+    return { ok: false, message: getRegistrationMessage() };
   }
+
+  if (response.ok) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    message: getRegistrationMessage(response.status, await readRegistrationResponse(response)),
+  };
+}
+
+async function readRegistrationResponse(response: Response): Promise<RegistrationResponse> {
+  try {
+    const body = (await response.json()) as RegistrationResponse;
+
+    return body && typeof body === 'object' ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+function getRegistrationMessage(status?: number, body: RegistrationResponse = {}): string {
+  if (status === 429 && body.error === 'registration-rate-limited' && body.resetAt) {
+    return `Too many registration attempts. Try again after ${body.resetAt}.`;
+  }
+
+  if (status === 503 && body.error === 'registration-service-unavailable') {
+    return 'Registration is temporarily unavailable. Please try again.';
+  }
+
+  return 'Unable to create account. Please review your details and try again.';
 }
 
 async function exchangeCredentials(input: {

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import { createUser, getAccountRoleForEmail } from '@/lib/server/data-store';
-import { getTrustedRequestIp } from '@/lib/server/request-ip';
+import {
+  getTrustedRequestIp,
+  isLocalDevelopmentRegistrationEnvironment,
+} from '@/lib/server/request-ip';
 import { reserveRegistration } from '@/lib/server/rate-limit';
 
 const MAX_REGISTRATION_BODY_BYTES = 1_024;
@@ -25,29 +28,31 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const trustedIp = getTrustedRequestIp(request.headers);
+  if (!isLocalDevelopmentRegistrationEnvironment()) {
+    const trustedIp = getTrustedRequestIp(request.headers);
 
-  if (trustedIp.status !== 'available') {
-    return unavailableResponse();
-  }
+    if (trustedIp.status !== 'available') {
+      return unavailableResponse();
+    }
 
-  const reservation = await reserveRegistration(trustedIp.ip);
+    const reservation = await reserveRegistration(trustedIp.ip);
 
-  if (reservation.status === 'unavailable') {
-    return unavailableResponse();
-  }
+    if (reservation.status === 'unavailable') {
+      return unavailableResponse();
+    }
 
-  if (reservation.status === 'denied') {
-    return NextResponse.json(
-      {
-        error: 'registration-rate-limited',
-        resetAt: reservation.resetAt.toISOString(),
-      },
-      {
-        status: 429,
-        headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
-      },
-    );
+    if (reservation.status === 'denied') {
+      return NextResponse.json(
+        {
+          error: 'registration-rate-limited',
+          resetAt: reservation.resetAt.toISOString(),
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
+        },
+      );
+    }
   }
 
   try {

@@ -5,6 +5,12 @@ import { createUser, getAccountRoleForEmail } from '@/lib/server/data-store';
 import { getTrustedRequestIp } from '@/lib/server/request-ip';
 import { reserveRegistration } from '@/lib/server/rate-limit';
 
+type RegistrationEnvironment = {
+  NODE_ENV: 'development' | 'production' | 'test';
+  VERCEL?: '1';
+  VERCEL_ENV?: string;
+};
+
 jest.mock('@/lib/server/data-store', () => ({
   createUser: jest.fn(),
   getAccountRoleForEmail: jest.fn(),
@@ -12,6 +18,8 @@ jest.mock('@/lib/server/data-store', () => ({
 
 jest.mock('@/lib/server/request-ip', () => ({
   getTrustedRequestIp: jest.fn(),
+  isLocalDevelopmentRegistrationEnvironment:
+    jest.requireActual('@/lib/server/request-ip').isLocalDevelopmentRegistrationEnvironment,
 }));
 
 jest.mock('@/lib/server/rate-limit', () => ({
@@ -19,12 +27,16 @@ jest.mock('@/lib/server/rate-limit', () => ({
 }));
 
 describe('POST /api/register', () => {
+  const originalEnv = process.env;
   const createUserMock = jest.mocked(createUser);
   const getAccountRoleForEmailMock = jest.mocked(getAccountRoleForEmail);
   const getTrustedRequestIpMock = jest.mocked(getTrustedRequestIp);
   const reserveRegistrationMock = jest.mocked(reserveRegistration);
 
   beforeEach(() => {
+    process.env = { ...originalEnv, NODE_ENV: 'test' };
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
     createUserMock.mockReset();
     getAccountRoleForEmailMock.mockReset();
     getTrustedRequestIpMock.mockReset();
@@ -40,6 +52,10 @@ describe('POST /api/register', () => {
       resetAt: new Date('2026-07-28T13:00:00.000Z'),
       retryAfterSeconds: 0,
     });
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   it('reserves five trusted-IP registrations before account creation and denies the sixth', async () => {
@@ -77,6 +93,9 @@ describe('POST /api/register', () => {
     expect(reserveRegistrationMock).toHaveBeenCalledTimes(6);
     expect(reserveRegistrationMock).toHaveBeenCalledWith('203.0.113.7');
     expect(createUserMock).toHaveBeenCalledTimes(5);
+    expect(reserveRegistrationMock.mock.invocationCallOrder[0]).toBeLessThan(
+      createUserMock.mock.invocationCallOrder[0],
+    );
   });
 
   it('restores registration access after a rolling window expires', async () => {
@@ -99,8 +118,13 @@ describe('POST /api/register', () => {
     expect(createUserMock).toHaveBeenCalledTimes(1);
   });
 
-  it('fails closed before an account write when the trusted address or limiter is unavailable', async () => {
+  it.each<[string, RegistrationEnvironment]>([
+    ['Vercel production', { NODE_ENV: 'production', VERCEL: '1', VERCEL_ENV: 'production' }],
+    ['Vercel Preview', { NODE_ENV: 'development', VERCEL: '1', VERCEL_ENV: 'preview' }],
+  ])('keeps %s fail-closed when trusted-IP or atomic reservation is unavailable', async (_name, env) => {
+    process.env = { ...originalEnv, ...env };
     getTrustedRequestIpMock.mockReturnValueOnce({ status: 'unavailable' });
+
     expect((await POST(createRequest())).status).toBe(503);
     expect(reserveRegistrationMock).not.toHaveBeenCalled();
     expect(createUserMock).not.toHaveBeenCalled();
@@ -112,6 +136,7 @@ describe('POST /api/register', () => {
       retryAfterSeconds: null,
     });
     expect((await POST(createRequest())).status).toBe(503);
+    expect(reserveRegistrationMock).toHaveBeenCalledWith('203.0.113.7');
     expect(createUserMock).not.toHaveBeenCalled();
   });
 
@@ -139,14 +164,43 @@ describe('POST /api/register', () => {
     expect(reserveRegistrationMock).toHaveBeenCalledWith('203.0.113.7');
   });
 
-  it.each([
-    { email: 'invalid', name: 'Student', password: 'secure-password' },
-    { email: 'student@example.com', name: 'x'.repeat(321), password: 'secure-password' },
-    { email: 'student@example.com', name: 'Student', password: 'short' },
-  ])('rejects malformed bounded input before rate limiting', async (body) => {
+  it('allows only local development registration without reading forwarded headers or reserving', async () => {
+    process.env = { ...originalEnv, NODE_ENV: 'development' };
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+
+    const response = await POST(createRequest(
+      {},
+      {
+        forwarded: 'for=198.51.100.2',
+        'x-forwarded-for': '198.51.100.2',
+      },
+      false,
+    ));
+
+    expect(response.status).toBe(200);
+    expect(getTrustedRequestIpMock).not.toHaveBeenCalled();
+    expect(reserveRegistrationMock).not.toHaveBeenCalled();
+    expect(createUserMock).toHaveBeenCalledWith({
+      email: 'student@example.com',
+      name: 'Student',
+      password: 'secure-password',
+      role: 'student',
+    });
+  });
+
+  it.each<[string, RegistrationEnvironment]>([
+    ['deployed', { NODE_ENV: 'test' }],
+    ['local development', { NODE_ENV: 'development' }],
+  ])('rejects malformed bounded input before either registration path in %s', async (_name, env) => {
+    process.env = { ...originalEnv, ...env };
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+    const body = { email: 'invalid', name: 'Student', password: 'secure-password' };
     const response = await POST(createRequest(body));
 
     expect(response.status).toBe(400);
+    expect(getTrustedRequestIpMock).not.toHaveBeenCalled();
     expect(reserveRegistrationMock).not.toHaveBeenCalled();
     expect(createUserMock).not.toHaveBeenCalled();
   });
@@ -155,12 +209,13 @@ describe('POST /api/register', () => {
 function createRequest(
   values: Record<string, string> = {},
   headers: Record<string, string> = {},
+  includeTrustedVercelHeader = true,
 ): Request {
   return new Request('http://localhost/api/register', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-vercel-forwarded-for': '203.0.113.7',
+      ...(includeTrustedVercelHeader ? { 'x-vercel-forwarded-for': '203.0.113.7' } : {}),
       ...headers,
     },
     body: JSON.stringify({
