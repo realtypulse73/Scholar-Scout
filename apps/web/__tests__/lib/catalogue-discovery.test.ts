@@ -32,6 +32,69 @@ describe('catalogue discovery model', () => {
     expect(model.items[0].facts.skillTaught).toMatchObject({ value: 'Welding', state: 'current' });
   });
 
+  it('derives at most three neutral factual reasons from reviewed public facts with their original evidence', () => {
+    const reviewed = record('catalogue:reasons');
+    reviewed.facts.skillTaught = {
+      value: 'Welding',
+      evidence: {
+        ...fact('Welding').evidence,
+        status: 'needs-confirmation',
+        verificationAction: 'Confirm welding training directly with the provider.',
+      },
+    };
+    reviewed.facts.delivery = {
+      value: 'hybrid',
+      evidence: {
+        ...fact('hybrid').evidence,
+        status: 'unknown',
+        verificationAction: 'Ask the provider how hybrid delivery works.',
+      },
+    };
+
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [reviewed],
+      searchParams: { metro: 'greater-houston' },
+    }).items;
+
+    expect(item.reasonsToConsider).toEqual([
+      expect.objectContaining({
+        label: 'Skill taught',
+        value: 'Welding',
+        state: 'needs-confirmation',
+        evidence: expect.objectContaining({
+          sourceLabel: 'Official programme source',
+          verificationAction: 'Confirm welding training directly with the provider.',
+        }),
+      }),
+      expect.objectContaining({
+        label: 'Delivery',
+        value: 'hybrid',
+        state: 'unknown',
+        evidence: expect.objectContaining({
+          sourceLabel: 'Official programme source',
+          verificationAction: 'Ask the provider how hybrid delivery works.',
+        }),
+      }),
+      expect.objectContaining({ label: 'Training payer', value: 'Student' }),
+    ]);
+    expect(item.reasonsToConsider).toHaveLength(3);
+    expect(item.reasonsToConsider.map((reason) => reason.label)).not.toContain('Cost or tuition');
+  });
+
+  it('keeps reasons empty when the reviewed public record has no reason-eligible values', () => {
+    const unavailable = record('catalogue:unavailable');
+    unavailable.facts.skillTaught = { value: null, evidence: fact('unused').evidence };
+    unavailable.facts.delivery = { value: null, evidence: fact('unused').evidence };
+    unavailable.facts.trainingPayer = { value: null, evidence: fact('unused').evidence };
+
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [unavailable],
+      searchParams: { metro: 'greater-houston' },
+    }).items;
+
+    expect(item.reasonsToConsider).toEqual([]);
+  });
+
   it('only accepts controlled filter keys and values', () => {
     expect(parseCatalogueDiscoveryFilters({ metro: 'not-a-place', pathway: 'unknown', delivery: 'teleport', status: 'bad', q: ['one', 'two'], page: '0', profile: 'private', score: '99' })).toEqual({ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 });
   });
