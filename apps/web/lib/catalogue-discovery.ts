@@ -31,6 +31,14 @@ export interface CatalogueDiscoveryFact<Value> {
   evidence: FactEvidence;
 }
 
+/** A neutral, source-backed public fact a visitor may choose to verify. */
+export interface CatalogueDiscoveryReason {
+  label: 'Skill taught' | 'Delivery' | 'Training payer';
+  value: string;
+  state: FactStatus;
+  evidence: FactEvidence;
+}
+
 export interface CatalogueDiscoveryItem {
   id: string;
   providerTitle: string;
@@ -45,6 +53,7 @@ export interface CatalogueDiscoveryItem {
     costOrTuition: CatalogueDiscoveryFact<string | number>;
     duration: CatalogueDiscoveryFact<string>;
   };
+  reasonsToConsider: CatalogueDiscoveryReason[];
   factState: FactStatus;
   source: { label: string; date: string | null; state: 'current' | 'needs-confirmation' | 'unknown' };
   officialVerificationUrl: string;
@@ -163,10 +172,44 @@ function mapPublishedRecord(record: CataloguePublishedRecord, now: Date): Catalo
     place,
     delivery,
     facts,
+    reasonsToConsider: deriveReasonsToConsider({
+      skillTaught: facts.skillTaught,
+      delivery,
+      trainingPayer: facts.trainingPayer,
+    }),
     factState: aggregateFactState([place.state, delivery.state, ...Object.values(facts).map((fact) => fact.state)]),
     source: mapSource(record.source, now),
     officialVerificationUrl: record.source.sourceUrl,
     mediaState: 'reserved-for-rights-review',
+  };
+}
+
+function deriveReasonsToConsider({
+  skillTaught,
+  delivery,
+  trainingPayer,
+}: {
+  skillTaught: CatalogueDiscoveryFact<string>;
+  delivery: CatalogueDiscoveryFact<CatalogueDelivery>;
+  trainingPayer: CatalogueDiscoveryFact<string>;
+}): CatalogueDiscoveryReason[] {
+  return [
+    toReason('Skill taught', skillTaught),
+    toReason('Delivery', delivery),
+    toReason('Training payer', trainingPayer),
+  ].filter((reason): reason is CatalogueDiscoveryReason => reason !== null);
+}
+
+function toReason(
+  label: CatalogueDiscoveryReason['label'],
+  fact: CatalogueDiscoveryFact<string>,
+): CatalogueDiscoveryReason | null {
+  if (fact.value === null) return null;
+  return {
+    label,
+    value: fact.value,
+    state: fact.state,
+    evidence: fact.evidence,
   };
 }
 

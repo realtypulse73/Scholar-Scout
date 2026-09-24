@@ -36,6 +36,12 @@ const item = (id = 'catalogue:one', title = 'Welding pathway'): CatalogueDiscove
     costOrTuition: fact('$500', 'needs-confirmation'),
     duration: fact('12 weeks'),
   },
+  reasonsToConsider: [{
+    label: 'Skill taught',
+    value: 'Welding',
+    state: 'current',
+    evidence: fact('Welding').evidence,
+  }],
   factState: 'needs-confirmation',
   source: { label: 'Official programme source', date: '2026-09-20', state: 'current' },
   officialVerificationUrl: 'https://example.edu/programme',

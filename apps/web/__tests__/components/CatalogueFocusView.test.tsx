@@ -8,6 +8,12 @@ const item: CatalogueDiscoveryItem = {
   id: 'snapshot-only-id', providerTitle: 'Bayou Skills Academy', regionId: 'greater-new-orleans', regionLabel: 'Greater New Orleans', pathway: 'trade-career-school',
   place: fact('New Orleans, Louisiana', 'current'), delivery: fact('in-person' as const, 'current'),
   facts: { skillTaught: fact('Electrical work', 'current'), trainingPayer: fact('Student', 'needs-confirmation'), costOrTuition: fact('$400', 'current'), duration: fact('10 weeks', 'conflicting') },
+  reasonsToConsider: [{
+    label: 'Skill taught',
+    value: 'Electrical work',
+    state: 'current',
+    evidence: fact('Electrical work', 'current').evidence,
+  }],
   factState: 'conflicting', source: { label: 'Bayou official catalogue', date: '2026-09-20', state: 'current' }, officialVerificationUrl: 'https://example.edu/bayou', mediaState: 'reserved-for-rights-review',
 };
 

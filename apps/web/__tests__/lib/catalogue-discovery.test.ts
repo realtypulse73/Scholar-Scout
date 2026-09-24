@@ -83,9 +83,10 @@ describe('catalogue discovery model', () => {
 
   it('keeps reasons empty when the reviewed public record has no reason-eligible values', () => {
     const unavailable = record('catalogue:unavailable');
-    unavailable.facts.skillTaught = { value: null, evidence: fact('unused').evidence };
-    unavailable.facts.delivery = { value: null, evidence: fact('unused').evidence };
-    unavailable.facts.trainingPayer = { value: null, evidence: fact('unused').evidence };
+    const unavailableEvidence = { ...fact('unused').evidence, status: 'unknown' as const };
+    unavailable.facts.skillTaught = { value: null, state: 'unknown', evidence: unavailableEvidence };
+    unavailable.facts.delivery = { value: null, state: 'unknown', evidence: unavailableEvidence };
+    unavailable.facts.trainingPayer = { value: null, state: 'unknown', evidence: unavailableEvidence };
 
     const [item] = buildCatalogueDiscoveryModel({
       records: [unavailable],

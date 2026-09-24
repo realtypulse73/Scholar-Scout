@@ -18,6 +18,12 @@ const item: CatalogueDiscoveryItem = {
     costOrTuition: fact('$500', 'current'),
     duration: fact('12 weeks', 'unknown'),
   },
+  reasonsToConsider: [{
+    label: 'Skill taught',
+    value: 'Welding',
+    state: 'current',
+    evidence: fact('Welding', 'current').evidence,
+  }],
   factState: 'needs-confirmation',
   source: { label: 'Northside official catalogue', date: '2026-09-20', state: 'current' },
   officialVerificationUrl: 'https://example.edu/welding',
