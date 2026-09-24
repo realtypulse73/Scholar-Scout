@@ -88,4 +88,19 @@ describe('CatalogueComparison', () => {
     expect(screen.getByRole('status', { name: /retired:one is unavailable/i })).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('scholarscout.shortlist') ?? '[]')).toEqual(['retired:one']);
   });
+
+  it('shows mixed fact states with their source dates and individual verification actions', async () => {
+    const mixed = item();
+    mixed.facts.skillTaught = fact('Welding', 'unknown');
+    mixed.facts.duration = fact('12 weeks', 'conflicting');
+    window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one']));
+
+    render(<CatalogueComparison items={[mixed]} />);
+
+    await screen.findByRole('heading', { name: 'Welding pathway' });
+    expect(screen.getByText((_, node) => node?.textContent === 'Status: unknown')).toBeInTheDocument();
+    expect(screen.getByText((_, node) => node?.textContent === 'Status: conflicting')).toBeInTheDocument();
+    expect(screen.getAllByText((_, node) => node?.textContent === 'Source date: 2026-09-20')).toHaveLength(7);
+    expect(screen.getAllByRole('link', { name: /verify this fact/i })).toHaveLength(7);
+  });
 });
