@@ -5,15 +5,15 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 11
 current_phase_name: Choice-Preserving Six-Area Discovery
 status: planning
-stopped_at: Phase 11 context gathered
-last_updated: "2026-09-23T23:56:42.940Z"
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-09-24T00:43:32.385Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 10 complete, transitioned to Phase 11
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 20
+  completed_plans: 18
   percent: 29
 ---
 
@@ -110,6 +110,7 @@ Last activity: 2026-09-23 — Phase 10 complete, transitioned to Phase 11
 | Phase 09 P08 | 5min | 2 tasks | 2 files |
 | Phase 10 P02 | 58min | 2 tasks | 9 files |
 | Phase 10 P06 | 1h 30m | 2 tasks | 9 files |
+| Phase 11 P03 | 25min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -197,6 +198,7 @@ Last activity: 2026-09-23 — Phase 10 complete, transitioned to Phase 11
 - [Phase ?]: Staff history exposes checklist status and concise lifecycle evidence, never raw candidates or configuration.
 - [Phase ?]: Use a bounded one-record stale-import DTO and preserve atomic non-retrying batch behavior.
 - [Phase ?]: Validate recovered publication candidates, manifests, lineage, active snapshot, and canonical public digest before persistence.
+- [Phase ?]: Compare saved IDs only against the supplied public snapshot and retain unmatched IDs as visitor-controlled unavailable choices.
 
 ### Roadmap Evolution
 
@@ -239,6 +241,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T23:56:42.914Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-choice-preserving-six-area-discovery/11-CONTEXT.md
+Last session: 2026-09-24T00:43:32.354Z
+Stopped at: Completed 11-03-PLAN.md
+Resume file: None
