@@ -30,6 +30,8 @@ function fact<T extends string>(value: T, state: CatalogueDiscoveryItem['factSta
 describe('CatalogueFocusView', () => {
   it('renders the same factual qualification explanation before general reasons', () => {
     const qualificationExplanation: QualificationExplanation = {
+      hasQualificationInput: true,
+      hasPublishedRequirements: true,
       checkedRequirements: [{
         label: 'Checked published requirement',
         text: 'A high school diploma or equivalent is required.',

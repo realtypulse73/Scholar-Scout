@@ -82,6 +82,8 @@ describe('CatalogueComparison', () => {
   it('renders the shared factual qualification explanation without changing saved choice actions', async () => {
     const user = userEvent.setup();
     const qualificationExplanation: QualificationExplanation = {
+      hasQualificationInput: true,
+      hasPublishedRequirements: true,
       checkedRequirements: [
         'A high school diploma or equivalent is required for this long reviewed training pathway.',
         'A current licence is listed in this reviewed programme requirement.',

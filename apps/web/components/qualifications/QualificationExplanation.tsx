@@ -39,6 +39,11 @@ export default function QualificationExplanation({
       <VerificationRow key={`${row.text}-${row.evidence.sourceUrl}`} row={row} />
     )),
   ];
+  const emptyMessage = !explanation.hasQualificationInput
+    ? 'Add qualifications to compare published requirements.'
+    : explanation.hasPublishedRequirements
+      ? 'No current published requirement matches the qualifications you saved. Verify with the programme.'
+      : 'No reviewed requirements are listed yet. Verify with the programme.';
 
   return (
     <section aria-label="Qualification details" className="mt-4 min-w-0 rounded-card border border-ink-200 bg-ink-50 p-3">
@@ -50,7 +55,7 @@ export default function QualificationExplanation({
             : 'No qualification connection yet'}
       </h4>
       {!hasConnection && explanation.verificationRows.length === 0 ? (
-        <p className="mt-2 text-sm leading-6 text-ink-700">No reviewed requirements are listed yet. Verify with the programme.</p>
+        <p className="mt-2 text-sm leading-6 text-ink-700">{emptyMessage}</p>
       ) : null}
       {checkedCount === 0 && rows.length > 0 ? <p className="mt-2 text-sm text-ink-700">Check this requirement with the programme.</p> : null}
       <div className="mt-3 space-y-3">{rows}</div>

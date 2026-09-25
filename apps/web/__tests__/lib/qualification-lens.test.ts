@@ -64,6 +64,8 @@ describe('qualification lens', () => {
     expect(model.items).toEqual([expect.objectContaining({
       item: expect.objectContaining({ id: 'catalogue:welding' }),
       explanation: expect.objectContaining({
+        hasQualificationInput: true,
+        hasPublishedRequirements: true,
         checkedRequirements: [expect.objectContaining({
           label: 'Checked published requirement',
           text: 'A high school diploma or equivalent is required.',
@@ -242,6 +244,8 @@ describe('qualification lens', () => {
       expect(Object.keys(explanation).sort()).toEqual([
         'checkedRequirements',
         'documentedSupport',
+        'hasPublishedRequirements',
+        'hasQualificationInput',
         'keywordConnections',
         'verificationRows',
       ].filter((key) => key !== 'documentedSupport' || 'documentedSupport' in explanation));

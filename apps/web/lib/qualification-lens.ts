@@ -40,6 +40,8 @@ export interface QualificationDocumentedSupport {
 }
 
 export interface QualificationExplanation {
+  hasQualificationInput: boolean;
+  hasPublishedRequirements: boolean;
   checkedRequirements: QualificationCheckedRequirement[];
   keywordConnections: QualificationKeywordConnection[];
   verificationRows: QualificationVerificationRow[];
@@ -114,6 +116,8 @@ function explainQualificationConnection(
     : undefined;
 
   return {
+    hasQualificationInput: record.structured.length > 0 || record.keywords.length > 0,
+    hasPublishedRequirements: publishedRequirements.length > 0,
     checkedRequirements,
     keywordConnections,
     verificationRows,

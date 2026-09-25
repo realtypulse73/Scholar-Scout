@@ -86,6 +86,8 @@ describe('CatalogueOpportunityCard', () => {
 
   it('renders a checked published requirement before general reasons with a direct verification action', () => {
     const qualificationExplanation: QualificationExplanation = {
+      hasQualificationInput: true,
+      hasPublishedRequirements: true,
       checkedRequirements: [{
         label: 'Checked published requirement',
         text: 'A high school diploma or equivalent is required.',
@@ -109,6 +111,8 @@ describe('CatalogueOpportunityCard', () => {
   it('keeps keyword, uncertainty, and documented support factual while revealing extra requirement details on request', async () => {
     const user = userEvent.setup();
     const qualificationExplanation: QualificationExplanation = {
+      hasQualificationInput: true,
+      hasPublishedRequirements: true,
       checkedRequirements: [
         'A high school diploma or equivalent is required.',
         'A current licence is required for this long reviewed training route.',
@@ -158,6 +162,8 @@ describe('CatalogueOpportunityCard', () => {
 
   it('keeps long factual text wrapped and offers no outcome conclusion when no reviewed requirement exists', () => {
     const emptyExplanation: QualificationExplanation = {
+      hasQualificationInput: false,
+      hasPublishedRequirements: true,
       checkedRequirements: [],
       keywordConnections: [],
       verificationRows: [],
@@ -167,7 +173,7 @@ describe('CatalogueOpportunityCard', () => {
 
     const explanation = screen.getByRole('region', { name: /qualification details/i });
     expect(explanation).toHaveClass('min-w-0');
-    expect(explanation).toHaveTextContent('No reviewed requirements are listed yet. Verify with the programme.');
+    expect(explanation).toHaveTextContent('Add qualifications to compare published requirements.');
     expect(screen.getByRole('link', { name: 'Verify with the programme (opens a new tab)' })).toHaveAttribute('target', '_blank');
     expect(explanation.textContent?.toLocaleLowerCase()).not.toMatch(/eligible|admission|outcome|safe|salary/);
   });
