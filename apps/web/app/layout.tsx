@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
-import { Space_Grotesk } from 'next/font/google';
 import localFont from 'next/font/local';
 import AuthSessionProvider from '@/components/auth/AuthSessionProvider';
 import './globals.css';
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
+const spaceGrotesk = localFont({
+  src: './fonts/SpaceGrotesk-Variable.ttf',
+  weight: '300 700',
   variable: '--font-space-grotesk',
 });
 const geistMono = localFont({

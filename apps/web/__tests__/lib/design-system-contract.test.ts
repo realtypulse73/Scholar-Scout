@@ -33,4 +33,15 @@ describe('visual-system Tailwind contract', () => {
       expect(source).toContain('danger:');
     }
   });
+
+  it('uses the bundled Space Grotesk asset instead of a build-time Google font request', () => {
+    const layout = readFileSync(
+      join(process.cwd(), 'app/layout.tsx'),
+      'utf8',
+    );
+
+    expect(layout).toContain("from 'next/font/local'");
+    expect(layout).toContain('SpaceGrotesk-Variable.ttf');
+    expect(layout).not.toContain("from 'next/font/google'");
+  });
 });
