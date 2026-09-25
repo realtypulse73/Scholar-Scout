@@ -8,6 +8,7 @@ import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
+jest.mock('next/navigation', () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
 jest.mock('@/auth', () => ({ authOptions: {} }), { virtual: true });
 jest.mock('@/lib/server/data-store', () => ({ getQualificationRecord: jest.fn() }));
 jest.mock('@/lib/server/programme-records', () => ({ getPublishedCatalogueSnapshot: jest.fn() }));
