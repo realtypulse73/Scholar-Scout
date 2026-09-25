@@ -9,6 +9,7 @@ import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
 import { catalogueRegions } from '@/lib/catalogue-fixtures';
 import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import { getQualificationRecord } from '@/lib/server/data-store';
+import { createAccountStorageKey } from '@/lib/server/student-actor';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 export const metadata = {
@@ -28,7 +29,7 @@ export default async function ShortlistPage() {
   }).items);
   const session = await getServerSession(authOptions);
   const qualificationRecord = session?.user?.id
-    ? await getQualificationRecord(session.user.id)
+    ? await getQualificationRecord(createAccountStorageKey(session.user.id))
     : null;
   const qualificationExplanations = Object.fromEntries(
     buildQualificationLensModel(items, {

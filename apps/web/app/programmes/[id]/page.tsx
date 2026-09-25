@@ -10,6 +10,7 @@ import {
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
 import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import { getQualificationRecord } from '@/lib/server/data-store';
+import { createAccountStorageKey } from '@/lib/server/student-actor';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 interface PageProps {
@@ -49,7 +50,7 @@ export default async function ProgrammeDetailPage({ params, searchParams }: Page
   });
   const session = await getServerSession(authOptions);
   const qualificationRecord = session?.user?.id
-    ? await getQualificationRecord(session.user.id)
+    ? await getQualificationRecord(createAccountStorageKey(session.user.id))
     : null;
   const qualificationExplanation = buildQualificationLensModel([item], {
     structured: qualificationRecord?.structured ?? [],
