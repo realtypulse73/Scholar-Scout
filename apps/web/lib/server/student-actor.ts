@@ -36,6 +36,11 @@ export interface GuestStudentActor {
 
 export type StudentActor = AccountStudentActor | GuestStudentActor;
 
+/** Builds the internal account namespace from a trusted authenticated account id. */
+export function createAccountStorageKey(accountId: string): string {
+  return `account:${accountId}`;
+}
+
 /**
  * Resolves a private actor from trusted server credentials only. Callers cannot
  * nominate storage keys, account ids, guest ids, or staff capability.
@@ -50,7 +55,7 @@ export async function resolveStudentActor(input: {
     return {
       kind: 'account',
       accountId,
-      storageKey: `account:${accountId}`,
+      storageKey: createAccountStorageKey(accountId),
     };
   }
 

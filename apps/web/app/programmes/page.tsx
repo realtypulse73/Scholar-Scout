@@ -4,6 +4,7 @@ import { authOptions } from '@/auth';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
 import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import { getQualificationRecord } from '@/lib/server/data-store';
+import { createAccountStorageKey } from '@/lib/server/student-actor';
 import { getPublishedCatalogueSnapshot } from '@/lib/server/programme-records';
 
 interface PageProps {
@@ -26,7 +27,7 @@ export default async function ProgrammesPage({ searchParams }: PageProps) {
   });
   const session = await getServerSession(authOptions);
   const qualificationRecord = session?.user?.id
-    ? await getQualificationRecord(session.user.id)
+    ? await getQualificationRecord(createAccountStorageKey(session.user.id))
     : null;
   const qualificationLens = buildQualificationLensModel(model.items, {
     structured: qualificationRecord?.structured ?? [],
