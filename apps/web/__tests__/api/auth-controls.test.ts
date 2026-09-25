@@ -7,6 +7,7 @@ import { POST as exchangeCredentials } from '@/app/api/auth/credentials/route';
 import { authOptions } from '@/auth';
 import {
   GUEST_ACTOR_COOKIE_NAME,
+  createAccountStorageKey,
   clearGuestActorCookie,
   resolveStudentActor,
 } from '@/lib/server/student-actor';
@@ -256,6 +257,10 @@ describe('credential exchange controls', () => {
     getTrustedRequestIpMock.mockReset();
     setAtomicReservationLimiterForTests(null);
     setScholarScoutDataStoreForTests(null);
+  });
+
+  it('uses one named account namespace constructor for trusted account storage', () => {
+    expect(createAccountStorageKey('student-one')).toBe('account:student-one');
   });
 
   it('reserves five attempts before lookup and returns reset-aware 429 before the sixth KDF', async () => {
