@@ -23,7 +23,7 @@ The product presents published facts and verification actions. It does not make 
 - [x] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 10/10) (completed 2026-09-22)
 - [x] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 6/6) (completed 2026-09-23)
 - [x] **Phase 11: Choice-Preserving Six-Area Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 5/5) (completed 2026-09-24)
-- [x] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 5/5) (completed 2026-09-24)
+- [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 6/6; independent re-verification pending)
 - [ ] **Phase 13: Provider Detail, Transition Stories, and Media Safety** — Deliver factual provider pages and finite, inclusive, rights-safe, motion-safe Scholar Scout story-to-facts journeys. (Plans: 0/0)
 - [ ] **Phase 14: Sensitive Support Referral and Neutral Military Information** — Offer approved local-only support referrals and neutral official military information without sensitive retention or recruitment pressure. (Plans: 0/0)
 - [ ] **Phase 15: Six-Area Expansion, Operations, and Release Gate** — Complete coverage expansion and prove ongoing freshness, source, rights, accessibility, and launch readiness. (Plans: 0/0)
@@ -151,12 +151,14 @@ Plans:
 - [x] 12-03-PLAN.md
 - [x] 12-04-PLAN.md
 - [x] 12-05-PLAN.md
+- [x] 12-06-PLAN.md
 
 - [x] `12-01-PLAN.md` — Add the private account-only qualification record, bounded editor, and ownership/privacy regressions.
 - [x] `12-02-PLAN.md` — Carry published reviewed evidence into the pure, deterministic, all-visible qualification lens.
 - [x] `12-03-PLAN.md` — Render the Programmes editor entry, opt-in order, and factual card explanations.
 - [x] `12-04-PLAN.md` — Extend the existing governed candidate import and publication path with reviewed qualification evidence.
 - [x] `12-05-PLAN.md` — Integrate and verify the shared lens on detail and comparison surfaces.
+- [x] `12-06-PLAN.md` — Repair the trusted account-key and success-refresh links identified by Phase 12 verification.
 
 **Risk:** Helpful qualification guidance can drift into an opaque eligibility model. Centralize it in the shared view model, snapshot explanations, and test that input changes never remove records or add prohibited signals.
 
