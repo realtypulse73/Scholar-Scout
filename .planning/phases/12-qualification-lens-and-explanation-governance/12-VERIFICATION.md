@@ -1,35 +1,30 @@
 ---
 phase: 12-qualification-lens-and-explanation-governance
-verified: 2026-09-24T17:19:00-04:00
-status: gaps_found
-score: 3/4 must-haves verified
+verified: 2026-09-25T06:45:00-04:00
+status: human_needed
+score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "A signed-in student can use their deliberately saved ordinary qualifications to see relevant published requirements on Programmes, detail, and comparison surfaces."
-    status: failed
-    reason: "The account route persists and loads records at the server-derived key `account:<id>`, but all three learner server pages read the bare session ID. They therefore receive null for the record that the form saved and build an empty lens. In addition, the embedded Programmes form closes after saving without refreshing the server-supplied lens model."
-    artifacts:
-      - path: "apps/web/app/programmes/page.tsx"
-        issue: "Calls getQualificationRecord(session.user.id) rather than the account storage key, so saved records do not reach the overview lens."
-      - path: "apps/web/app/programmes/[id]/page.tsx"
-        issue: "Uses the same bare-ID lookup, leaving detail explanations disconnected from the saved record."
-      - path: "apps/web/app/shortlist/page.tsx"
-        issue: "Uses the same bare-ID lookup, leaving comparison explanations disconnected from the saved record."
-      - path: "apps/web/components/qualifications/QualificationRecordForm.tsx"
-        issue: "Successful Programmes saves close the form but do not refresh the parent server data, so the already-rendered lens remains stale."
-    missing:
-      - "Use the same trusted account storage-key convention for learner-page qualification reads as the account route."
-      - "Refresh or re-fetch the Programmes lens after a successful embedded save, and add authenticated page-level tests proving a saved record produces a checked requirement on overview, detail, and comparison."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 3/4
+  gaps_closed:
+    - "A signed-in student can use their deliberately saved ordinary qualifications to see relevant published requirements on Programmes, detail, and comparison surfaces."
+  gaps_remaining: []
+  regressions: []
+human_verification:
+  - test: "Sign in as a student, save a structured qualification in Programmes, choose Qualifications first, then open the matching detail page and saved comparison. Repeat by clearing the record."
+    expected: "The matching reviewed requirement, source/date, and verification action appear on all three surfaces after the save; all cards remain visible; clearing removes the checked row after refresh; focus returns to Edit qualifications."
+    why_human: "The unit and server-page tests prove the account key, callback ordering, and router.refresh invocation, but an authenticated browser session is needed to observe the actual streamed refresh, responsive layout, and assistive-technology focus behavior."
 ---
 
 # Phase 12: Qualification Lens and Explanation Governance Verification Report
 
 **Phase Goal:** Give students an optional, private way to compare ordinary qualifications against published requirements while keeping all options visible and explanations non-predictive.
 
-**Verified:** 2026-09-24T17:19:00-04:00  
-**Status:** gaps_found  
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-25T06:45:00-04:00
+**Status:** human_needed
+**Re-verification:** Yes — after gap closure
 
 ## Goal Achievement
 
@@ -37,85 +32,80 @@ gaps:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | A student can deliberately save ordinary qualifications and see relevant reviewed requirements to confirm. | ✗ FAILED | The Account route correctly writes at `actor.storageKey` (`account:<id>`), but Programmes, detail, and shortlist pass bare `session.user.id` to `getQualificationRecord`. The stored record is therefore not the record supplied to the lens. Programmes also does not refresh its server-provided model after a successful embedded save. |
-| 2 | The lens makes no eligibility, admission, enlistment, funding, placement, salary, safety, or outcome verdict and never hides an opportunity. | ✓ VERIFIED | `qualification-lens.ts` accepts only `structured` and `keywords`, returns factual DTO rows, and sorts a copy by checked-count/keyword/public ID. Its focused tests assert no verdict fields and identical item ID sets before and after ordering. |
-| 3 | Ranked results have decomposable reviewed reasons, a verification step, factual support where documented, and retained student choices. | ✓ VERIFIED | Published requirements, descriptions, and supports retain `FactEvidence` through governed candidate publication and discovery. `QualificationExplanation` renders named checked/keyword/verification rows and actions; overview/detail/comparison compose that renderer while preserving existing save, compare, alternate, and official-source controls. |
-| 4 | GPA, tests, prestige, ZIP/residence, passive engagement, and similar proxies cannot rank or hide an opportunity. | ✓ VERIFIED | `parseQualificationRecord` exact-validates only structured qualification kinds, note, and explicit keywords. `isQualificationLensRecord` rejects any extra key; the lens consumes only structured keys and keywords, and its tests reject note and GPA-shaped input. |
+| 1 | A signed-in student can deliberately save ordinary qualifications and see relevant reviewed requirements to confirm. | ✓ VERIFIED | The account route and all three learner pages use `createAccountStorageKey(session.user.id)`. Authenticated page tests seed `account:student-one`, render Programmes/detail/shortlist, assert the reviewed requirement/source/action, reject a foreign key lookup, and prove the private note is absent. |
+| 2 | The lens makes no eligibility, admission, enlistment, funding, placement, salary, safety, or outcome verdict and never hides an opportunity. | ✓ VERIFIED | `qualification-lens.ts` accepts only structured choices and explicit keywords, produces factual rows, and `orderQualificationsFirst` sorts a copy without filtering. Focused lens tests pass. |
+| 3 | Ranked results have decomposable reviewed reasons, a verification step, factual support where documented, and retained student choices. | ✓ VERIFIED | The governed snapshot supplies reviewed requirement evidence, descriptions, and documented supports to the shared `QualificationExplanation` renderer. Programmes, detail, and comparison retain their verification and student-choice controls. |
+| 4 | GPA, tests, prestige, ZIP/residence, passive engagement, and similar proxies cannot rank or hide an opportunity. | ✓ VERIFIED | The exact private-record parser rejects unexpected/proxy fields, and the lens validates its input to the two allowed fields before deriving its all-visible order. Focused parser and lens suites pass. |
 
-**Score:** 3/4 truths verified (0 present but behavior-unverified)
+**Score:** 4/4 truths verified (0 present but behavior-unverified)
 
-## Required Artifacts
+### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `apps/web/lib/qualification-record.ts` | Bounded private-record contract | ✓ VERIFIED | Exact payload parser permits only five ordinary kinds, a 500-character note, and at most 12 normalized 40-character keywords. |
-| `apps/web/app/api/account/qualifications/route.ts` | Account-only read/write contract | ✓ VERIFIED | Resolves `allowGuest: false`, requires account actor, rejects malformed payloads, and returns a generic 409 reload contract. |
-| `apps/web/lib/qualification-lens.ts` | Source-preserving explanation and all-visible order | ✓ VERIFIED | Pure, substantive module emits checked/keyword/verification/support DTOs and sorts without filtering. |
-| `apps/web/lib/catalogue-publication.ts` and `apps/web/lib/server/catalogue-publications.ts` | Governed reviewed requirement evidence | ✓ VERIFIED | Controlled qualification keys and `FactEvidence` are validated, staged, reviewed, and carried to published records. |
-| `apps/web/components/qualifications/QualificationExplanation.tsx` | Shared factual learner renderer | ✓ VERIFIED | Used by overview card, detail, and comparison; renders text, source, date, verification actions, and non-color uncertainty treatment. |
-| `apps/web/app/programmes/page.tsx`, `apps/web/app/programmes/[id]/page.tsx`, `apps/web/app/shortlist/page.tsx` | Account record to learner lens composition | ✗ DISCONNECTED | Each calls `getQualificationRecord(session.user.id)` even though the route saves under `account:${accountId}`. |
+| `apps/web/lib/server/student-actor.ts` | Shared trusted account key | ✓ VERIFIED | `createAccountStorageKey` is server-only and is used by actor resolution and all three learner pages. |
+| `apps/web/app/api/account/qualifications/route.ts` | Account-only persistence | ✓ VERIFIED | It resolves `allowGuest: false`, uses `actor.storageKey` for GET/POST, validates the bounded record, and returns a recoverable conflict response. |
+| `apps/web/app/programmes/page.tsx`, `apps/web/app/programmes/[id]/page.tsx`, `apps/web/app/shortlist/page.tsx` | Active-account record to factual lens | ✓ VERIFIED | Each derives the storage namespace only from `session.user.id` and passes only `{ structured, keywords }` to the lens. No guest has a lookup path. |
+| `apps/web/components/qualifications/QualificationRecordForm.tsx` | Success-only persistence signal | ✓ VERIFIED | `onSuccess` and `onClose` execute only after a successful POST; conflict and non-OK tests retain the editor/draft and call neither callback. |
+| `apps/web/components/catalogue/CatalogueDiscoveryOverview.tsx` | Fresh Programmes lens after successful mutation | ✓ VERIFIED | Its success callback calls `router.refresh()` before the close/focus callback. The component regression asserts one refresh and focus restoration. |
+| `apps/web/lib/qualification-lens.ts` | Source-preserving, all-visible explanation | ✓ VERIFIED | It maps all supplied discovery items, uses only reviewed evidence, and sorts without suppressing an opportunity. |
 
-## Key Link Verification
+### Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| `QualificationRecordForm` | `/api/account/qualifications` | authenticated fetch | ✓ WIRED | Form fetches GET/POST and route resolves the server-derived account actor. |
-| Account route | `qualificationProfiles[account:<id>]` | `actor.storageKey` → conditional write | ✓ WIRED | Route GET and POST use `actor.storageKey`; persistence tests use `account:student-one`. |
-| Governed published snapshot | `buildCatalogueDiscoveryModel` | published requirements/description/support mapping | ✓ WIRED | Discovery maps published evidence directly from reviewed snapshot records. |
-| Learner pages | saved account record → lens DTO | `getQualificationRecord` before `buildQualificationLensModel` | ✗ NOT_WIRED | Server pages use a different key shape from persistence, yielding a null record for any record saved through the account route. |
-| Programmes save | refreshed overview lens | close callback | ✗ NOT_WIRED | Form calls `onClose` after POST; the overview only closes/refocuses and never requests fresh server lens data. |
+| Trusted NextAuth session ID | active account record | `createAccountStorageKey` → `getQualificationRecord` | ✓ WIRED | Programmes, detail, and shortlist now use the same `account:<id>` convention as the account route. |
+| Active account record | learner explanation DTO | `{ structured, keywords }` → `buildQualificationLensModel` | ✓ WIRED | Page tests prove a checked reviewed requirement reaches each surface while the private note does not. |
+| Successful form POST | fresh Programmes server data | `onSuccess` → `router.refresh()` → close/focus | ✓ WIRED | Form and overview tests exercise successful save/clear; 409/non-OK paths do not refresh or close. |
+| Governed snapshot evidence | shared learner explanation | reviewed requirement/description/support → `QualificationExplanation` | ✓ WIRED | The common renderer retains source/date/action and factual support conditions across overview, detail, and comparison. |
 
-## Data-Flow Trace (Level 4)
+### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | --- | --- | --- | --- | --- |
-| `QualificationRecordForm` | `record` | account route GET/POST | Account route uses real conditional persistence | ✓ FLOWING |
-| `QualificationExplanation` | explanation DTO | governed snapshot + private structured keys/keywords | Snapshot evidence is real governed data, but learner pages supply an empty record due to key mismatch | ✗ DISCONNECTED |
-| Detail/comparison explanation props | `qualificationExplanation(s)` | page-level lens composition | Same bare-ID lookup means saved account data cannot flow into props | ✗ DISCONNECTED |
+| Learner pages | `qualificationRecord` | Account-only persisted `qualificationProfiles[account:<id>]` | Active session selects only its namespaced record | ✓ FLOWING |
+| Lens model | `structured`, `keywords` | Bounded persisted record | Pages intentionally omit `note`; reviewed snapshot carries the factual evidence | ✓ FLOWING |
+| Programmes overview | fresh server lens | App Router refresh after accepted POST | Success callback is invoked before close; failed writes retain the previous state | ✓ FLOWING |
 
-## Behavioral Spot-Checks
+### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Parser, account route, store isolation, publication, lens, and component contracts | `corepack pnpm --filter @scholar-scout/web test --runInBand --runTestsByPath …12 focused paths…` | 12 suites / 102 tests passed | ✓ PASS |
-| Saved account record reaches Programmes/detail/comparison | Static data-flow trace | Route writes `account:<id>`; pages read bare `<id>` | ✗ FAIL |
+| Account-scoped reads, guest/foreign isolation, note-free view composition, success-only form refresh, all-visible lens | `corepack pnpm --filter @scholar-scout/web test --runInBand --runTestsByPath` on 10 Phase 12 regression paths | 10 suites, 59 tests passed | ✓ PASS |
+| Type safety | `corepack pnpm --filter @scholar-scout/web run typecheck` | Exit 0 | ✓ PASS |
+| Lint | `corepack pnpm --filter @scholar-scout/web run lint` | Exit 0 | ✓ PASS |
+| Whole web workspace | `corepack pnpm --filter @scholar-scout/web test --runInBand` | Exit 0 | ✓ PASS |
 
-The passing focused suites do not include an authenticated page composition test that saves a record through the route/storage convention and then asserts a checked requirement on the learner pages. They therefore did not reveal the disconnected key.
+The test runner warns that the repository and this worktree both contain a `pnpm-lock.yaml`; it still completed all checks successfully. This pre-existing workspace-root warning is unrelated to Phase 12 behavior.
 
-## Requirements Coverage
+### Requirements Coverage
 
 | Requirement | Source Plans | Status | Evidence |
 | --- | --- | --- | --- |
-| MATCH-01 | 12-01, 12-02, 12-03, 12-04 | ✗ BLOCKED | Account storage works, but saved ordinary qualifications do not reach learner-page explanations or ordering. |
-| MATCH-02 | 12-02, 12-03, 12-05 | ✓ SATISFIED | Lens DTO and renderer use source-first verification language and neither filter nor expose predictive/verdict fields. |
-| MATCH-03 | 12-02, 12-04, 12-05 | ✓ SATISFIED | Reviewed evidence, verification actions, documented support, and retained choice controls are wired across the shared renderer. |
-| MATCH-04 | 12-01, 12-02, 12-03 | ✓ SATISFIED | Exact parser/lens contracts reject proxy fields; ranking can inspect only controlled structured kinds and explicit keywords. |
+| MATCH-01 | 12-01 through 12-06 | ✓ SATISFIED | The saved active-account record produces a reviewed requirement to verify on Programmes, detail, and comparison; the repair adds the missing account-key and refresh wiring. |
+| MATCH-02 | 12-02, 12-03, 12-05, 12-06 | ✓ SATISFIED | All-visible factual lens behavior has no predictive/verdict DTO or filtering path. |
+| MATCH-03 | 12-02 through 12-06 | ✓ SATISFIED | Reviewed reasons, evidence/action, documented support, and student-controlled actions remain connected across all three learner surfaces. |
+| MATCH-04 | 12-01 through 12-06 | ✓ SATISFIED | The parser/lens contract permits only structured ordinary qualifications and explicit keywords; proxy fields cannot reach ordering or visibility. |
 
-## Anti-Patterns Found
+### Anti-Patterns Found
 
-| File | Line | Pattern | Severity | Impact |
-| --- | --- | --- | --- | --- |
-| `apps/web/app/programmes/page.tsx` | 29 | Bare account ID used as persistence key | 🛑 BLOCKER | Prevents saved qualifications from influencing the overview lens. |
-| `apps/web/app/programmes/[id]/page.tsx` | 52 | Bare account ID used as persistence key | 🛑 BLOCKER | Prevents saved qualifications from influencing detail explanations. |
-| `apps/web/app/shortlist/page.tsx` | 31 | Bare account ID used as persistence key | 🛑 BLOCKER | Prevents saved qualifications from influencing comparison explanations. |
+No unresolved `TBD`, `FIXME`, or `XXX` markers were found in the Phase 12 production files. The new learner-page tests contain no hardcoded private note rendered through production props; their private-note fixtures assert the opposite boundary.
 
-No unresolved `TBD`, `FIXME`, or `XXX` markers were found in Phase 12 production files.
+### Human Verification Required
 
-## Human Verification Required After Repair
+### 1. Authenticated refreshed qualification journey
 
-### Authenticated qualification flow
+**Test:** Sign in as a student, save one structured qualification in Programmes, choose `Qualifications first`, then visit the matching detail page and saved comparison. Clear the record and revisit Programmes.
 
-**Test:** Sign in, save one ordinary qualification in Programmes, select `Qualifications first`, then open the same programme detail and saved comparison.
+**Expected:** The matching checked requirement, source/date, and verification link appear on all three views after the save; every reviewed card remains visible; clearing removes that checked row after refresh; focus returns to `Edit qualifications` after closing.
 
-**Expected:** The checked published requirement, source/date/action, and non-predictive wording appear consistently on all three surfaces; every filtered card remains visible; focus returns to `Edit qualifications` after closing.
-
-**Why human:** Browser focus, dynamic refresh, responsive reflow, and screen-reader announcement need an authenticated browser session to confirm.
+**Why human:** Automated tests prove data ownership and callback ordering, but only an authenticated browser session can prove the actual streamed refresh, visual reflow, and assistive-technology focus experience.
 
 ## Gaps Summary
 
-Phase 12’s private-record and factual lens building blocks are substantive and test-covered, but the most important end-to-end link is broken: the account route writes `qualificationProfiles` under an opaque server actor key while learner pages look up a different bare ID. This makes the central Phase 12 promise unavailable to an actual signed-in student despite passing unit and component tests. Repair the shared account-record lookup and refresh behavior, add an authenticated page-level regression, then re-verify before Phase 13 proceeds.
+The original account-key and stale-overview gap is closed. All automated Phase 12 must-haves pass. One focused authenticated-browser confirmation remains before the phase can receive a final `passed` verdict.
 
 ---
 
-_Verified: 2026-09-24T17:19:00-04:00_  
-_Verifier: the agent (gsd-verifier)_
+_Verified: 2026-09-25T06:45:00-04:00_
+_Verifier: the agent (independent Phase 12 re-verification)_
