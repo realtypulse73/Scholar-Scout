@@ -23,7 +23,7 @@ The product presents published facts and verification actions. It does not make 
 - [x] **Phase 9: Catalogue Foundations and Source Contracts** — Define the six-area scope, controlled catalogue/evidence vocabulary, and honest freshness/coverage states. (Plans: 10/10) (completed 2026-09-22)
 - [x] **Phase 10: Curated Import and Governed Staff Publication** — Validate, version, review, and safely publish bounded catalogue snapshots through authorized staff controls. (Plans: 6/6) (completed 2026-09-23)
 - [x] **Phase 11: Choice-Preserving Six-Area Discovery** — Make the governed catalogue browseable, comparable, source-first, and accessible without pathway suppression. (Plans: 5/5) (completed 2026-09-24)
-- [ ] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 6/6; independent re-verification pending)
+- [x] **Phase 12: Qualification Lens and Explanation Governance** — Let students privately highlight published requirements while preserving non-predictive, all-visible ranking and explanations. (Plans: 6/6) (completed 2026-09-25)
 - [ ] **Phase 13: Provider Detail, Transition Stories, and Media Safety** — Deliver factual provider pages and finite, inclusive, rights-safe, motion-safe Scholar Scout story-to-facts journeys. (Plans: 0/0)
 - [ ] **Phase 14: Sensitive Support Referral and Neutral Military Information** — Offer approved local-only support referrals and neutral official military information without sensitive retention or recruitment pressure. (Plans: 0/0)
 - [ ] **Phase 15: Six-Area Expansion, Operations, and Release Gate** — Complete coverage expansion and prove ongoing freshness, source, rights, accessibility, and launch readiness. (Plans: 0/0)
@@ -142,7 +142,7 @@ Plans:
 3. Every ranked result gives decomposable stated-preference/programme-verified reasons, a material verification step, a plain-language support statement, and a choice-preserving action.
 4. GPA, test scores, prestige, ZIP, click/passive behavior, and similar proxies are excluded from rank, visibility, and conclusions by contracts and regression tests.
 
-**Plans:** 5/5 plans complete
+**Plans:** 6/6 plans complete
 
 Plans:
 

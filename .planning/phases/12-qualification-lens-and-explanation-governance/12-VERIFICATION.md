@@ -1,7 +1,7 @@
 ---
 phase: 12-qualification-lens-and-explanation-governance
 verified: 2026-09-25T06:45:00-04:00
-status: human_needed
+status: passed
 score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -13,9 +13,8 @@ re_verification:
   gaps_remaining: []
   regressions: []
 human_verification:
-  - test: "Sign in as a student, save a structured qualification in Programmes, choose Qualifications first, then open the matching detail page and saved comparison. Repeat by clearing the record."
-    expected: "The matching reviewed requirement, source/date, and verification action appear on all three surfaces after the save; all cards remain visible; clearing removes the checked row after refresh; focus returns to Edit qualifications."
-    why_human: "The unit and server-page tests prove the account key, callback ordering, and router.refresh invocation, but an authenticated browser session is needed to observe the actual streamed refresh, responsive layout, and assistive-technology focus behavior."
+  completed: "2026-09-25T09:00:00-04:00"
+  evidence: "12-UAT.md"
 ---
 
 # Phase 12: Qualification Lens and Explanation Governance Verification Report
@@ -23,7 +22,7 @@ human_verification:
 **Phase Goal:** Give students an optional, private way to compare ordinary qualifications against published requirements while keeping all options visible and explanations non-predictive.
 
 **Verified:** 2026-09-25T06:45:00-04:00
-**Status:** human_needed
+**Status:** passed
 **Re-verification:** Yes — after gap closure
 
 ## Goal Achievement
@@ -91,7 +90,7 @@ The test runner warns that the repository and this worktree both contain a `pnpm
 
 No unresolved `TBD`, `FIXME`, or `XXX` markers were found in the Phase 12 production files. The new learner-page tests contain no hardcoded private note rendered through production props; their private-note fixtures assert the opposite boundary.
 
-### Human Verification Required
+### Human Verification Completed
 
 ### 1. Authenticated refreshed qualification journey
 
@@ -99,11 +98,11 @@ No unresolved `TBD`, `FIXME`, or `XXX` markers were found in the Phase 12 produc
 
 **Expected:** The matching checked requirement, source/date, and verification link appear on all three views after the save; every reviewed card remains visible; clearing removes that checked row after refresh; focus returns to `Edit qualifications` after closing.
 
-**Why human:** Automated tests prove data ownership and callback ordering, but only an authenticated browser session can prove the actual streamed refresh, visual reflow, and assistive-technology focus experience.
+**Result:** PASS — the authenticated browser journey completed on 2026-09-25. The saved qualification produced the reviewed requirement/source/date/action on Programmes, programme detail, and saved comparison. Clearing it refreshed the view, preserved visible programme cards, returned focus to `Edit qualifications`, and showed accurate no-input wording. See `12-UAT.md`.
 
 ## Gaps Summary
 
-The original account-key and stale-overview gap is closed. All automated Phase 12 must-haves pass. One focused authenticated-browser confirmation remains before the phase can receive a final `passed` verdict.
+The original account-key and stale-overview gap is closed. Automated evidence and the focused authenticated-browser journey both pass; there are no remaining Phase 12 gaps.
 
 ---
 

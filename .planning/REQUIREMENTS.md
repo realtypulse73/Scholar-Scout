@@ -34,7 +34,7 @@
 
 ### Qualification and claim safety
 
-- [ ] **MATCH-01**: A student can optionally use ordinary qualifications they deliberately provide—such as diploma/credits, degree, licence, prior work, or voluntary military history—to highlight published requirements they should verify.
+- [x] **MATCH-01**: A student can optionally use ordinary qualifications they deliberately provide—such as diploma/credits, degree, licence, prior work, or voluntary military history—to highlight published requirements they should verify.
 - [x] **MATCH-02**: Qualification information never produces an eligible/ineligible, realistic/safe-match, admission, enlistment, funding, placement, salary, or outcome verdict and never hides an opportunity.
 - [x] **MATCH-03**: Every ranked option shows decomposable student-selected or programme-verified reasons, a material verification step, a plain-language support statement, and a choice-preserving action.
 - [x] **MATCH-04**: GPA, test scores, school prestige, ZIP code, click behaviour, passive engagement, and similar proxies cannot rank or hide opportunities.
@@ -99,7 +99,7 @@
 | DISC-02 | Phase 11 | Complete |
 | DISC-03 | Phase 11 | Complete |
 | DISC-04 | Phase 11 | Complete |
-| MATCH-01 | Phase 12 | Pending |
+| MATCH-01 | Phase 12 | Complete |
 | MATCH-02 | Phase 12 | Complete |
 | MATCH-03 | Phase 12 | Complete |
 | MATCH-04 | Phase 12 | Complete |
@@ -120,4 +120,4 @@
 
 ---
 *Requirements defined: 2026-09-22*
-*Last updated: 2026-09-22 after v1.1 research synthesis*
+*Last updated: 2026-09-25 after Phase 12 verification*

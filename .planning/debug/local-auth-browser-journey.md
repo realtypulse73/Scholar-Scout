@@ -1,5 +1,5 @@
 ---
-status: investigating
+status: resolved
 trigger: "Authenticated local Phase 12 browser journey cannot sign in after a successful credential exchange."
 created: 2026-09-25
 updated: 2026-09-25
@@ -17,8 +17,7 @@ updated: 2026-09-25
 
 ## Current Focus
 
-- hypothesis: The in-memory credential-grant map is not shared between the development route bundles that issue and consume the grant; the offline Google-font dependency prevents the production-mode workaround.
-- next_action: Implement and verify a process-global, single-use grant store for the local Next.js route bundles; separately replace the build-time Google font fetch with a local, licensed Space Grotesk asset or document the required asset handoff.
+Resolved. The repaired local credential handoff and bundled font enabled the authenticated browser journey; the resulting Phase 12 UAT is recorded in `../phases/12-qualification-lens-and-explanation-governance/12-UAT.md`.
 
 ## Repair Plan
 

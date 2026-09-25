@@ -27,6 +27,7 @@ Students can confidently discover and act on the education pathways that fit the
 - ✓ Complete and validate the in-progress school, peer-community, campus-community, and Western New York product work — Phase 5
 - ✓ Restore reliable CI, candidate-quality, and Preview rehearsal signals for release decisions — Phase 6
 - ✓ Provide snapshot-only, source-first discovery with reversible six-area filters and visitor-controlled comparison — Phase 11
+- ✓ Provide a private, source-backed qualification lens that never hides opportunities or produces a verdict — Phase 12
 
 ### Active
 
@@ -68,6 +69,7 @@ Phases 5–7 established governed programme evidence, choice-preserving matching
 | Read public discovery only from the governed reviewed snapshot | Prevent legacy seeds, profiles, candidate data, and live provider requests from affecting what a learner sees | Phase 11 passed |
 | Retain unavailable saved IDs as removable choices | A changed catalogue must not silently replace or erase a visitor’s saved option | Phase 11 passed |
 | Derive reasons only from reviewed facts with preserved evidence | Source-backed explanation must not become a personal recommendation or outcome claim | Phase 11 passed |
+| Keep qualification guidance factual and choice-preserving | Student-supplied ordinary qualifications reveal reviewed requirements to verify, never determine eligibility or suppress a pathway | Phase 12 passed |
 
 ## Current Milestone: v1.1 Regional Opportunity Navigator
 
@@ -96,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after Phase 11*
+*Last updated: 2026-09-25 after Phase 12*
