@@ -39,10 +39,12 @@ describe('QualificationRecordForm', () => {
 
   it('requires confirmation before clearing and sends only the approved empty record', async () => {
     const user = userEvent.setup();
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
     fetchMock
       .mockResolvedValueOnce(response({ record: savedRecord }))
       .mockResolvedValueOnce(response({ ok: true }));
-    render(<QualificationRecordForm />);
+    render(<QualificationRecordForm onSuccess={onSuccess} onClose={onClose} />);
 
     await screen.findByText('Private qualifications loaded.');
     await user.click(screen.getByRole('button', { name: 'Clear saved qualifications' }));
@@ -59,14 +61,38 @@ describe('QualificationRecordForm', () => {
       }),
     );
     expect(screen.getByRole('status')).toHaveTextContent('Qualifications cleared.');
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies its host after saving a private qualification record', async () => {
+    const user = userEvent.setup();
+    const events: string[] = [];
+    fetchMock
+      .mockResolvedValueOnce(response({ record: { structured: [], note: '', keywords: [] } }))
+      .mockResolvedValueOnce(response({ ok: true }));
+    render(
+      <QualificationRecordForm
+        onSuccess={() => events.push('success')}
+        onClose={() => events.push('close')}
+      />,
+    );
+
+    await screen.findByText('No qualifications saved yet.');
+    await user.click(screen.getByLabelText('Degree'));
+    await user.click(screen.getByRole('button', { name: 'Save qualifications' }));
+
+    await waitFor(() => expect(events).toEqual(['success', 'close']));
   });
 
   it('keeps a draft and offers a reload after a save conflict', async () => {
     const user = userEvent.setup();
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
     fetchMock
       .mockResolvedValueOnce(response({ record: { structured: [], note: '', keywords: [] } }))
       .mockResolvedValueOnce(response({ error: 'conflict' }, false, 409));
-    render(<QualificationRecordForm />);
+    render(<QualificationRecordForm onSuccess={onSuccess} onClose={onClose} />);
 
     await screen.findByText('No qualifications saved yet.');
     const note = screen.getByLabelText('Private note (0/500)');
@@ -76,14 +102,18 @@ describe('QualificationRecordForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('your draft is still here');
     expect(note).toHaveValue('Keep this draft.');
     expect(screen.getByRole('button', { name: 'Reload saved qualifications' })).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('keeps the existing record visible and explains a failed clear', async () => {
     const user = userEvent.setup();
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
     fetchMock
       .mockResolvedValueOnce(response({ record: savedRecord }))
       .mockResolvedValueOnce(response({ error: 'unavailable' }, false, 503));
-    render(<QualificationRecordForm />);
+    render(<QualificationRecordForm onSuccess={onSuccess} onClose={onClose} />);
 
     await screen.findByText('Private qualifications loaded.');
     await user.click(screen.getByRole('button', { name: 'Clear saved qualifications' }));
@@ -92,5 +122,7 @@ describe('QualificationRecordForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('could not clear');
     expect(screen.getByLabelText('Private note (32/500)')).toHaveValue(savedRecord.note);
     expect(screen.getByRole('status')).toHaveTextContent('Qualifications were not cleared.');
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

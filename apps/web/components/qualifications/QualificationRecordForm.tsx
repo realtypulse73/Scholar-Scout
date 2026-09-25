@@ -16,7 +16,12 @@ const labels: Record<QualificationKind, string> = {
   'voluntary-military-history': 'Voluntary military history',
 };
 
-export default function QualificationRecordForm({ onClose }: { onClose?: () => void }) {
+interface QualificationRecordFormProps {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export default function QualificationRecordForm({ onClose, onSuccess }: QualificationRecordFormProps) {
   const [record, setRecord] = useState<QualificationRecord>(EMPTY_QUALIFICATION_RECORD);
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState('Loading your private qualifications.');
@@ -89,6 +94,7 @@ export default function QualificationRecordForm({ onClose }: { onClose?: () => v
       setRecord(nextRecord);
       setCanReload(false);
       setStatus(action === 'clear' ? 'Qualifications cleared.' : 'Qualifications saved.');
+      onSuccess?.();
       onClose?.();
     } catch {
       setError(action === 'clear'

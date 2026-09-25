@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
@@ -33,6 +34,7 @@ export default function CatalogueDiscoveryOverview({
   canEditQualifications = false,
   onRetryQualificationLens,
 }: CatalogueDiscoveryOverviewProps) {
+  const router = useRouter();
   const { filters, region } = model;
   const activeFilters = describeActiveFilters(filters);
   const [order, setOrder] = useState<'normal' | 'qualifications'>('normal');
@@ -49,6 +51,10 @@ export default function CatalogueDiscoveryOverview({
   function closeQualificationEditor() {
     setShowQualificationEditor(false);
     window.setTimeout(() => qualificationTrigger.current?.focus(), 0);
+  }
+
+  function refreshQualificationLens() {
+    router.refresh();
   }
 
   return (
@@ -103,7 +109,7 @@ export default function CatalogueDiscoveryOverview({
               {qualificationLensState === 'error' || !qualificationLens ? <><p className="mt-2 text-sm text-ink-600">Qualifications first is unavailable right now. You can still browse every opportunity.</p><button type="button" className="mt-2 text-sm font-semibold text-brand-red underline-offset-4 hover:underline" onClick={onRetryQualificationLens}>Retry qualifications first</button></> : null}
               {isLensReady && lensEntries.every((entry) => entry.explanation.checkedRequirements.length === 0 && entry.explanation.keywordConnections.length === 0) ? <p className="mt-2 text-sm text-ink-600">Add qualifications to check published requirements.</p> : null}
               {canEditQualifications ? <button ref={qualificationTrigger} type="button" onClick={() => setShowQualificationEditor(true)} className="mt-3 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Edit qualifications</button> : <Link href="/auth/sign-in" className="mt-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Sign in to edit qualifications</Link>}
-              {showQualificationEditor ? <div className="mt-4"><QualificationRecordForm onClose={closeQualificationEditor} /></div> : null}
+              {showQualificationEditor ? <div className="mt-4"><QualificationRecordForm onClose={closeQualificationEditor} onSuccess={refreshQualificationLens} /></div> : null}
             </fieldset>
             <p className="mt-3 text-sm font-semibold text-ink-700">Coverage for {region.label}</p>
             <ul data-testid="catalogue-coverage" className="mt-2 grid min-w-0 gap-2 text-sm sm:grid-cols-2" aria-label="Pathway coverage">

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
@@ -6,6 +6,18 @@ import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
 
 jest.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
+
+const mockRefresh = jest.fn();
+
+jest.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mockRefresh }) }));
+jest.mock('@/components/qualifications/QualificationRecordForm', () => ({
+  __esModule: true,
+  default: ({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) => (
+    <button type="button" onClick={() => { onSuccess?.(); onClose?.(); }}>
+      Complete qualification update
+    </button>
+  ),
+}));
 
 const evidence = { status: 'current' as const, authority: 'provider-official' as const, sourceLabel: 'Official programme source', sourceUrl: 'https://example.edu/programme', sourceDate: { state: 'documented' as const, value: '2026-09-20' }, reviewedAt: '2026-09-20', verificationAction: 'Verify on the official programme page.' };
 const fact = <T,>(value: T) => ({ value, evidence });
@@ -27,6 +39,10 @@ const publishedRecord: CataloguePublishedRecord = {
 };
 
 describe('CatalogueDiscoveryOverview', () => {
+  beforeEach(() => {
+    mockRefresh.mockClear();
+  });
+
   it('renders governed discovery actions without an account or profile', () => {
     const model = buildCatalogueDiscoveryModel({ records: [publishedRecord], searchParams: { metro: 'greater-houston' } });
     render(<CatalogueDiscoveryOverview model={model} />);
@@ -105,5 +121,27 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByText('Qualifications first is unavailable right now. You can still browse every opportunity.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry qualifications first' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Normal catalogue' })).toBeChecked();
+  });
+
+  it('refreshes the server lens and returns focus after a successful embedded qualification update', async () => {
+    const user = userEvent.setup();
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: { metro: 'greater-houston' },
+    });
+    const lens = buildQualificationLensModel(model.items, {
+      structured: ['diploma-credits'],
+      keywords: [],
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} qualificationLens={lens} canEditQualifications />);
+
+    const trigger = screen.getByRole('button', { name: 'Edit qualifications' });
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: 'Complete qualification update' }));
+
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole('button', { name: 'Complete qualification update' })).not.toBeInTheDocument();
   });
 });
