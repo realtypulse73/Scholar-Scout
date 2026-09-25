@@ -6,8 +6,10 @@ import {
   consumeCredentialGrant,
   findOrCreateOAuthUser,
 } from '@/lib/server/data-store';
+import { resolveNextAuthSecret } from '@/lib/server/local-auth-secret';
 
 export const authOptions: NextAuthOptions = {
+  secret: resolveNextAuthSecret(),
   session: {
     strategy: 'jwt',
   },

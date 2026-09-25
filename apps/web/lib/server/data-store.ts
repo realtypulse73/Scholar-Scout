@@ -79,15 +79,36 @@ export type CredentialVerificationResult =
   | { status: 'unknown-account' | 'incorrect-password'; user: null };
 
 const CREDENTIAL_GRANT_TTL_MS = 2 * 60 * 1_000;
-const credentialGrants = new Map<
-  string,
-  {
-    email: string;
-    ip: string;
-    expiresAt: number;
-    user: StoredUser;
+const CREDENTIAL_GRANT_STORE_KEY = Symbol.for('scholar-scout.credential-grants');
+
+interface CredentialGrantRecord {
+  email: string;
+  ip: string;
+  expiresAt: number;
+  user: StoredUser;
+}
+
+/**
+ * Next.js development can evaluate route bundles independently. Store grants on the
+ * process global so the exchange route and the NextAuth callback keep one secure,
+ * short-lived handoff store while preserving single-use consumption.
+ */
+function getCredentialGrantStore(): Map<string, CredentialGrantRecord> {
+  const processGlobal = globalThis as typeof globalThis & {
+    [key: symbol]: unknown;
+  };
+  const existing = processGlobal[CREDENTIAL_GRANT_STORE_KEY];
+
+  if (existing instanceof Map) {
+    return existing as Map<string, CredentialGrantRecord>;
   }
->();
+
+  const grants = new Map<string, CredentialGrantRecord>();
+  processGlobal[CREDENTIAL_GRANT_STORE_KEY] = grants;
+  return grants;
+}
+
+const credentialGrants = getCredentialGrantStore();
 
 export interface GuestLifecycleRecord {
   id: string;

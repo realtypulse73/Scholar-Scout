@@ -370,6 +370,46 @@ describe('credential exchange controls', () => {
       }),
     ).resolves.toBeNull();
   });
+
+  it('shares a single-use grant between independently evaluated server bundles', async () => {
+    let issueGrant!: (input: {
+      email: string;
+      ip: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+        role: 'student';
+        passwordHash: string;
+        createdAt: string;
+      };
+    }) => string;
+    let consumeGrant!: (grant: string) => unknown;
+
+    await jest.isolateModulesAsync(async () => {
+      ({ issueCredentialGrant: issueGrant } = await import('@/lib/server/data-store'));
+    });
+
+    const grant = issueGrant({
+      email: 'student@example.com',
+      ip: 'local-development',
+      user: {
+        id: 'student-one',
+        name: 'Student',
+        email: 'student@example.com',
+        role: 'student',
+        passwordHash: 'hashed-password',
+        createdAt: '2026-09-25T00:00:00.000Z',
+      },
+    });
+
+    await jest.isolateModulesAsync(async () => {
+      ({ consumeCredentialGrant: consumeGrant } = await import('@/lib/server/data-store'));
+    });
+
+    expect(consumeGrant(grant)).toMatchObject({ id: 'student-one' });
+    expect(consumeGrant(grant)).toBeNull();
+  });
 });
 
 function createCredentialsRequest(
