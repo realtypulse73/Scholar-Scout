@@ -19,6 +19,9 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
   const [playbackRejected, setPlaybackRejected] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isPlaybackControlled = playback !== undefined;
+  const shouldPlay = playback?.shouldPlay ?? false;
+  const reducedMotion = playback?.reducedMotion ?? false;
 
   function closeAbout(): void {
     setIsAboutOpen(false);
@@ -35,10 +38,10 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
   }, [isAboutOpen]);
 
   useEffect(() => {
-    if (media?.kind !== 'local-preview' || !playback || !videoRef.current) return;
+    if (media?.kind !== 'local-preview' || !isPlaybackControlled || !videoRef.current) return;
     const video = videoRef.current;
     setPlaybackRejected(false);
-    if (!playback.shouldPlay || playback.reducedMotion) {
+    if (!shouldPlay || reducedMotion) {
       video.pause();
       return;
     }
@@ -50,7 +53,7 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
       active = false;
       video.pause();
     };
-  }, [media?.kind, playback?.reducedMotion, playback?.shouldPlay]);
+  }, [isPlaybackControlled, media?.kind, reducedMotion, shouldPlay]);
 
   if (!media) return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-dashed border-brand-300 bg-brand-50 p-5">
