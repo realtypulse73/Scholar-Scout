@@ -18,6 +18,16 @@ const snapshotRecord: CataloguePublishedRecord = {
   source: { sourceLabel: 'Snapshot official source', sourceUrl: 'https://example.edu/snapshot', sourceDate: { state: 'documented', value: '2026-09-20' }, checkedAt: '2026-09-20' },
   facts: { location: fact('Houston, Texas'), pathway: fact('trade-career-school'), skillTaught: fact('Welding'), trainingPayer: fact('Student'), costOrTuition: fact('$500'), duration: fact('12 weeks'), delivery: fact('in-person') },
   claimBoundary: 'Factual programme details from the official source.', mediaFallback: false,
+  renderableMedia: {
+    kind: 'local-preview',
+    assetPath: '/media/snapshot-workshop.mp4',
+    alt: 'A reviewed local workshop preview.',
+    label: 'Provider-approved media',
+    sourceLabel: 'Snapshot media approval',
+    sourceUrl: 'https://example.edu/media-approval',
+    rightsBasis: 'provider-approved',
+    reviewedAt: '2026-09-20',
+  },
   publishedRequirements: [{ text: 'A degree is required for this reviewed detail programme.', qualificationKeys: ['degree'], evidence: fact('Welding').evidence }],
 };
 
@@ -50,6 +60,14 @@ describe('programme detail page', () => {
     render(await ProgrammeDetailPage({ params: Promise.resolve({ id: 'snapshot-only-id' }), searchParams: Promise.resolve({ metro: 'greater-houston' }) }));
     expect(screen.getByRole('heading', { name: /snapshot only academy/i })).toBeInTheDocument();
     await expect(generateMetadata({ params: Promise.resolve({ id: 'snapshot-only-id' }) })).resolves.toMatchObject({ title: 'Snapshot Only Academy | Scholar Scout' });
+  });
+
+  it('renders only the reviewed snapshot media projection before factual detail', async () => {
+    render(await ProgrammeDetailPage({ params: Promise.resolve({ id: 'snapshot-only-id' }), searchParams: Promise.resolve({ metro: 'greater-houston' }) }));
+
+    expect(screen.getByRole('video', { name: /reviewed local workshop preview/i })).toHaveAttribute('src', '/media/snapshot-workshop.mp4');
+    expect(screen.getByRole('region', { name: /media preview/i }).compareDocumentPosition(screen.getByRole('region', { name: /facts and sources/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText(/legacy seed/i)).not.toBeInTheDocument();
   });
 
   it('uses only the active account namespace for a source-backed qualification explanation', async () => {

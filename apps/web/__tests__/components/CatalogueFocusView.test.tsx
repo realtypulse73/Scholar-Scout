@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import CatalogueFocusView from '@/components/catalogue/CatalogueFocusView';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
 import type { QualificationExplanation } from '@/lib/qualification-lens';
@@ -21,6 +22,17 @@ const item: CatalogueDiscoveryItem = {
     evidence: fact('Student', 'needs-confirmation').evidence,
   }],
   factState: 'conflicting', source: { label: 'Bayou official catalogue', date: '2026-09-20', state: 'current' }, officialVerificationUrl: 'https://example.edu/bayou', mediaState: 'reserved-for-rights-review',
+  renderableMedia: {
+    kind: 'local-preview',
+    assetPath: '/media/bayou-workshop.mp4',
+    alt: 'A safely equipped workshop learning environment.',
+    label: 'Provider-approved media',
+    sourceLabel: 'Bayou Skills Academy media approval',
+    sourceUrl: 'https://example.edu/media-approval',
+    rightsBasis: 'provider-approved',
+    reviewedAt: '2026-09-20',
+    attribution: 'Bayou Skills Academy',
+  },
 };
 
 function fact<T extends string>(value: T, state: CatalogueDiscoveryItem['factState']) {
@@ -74,7 +86,7 @@ describe('CatalogueFocusView', () => {
   });
 
   it('keeps complete evidence and finite visitor-controlled navigation visible without media', () => {
-    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+    render(<CatalogueFocusView item={{ ...item, renderableMedia: undefined }} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
     expect(screen.getByRole('heading', { name: /bayou skills academy/i })).toBeInTheDocument();
     expect(screen.getAllByText('Training payer', { exact: true })).toHaveLength(2);
@@ -87,6 +99,24 @@ describe('CatalogueFocusView', () => {
     expect(screen.queryByRole('video')).not.toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+  });
+
+  it('presents a reviewed local preview with disclosure before the factual source region', async () => {
+    const user = userEvent.setup();
+    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    const preview = screen.getByRole('region', { name: /media preview/i });
+    const facts = screen.getByRole('region', { name: /facts and sources/i });
+    expect(preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('video', { name: /safely equipped workshop learning environment/i })).toHaveAttribute('src', '/media/bayou-workshop.mp4');
+    expect(screen.getByText('Provider-approved media')).toBeInTheDocument();
+    expect(screen.getByText(/not affiliated with or endorsed by/i)).toBeInTheDocument();
+
+    const trigger = screen.getByRole('button', { name: /about this media/i });
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: /about this media/i })).toHaveTextContent(/bayou skills academy media approval.*provider approved.*september 2026.*bayou skills academy/i);
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
   });
 
   it('keeps named focus actions and the non-media preview readable with reduced motion or a narrow viewport', () => {
