@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import type { CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
 interface DiscoveryPreviewSlotProps {
@@ -51,7 +52,7 @@ export default function DiscoveryPreviewSlot({ media }: DiscoveryPreviewSlotProp
         <video aria-label={media.alt} className="w-full rounded-control bg-ink-900" controls muted playsInline preload="metadata">
           <source src={media.assetPath} />
         </video>
-      ) : <img src={media.assetPath} alt={media.alt} className="w-full rounded-control object-cover" />}
+      ) : <Image src={media.assetPath} alt={media.alt} width={960} height={540} className="w-full rounded-control object-cover" />}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="text-sm font-semibold text-ink-900">{media.label}</p>
         <button ref={triggerRef} type="button" onClick={() => setIsAboutOpen(true)} className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">About this media</button>
