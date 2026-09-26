@@ -7,6 +7,7 @@ import {
   isWithinNormalWeeklyReleaseWindow,
   isCataloguePublicationState,
   parseCatalogueCandidateImport,
+  resolveRenderableMedia,
   type CatalogueCandidateInput,
 } from '@/lib/catalogue-publication';
 import type { FactEvidence } from '@/lib/catalogue-contract';
@@ -69,6 +70,16 @@ const validCandidate: CatalogueCandidateInput = {
     delivery: { value: 'in-person', evidence: evidence() },
   },
   claimBoundary: 'Factual programme details from the official source.',
+  mediaCandidates: [{
+    kind: 'local-preview',
+    assetPath: '/media/training-workshop.mp4',
+    alt: 'A reviewed training workshop.',
+    label: 'Provider-approved media',
+    sourceLabel: 'Provider media approval',
+    sourceUrl: 'https://example.edu/media-approval',
+    rights: { kind: 'provider-approved', sourceUrl: 'https://example.edu/media-approval', status: 'valid' },
+    reviewedAt: '2026-09-20',
+  }],
 };
 
 describe('catalogue publication editorial checklist', () => {
@@ -115,8 +126,10 @@ describe('catalogue publication editorial checklist', () => {
   ])('uses factual text-and-source fallback for %s media rights', (_, mediaRights) => {
     const result = evaluateCatalogueChecklist({
       ...validCandidate,
-      media: { url: 'https://example.edu/video', alt: 'Student workshop' },
-      mediaRights: mediaRights as never,
+      mediaCandidates: [{
+        ...validCandidate.mediaCandidates![0],
+        rights: mediaRights as never,
+      }],
     }, now);
 
     expect(result.passed).toBe(true);
@@ -140,6 +153,38 @@ describe('catalogue publication editorial checklist', () => {
         secret: 'must-not-persist',
       }],
     })).toBe(false);
+  });
+});
+
+describe('reviewed media projection', () => {
+  it('uses D-03 order and never returns an embed instruction', () => {
+    const result = resolveRenderableMedia([
+      {
+        kind: 'approved-embed', embedUrl: 'https://example.edu/embed', alt: 'Provider embed', label: 'Provider-approved embed', sourceLabel: 'Embed approval', sourceUrl: 'https://example.edu/embed-approval', rights: { kind: 'approved-embed', sourceUrl: 'https://example.edu/embed-approval', status: 'valid' }, reviewedAt: '2026-09-20',
+      },
+      {
+        kind: 'illustration', assetPath: '/images/learning-environment.png', alt: 'A Scholar Scout illustrative learning environment.', label: 'Illustration', sourceLabel: 'Scholar Scout illustration record', sourceUrl: 'https://example.edu/illustration-record', rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' }, reviewedAt: '2026-09-20',
+      },
+    ], now);
+
+    expect(result).toEqual({
+      renderableMedia: expect.objectContaining({
+        kind: 'illustration',
+        label: 'Scholar Scout illustration',
+        assetPath: '/images/learning-environment.png',
+      }),
+      mediaFallback: false,
+    });
+    expect(result.renderableMedia).not.toHaveProperty('embedUrl');
+  });
+
+  it.each([
+    ['absent candidates', undefined],
+    ['remote-only local candidate', [{ ...validCandidate.mediaCandidates![0], assetPath: 'https://example.edu/media.mp4' }]],
+    ['unknown rights', [{ ...validCandidate.mediaCandidates![0], rights: { ...validCandidate.mediaCandidates![0].rights, status: undefined } }]],
+    ['expired rights', [{ ...validCandidate.mediaCandidates![0], rights: { ...validCandidate.mediaCandidates![0].rights, expiresAt: '2026-09-21' } }]],
+  ])('fails closed for %s', (_, candidates) => {
+    expect(resolveRenderableMedia(candidates as typeof validCandidate.mediaCandidates, now)).toEqual({ mediaFallback: true });
   });
 });
 

@@ -481,6 +481,11 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
     || typeof value.title !== 'string' || typeof value.regionId !== 'string'
     || !isRecord(value.region) || !isRecord(value.source) || !isRecord(value.facts)
     || typeof value.claimBoundary !== 'string' || typeof value.mediaFallback !== 'boolean') return false;
+  if (Object.keys(value).some((key) => ![
+    'id', 'revision', 'title', 'regionId', 'region', 'source', 'facts', 'claimBoundary',
+    'publishedRequirements', 'reviewedDescription', 'documentedSupport', 'media',
+    'renderableMedia', 'mediaFallback',
+  ].includes(key))) return false;
   if (!isBoundedRequiredText(value.title, 240) || !isBoundedRequiredText(value.regionId, 80)
     || !isBoundedClaim(value.claimBoundary)
     || validateCatalogueRegion(value.region as unknown as CatalogueRegion).length > 0

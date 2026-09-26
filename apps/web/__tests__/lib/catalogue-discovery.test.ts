@@ -55,6 +55,27 @@ describe('catalogue discovery model', () => {
     });
   });
 
+  it('exposes only the selected safe media projection from a published record', () => {
+    const reviewed = record('catalogue:media');
+    reviewed.renderableMedia = {
+      kind: 'illustration',
+      assetPath: '/images/learning-environment.png',
+      alt: 'A Scholar Scout illustrative learning environment.',
+      label: 'Scholar Scout illustration',
+      sourceLabel: 'Scholar Scout illustration record',
+      sourceUrl: 'https://example.edu/illustration-record',
+      rightsBasis: 'scholarscout-owned',
+      reviewedAt: '2026-09-20',
+    };
+    (reviewed as typeof reviewed & { mediaCandidates: unknown[] }).mediaCandidates = [{ embedUrl: 'https://example.edu/embed' }];
+
+    const [item] = buildCatalogueDiscoveryModel({ records: [reviewed], searchParams: { metro: 'greater-houston' } }).items;
+
+    expect(item.renderableMedia).toEqual(reviewed.renderableMedia);
+    expect(item).not.toHaveProperty('mediaCandidates');
+    expect(item.renderableMedia).not.toHaveProperty('embedUrl');
+  });
+
   it('derives at most three neutral factual reasons from reviewed public facts with their original evidence', () => {
     const reviewed = record('catalogue:reasons');
     reviewed.facts.skillTaught = {
