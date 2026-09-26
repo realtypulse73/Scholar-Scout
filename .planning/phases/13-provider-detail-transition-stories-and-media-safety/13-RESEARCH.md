@@ -67,7 +67,7 @@ Transition stories must be an explicitly bounded Scholar Scout editorial layer, 
 |---|---|---|
 | Local approved stills plus factual fallback | Dynamic provider URL renderer | Dynamic remote URLs expand the request/privacy, availability, and source-control boundary; they are unnecessary for the requirement and need explicit Next remote allowlisting. [CITED: https://nextjs.org/docs/app/api-reference/components/image] |
 | Text-first static story catalogue | Autoplay/full-screen carousel or endless feed | A carousel/feed adds attention mechanics and makes finite, skippable, keyboard-clear progression harder; the roadmap explicitly forbids infinite/autoplay mechanics. [VERIFIED: .planning/ROADMAP.md] |
-| No embed renderer in this phase | Direct provider/third-party iframe embeds | An embed can be a valid future rights class, but it also needs provider-specific accessibility, privacy, title, transcript, and load-behavior review. Render its factual fallback until that contract exists. [VERIFIED: codebase grep; CITED: https://www.w3.org/WAI/media/av/planning/] |
+| No embed renderer in this phase | Direct provider/third-party iframe embeds | An embed can be a valid future rights class, but it also needs provider-specific accessibility, privacy, title, transcript, and load-behavior review. In Phase 13, do not render it; continue D-03 selection to an eligible labelled Scholar Scout illustration, then use factual fallback only if neither local nor illustration media passes. [VERIFIED: codebase grep; CITED: https://www.w3.org/WAI/media/av/planning/] |
 
 **Installation:** No new packages. Use the installed Next/React/Jest stack. [VERIFIED: apps/web/package.json]
 
@@ -321,22 +321,13 @@ function isUsableMedia(media: ProviderMedia | undefined, now: Date): boolean {
 |---|---|---|---|
 | A1 | No new npm package is necessary for the text-first, local-media-first implementation. [ASSUMED] | Standard Stack | A later approved video/embed requirement could need a reviewed platform capability or service. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Who is the accountable owner for existing and future story assets?**
-   - What we know: the existing people-based image is locally served but no rights manifest was found in the scoped repository search. [VERIFIED: codebase grep]
-   - What's unclear: ownership/licence, permitted audience/use, expiry, and attribution obligations. [VERIFIED: codebase grep]
-   - Recommendation: require a named owner and a dated rights record before using any people-based asset; otherwise ship the text/CSS-only story treatment. [CITED: https://copyright.gov/circs/circ16a.pdf]
+1. **Story assets:** Phase 13 uses text/CSS-only transition stories and excludes the existing people-based asset because it has no reviewed rights record. Stories contain no people asset. [RESOLVED: CONTEXT.md D-07]
 
-2. **Should Phase 13 render any approved embed?**
-   - What we know: `approved-embed` is an existing rights kind, but no public embed renderer, iframe accessibility contract, or transcript/privacy review exists. [VERIFIED: codebase grep]
-   - What's unclear: exact provider/third-party terms, accessibility metadata, cookie/network behavior, and acceptable CSP framing. [VERIFIED: codebase grep]
-   - Recommendation: retain the enum but treat it as unsupported/fallback in this phase; obtain a separate approval before adding iframe code. [CITED: https://www.w3.org/WAI/media/av/planning/]
+2. **Approved embeds:** Phase 13 creates no iframe or third-party embed renderer. A valid embed candidate is considered in D-03 order but cannot render; selection continues to an eligible clearly labelled Scholar Scout-generated illustration, then to factual fallback only if no safe local or illustration selection passes. [RESOLVED: CONTEXT.md D-03, D-04]
 
-3. **What small editorial set constitutes the first inclusive transition-story library?**
-   - What we know: the roadmap requires finite, inclusive, non-authoritative stories. [VERIFIED: .planning/ROADMAP.md]
-   - What's unclear: approved copy, exact number of stories, localization, and which controlled discovery links each story may use. [ASSUMED]
-   - Recommendation: product approves 3–6 short generic text records; each maps only to a controlled browse/detail URL and retains a Skip action. [ASSUMED]
+3. **Editorial set:** Use the bounded local-record approach permitted by CONTEXT.md: a finite, inclusive, non-authoritative text-first set with controlled factual destinations and a Skip action. Do not introduce a new content source, personal testimony, or provider-specific outcome claims. [RESOLVED: CONTEXT.md D-05, D-07]
 
 ## Environment Availability
 
@@ -367,7 +358,7 @@ function isUsableMedia(media: ProviderMedia | undefined, now: Date): boolean {
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |---|---|---|---|---|
 | MEDIA-01 | Valid current local rights DTO renders media with alt/caption while every provider fact/source remains visible. | unit + component + page | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath __tests__/lib/catalogue-publication.test.ts __tests__/lib/catalogue-discovery.test.ts __tests__/components/ProviderMediaPreview.test.tsx __tests__/components/CatalogueFocusView.test.tsx __tests__/app/programmes/[id]/page.test.tsx` | ❌ Wave 0: `ProviderMediaPreview.test.tsx`; extend existing others |
-| MEDIA-02 | Absent, no-status, unknown, expired, revoked, uncertain, malformed, remote, and unsupported embed records produce factual fallback with official links. | unit + component | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath __tests__/lib/catalogue-publication.test.ts __tests__/lib/catalogue-discovery.test.ts __tests__/components/ProviderMediaPreview.test.tsx` | ❌ Wave 0: `ProviderMediaPreview.test.tsx`; extend existing lib tests |
+| MEDIA-02 | Absent, no-status, unknown, expired, revoked, uncertain, malformed, remote, and unsupported records produce factual fallback with official links; a valid-but-unrenderable embed instead continues to an eligible labelled illustration before that fallback. | unit + component | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath __tests__/lib/catalogue-publication.test.ts __tests__/lib/catalogue-discovery.test.ts __tests__/components/ProviderMediaPreview.test.tsx` | ❌ Wave 0: `ProviderMediaPreview.test.tsx`; extend existing lib tests |
 | MEDIA-03 | The finite story list has controlled factual links, a Skip action, non-affiliation language, no timed/autoplay mechanism, and semantic accessible structure. | unit + component + page | `corepack pnpm --filter @scholar-scout/web test -- --runInBand --runTestsByPath __tests__/lib/transition-stories.test.ts __tests__/components/TransitionStoryList.test.tsx __tests__/app/stories/page.test.tsx __tests__/components/StudentJourneyScene.test.tsx` | ❌ Wave 0: three story tests; existing scene test extended |
 
 ### Sampling Rate
