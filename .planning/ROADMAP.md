@@ -170,7 +170,7 @@ Plans:
 
 **Requirements:** MEDIA-01, MEDIA-02, MEDIA-03.
 
-**Scope boundaries:** Provider detail is factual and source-led; stories are Scholar Scout-owned non-authoritative context. Do not copy provider assets, use unlicensed/unknown media, imply provider affiliation/outcomes, or add infinite/autoplay attention mechanics.
+**Scope boundaries:** Provider detail is factual and source-led; stories are Scholar Scout-owned non-authoritative context. Do not copy provider assets, use unlicensed/unknown media, imply provider affiliation/outcomes, or add an infinite or multi-card autoplay feed. A single muted preview on the provider card nearest the viewport center is permitted only while it remains visible, with a visible pause control and a complete `prefers-reduced-motion` stop.
 
 **Success criteria:**
 
