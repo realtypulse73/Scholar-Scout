@@ -1,4 +1,5 @@
 import {
+  CATALOGUE_FRESHNESS_POLICY,
   getFreshnessStatus,
   validateCatalogueOpportunityCardFacts,
   validateCatalogueRegion,
@@ -766,8 +767,10 @@ export function resolveRenderableMedia(
 }
 
 function isEligibleCandidate(candidate: CatalogueMediaCandidate, now: Date): boolean {
+  const reviewedAt = new Date(candidate.reviewedAt);
+  const reviewAgeDays = (now.getTime() - reviewedAt.getTime()) / (24 * 60 * 60 * 1000);
   if (!isMediaCandidate(candidate) || candidate.rights.status !== 'valid'
-    || new Date(candidate.reviewedAt).getTime() > now.getTime()
+    || reviewAgeDays < 0 || reviewAgeDays > CATALOGUE_FRESHNESS_POLICY.operationalFactMaxAgeDays
     || candidate.rights.expiresAt !== undefined && new Date(candidate.rights.expiresAt).getTime() < now.getTime()) {
     return false;
   }

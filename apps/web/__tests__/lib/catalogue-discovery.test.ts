@@ -76,6 +76,32 @@ describe('catalogue discovery model', () => {
     expect(item.renderableMedia).not.toHaveProperty('embedUrl');
   });
 
+  it('retains complete factual sources and official verification when media falls back', () => {
+    const reviewed = record('catalogue:fallback');
+    reviewed.mediaFallback = true;
+
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [reviewed],
+      searchParams: { metro: 'greater-houston' },
+    }).items;
+
+    expect(item.renderableMedia).toBeUndefined();
+    expect(item.officialVerificationUrl).toBe('https://example.edu/programme');
+    expect(item.source).toMatchObject({
+      label: 'Official programme source',
+      date: '2026-09-20',
+      state: 'current',
+    });
+    expect(Object.values(item.facts)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        evidence: expect.objectContaining({
+          sourceUrl: 'https://example.edu/programme',
+          verificationAction: 'Verify on the official programme page.',
+        }),
+      }),
+    ]));
+  });
+
   it('derives at most three neutral factual reasons from reviewed public facts with their original evidence', () => {
     const reviewed = record('catalogue:reasons');
     reviewed.facts.skillTaught = {

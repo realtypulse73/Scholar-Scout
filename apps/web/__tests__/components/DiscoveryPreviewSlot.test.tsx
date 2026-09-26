@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
 import type { CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
@@ -47,5 +48,21 @@ describe('DiscoveryPreviewSlot', () => {
 
     expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/does not display provider or learner media yet/i);
     expect(document.querySelector('iframe')).not.toBeInTheDocument();
+  });
+
+  it('discloses the reviewed source, permission, attribution, and review date without adding an embed renderer', async () => {
+    const user = userEvent.setup();
+    render(<DiscoveryPreviewSlot media={{ ...localPreview, attribution: 'Workshop media team' }} />);
+
+    expect(document.querySelectorAll('video')).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'About this media' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'About this media' });
+    expect(dialog).toHaveTextContent(/workshop media approval/i);
+    expect(dialog).toHaveTextContent(/permission basis: provider approved/i);
+    expect(dialog).toHaveTextContent(/reviewed: september 2026/i);
+    expect(dialog).toHaveTextContent(/attribution: workshop media team/i);
+    expect(screen.getByText(/not affiliated with or endorsed by the provider/i)).toBeInTheDocument();
+    expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
   });
 });

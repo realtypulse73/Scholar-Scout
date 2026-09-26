@@ -120,6 +120,33 @@ describe('CatalogueFocusView', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('wires a labelled illustration into detail while preserving the factual and official actions', () => {
+    render(<CatalogueFocusView
+      item={{
+        ...item,
+        renderableMedia: {
+          ...item.renderableMedia!,
+          kind: 'illustration',
+          assetPath: '/images/scholarscout-workshop.png',
+          alt: 'A Scholar Scout illustrative workshop learning environment.',
+          label: 'Scholar Scout illustration',
+          rightsBasis: 'scholarscout-owned',
+        },
+      }}
+      backHref="/programmes?metro=greater-new-orleans"
+      alternateHref="/programmes?metro=greater-new-orleans&pathway=university"
+    />);
+
+    const preview = screen.getByRole('region', { name: /media preview/i });
+    const facts = screen.getByRole('region', { name: /facts and sources/i });
+    expect(preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('img', { name: /scholar scout illustrative workshop/i })).toBeInTheDocument();
+    expect(preview).toHaveTextContent('Scholar Scout illustration');
+    expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /visit the official provider site/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: 'Compare this option' })).toHaveAttribute('href', '/shortlist');
+  });
+
   it('keeps named focus actions and the non-media preview readable with reduced motion or a narrow viewport', () => {
     render(<CatalogueFocusView item={{ ...item, renderableMedia: undefined }} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 

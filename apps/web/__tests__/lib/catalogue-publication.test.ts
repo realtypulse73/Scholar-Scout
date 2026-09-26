@@ -186,6 +186,58 @@ describe('reviewed media projection', () => {
   ])('fails closed for %s', (_, candidates) => {
     expect(resolveRenderableMedia(candidates as typeof validCandidate.mediaCandidates, now)).toEqual({ mediaFallback: true });
   });
+
+  it.each([
+    ['revoked rights', { rights: { ...validCandidate.mediaCandidates![0].rights, status: 'revoked' } }],
+    ['uncertain rights', { rights: { ...validCandidate.mediaCandidates![0].rights, status: 'uncertain' } }],
+    ['missing alternative text', { alt: '' }],
+    ['missing source label', { sourceLabel: '' }],
+    ['missing source URL', { sourceUrl: undefined }],
+    ['malformed review date', { reviewedAt: 'not-a-date' }],
+    ['stale review', { reviewedAt: '2026-03-22' }],
+    ['prohibited traversal path', { assetPath: '/media/../private.mp4' }],
+    ['unsupported local path', { assetPath: '/private/training.mp4' }],
+  ])('fails closed when local candidate evidence is %s', (_, change) => {
+    const candidate = { ...validCandidate.mediaCandidates![0], ...change };
+    expect(resolveRenderableMedia([candidate] as never, now)).toEqual({ mediaFallback: true });
+  });
+
+  it('prefers an eligible local preview over deferred embeds and illustrations', () => {
+    const local = validCandidate.mediaCandidates![0];
+    const result = resolveRenderableMedia([
+      {
+        kind: 'approved-embed',
+        embedUrl: 'https://example.edu/embed',
+        alt: 'Provider embed',
+        label: 'Provider-approved embed',
+        sourceLabel: 'Embed approval',
+        sourceUrl: 'https://example.edu/embed-approval',
+        rights: { kind: 'approved-embed', sourceUrl: 'https://example.edu/embed-approval', status: 'valid' },
+        reviewedAt: '2026-09-20',
+      },
+      {
+        kind: 'illustration',
+        assetPath: '/images/learning-environment.png',
+        alt: 'A Scholar Scout illustrative learning environment.',
+        label: 'Illustration',
+        sourceLabel: 'Scholar Scout illustration record',
+        sourceUrl: 'https://example.edu/illustration-record',
+        rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' },
+        reviewedAt: '2026-09-20',
+      },
+      local,
+    ], now);
+
+    expect(result).toEqual({
+      renderableMedia: expect.objectContaining({
+        kind: 'local-preview',
+        assetPath: '/media/training-workshop.mp4',
+        sourceUrl: 'https://example.edu/media-approval',
+      }),
+      mediaFallback: false,
+    });
+    expect(result.renderableMedia).not.toHaveProperty('embedUrl');
+  });
 });
 
 describe('weekly catalogue release schedule', () => {
