@@ -6,12 +6,19 @@ import type { CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
 interface DiscoveryPreviewSlotProps {
   media?: CatalogueRenderableMedia;
+  playback?: {
+    shouldPlay: boolean;
+    reducedMotion: boolean;
+    onToggle: () => void;
+  };
 }
 
 /** Renders only the immutable local presentation projection from a reviewed snapshot. */
-export default function DiscoveryPreviewSlot({ media }: DiscoveryPreviewSlotProps) {
+export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPreviewSlotProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [playbackRejected, setPlaybackRejected] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   function closeAbout(): void {
     setIsAboutOpen(false);
@@ -26,6 +33,24 @@ export default function DiscoveryPreviewSlot({ media }: DiscoveryPreviewSlotProp
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [isAboutOpen]);
+
+  useEffect(() => {
+    if (media?.kind !== 'local-preview' || !playback || !videoRef.current) return;
+    const video = videoRef.current;
+    setPlaybackRejected(false);
+    if (!playback.shouldPlay || playback.reducedMotion) {
+      video.pause();
+      return;
+    }
+    let active = true;
+    Promise.resolve(video.play()).catch(() => {
+      if (active) setPlaybackRejected(true);
+    });
+    return () => {
+      active = false;
+      video.pause();
+    };
+  }, [media?.kind, playback?.reducedMotion, playback?.shouldPlay]);
 
   if (!media) return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-dashed border-brand-300 bg-brand-50 p-5">
@@ -49,10 +74,28 @@ export default function DiscoveryPreviewSlot({ media }: DiscoveryPreviewSlotProp
   return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-brand-300 bg-brand-50 p-5">
       {media.kind === 'local-preview' ? (
-        <video aria-label={media.alt} className="w-full rounded-control bg-ink-900" controls muted playsInline preload="metadata">
+        <video ref={videoRef} aria-label={media.alt} className="w-full rounded-control bg-ink-900" controls={!playback} loop muted playsInline preload="metadata">
           <source src={media.assetPath} />
         </video>
       ) : <Image src={media.assetPath} alt={media.alt} width={960} height={540} className="w-full rounded-control object-cover" />}
+      {media.kind === 'local-preview' && playback ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={playback.reducedMotion}
+            onClick={playback.onToggle}
+            className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:border-ink-300 disabled:text-ink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            {playback.shouldPlay ? 'Pause preview' : 'Play preview'}
+          </button>
+          <p role="status" aria-live="polite" className="text-sm text-ink-700">
+            {playback.reducedMotion
+              ? 'Motion is paused because your device prefers reduced motion.'
+              : playback.shouldPlay ? 'Preview is playing muted.' : 'Preview is paused.'}
+          </p>
+        </div>
+      ) : null}
+      {playbackRejected ? <p className="mt-3 text-sm text-ink-700">Preview could not start automatically. Facts and source actions remain available.</p> : null}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="text-sm font-semibold text-ink-900">{media.label}</p>
         <button ref={triggerRef} type="button" onClick={() => setIsAboutOpen(true)} className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">About this media</button>

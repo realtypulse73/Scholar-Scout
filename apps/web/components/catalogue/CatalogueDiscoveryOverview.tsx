@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
 import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
@@ -53,6 +53,75 @@ export default function CatalogueDiscoveryOverview({
   const visualItems = displayedEntries
     .map(({ item }) => item)
     .filter((item) => item.renderableMedia !== undefined);
+  const previewNodes = useRef(new Map<string, HTMLDivElement>());
+  const [centeredPreviewId, setCenteredPreviewId] = useState<string | null>(null);
+  const [manuallyPausedIds, setManuallyPausedIds] = useState<string[]>([]);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const visualItemIds = visualItems.map((item) => item.id).join('|');
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || typeof window.IntersectionObserver === 'undefined') {
+      setCenteredPreviewId(null);
+      return undefined;
+    }
+
+    const entriesById = new Map<string, IntersectionObserverEntry>();
+    const updateCenteredPreview = (useCurrentRects = false) => {
+      const viewportCenter = window.innerHeight / 2;
+      const nearest = [...entriesById.entries()]
+        .map(([id, entry]) => ({
+          id,
+          entry,
+          rect: useCurrentRects ? previewNodes.current.get(id)?.getBoundingClientRect()
+            ?? entry.boundingClientRect : entry.boundingClientRect,
+        }))
+        .filter(({ entry, rect }) => entry.isIntersecting
+          && rect.bottom > 0
+          && rect.top < window.innerHeight)
+        .sort((first, second) => {
+          const firstCenter = first.rect.top + first.rect.height / 2;
+          const secondCenter = second.rect.top + second.rect.height / 2;
+          return Math.abs(firstCenter - viewportCenter) - Math.abs(secondCenter - viewportCenter);
+        })[0];
+      setCenteredPreviewId((current) => current === (nearest?.id ?? null) ? current : nearest?.id ?? null);
+    };
+    const observer = new window.IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const id = [...previewNodes.current.entries()].find(([, node]) => node === entry.target)?.[0];
+        if (id) entriesById.set(id, entry);
+      });
+      updateCenteredPreview();
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+    previewNodes.current.forEach((node) => observer.observe(node));
+    const updateOnViewportChange = () => updateCenteredPreview(true);
+    window.addEventListener('scroll', updateOnViewportChange, true);
+    window.addEventListener('resize', updateOnViewportChange);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', updateOnViewportChange, true);
+      window.removeEventListener('resize', updateOnViewportChange);
+    };
+  }, [prefersReducedMotion, visualItemIds]);
+
+  function setPreviewNode(id: string, node: HTMLDivElement | null): void {
+    if (node) previewNodes.current.set(id, node);
+    else previewNodes.current.delete(id);
+  }
+
+  function togglePreview(id: string): void {
+    setManuallyPausedIds((ids) => ids.includes(id)
+      ? ids.filter((pausedId) => pausedId !== id)
+      : [...ids, id]);
+  }
   const resultCount = displayedEntries.length;
   const orderLabel = order === 'qualifications' ? 'Qualifications first' : 'Normal catalogue';
 
@@ -129,7 +198,17 @@ export default function CatalogueDiscoveryOverview({
               <h3 className="text-xl font-semibold text-ink-900">Optional visual explorer</h3>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-700">These reviewed local visuals are an optional way to begin. Every factual card, filter, pathway, and metro remains available without opening a visual.</p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {visualItems.map((item) => <VisualOpportunityCard key={item.id} item={item} filters={filters} />)}
+                {visualItems.map((item) => <VisualOpportunityCard
+                  key={item.id}
+                  item={item}
+                  filters={filters}
+                  onPreviewNode={(node) => setPreviewNode(item.id, node)}
+                  playback={item.renderableMedia?.kind === 'local-preview' ? {
+                    shouldPlay: centeredPreviewId === item.id && !manuallyPausedIds.includes(item.id) && !prefersReducedMotion,
+                    reducedMotion: prefersReducedMotion,
+                    onToggle: () => togglePreview(item.id),
+                  } : undefined}
+                />)}
               </div>
             </section>
           ) : null}
@@ -143,15 +222,19 @@ export default function CatalogueDiscoveryOverview({
 function VisualOpportunityCard({
   item,
   filters,
+  onPreviewNode,
+  playback,
 }: {
   item: CatalogueDiscoveryItem;
   filters: CatalogueDiscoveryModel['filters'];
+  onPreviewNode: (node: HTMLDivElement | null) => void;
+  playback?: { shouldPlay: boolean; reducedMotion: boolean; onToggle: () => void };
 }) {
   if (!item.renderableMedia) return null;
 
   return (
-    <article aria-label={`Visual explorer: ${item.providerTitle}`} className="min-w-0 rounded-card border border-brand-200 bg-white p-4 shadow-sm">
-      <DiscoveryPreviewSlot media={item.renderableMedia} />
+    <article ref={onPreviewNode} data-testid={`visual-preview-${item.id}`} aria-label={`Visual explorer: ${item.providerTitle}`} className="min-w-0 rounded-card border border-brand-200 bg-white p-4 shadow-sm">
+      <DiscoveryPreviewSlot media={item.renderableMedia} playback={playback} />
       <h4 className="mt-4 text-lg font-semibold text-ink-900">{item.providerTitle}</h4>
       <p className="mt-1 text-sm text-ink-600">{item.place.value ?? 'Location needs confirmation'} · {item.pathway ? pathwayLabels[item.pathway] : 'Pathway needs confirmation'}</p>
       <Link
