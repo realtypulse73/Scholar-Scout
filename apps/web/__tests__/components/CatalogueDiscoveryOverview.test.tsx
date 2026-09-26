@@ -39,8 +39,44 @@ const publishedRecord: CataloguePublishedRecord = {
 };
 
 describe('CatalogueDiscoveryOverview', () => {
+  let observerCallback: IntersectionObserverCallback | undefined;
+  const play = jest.fn(() => Promise.resolve());
+  const pause = jest.fn();
+  let prefersReducedMotion = false;
+
   beforeEach(() => {
     mockRefresh.mockClear();
+    observerCallback = undefined;
+    play.mockClear();
+    pause.mockClear();
+    prefersReducedMotion = false;
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', { configurable: true, value: play });
+    Object.defineProperty(HTMLMediaElement.prototype, 'pause', { configurable: true, value: pause });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn(() => ({
+        matches: prefersReducedMotion,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })),
+    });
+    class MockIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback) {
+        observerCallback = callback;
+      }
+
+      observe = jest.fn();
+      unobserve = jest.fn();
+      disconnect = jest.fn();
+      takeRecords = jest.fn(() => []);
+      root = null;
+      rootMargin = '0px';
+      thresholds = [0];
+    }
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      value: MockIntersectionObserver,
+    });
   });
 
   it('renders governed discovery actions without an account or profile', () => {
@@ -174,4 +210,87 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByTestId('catalogue-coverage').querySelectorAll('li')).toHaveLength(6);
     expect(screen.getByRole('link', { name: /see all facts and sources for welding pathway/i })).toBeInTheDocument();
   });
+
+  it('allows only the visible visual card nearest the viewport center to play and retains a manual pause', async () => {
+    const user = userEvent.setup();
+    const localMedia = {
+      kind: 'local-preview' as const,
+      assetPath: '/media/welding-workshop.mp4',
+      alt: 'A welding workshop learning environment.',
+      label: 'Provider-approved media',
+      sourceLabel: 'Welding pathway media approval',
+      sourceUrl: 'https://example.edu/media-approval',
+      rightsBasis: 'provider-approved' as const,
+      reviewedAt: '2026-09-20',
+    };
+    const model = buildCatalogueDiscoveryModel({
+      records: [
+        { ...publishedRecord, renderableMedia: localMedia },
+        { ...publishedRecord, id: 'catalogue:two', title: 'Electrical pathway', renderableMedia: { ...localMedia, assetPath: '/media/electrical-workshop.mp4', alt: 'An electrical workshop learning environment.' } },
+      ],
+      searchParams: { metro: 'greater-houston' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    const firstPreview = screen.getByTestId('visual-preview-catalogue:one');
+    const secondPreview = screen.getByTestId('visual-preview-catalogue:two');
+    expect(observerCallback).toBeDefined();
+    observerCallback?.([
+      observerEntry(firstPreview, 220),
+      observerEntry(secondPreview, 680),
+    ], {} as IntersectionObserver);
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
+
+    expect(within(firstPreview).getByRole('button', { name: /pause preview/i })).toBeInTheDocument();
+    expect(within(secondPreview).getByRole('button', { name: /play preview/i })).toBeInTheDocument();
+    await user.click(within(firstPreview).getByRole('button', { name: /pause preview/i }));
+    expect(pause).toHaveBeenCalled();
+    expect(within(firstPreview).getByRole('button', { name: /play preview/i })).toBeInTheDocument();
+
+    observerCallback?.([
+      observerEntry(firstPreview, 760),
+      observerEntry(secondPreview, 260),
+    ], {} as IntersectionObserver);
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+  });
+
+  it('keeps local previews still for visitors who prefer reduced motion', () => {
+    prefersReducedMotion = true;
+    const model = buildCatalogueDiscoveryModel({
+      records: [{
+        ...publishedRecord,
+        renderableMedia: {
+          kind: 'local-preview',
+          assetPath: '/media/welding-workshop.mp4',
+          alt: 'A welding workshop learning environment.',
+          label: 'Provider-approved media',
+          sourceLabel: 'Welding pathway media approval',
+          sourceUrl: 'https://example.edu/media-approval',
+          rightsBasis: 'provider-approved',
+          reviewedAt: '2026-09-20',
+        },
+      }],
+      searchParams: { metro: 'greater-houston' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    const preview = screen.getByTestId('visual-preview-catalogue:one');
+    expect(play).not.toHaveBeenCalled();
+    expect(within(preview).getByText(/motion is paused because your device prefers reduced motion/i)).toBeInTheDocument();
+    expect(within(preview).getByRole('button', { name: /play preview/i })).toBeDisabled();
+  });
 });
+
+function observerEntry(target: Element, midpoint: number): IntersectionObserverEntry {
+  return {
+    target,
+    isIntersecting: true,
+    intersectionRatio: 1,
+    boundingClientRect: { top: midpoint - 100, bottom: midpoint + 100, height: 200 } as DOMRectReadOnly,
+    intersectionRect: {} as DOMRectReadOnly,
+    rootBounds: null,
+    time: 0,
+  };
+}
