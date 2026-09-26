@@ -4,8 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
+import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
 import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
-import { type CatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import {
+  buildCatalogueDetailHref,
+  type CatalogueDiscoveryItem,
+  type CatalogueDiscoveryModel,
+} from '@/lib/catalogue-discovery';
 import { CATALOGUE_PATHWAYS } from '@/lib/catalogue-contract';
 import { orderQualificationsFirst, type QualificationLensModel } from '@/lib/qualification-lens';
 import { catalogueRegions } from '@/lib/catalogue-fixtures';
@@ -45,6 +50,9 @@ export default function CatalogueDiscoveryOverview({
   const displayedEntries = order === 'qualifications' && isLensReady
     ? orderQualificationsFirst(lensEntries)
     : model.items.map((item) => ({ item, explanation: undefined }));
+  const visualItems = displayedEntries
+    .map(({ item }) => item)
+    .filter((item) => item.renderableMedia !== undefined);
   const resultCount = displayedEntries.length;
   const orderLabel = order === 'qualifications' ? 'Qualifications first' : 'Normal catalogue';
 
@@ -116,10 +124,44 @@ export default function CatalogueDiscoveryOverview({
               {model.coverage.map((coverage) => <li key={coverage.pathway} className="rounded-control border border-ink-200 px-3 py-2"><span className="font-medium">{pathwayLabels[coverage.pathway]}</span>: {coverage.state === 'verified' ? 'Verified coverage' : 'Not yet verified'} <span className="text-ink-500">(reviewed {coverage.reviewedAt})</span></li>)}
             </ul>
           </div>
+          {visualItems.length > 0 ? (
+            <section aria-label="Optional visual explorer" className="rounded-card border border-brand-200 bg-brand-50 p-5">
+              <h3 className="text-xl font-semibold text-ink-900">Optional visual explorer</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-700">These reviewed local visuals are an optional way to begin. Every factual card, filter, pathway, and metro remains available without opening a visual.</p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {visualItems.map((item) => <VisualOpportunityCard key={item.id} item={item} filters={filters} />)}
+              </div>
+            </section>
+          ) : null}
           {displayedEntries.length > 0 ? displayedEntries.map(({ item, explanation }) => <CatalogueOpportunityCard key={item.id} item={item} filters={filters} qualificationExplanation={order === 'qualifications' && isLensReady ? explanation : undefined} />) : <EmptyState model={model} />}
         </section>
       </div>
     </main>
+  );
+}
+
+function VisualOpportunityCard({
+  item,
+  filters,
+}: {
+  item: CatalogueDiscoveryItem;
+  filters: CatalogueDiscoveryModel['filters'];
+}) {
+  if (!item.renderableMedia) return null;
+
+  return (
+    <article aria-label={`Visual explorer: ${item.providerTitle}`} className="min-w-0 rounded-card border border-brand-200 bg-white p-4 shadow-sm">
+      <DiscoveryPreviewSlot media={item.renderableMedia} />
+      <h4 className="mt-4 text-lg font-semibold text-ink-900">{item.providerTitle}</h4>
+      <p className="mt-1 text-sm text-ink-600">{item.place.value ?? 'Location needs confirmation'} · {item.pathway ? pathwayLabels[item.pathway] : 'Pathway needs confirmation'}</p>
+      <Link
+        href={buildCatalogueDetailHref(item.id, filters)}
+        aria-label={`View ${item.providerTitle} details`}
+        className="mt-4 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      >
+        View details in Scholar Scout
+      </Link>
+    </article>
   );
 }
 

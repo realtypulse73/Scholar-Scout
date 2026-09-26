@@ -80,7 +80,7 @@ describe('CatalogueFocusView', () => {
     expect(explanation).toHaveTextContent('Needs verification');
     expect(explanation).toHaveTextContent('This programme lists career advising. Ask the programme if it is available to you.');
     expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent is required.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
-    expect(screen.getByRole('link', { name: /official verification/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /visit the official provider site/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(explanation.compareDocumentPosition(screen.getByRole('region', { name: /reasons to consider/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -98,7 +98,7 @@ describe('CatalogueFocusView', () => {
     expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/rights review/i);
     expect(screen.queryByRole('video')).not.toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(screen.getByRole('link', { name: /visit the official provider site/i })).toHaveAttribute('href', 'https://example.edu/bayou');
   });
 
   it('presents a reviewed local preview with disclosure before the factual source region', async () => {

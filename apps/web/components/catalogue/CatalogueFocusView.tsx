@@ -14,6 +14,8 @@ const pathwayLabels: Record<NonNullable<CatalogueDiscoveryItem['pathway']>, stri
   'military-information': 'Military information',
 };
 
+const pairedChoiceActionClassName = 'mt-3 inline-flex min-h-touch w-full items-center justify-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus';
+
 interface CatalogueFocusViewProps {
   item: CatalogueDiscoveryItem;
   backHref: string;
@@ -105,9 +107,9 @@ export default function CatalogueFocusView({
           <section className="min-w-0 rounded-card border border-ink-200 bg-white p-5" aria-label="Official verification and student choices">
             <h2 className="text-lg font-semibold">Verify this opportunity</h2>
             <p className="mt-2 text-sm text-ink-600">Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {formatState(item.source.state)}</p>
-            <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-touch w-full items-center justify-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Official verification (opens a new tab)</a>
+            <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className={pairedChoiceActionClassName}>Visit the official provider site (opens a new tab)</a>
             <div className="mt-3"><ShortlistButton programmeId={item.id} /></div>
-            <Link href="/shortlist" className="mt-3 inline-flex min-h-touch w-full items-center justify-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open comparison</Link>
+            <Link href="/shortlist" className={pairedChoiceActionClassName}>Compare this option</Link>
           </section>
           <section className="min-w-0 rounded-card border border-ink-200 bg-white p-5" aria-label="Alternate paths">
             <h2 className="text-lg font-semibold">Alternate paths</h2>

@@ -114,7 +114,7 @@ describe('CatalogueDiscoveryOverview', () => {
 
     expect(screen.getByText('Loading your saved qualifications…')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Qualifications first' })).toBeDisabled();
-    expect(screen.getByRole('article', { name: /welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /see all facts and sources for welding pathway/i })).toBeInTheDocument();
 
     rerender(<CatalogueDiscoveryOverview model={model} qualificationLensState="error" />);
 
@@ -172,6 +172,6 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Metro area')).toBeInTheDocument();
     expect(screen.getByTestId('catalogue-coverage').querySelectorAll('li')).toHaveLength(6);
-    expect(screen.getByRole('article', { name: /welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /see all facts and sources for welding pathway/i })).toBeInTheDocument();
   });
 });
