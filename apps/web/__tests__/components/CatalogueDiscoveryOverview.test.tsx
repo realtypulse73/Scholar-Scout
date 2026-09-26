@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
@@ -143,5 +143,35 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(mockRefresh).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(screen.queryByRole('button', { name: 'Complete qualification update' })).not.toBeInTheDocument();
+  });
+
+  it('adds an optional visual explorer without removing ordinary six-area factual browsing', () => {
+    const model = buildCatalogueDiscoveryModel({
+      records: [{
+        ...publishedRecord,
+        renderableMedia: {
+          kind: 'local-preview',
+          assetPath: '/media/welding-workshop.mp4',
+          alt: 'A welding workshop learning environment.',
+          label: 'Provider-approved media',
+          sourceLabel: 'Welding pathway media approval',
+          sourceUrl: 'https://example.edu/media-approval',
+          rightsBasis: 'provider-approved',
+          reviewedAt: '2026-09-20',
+        },
+      }],
+      searchParams: { metro: 'greater-houston' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    const explorer = screen.getByRole('region', { name: /optional visual explorer/i });
+    expect(within(explorer).getByText('Provider-approved media')).toBeInTheDocument();
+    expect(within(explorer).getByRole('link', { name: /view welding pathway details/i }))
+      .toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
+    expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Metro area')).toBeInTheDocument();
+    expect(screen.getByTestId('catalogue-coverage').querySelectorAll('li')).toHaveLength(6);
+    expect(screen.getByRole('article', { name: /welding pathway/i })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogueFocusView from '@/components/catalogue/CatalogueFocusView';
 import type { CatalogueDiscoveryItem } from '@/lib/catalogue-discovery';
@@ -148,5 +148,19 @@ describe('CatalogueFocusView', () => {
     render(<CatalogueFocusView item={{ ...item, reasonsToConsider: [] }} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
     expect(screen.getByRole('region', { name: /reasons to consider/i })).toHaveTextContent(/no reviewed factual reasons are currently listed/i);
+  });
+
+  it('pairs comparison with the official provider source using equal actions', () => {
+    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    const choices = screen.getByRole('region', { name: /official verification and student choices/i });
+    const compare = within(choices).getByRole('link', { name: 'Compare this option' });
+    const official = within(choices).getByRole('link', { name: /visit the official provider site/i });
+
+    expect(compare).toHaveAttribute('href', '/shortlist');
+    expect(official).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(official).toHaveAttribute('target', '_blank');
+    expect(official).toHaveAttribute('rel', 'noreferrer');
+    expect(compare.className).toBe(official.className);
   });
 });
