@@ -613,7 +613,7 @@ describe('weekly catalogue publication', () => {
       eligibility: { periodKey: '2026-W39', withinWindow: false, eligible: false },
       selected: [{ id: validCandidate.id, revision: 1 }],
       quarantined: [],
-      mediaFallbackIds: [],
+      mediaFallbackIds: [validCandidate.id],
     });
     expect(store.writeAttempts).toBe(writesBeforePreview);
   });
