@@ -60,6 +60,7 @@ export default function CatalogueDiscoveryOverview({
   const visualItemIds = visualItems.map((item) => item.id).join('|');
 
   useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
     updatePreference();

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
@@ -260,10 +260,12 @@ describe('CatalogueDiscoveryOverview', () => {
     const firstPreview = screen.getByTestId('visual-preview-catalogue:one');
     const secondPreview = screen.getByTestId('visual-preview-catalogue:two');
     expect(observerCallback).toBeDefined();
-    observerCallback?.([
-      observerEntry(firstPreview, 220),
-      observerEntry(secondPreview, 680),
-    ], {} as IntersectionObserver);
+    await act(async () => {
+      observerCallback?.([
+        observerEntry(firstPreview, 220),
+        observerEntry(secondPreview, 680),
+      ], {} as IntersectionObserver);
+    });
     await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
 
     expect(within(firstPreview).getByRole('button', { name: /pause preview/i })).toBeInTheDocument();
@@ -272,10 +274,12 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(pause).toHaveBeenCalled();
     expect(within(firstPreview).getByRole('button', { name: /play preview/i })).toBeInTheDocument();
 
-    observerCallback?.([
-      observerEntry(firstPreview, 760),
-      observerEntry(secondPreview, 260),
-    ], {} as IntersectionObserver);
+    await act(async () => {
+      observerCallback?.([
+        observerEntry(firstPreview, 760),
+        observerEntry(secondPreview, 260),
+      ], {} as IntersectionObserver);
+    });
     await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
   });
 
@@ -304,6 +308,19 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(play).not.toHaveBeenCalled();
     expect(within(preview).getByText(/motion is paused because your device prefers reduced motion/i)).toBeInTheDocument();
     expect(within(preview).getByRole('button', { name: /play preview/i })).toBeDisabled();
+  });
+
+  it('keeps factual browsing available when matchMedia is unavailable', () => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: { metro: 'greater-houston' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('article', { name: /welding pathway/i })).toBeInTheDocument();
   });
 });
 
