@@ -153,6 +153,7 @@ export default function CatalogueDiscoveryOverview({
             <div><label htmlFor="q" className="text-sm font-semibold text-ink-800">Search reviewed records</label><input id="q" name="q" defaultValue={filters.q} className="mt-2 min-h-touch w-full rounded-card border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-focus" /></div>
             <button type="submit" className="inline-flex min-h-touch w-full items-center justify-center rounded-card bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2">Apply filters</button>
             <Link href={model.resetHref} className="block text-center text-sm font-semibold text-brand-700 underline underline-offset-4">Reset filters</Link>
+            <Link href="/stories" className="block text-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2">Explore visual stories</Link>
           </form>
         </aside>
         <section aria-labelledby="catalogue-results-heading" className="min-w-0 space-y-5">
