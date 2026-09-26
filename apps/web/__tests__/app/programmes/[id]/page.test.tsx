@@ -89,7 +89,7 @@ describe('programme detail page', () => {
     render(await ProgrammeDetailPage({ params: Promise.resolve({ id: 'snapshot-only-id' }), searchParams: Promise.resolve({ metro: 'greater-houston' }) }));
 
     expect(getQualificationRecord).not.toHaveBeenCalled();
-    expect(screen.getByRole('link', { name: /official verification/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /visit the official provider site.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/snapshot');
   });
 
   it('does not fall back to a legacy seed-only ID', async () => {
