@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import TransitionStoryList from '@/components/stories/TransitionStoryList';
 import { TRANSITION_STORIES } from '@/lib/transition-stories';
 
@@ -24,5 +25,29 @@ describe('TransitionStoryList', () => {
     expect(decoration).toHaveAttribute('aria-hidden', 'true');
     expect(decoration).toHaveClass('pointer-events-none', 'transition-story-decoration');
     expect(decoration).not.toHaveAttribute('tabindex');
+  });
+
+  it('keeps six fixed general contexts, keyboard-first factual exits, and no testimony or submission surface', async () => {
+    const user = userEvent.setup();
+    render(<TransitionStoryList stories={TRANSITION_STORIES} />);
+
+    const skip = screen.getByRole('link', { name: 'Skip to factual opportunities' });
+    const articles = screen.getAllByRole('article');
+    expect(articles).toHaveLength(6);
+    expect(screen.getAllByText('Scholar Scout context')).toHaveLength(6);
+    expect(articles.map((article) => article.querySelector('h2')?.textContent)).toEqual(
+      TRANSITION_STORIES.map((story) => story.title),
+    );
+    expect(articles.map((article) => article.querySelector('a')?.getAttribute('href'))).toEqual(
+      TRANSITION_STORIES.map((story) => story.href),
+    );
+    expect(skip.compareDocumentPosition(articles[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.tab();
+    expect(skip).toHaveFocus();
+    expect(document.querySelector('form, input, textarea, select, button, video, audio, iframe')).not.toBeInTheDocument();
+    TRANSITION_STORIES.forEach((story) => {
+      expect(screen.getByText(story.context)).not.toHaveTextContent(/\b(i|my|we|our)\b|attended|graduated|placed|hired|enrolled/i);
+    });
   });
 });

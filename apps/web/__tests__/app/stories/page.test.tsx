@@ -21,4 +21,18 @@ describe('StoriesPage', () => {
     expect(screen.getAllByText(/not provider affiliation, attendance, placement, endorsement, or outcome evidence/i))
       .toHaveLength(TRANSITION_STORIES.length);
   });
+
+  it('ships only the fixed local catalogue destinations, never a provider-specific or personal submission route', () => {
+    render(<StoriesPage />);
+
+    expect(TRANSITION_STORIES).toHaveLength(6);
+    const destinations = screen.getAllByRole('article').map((article) => article.querySelector('a'));
+    expect(destinations).toHaveLength(6);
+    expect(destinations.map((link) => link?.getAttribute('href'))).toEqual(
+      TRANSITION_STORIES.map((story) => story.href),
+    );
+    expect(destinations.every((link) => link?.getAttribute('href')?.startsWith('/programmes?metro='))).toBe(true);
+    expect(document.querySelector('form, input, textarea, select, button, video, audio, iframe')).not.toBeInTheDocument();
+    expect(screen.queryByText(/submit your story|provider testimony|student outcome/i)).not.toBeInTheDocument();
+  });
 });
