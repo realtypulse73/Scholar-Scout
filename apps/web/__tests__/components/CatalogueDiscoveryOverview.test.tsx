@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogueDiscoveryOverview from '@/components/catalogue/CatalogueDiscoveryOverview';
 import { buildCatalogueDiscoveryModel } from '@/lib/catalogue-discovery';
+import { catalogueRegions } from '@/lib/catalogue-fixtures';
 import { buildQualificationLensModel } from '@/lib/qualification-lens';
 import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
 
@@ -209,6 +210,29 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getByLabelText('Metro area')).toBeInTheDocument();
     expect(screen.getByTestId('catalogue-coverage').querySelectorAll('li')).toHaveLength(6);
     expect(screen.getByRole('link', { name: /see all facts and sources for welding pathway/i })).toBeInTheDocument();
+  });
+
+  it('links to Stories from a non-default metro without changing factual browsing controls', () => {
+    const chicagoRegion = catalogueRegions.find((region) => region.id === 'greater-chicago');
+    expect(chicagoRegion).toBeDefined();
+    const model = buildCatalogueDiscoveryModel({
+      records: [{
+        ...publishedRecord,
+        regionId: 'greater-chicago',
+        region: chicagoRegion!,
+      }],
+      searchParams: { metro: 'greater-chicago' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    expect(screen.getByRole('link', { name: /explore visual stories/i }))
+      .toHaveAttribute('href', '/stories');
+    expect(screen.getByRole('heading', { name: /reviewed opportunities in greater chicago/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Metro area')).toHaveValue('greater-chicago');
+    expect(screen.getByTestId('catalogue-coverage').querySelectorAll('li')).toHaveLength(6);
+    expect(screen.getByRole('link', { name: /see all facts and sources for welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /reset filters/i })).toBeInTheDocument();
   });
 
   it('allows only the visible visual card nearest the viewport center to play and retains a manual pause', async () => {
