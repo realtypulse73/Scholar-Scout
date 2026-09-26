@@ -65,7 +65,7 @@ describe('programme detail page', () => {
   it('renders only the reviewed snapshot media projection before factual detail', async () => {
     render(await ProgrammeDetailPage({ params: Promise.resolve({ id: 'snapshot-only-id' }), searchParams: Promise.resolve({ metro: 'greater-houston' }) }));
 
-    expect(screen.getByRole('video', { name: /reviewed local workshop preview/i })).toHaveAttribute('src', '/media/snapshot-workshop.mp4');
+    expect(screen.getByLabelText(/reviewed local workshop preview/i).querySelector('source')).toHaveAttribute('src', '/media/snapshot-workshop.mp4');
     expect(screen.getByRole('region', { name: /media preview/i }).compareDocumentPosition(screen.getByRole('region', { name: /facts and sources/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByText(/legacy seed/i)).not.toBeInTheDocument();
   });

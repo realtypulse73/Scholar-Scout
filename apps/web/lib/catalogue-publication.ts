@@ -53,6 +53,35 @@ export interface CatalogueMediaRights {
   status?: 'valid' | 'revoked' | 'uncertain';
 }
 
+export type CatalogueMediaCandidateKind = 'local-preview' | 'approved-embed' | 'illustration';
+
+/** Staff-reviewed media evidence. Only the resolver's narrow projection may cross into a snapshot. */
+export interface CatalogueMediaCandidate {
+  kind: CatalogueMediaCandidateKind;
+  assetPath?: string;
+  embedUrl?: string;
+  alt: string;
+  label: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  rights: CatalogueMediaRights;
+  reviewedAt: string;
+  attribution?: string;
+}
+
+/** Serializable, local-only presentation data exposed to learner surfaces. */
+export interface CatalogueRenderableMedia {
+  kind: 'local-preview' | 'illustration';
+  assetPath: string;
+  alt: string;
+  label: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  rightsBasis: Exclude<MediaRightsKind, 'approved-embed'>;
+  reviewedAt: string;
+  attribution?: string;
+}
+
 export interface CatalogueCandidateInput {
   id?: string;
   title?: string;
@@ -66,6 +95,7 @@ export interface CatalogueCandidateInput {
   documentedSupport?: SourcedFact<string>;
   media?: { url?: string; alt?: string };
   mediaRights?: CatalogueMediaRights;
+  mediaCandidates?: CatalogueMediaCandidate[];
 }
 
 export interface CatalogueChecklistCategoryStatus {
@@ -90,6 +120,7 @@ export interface CatalogueCandidate extends Required<Pick<CatalogueCandidateInpu
   updatedAt: string;
   media?: { url?: string; alt?: string };
   mediaRights?: CatalogueMediaRights;
+  mediaCandidates?: CatalogueMediaCandidate[];
   publishedRequirements?: PublishedRequirement[];
   reviewedDescription?: SourcedFact<string>;
   documentedSupport?: SourcedFact<string>;
@@ -151,6 +182,7 @@ export interface CataloguePublishedRecord {
   reviewedDescription?: SourcedFact<string>;
   documentedSupport?: SourcedFact<string>;
   media?: { url?: string; alt?: string };
+  renderableMedia?: CatalogueRenderableMedia;
   mediaFallback: boolean;
 }
 
@@ -293,7 +325,7 @@ export function evaluateCatalogueChecklist(
     failed.add('regional-boundary');
   }
 
-  const mediaFallback = !isUsableMedia(candidate.media, candidate.mediaRights, now);
+  const mediaFallback = resolveRenderableMedia(candidate.mediaCandidates, now).mediaFallback;
   const correctionCodes = CATALOGUE_CHECKLIST_CATEGORIES.filter(
     (category) => failed.has(category),
   );
@@ -375,6 +407,9 @@ function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
       : { documentedSupport: value.documentedSupport as SourcedFact<string> }),
     ...(value.media === undefined ? {} : { media: value.media as { url?: string; alt?: string } }),
     ...(value.mediaRights === undefined ? {} : { mediaRights: value.mediaRights as CatalogueMediaRights }),
+    ...(value.mediaCandidates === undefined
+      ? {}
+      : { mediaCandidates: value.mediaCandidates as CatalogueMediaCandidate[] }),
   };
   const expectedChecklist = evaluateCatalogueChecklist(candidateInput, new Date(value.updatedAt));
   if (!isChecklist(value.checklist) || canonicalJson(value.checklist) !== canonicalJson(expectedChecklist)) {
@@ -465,7 +500,8 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
     }, new Date())) {
     return false;
   }
-  return value.media === undefined || isMedia(value.media);
+  return (value.media === undefined || isMedia(value.media))
+    && (value.renderableMedia === undefined || isRenderableMedia(value.renderableMedia));
 }
 
 function isCandidateStoredFields(value: Record<string, unknown>): boolean {
@@ -478,7 +514,9 @@ function isCandidateStoredFields(value: Record<string, unknown>): boolean {
     && (value.reviewedDescription === undefined || isRecord(value.reviewedDescription))
     && (value.documentedSupport === undefined || isRecord(value.documentedSupport))
     && (value.media === undefined || isMedia(value.media))
-    && (value.mediaRights === undefined || isMediaRights(value.mediaRights));
+    && (value.mediaRights === undefined || isMediaRights(value.mediaRights))
+    && (value.mediaCandidates === undefined || Array.isArray(value.mediaCandidates)
+      && value.mediaCandidates.length <= 12 && value.mediaCandidates.every(isMediaCandidate));
 }
 
 function isCanonicalSnapshot(
@@ -541,6 +579,34 @@ function isMediaRights(value: unknown): boolean {
     && (value.expiresAt === undefined || (typeof value.expiresAt === 'string' && isIsoDate(value.expiresAt)))
     && (value.status === undefined || value.status === 'valid' || value.status === 'revoked' || value.status === 'uncertain')
     && Object.keys(value).every((key) => ['kind', 'sourceUrl', 'expiresAt', 'status'].includes(key));
+}
+
+function isMediaCandidate(value: unknown): value is CatalogueMediaCandidate {
+  if (!isRecord(value) || !isMediaCandidateKind(value.kind) || !isBoundedRequiredText(value.alt, 500)
+    || !isBoundedRequiredText(value.label, 120) || !isBoundedRequiredText(value.sourceLabel, 240)
+    || !isHttpUrl(value.sourceUrl) || !isMediaRights(value.rights)
+    || typeof value.reviewedAt !== 'string' || !isIsoDate(value.reviewedAt)
+    || (value.attribution !== undefined && !isBoundedRequiredText(value.attribution, 240))) {
+    return false;
+  }
+  if (value.kind === 'approved-embed') {
+    return isHttpUrl(value.embedUrl) && value.assetPath === undefined
+      && Object.keys(value).every((key) => ['kind', 'embedUrl', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rights', 'reviewedAt', 'attribution'].includes(key));
+  }
+  return isLocalMediaPath(value.assetPath) && value.embedUrl === undefined
+    && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rights', 'reviewedAt', 'attribution'].includes(key));
+}
+
+function isRenderableMedia(value: unknown): value is CatalogueRenderableMedia {
+  if (!isRecord(value) || (value.kind !== 'local-preview' && value.kind !== 'illustration')
+    || !isLocalMediaPath(value.assetPath) || !isBoundedRequiredText(value.alt, 500)
+    || !isBoundedRequiredText(value.label, 120) || !isBoundedRequiredText(value.sourceLabel, 240)
+    || !isHttpUrl(value.sourceUrl) || !isNonEmbedRightsKind(value.rightsBasis)
+    || typeof value.reviewedAt !== 'string' || !isIsoDate(value.reviewedAt)
+    || (value.attribution !== undefined && !isBoundedRequiredText(value.attribution, 240))) {
+    return false;
+  }
+  return Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rightsBasis', 'reviewedAt', 'attribution'].includes(key));
 }
 
 function hasUnique(values: string[]): boolean {
@@ -679,18 +745,44 @@ function isCandidateApproval(value: unknown): value is CatalogueCandidateApprova
     && Object.keys(value).every((key) => ['reviewerId', 'reviewedAt', 'revision'].includes(key));
 }
 
-function isUsableMedia(
-  media: CatalogueCandidateInput['media'],
-  rights: CatalogueMediaRights | undefined,
+/** Resolves reviewed candidates without ever returning an embed URL or remote presentation path. */
+export function resolveRenderableMedia(
+  candidates: CatalogueMediaCandidate[] | undefined,
   now: Date,
-): boolean {
-  if (!media?.url) return true;
-  if (!rights || !isMediaRightsKind(rights.kind) || !isHttpUrl(rights.sourceUrl)
-    || rights.status === 'revoked' || rights.status === 'uncertain') return false;
-  if (rights.expiresAt && (!isIsoDate(rights.expiresAt) || new Date(rights.expiresAt).getTime() < now.getTime())) {
+): { renderableMedia?: CatalogueRenderableMedia; mediaFallback: boolean } {
+  const reviewed = candidates ?? [];
+  const local = reviewed.find((candidate) => candidate.kind === 'local-preview' && isEligibleCandidate(candidate, now));
+  if (local) return { renderableMedia: toRenderableMedia(local), mediaFallback: false };
+
+  // Embed evidence can be valid, but Phase 13 has no embed renderer. Continue to illustration.
+  const illustration = reviewed.find((candidate) => candidate.kind === 'illustration' && isEligibleCandidate(candidate, now));
+  if (illustration) return { renderableMedia: toRenderableMedia(illustration), mediaFallback: false };
+  return { mediaFallback: true };
+}
+
+function isEligibleCandidate(candidate: CatalogueMediaCandidate, now: Date): boolean {
+  if (!isMediaCandidate(candidate) || candidate.rights.status !== 'valid'
+    || new Date(candidate.reviewedAt).getTime() > now.getTime()
+    || candidate.rights.expiresAt !== undefined && new Date(candidate.rights.expiresAt).getTime() < now.getTime()) {
     return false;
   }
-  return true;
+  if (candidate.kind === 'approved-embed') return candidate.rights.kind === 'approved-embed';
+  if (candidate.kind === 'illustration') return candidate.rights.kind === 'scholarscout-owned';
+  return isNonEmbedRightsKind(candidate.rights.kind);
+}
+
+function toRenderableMedia(candidate: CatalogueMediaCandidate): CatalogueRenderableMedia {
+  return {
+    kind: candidate.kind === 'illustration' ? 'illustration' : 'local-preview',
+    assetPath: candidate.assetPath!,
+    alt: candidate.alt,
+    label: candidate.kind === 'illustration' ? 'Scholar Scout illustration' : candidate.label,
+    sourceLabel: candidate.sourceLabel,
+    sourceUrl: candidate.sourceUrl,
+    rightsBasis: candidate.rights.kind as CatalogueRenderableMedia['rightsBasis'],
+    reviewedAt: candidate.reviewedAt,
+    ...(candidate.attribution === undefined ? {} : { attribution: candidate.attribution }),
+  };
 }
 
 function isBoundedClaim(value: unknown): value is string {
@@ -731,6 +823,19 @@ function isBoundedRequiredText(value: unknown, maximum: number): value is string
 function isMediaRightsKind(value: unknown): value is MediaRightsKind {
   return value === 'scholarscout-owned' || value === 'licensed'
     || value === 'provider-approved' || value === 'approved-embed';
+}
+
+function isNonEmbedRightsKind(value: unknown): value is CatalogueRenderableMedia['rightsBasis'] {
+  return value === 'scholarscout-owned' || value === 'licensed' || value === 'provider-approved';
+}
+
+function isMediaCandidateKind(value: unknown): value is CatalogueMediaCandidateKind {
+  return value === 'local-preview' || value === 'approved-embed' || value === 'illustration';
+}
+
+function isLocalMediaPath(value: unknown): value is string {
+  return typeof value === 'string' && /^\/(?:media|images)\/[a-zA-Z0-9._/-]{1,240}$/.test(value)
+    && !value.includes('..');
 }
 
 function isLifecycle(value: unknown): value is CatalogueCandidateLifecycle {

@@ -12,7 +12,7 @@ import {
 } from '@/lib/catalogue-contract';
 import { catalogueCoverage, catalogueRegions } from '@/lib/catalogue-fixtures';
 import type { CatalogueRegionId, CoverageState } from '@/lib/catalogue-contract';
-import type { CataloguePublishedRecord } from '@/lib/catalogue-publication';
+import type { CataloguePublishedRecord, CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
 const DEFAULT_METRO: CatalogueRegionId = 'greater-houston';
 const DELIVERY_VALUES: readonly CatalogueDelivery[] = ['in-person', 'online', 'hybrid'];
@@ -63,6 +63,7 @@ export interface CatalogueDiscoveryItem {
   source: { label: string; date: string | null; state: 'current' | 'needs-confirmation' | 'unknown' };
   officialVerificationUrl: string;
   mediaState: 'reserved-for-rights-review';
+  renderableMedia?: CatalogueRenderableMedia;
 }
 
 export interface CatalogueDiscoveryCoverage {
@@ -193,6 +194,7 @@ function mapPublishedRecord(record: CataloguePublishedRecord, now: Date): Catalo
     source: mapSource(record.source, now),
     officialVerificationUrl: record.source.sourceUrl,
     mediaState: 'reserved-for-rights-review',
+    ...(record.renderableMedia === undefined ? {} : { renderableMedia: record.renderableMedia }),
   };
 }
 

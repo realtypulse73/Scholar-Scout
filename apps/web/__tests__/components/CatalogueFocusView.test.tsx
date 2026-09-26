@@ -108,7 +108,8 @@ describe('CatalogueFocusView', () => {
     const preview = screen.getByRole('region', { name: /media preview/i });
     const facts = screen.getByRole('region', { name: /facts and sources/i });
     expect(preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole('video', { name: /safely equipped workshop learning environment/i })).toHaveAttribute('src', '/media/bayou-workshop.mp4');
+    expect(screen.getByLabelText(/safely equipped workshop learning environment/i)).toBeInTheDocument();
+    expect(preview.querySelector('source')).toHaveAttribute('src', '/media/bayou-workshop.mp4');
     expect(screen.getByText('Provider-approved media')).toBeInTheDocument();
     expect(screen.getByText(/not affiliated with or endorsed by/i)).toBeInTheDocument();
 
@@ -120,7 +121,7 @@ describe('CatalogueFocusView', () => {
   });
 
   it('keeps named focus actions and the non-media preview readable with reduced motion or a narrow viewport', () => {
-    render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+    render(<CatalogueFocusView item={{ ...item, renderableMedia: undefined }} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
     expect(screen.getByTestId('catalogue-focus-layout')).toHaveClass('catalogue-focus', 'min-w-0', 'max-w-full');
     expect(screen.getByRole('navigation', { name: /opportunity detail navigation/i })).toBeInTheDocument();

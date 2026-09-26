@@ -9,6 +9,7 @@ import {
   getWeeklyReleasePeriodKey,
   isWithinNormalWeeklyReleaseWindow,
   parseCatalogueCandidateImport,
+  resolveRenderableMedia,
   type CatalogueCandidate,
   type CatalogueCandidateImportChange,
   type CatalogueCandidateInput,
@@ -227,7 +228,7 @@ export async function publishEmergencyCatalogueSnapshot(input: {
       kind: 'emergency',
       reason,
       timestamp,
-      replaceRecord: toPublishedRecord(corrected, checklist.mediaFallback),
+      replaceRecord: toPublishedRecord(corrected, new Date(timestamp)),
     });
     data.cataloguePublicationState = snapshot.state;
     return { snapshot: snapshot.snapshot, manifest: snapshot.manifest };
@@ -332,7 +333,7 @@ export async function publishWeeklyCatalogueSnapshot(input: {
         retired.push({ id: candidate.id, revision: candidate.revision });
         return candidate;
       }
-      records.set(candidate.id, toPublishedRecord(candidate, checklist.mediaFallback));
+      records.set(candidate.id, toPublishedRecord(candidate, now));
       included.push({ id: candidate.id, revision: candidate.revision });
       return candidate;
     });
@@ -1010,8 +1011,9 @@ function normalizeReleaseSelection(candidateIds: string[]): string[] {
 
 function toPublishedRecord(
   candidate: CatalogueCandidate,
-  mediaFallback: boolean,
+  now: Date,
 ): CataloguePublishedRecord {
+  const media = resolveRenderableMedia(candidate.mediaCandidates, now);
   return {
     id: candidate.id,
     revision: candidate.revision,
@@ -1030,8 +1032,8 @@ function toPublishedRecord(
     ...(candidate.documentedSupport === undefined
       ? {}
       : { documentedSupport: candidate.documentedSupport }),
-    ...(!mediaFallback && candidate.media === undefined ? {} : !mediaFallback ? { media: candidate.media } : {}),
-    mediaFallback,
+    ...(media.renderableMedia === undefined ? {} : { renderableMedia: media.renderableMedia }),
+    mediaFallback: media.mediaFallback,
   };
 }
 
@@ -1104,6 +1106,9 @@ function toCandidateInput(value: unknown): CatalogueCandidateInput {
       expiresAt: boundedText(value.mediaRights.expiresAt, 20),
       status: value.mediaRights.status as 'valid' | 'revoked' | 'uncertain' | undefined,
     } : undefined,
+    mediaCandidates: Array.isArray(value.mediaCandidates)
+      ? value.mediaCandidates as CatalogueCandidateInput['mediaCandidates']
+      : undefined,
   };
 }
 
