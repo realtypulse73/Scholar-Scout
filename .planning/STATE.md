@@ -229,7 +229,7 @@ Last activity: 2026-09-25 — Phase 12 complete, transitioned to Phase 13
 
 ### Pending Todos
 
-None yet.
+- [2026-09-26-make-discovery-visual-first](./todos/pending/2026-09-26-make-discovery-visual-first.md) — major UI: make reviewed discovery visually engaging by default while preserving Phase 13 media-rights, factual-fallback, and motion-safety boundaries.
 
 ### Blockers/Concerns
 
