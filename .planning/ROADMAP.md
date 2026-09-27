@@ -183,6 +183,17 @@ Plans:
 
 **Risk:** Visual content can create copyright exposure, misleading affiliation, inaccessible motion, or a manipulative feed. Rights evidence and no-media/reduced-motion fallbacks are release-critical.
 
+### Phase 13.1: Visual-First Discovery Experience (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 13.1 to break down)
+
 ### Phase 14: Sensitive Support Referral and Neutral Military Information
 
 **Goal:** Provide approved optional local-only sensitive support referrals and neutral official military-information pathways without changing rank, retaining sensitive selections, or pressuring learners.
