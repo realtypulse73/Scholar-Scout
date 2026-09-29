@@ -42,9 +42,11 @@ class MemoryDataStore implements ScholarScoutDataStore {
 describe('contributor media routes', () => {
   const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
   const originalCapabilities = process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES;
+  let store: MemoryDataStore;
 
   beforeEach(() => {
-    setScholarScoutDataStoreForTests(new MemoryDataStore());
+    store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
     process.env.SCHOLARSCOUT_STAFF_EMAILS = 'editor@example.com';
     process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
       'editor@example.com': ['editor'],
@@ -103,6 +105,54 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' });
+  });
+
+  it('preserves the first acknowledgement and rejects a changed acknowledgement without another Draft', async () => {
+    await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
+      method: 'POST', body: JSON.stringify({ accountId: 'student-1' }),
+    }));
+    const original = {
+      adultAffirmed: true,
+      signerName: 'Student One',
+      creatorAuthority: true,
+      recognisablePeopleConsent: true,
+    };
+    await attest(new Request('http://localhost/api/contributor-media/attestation', {
+      method: 'POST', body: JSON.stringify(original),
+    }));
+
+    const response = await attest(new Request('http://localhost/api/contributor-media/attestation', {
+      method: 'POST',
+      body: JSON.stringify({ ...original, signerName: 'Changed Signer' }),
+    }));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({ category: 'conflict', action: 'reload' });
+    expect(store.data.contributorMediaState?.submissions).toHaveLength(1);
+    expect(store.data.contributorMediaState?.submissions[0]?.signerName).toBe('Student One');
+  });
+
+  it('denies a disabled invitation before creating private evidence', async () => {
+    await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
+      method: 'POST', body: JSON.stringify({ accountId: 'student-1' }),
+    }));
+    store.data.contributorMediaState?.invitations.forEach((invitation) => {
+      invitation.status = 'disabled';
+    });
+
+    const response = await attest(new Request('http://localhost/api/contributor-media/attestation', {
+      method: 'POST',
+      body: JSON.stringify({
+        adultAffirmed: true,
+        signerName: 'Student One',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+      }),
+    }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Contributor invitation required.' });
+    expect(store.data.contributorMediaState?.submissions).toEqual([]);
   });
 });
 

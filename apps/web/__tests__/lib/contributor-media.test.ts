@@ -70,4 +70,44 @@ describe('contributor media domain contracts', () => {
       },
     })).toEqual({ status: 'Draft' });
   });
+
+  it('never projects a private status when the invitation belongs to another account', () => {
+    const invitation = createContributorInvitation({
+      accountId: 'student-1',
+      createdByStaffId: 'editor-1',
+      now: new Date('2026-09-29T00:00:00.000Z'),
+    });
+
+    expect(getContributorPrivateStatus({
+      accountId: 'student-2',
+      invitation,
+      submission: {
+        id: 'submission-2',
+        accountId: 'student-2',
+        status: 'Draft',
+        signerName: 'Private Signer',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+        attestedAt: '2026-09-29T00:00:00.000Z',
+        createdAt: '2026-09-29T00:00:00.000Z',
+        updatedAt: '2026-09-29T00:00:00.000Z',
+      },
+    })).toBeNull();
+  });
+
+  it('rejects overlong Unicode-normalized signer values without accepting an alternative attestation shape', () => {
+    expect(validateContributorAttestation({
+      adultAffirmed: true,
+      signerName: 'A'.repeat(121),
+      creatorAuthority: true,
+      recognisablePeopleConsent: true,
+    }).ok).toBe(false);
+    expect(validateContributorAttestation({
+      adultAffirmed: true,
+      signerName: 'Student One',
+      creatorAuthority: true,
+      recognisablePeopleConsent: true,
+      other: true,
+    }).ok).toBe(false);
+  });
 });

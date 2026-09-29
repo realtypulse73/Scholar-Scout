@@ -73,6 +73,9 @@ describe('catalogue discovery model', () => {
 
     expect(item.renderableMedia).toEqual(reviewed.renderableMedia);
     expect(item).not.toHaveProperty('mediaCandidates');
+    expect(item).not.toHaveProperty('contributorMediaState');
+    expect(item).not.toHaveProperty('attestation');
+    expect(item).not.toHaveProperty('invitation');
     expect(item.renderableMedia).not.toHaveProperty('embedUrl');
   });
 
