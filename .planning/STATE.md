@@ -4,11 +4,11 @@ milestone: v1.1
 milestone_name: Regional Opportunity Navigator
 current_phase: 13.1
 current_phase_name: Visual-First Discovery Experience
-status: executing
-stopped_at: Phase 13.1 UI-SPEC approved
-last_updated: "2026-09-27T06:55:22.472Z"
-last_activity: 2026-09-27
-last_activity_desc: Phase 13.1 inserted after Phase 13; ready to plan visual-first discovery
+status: ready_to_execute
+stopped_at: Phase 13.1 planned; Wave 0 requires rights-approved local fixture evidence and Phase 13 browser UAT
+last_updated: "2026-09-28T20:41:11.710Z"
+last_activity: 2026-09-28
+last_activity_desc: Phase 13.1 formal specification and four-wave plan completed
 progress:
   total_phases: 8
   completed_phases: 5
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 ## Current Position
 
 Phase: 13.1 — Visual-First Discovery Experience
-Plan: Not started
+Plan: 4 plans ready for execution
 Status: Ready to execute
-Last activity: 2026-09-27 — Phase 13.1 inserted after Phase 13; ready to plan visual-first discovery
+Last activity: 2026-09-28 — formal Phase 13.1 specification and four-wave visual-first plan passed independent review
 
 ## Performance Metrics
 
@@ -266,6 +266,6 @@ Last activity: 2026-09-27 — Phase 13.1 inserted after Phase 13; ready to plan 
 
 ## Session Continuity
 
-Last session: 2026-09-27T06:55:22.425Z
-Stopped at: Phase 13.1 UI-SPEC approved
-Resume file: .planning/phases/13.1-visual-first-discovery-experience/13.1-UI-SPEC.md
+Last session: 2026-09-28T20:41:11.710Z
+Stopped at: Phase 13.1 plan passed. Wave 0 begins with a blocking human rights/provenance checkpoint and the Phase 13 browser-UAT bridge.
+Resume file: .planning/phases/13.1-visual-first-discovery-experience/13.1-01-PLAN.md

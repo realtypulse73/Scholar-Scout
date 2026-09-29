@@ -185,14 +185,19 @@ Plans:
 
 ### Phase 13.1: Visual-First Discovery Experience (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Make `/programmes` visually compelling on arrival through reviewed, rights-safe local media and a truthful illustration/factual fallback, while preserving source-first discovery, user control, and reduced-motion safety.
+**Requirements**: VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, VIS-06, VIS-07.
 **Depends on:** Phase 13
-**Plans:** 0 plans
+**Plans:** 0/4 plans executed.
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 13.1 to break down)
+- [ ] `13.1-01-PLAN.md` — Establish rights-approved local visual fixtures, governed projection proof, and the Phase 13 browser-UAT bridge.
+- [ ] `13.1-02-PLAN.md` — Build the automatic, source-first visual welcome and static scoped atmosphere.
+- [ ] `13.1-03-PLAN.md` — Add responsive, accessible visual fallback and motion-boundary evidence.
+- [ ] `13.1-04-PLAN.md` — Validate release evidence, safety regressions, and documentation for the visual-first flow.
+
+**Risk:** The visual arrival must never become a remote, misleading, autoplaying, or fact-obscuring media surface. Rights/provenance review, reduced-motion behavior, no-media fallback, and the unresolved Phase 13 browser UAT are release gates.
 
 ### Phase 14: Sensitive Support Referral and Neutral Military Information
 
@@ -247,13 +252,14 @@ Plans:
 | DISC-01, DISC-02, DISC-03, DISC-04 | 11 |
 | MATCH-01, MATCH-02, MATCH-03, MATCH-04 | 12 |
 | MEDIA-01, MEDIA-02, MEDIA-03 | 13 |
+| VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, VIS-06, VIS-07 | 13.1 |
 | SAFE-01, SAFE-02, SAFE-03 | 14 |
 | OPS-06, OPS-07 | 15 |
 
-**Coverage:** 27/27 v1.1 requirements mapped exactly once; 0 unmapped; 0 duplicate mappings.
+**Coverage:** 34/34 active requirements mapped exactly once; 0 unmapped; 0 duplicate mappings.
 
 ## Execution Order
 
-Phase 9 → Phase 10 → Phase 11 → Phase 12 → Phase 13 → Phase 14 → Phase 15.
+Phase 9 → Phase 10 → Phase 11 → Phase 12 → Phase 13 → Phase 13.1 → Phase 14 → Phase 15.
 
-Phase 13 may begin research/design after Phase 11 because it uses the governed record contract, but it must not release provider pages/stories until the shared discovery evidence contract is stable. Phase 14 begins only once qualification governance and provider/military factual source surfaces are stable. Phase 15 is the integrated release gate for all prior phases.
+Phase 13 may begin research/design after Phase 11 because it uses the governed record contract, but it must not release provider pages/stories until the shared discovery evidence contract is stable. Phase 13.1 depends on that media safety boundary and uses its Wave 0 approved local fixtures to complete the outstanding Phase 13 browser UAT without marking Phase 13 complete. Phase 14 begins only once qualification governance and provider/military factual source surfaces are stable. Phase 15 is the integrated release gate for all prior phases.
