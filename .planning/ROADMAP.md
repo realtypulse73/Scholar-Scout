@@ -188,9 +188,18 @@ Plans:
 **Goal:** [Urgent work - to be planned]
 **Requirements**: TBD
 **Depends on:** Phase 13
-**Plans:** 0 plans
+**Plans:** 1/8 plans executed
 
 Plans:
+
+- [x] 13.2-01-PLAN.md
+- [ ] 13.2-02-PLAN.md
+- [ ] 13.2-03-PLAN.md
+- [ ] 13.2-04-PLAN.md
+- [ ] 13.2-05-PLAN.md
+- [ ] 13.2-06-PLAN.md
+- [ ] 13.2-07-PLAN.md
+- [ ] 13.2-08-PLAN.md
 
 - [ ] TBD (run /gsd-plan-phase 13.2 to break down)
 
