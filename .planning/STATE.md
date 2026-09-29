@@ -5,10 +5,10 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 13.1
 current_phase_name: Visual-First Discovery Experience
 status: ready_to_execute
-stopped_at: Phase 13.1 planned; Wave 0 requires rights-approved local fixture evidence and Phase 13 browser UAT
-last_updated: "2026-09-28T20:41:11.710Z"
-last_activity: 2026-09-28
-last_activity_desc: Phase 13.1 formal specification and four-wave plan completed
+stopped_at: Phase 13.1 media-free plan is ready; Wave 0 has no asset, rights, permission, student-data, or Phase 13-UAT checkpoint
+last_updated: "2026-09-29T00:00:00Z"
+last_activity: 2026-09-29
+last_activity_desc: Phase 13.1 formal contract, research, roadmap, validation, and four-wave plan reworked for the approved media-free visual release
 progress:
   total_phases: 8
   completed_phases: 5
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 4 plans ready for execution
 Status: Ready to execute
-Last activity: 2026-09-28 — formal Phase 13.1 specification and four-wave visual-first plan passed independent review
+Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave plan passed independent review; no asset or permission checkpoint remains
 
 ## Performance Metrics
 

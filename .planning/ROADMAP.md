@@ -185,19 +185,19 @@ Plans:
 
 ### Phase 13.1: Visual-First Discovery Experience (INSERTED)
 
-**Goal:** Make `/programmes` visually compelling on arrival through reviewed, rights-safe local media and a truthful illustration/factual fallback, while preserving source-first discovery, user control, and reduced-motion safety.
+**Goal:** Make `/programmes` visually compelling on arrival through an automatic media-free, code-native visual welcome and a truthful source-first factual path, while preserving user control, reduced-motion safety, and no student-data collection.
 **Requirements**: VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, VIS-06, VIS-07.
 **Depends on:** Phase 13
 **Plans:** 0/4 plans executed.
 
 Plans:
 
-- [ ] `13.1-01-PLAN.md` — Establish rights-approved local visual fixtures, governed projection proof, and the Phase 13 browser-UAT bridge.
-- [ ] `13.1-02-PLAN.md` — Build the automatic, source-first visual welcome and static scoped atmosphere.
-- [ ] `13.1-03-PLAN.md` — Add responsive, accessible visual fallback and motion-boundary evidence.
-- [ ] `13.1-04-PLAN.md` — Validate release evidence, safety regressions, and documentation for the visual-first flow.
+- [ ] `13.1-01-PLAN.md` — Build the automatic code-native welcome while preserving factual controls and the inherited bounded card-media path.
+- [ ] `13.1-02-PLAN.md` — Extend the static catalogue-only visual shell to the detail surface without changing factual authority.
+- [ ] `13.1-03-PLAN.md` — Add held-out media-free, privacy, accessibility, and motion-boundary regression evidence.
+- [ ] `13.1-04-PLAN.md` — Validate browser usability and release scope without an asset, rights, or Phase 13-UAT dependency.
 
-**Risk:** The visual arrival must never become a remote, misleading, autoplaying, or fact-obscuring media surface. Rights/provenance review, reduced-motion behavior, no-media fallback, and the unresolved Phase 13 browser UAT are release gates.
+**Risk:** The visual arrival must never become a remote, misleading, autoplaying, fact-obscuring, or student-data collection surface. The release uses no media asset or provenance path; reduced-motion behavior, source-first controls, and the independent Phase 13 verification boundary remain enforced.
 
 ### Phase 14: Sensitive Support Referral and Neutral Military Information
 
@@ -262,4 +262,4 @@ Plans:
 
 Phase 9 → Phase 10 → Phase 11 → Phase 12 → Phase 13 → Phase 13.1 → Phase 14 → Phase 15.
 
-Phase 13 may begin research/design after Phase 11 because it uses the governed record contract, but it must not release provider pages/stories until the shared discovery evidence contract is stable. Phase 13.1 depends on that media safety boundary and uses its Wave 0 approved local fixtures to complete the outstanding Phase 13 browser UAT without marking Phase 13 complete. Phase 14 begins only once qualification governance and provider/military factual source surfaces are stable. Phase 15 is the integrated release gate for all prior phases.
+Phase 13 may begin research/design after Phase 11 because it uses the governed record contract, but it must not release provider pages/stories until the shared discovery evidence contract is stable. Phase 13.1 retains the media safety boundary but implements a separate media-free catalogue presentation; it neither depends on nor completes the outstanding Phase 13 browser UAT. Phase 14 begins only once qualification governance and provider/military factual source surfaces are stable. Phase 15 is the integrated release gate for all prior phases.
