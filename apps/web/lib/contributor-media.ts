@@ -104,7 +104,12 @@ export function getContributorPrivateStatus(input: {
   invitation: ContributorMediaInvitation | null;
   submission: ContributorMediaSubmission | null;
 }): ContributorPrivateStatus | null {
-  if (!input.invitation || !input.submission || input.submission.accountId !== input.accountId) {
+  if (
+    !input.invitation
+    || !input.submission
+    || input.invitation.accountId !== input.accountId
+    || input.submission.accountId !== input.accountId
+  ) {
     return null;
   }
   return { status: input.submission.status };
