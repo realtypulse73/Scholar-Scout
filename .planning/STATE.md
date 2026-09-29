@@ -5,16 +5,16 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 13.1
 current_phase_name: Visual-First Discovery Experience
 status: ready_to_execute
-stopped_at: Phase 13.1 media-free plan is ready; Wave 0 has no asset, rights, permission, student-data, or Phase 13-UAT checkpoint
-last_updated: "2026-09-29T00:00:00Z"
+stopped_at: Phase 13.2 context gathered
+last_updated: "2026-09-29T04:56:58.862Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 13.1 formal contract, research, roadmap, validation, and four-wave plan reworked for the approved media-free visual release
+last_activity_desc: media-free Phase 13.1 specification and four-wave plan passed independent review; no asset or permission checkpoint remains
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 5
-  total_plans: 31
+  total_plans: 35
   completed_plans: 31
-  percent: 63
+  percent: 56
 ---
 
 # Project State
@@ -227,6 +227,7 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 - Phase 7 added: Governed Opportunity and Support Matching
 - Phase 07.1 inserted after Phase 7: Futuristic Student Journey Visual System (URGENT)
 - Phase 13.1 inserted after Phase 13: Visual-First Discovery Experience (URGENT)
+- Phase 13.2 inserted after Phase 13: Staff Media Intake, Permission Review, and Houston Tillotson Pilot (URGENT)
 
 ### Pending Todos
 
@@ -266,6 +267,6 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 
 ## Session Continuity
 
-Last session: 2026-09-28T20:41:11.710Z
-Stopped at: Phase 13.1 plan passed. Wave 0 begins with a blocking human rights/provenance checkpoint and the Phase 13 browser-UAT bridge.
-Resume file: .planning/phases/13.1-visual-first-discovery-experience/13.1-01-PLAN.md
+Last session: 2026-09-29T04:56:58.813Z
+Stopped at: Phase 13.2 context gathered
+Resume file: .planning/phases/13.2-staff-media-intake-permission-review-and-houston-tillotson-p/13.2-CONTEXT.md

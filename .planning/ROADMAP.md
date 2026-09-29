@@ -183,6 +183,17 @@ Plans:
 
 **Risk:** Visual content can create copyright exposure, misleading affiliation, inaccessible motion, or a manipulative feed. Rights evidence and no-media/reduced-motion fallbacks are release-critical.
 
+### Phase 13.2: Staff Media Intake, Permission Review, and Houston Tillotson Pilot (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 13.2 to break down)
+
 ### Phase 13.1: Visual-First Discovery Experience (INSERTED)
 
 **Goal:** Make `/programmes` visually compelling on arrival through an automatic media-free, code-native visual welcome and a truthful source-first factual path, while preserving user control, reduced-motion safety, and no student-data collection.
