@@ -49,6 +49,11 @@ import {
   isCataloguePublicationState,
   type CataloguePublicationState,
 } from '@/lib/catalogue-publication';
+import {
+  createEmptyContributorMediaState,
+  isContributorMediaState,
+  type ContributorMediaState,
+} from '@/lib/contributor-media';
 
 export type AccountRole = 'student' | 'staff';
 
@@ -165,6 +170,7 @@ export interface ScholarScoutData {
   recoveryLifecycleEvents?: RecoveryLifecycleEvent[];
   recoveryPlanOutcomes?: RecoveryPlanOutcome[];
   cataloguePublicationState?: CataloguePublicationState;
+  contributorMediaState?: ContributorMediaState;
 }
 
 export interface RecoveryLifecycleEvent {
@@ -312,6 +318,7 @@ const INITIAL_DATA: ScholarScoutData = {
   recoveryLifecycleEvents: [],
   recoveryPlanOutcomes: [],
   cataloguePublicationState: createEmptyCataloguePublicationState(),
+  contributorMediaState: createEmptyContributorMediaState(),
 };
 
 const dataFilePath =
@@ -847,6 +854,12 @@ export function validateScholarScoutDataImport(
     && data.cataloguePublicationState !== undefined
     && !isCataloguePublicationState(data.cataloguePublicationState)) {
     errors.push('Catalogue publication state is invalid.');
+  }
+
+  if ('contributorMediaState' in data
+    && data.contributorMediaState !== undefined
+    && !isContributorMediaState(data.contributorMediaState)) {
+    errors.push('Contributor media state is invalid.');
   }
 
   if (
@@ -1770,6 +1783,9 @@ function normalizeImportData(input: unknown): ScholarScoutData | null {
     cataloguePublicationState: data.cataloguePublicationState === undefined
       ? createEmptyCataloguePublicationState()
       : data.cataloguePublicationState as CataloguePublicationState,
+    contributorMediaState: data.contributorMediaState === undefined
+      ? createEmptyContributorMediaState()
+      : data.contributorMediaState as ContributorMediaState,
   };
 }
 
@@ -1804,6 +1820,9 @@ function normalizeScholarScoutData(data: ScholarScoutData): ScholarScoutData {
       ? data.recoveryPlanOutcomes.filter(isRecoveryPlanOutcome)
       : [],
     cataloguePublicationState: data.cataloguePublicationState ?? createEmptyCataloguePublicationState(),
+    contributorMediaState: isContributorMediaState(data.contributorMediaState)
+      ? data.contributorMediaState
+      : createEmptyContributorMediaState(),
   };
 }
 

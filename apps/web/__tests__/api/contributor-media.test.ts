@@ -8,13 +8,22 @@ import {
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import { resolveStudentActor } from '@/lib/server/student-actor';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }), { virtual: true });
+jest.mock('@/lib/server/student-actor', () => ({ resolveStudentActor: jest.fn() }));
 
 class MemoryDataStore implements ScholarScoutDataStore {
   data: ScholarScoutData = {
-    users: [],
+    users: [{
+      id: 'student-1',
+      name: 'Student One',
+      email: 'student@example.com',
+      role: 'student',
+      passwordHash: 'test-only',
+      createdAt: '2026-09-29T00:00:00.000Z',
+    }],
     onboardingProfiles: {},
     shortlists: {},
     programmeRecords: [],
@@ -43,19 +52,25 @@ describe('contributor media routes', () => {
     jest.mocked(getServerSession).mockResolvedValue({
       user: { id: 'editor-1', email: 'editor@example.com' },
     } as never);
+    jest.mocked(resolveStudentActor).mockResolvedValue({
+      kind: 'account',
+      accountId: 'student-1',
+      storageKey: 'account:student-1',
+    });
   });
 
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
     jest.mocked(getServerSession).mockReset();
+    jest.mocked(resolveStudentActor).mockReset();
     restoreEnvironment('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
     restoreEnvironment('SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES', originalCapabilities);
   });
 
-  it('allows an editor to invite a known account without accepting staff authority from the body', async () => {
+  it('allows an editor to invite a known account using trusted staff authority', async () => {
     const response = await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
       method: 'POST',
-      body: JSON.stringify({ accountId: 'student-1', staffId: 'forged-staff' }),
+      body: JSON.stringify({ accountId: 'student-1' }),
     }));
 
     expect(response.status).toBe(200);
@@ -66,10 +81,6 @@ describe('contributor media routes', () => {
     await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
       method: 'POST', body: JSON.stringify({ accountId: 'student-1' }),
     }));
-    jest.mocked(getServerSession).mockResolvedValue({
-      user: { id: 'student-1', email: 'student@example.com' },
-    } as never);
-
     const response = await attest(new Request('http://localhost/api/contributor-media/attestation', {
       method: 'POST',
       body: JSON.stringify({
@@ -77,7 +88,6 @@ describe('contributor media routes', () => {
         signerName: 'Student One',
         creatorAuthority: true,
         recognisablePeopleConsent: true,
-        accountId: 'other-account',
       }),
     }));
 
@@ -86,7 +96,7 @@ describe('contributor media routes', () => {
   });
 
   it('does not reveal any private contributor fields to unauthenticated or uninvited accounts', async () => {
-    jest.mocked(getServerSession).mockResolvedValue(null as never);
+    jest.mocked(resolveStudentActor).mockResolvedValue(null);
     const response = await attest(new Request('http://localhost/api/contributor-media/attestation', {
       method: 'POST', body: JSON.stringify({}),
     }));
