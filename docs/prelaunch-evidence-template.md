@@ -39,6 +39,23 @@ Record each result against the same immutable candidate commit:
 | Protected Preview browser | | | | | | | |
 | Preview outage/restoration | | | | | | | |
 
+## Two-lane Preview Restoration
+
+Record identifiers, UTC, outcomes, and safe cleanup booleans only. Do not record a secret name's value, a capability, a fixture ID, a Blob token/path, or an environment value.
+
+| Cleanup fact | Verified outcome |
+| --- | --- |
+| Baseline branch-scoped Vercel override removed | |
+| Baseline temporary Git ref removed | |
+| Baseline Actions capability secret removed | |
+| Outage branch-scoped Vercel override removed | |
+| Outage temporary Git ref removed | |
+| Outage Actions capability secret removed | |
+| Local handoff removed | |
+| Fresh values rotated for a future rehearsal | |
+
+- Safe restoration record artifact/link:
+
 ## Results
 
 - Production env readiness:

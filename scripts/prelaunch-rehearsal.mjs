@@ -6,7 +6,18 @@ import { spawn } from 'node:child_process';
 import { loadEnvFileFromArgs } from './env-file.mjs';
 
 const SAFE_RECORD_FIELDS = new Set(['candidateCommit', 'target', 'artifact', 'recordedAt', 'command', 'commands', 'outcome', 'errorCategory']);
-const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage'];
+const RESTORATION_RECORD_FIELDS = new Set(['candidateCommit', 'recordedAt', 'outcome', 'restoration']);
+const REQUIRED_RESTORATION_FACTS = [
+  'baselineVercelOverrideRemoved',
+  'baselinePreviewRefRemoved',
+  'baselineActionsCapabilitySecretRemoved',
+  'outageVercelOverrideRemoved',
+  'outagePreviewRefRemoved',
+  'outageActionsCapabilitySecretRemoved',
+  'localHandoffRemoved',
+  'valuesRotated',
+];
+const REQUIRED_RELEASE_LANES = ['candidate-quality', 'high-risk', 'local-browser', 'preview-browser', 'preview-outage', 'preview-restoration'];
 const CANDIDATE_QUALITY_COMMANDS = [
   ['pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']],
   ['pnpm', ['test']],
@@ -25,8 +36,19 @@ const LOCAL_BROWSER_COMMAND = [process.execPath, ['scripts/run-e2e-fixture.mjs',
 export function validateReleaseRecord(record, lane, candidateCommit) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return false;
   if (!REQUIRED_RELEASE_LANES.includes(lane)) return false;
+  if (lane === 'preview-restoration') return validatePreviewRestorationRecord(record, candidateCommit);
   if (record.candidateCommit !== candidateCommit || record.outcome !== 'passed') return false;
   return Object.keys(record).every((field) => SAFE_RECORD_FIELDS.has(field));
+}
+
+export function validatePreviewRestorationRecord(record, candidateCommit) {
+  if (record.candidateCommit !== candidateCommit || record.outcome !== 'passed') return false;
+  if (typeof record.recordedAt !== 'string' || record.recordedAt.length === 0) return false;
+  if (!record.restoration || typeof record.restoration !== 'object' || Array.isArray(record.restoration)) return false;
+  if (!Object.keys(record).every((field) => RESTORATION_RECORD_FIELDS.has(field))) return false;
+  const facts = record.restoration;
+  return Object.keys(facts).length === REQUIRED_RESTORATION_FACTS.length
+    && REQUIRED_RESTORATION_FACTS.every((fact) => facts[fact] === true);
 }
 
 export function aggregateReleaseRecords(records, candidateCommit) {
@@ -65,6 +87,11 @@ async function main() {
     }
     records['preview-browser'] = await loadRequiredRecord(args.previewBrowserRecord, 'preview-browser', candidateCommit);
     records['preview-outage'] = await loadRequiredRecord(args.previewOutageRecord, 'preview-outage', candidateCommit);
+    records['preview-restoration'] = await loadRequiredRecord(
+      args.previewRestorationRecord,
+      'preview-restoration',
+      candidateCommit,
+    );
     await writeFile(path.join(outputDir, 'release-records.json'), `${JSON.stringify(records, null, 2)}\n`);
     if (!aggregateReleaseRecords(records, candidateCommit)) throw new Error('Release rehearsal is incomplete: every candidate-bound lane must pass independently.');
     await writeFile(path.join(outputDir, 'prelaunch-summary.md'), buildReleaseSummary(records));
@@ -112,7 +139,7 @@ function buildLegacySummary(steps) { return ['# ScholarScout Prelaunch Rehearsal
 async function runStep(input) { const result = await runCommand(input.command, input.args); await writeFile(input.outputPath, result.stdout || result.stderr); return { name: input.name, status: result.code === 0 ? 'passed' : 'failed', detail: input.outputPath }; }
 function runCommand(command, commandArgs) { return new Promise((resolve) => { const child = spawn(command, commandArgs, { cwd: process.cwd(), env: process.env }); let stdout = ''; let stderr = ''; child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; }); child.on('error', () => resolve({ code: 1, stdout, stderr })); child.on('close', (code) => resolve({ code, stdout, stderr })); }); }
 function hasSmokeTarget() { return Boolean(process.env.SCHOLARSCOUT_SMOKE_BASE_URL || process.env.NEXTAUTH_URL); }
-function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
+function parseArgs(values) { const parsed = { outputDir: '', skipSmoke: false, skipToolingTests: false, envFile: '', releaseGate: false, localOnly: false, aggregateOnly: false, candidateCommit: '', previewBrowserRecord: '', previewOutageRecord: '', previewRestorationRecord: '' }; for (let index = 0; index < values.length; index += 1) { const value = values[index]; if (value === '--skip-smoke') parsed.skipSmoke = true; else if (value === '--skip-tooling-tests') parsed.skipToolingTests = true; else if (value === '--release-gate') parsed.releaseGate = true; else if (value === '--local-only') parsed.localOnly = true; else if (value === '--aggregate-only') parsed.aggregateOnly = true; else if (['--output-dir', '--env-file', '--candidate-commit', '--preview-browser-record', '--preview-outage-record', '--preview-restoration-record'].includes(value)) { const key = value.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); parsed[key] = values[index + 1] ?? ''; index += 1; } } return parsed; }
 function childArgs(values, args) { return args.envFile ? [...values, '--env-file', args.envFile] : values; }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

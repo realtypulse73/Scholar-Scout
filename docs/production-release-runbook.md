@@ -81,6 +81,42 @@ node scripts/run-e2e-fixture.mjs --spec apps/web/e2e/student-release-journey.spe
 
 Only an authorized Vercel maintainer may then dispatch **ScholarScout Prelaunch Rehearsal** for a protected Preview candidate. Configure Preview-only durable-adapter/lifecycle values and runner-only bypass material through authorized deployment controls; never add them to the repository, workflow logs, or this record. The protected Preview tracer uses the existing Plan 06-06 supervisor. Run a distinct one-off outage Preview with a fresh lifecycle scope, verify its safe 503 occurs before writes or disclosure, confirm exact server cleanup and base Preview restoration, and retain separate approved artifact/deployment links.
 
+### Two-lane Preview setup and cleanup gate
+
+Use two fresh, temporary Git refs, one for the baseline Preview and one for the outage Preview. They must be different refs and different Vercel Preview URLs. Do not change the base Preview environment, Production, an alias, or a promoted deployment. In Vercel, create branch-scoped Preview overrides for **only** each temporary ref. There is no fallback to a production URL or to `NEXTAUTH_URL`: enter each deployed Preview URL as the matching required GitHub Actions workflow input.
+
+For the baseline ref, map the baseline values from the ignored local handoff to the matching branch-scoped Preview variables. For the outage ref, use only the outage values. Both refs need `SCHOLARSCOUT_E2E_FIXTURE=true`, the matching `SCHOLARSCOUT_E2E_FIXTURE_ID`, `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY`, `SCHOLARSCOUT_BLOB_DATA_PATH`, `SCHOLARSCOUT_DATA_ADAPTER=vercel-blob`, and `SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN` for the approved private fixture store. The outage ref additionally needs `SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE=1`. Do not copy any baseline value into the outage lane or vice versa.
+
+In GitHub Actions repository secrets, set the baseline capability only as `SCHOLARSCOUT_E2E_FIXTURE_CAPABILITY` and the outage capability only as `SCHOLARSCOUT_E2E_OUTAGE_FIXTURE_CAPABILITY`. Dispatch the workflow with the immutable candidate commit and the two matching Preview URLs. Its retained artifact contains the candidate-quality, high-risk, local-browser, preview-browser, and preview-outage records; it is intentionally not release-ready yet.
+
+After the workflow finishes, remove both branch-scoped Vercel overrides, delete both temporary Git refs, delete both Actions capability secrets, delete the local handoff, and rotate both capabilities. Verify each removal in the authorized Vercel/GitHub interface without opening or recording a generated value. Download the workflow artifact and create `preview-restoration.json` beside its records with only this safe structure (replace the candidate commit and timestamp; set every fact to `true` only after verifying it):
+
+```json
+{
+  "candidateCommit": "IMMUTABLE_CANDIDATE_COMMIT",
+  "recordedAt": "UTC_TIMESTAMP",
+  "outcome": "passed",
+  "restoration": {
+    "baselineVercelOverrideRemoved": true,
+    "baselinePreviewRefRemoved": true,
+    "baselineActionsCapabilitySecretRemoved": true,
+    "outageVercelOverrideRemoved": true,
+    "outagePreviewRefRemoved": true,
+    "outageActionsCapabilitySecretRemoved": true,
+    "localHandoffRemoved": true,
+    "valuesRotated": true
+  }
+}
+```
+
+Then, from the downloaded artifact directory, run aggregate-only using the five lane records plus the restoration record:
+
+```bash
+pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit IMMUTABLE_CANDIDATE_COMMIT --preview-browser-record preview-browser.json --preview-outage-record preview-outage.json --preview-restoration-record preview-restoration.json
+```
+
+Aggregation fails if a lane, candidate binding, safe restoration fact, or cleanup record is missing or failed. Never commit the downloaded artifact, handoff, restoration record, or any generated value.
+
 The workflow consumes the runner-only bypass, lifecycle capability, and scrubbed base/outage Preview metadata only from GitHub Actions secrets. The repository-side runners write only scrubbed candidate-bound JSON records and fail closed if a secret, metadata, lifecycle cleanup, 503 proof, or restoration record is missing. Do not echo, download, or paste the input values.
 
 For a one-time fresh baseline/outage lifecycle scope, generate the ignored local handoff and follow its scrubbed report:
@@ -91,7 +127,7 @@ pnpm run provision:preview-rehearsal
 
 The handoff creates different baseline and outage fixture IDs and capabilities. Map them only to their matching one-off Preview deployments and to the corresponding GitHub Actions secrets; delete the handoff and rotate both values after the rehearsal. It never provisions Vercel bypass material or writes project-level Preview configuration.
 
-The releasable record fields are limited to candidate commit, Preview URL/ID, UTC, command, pass/fail result, safe error category, and approved artifact/deployment identifier or link. Never record secrets, cookies, capabilities, fixture identifiers, storage configuration, exports, or student content. A missing, failed, mismatched, or shared candidate-quality, high-risk, local-browser, protected Preview-browser, or Preview-outage record blocks the candidate; one lane cannot satisfy another.
+The releasable record fields are limited to candidate commit, Preview URL/ID, UTC, command, pass/fail result, safe error category, approved artifact/deployment identifier or link, and the restoration booleans above. Never record secrets, cookies, capabilities, fixture identifiers, storage configuration, exports, or student content. A missing, failed, mismatched, or shared candidate-quality, high-risk, local-browser, protected Preview-browser, Preview-outage, or Preview-restoration record blocks the candidate; one lane cannot satisfy another.
 
 Preview rehearsal evidence supplements rather than replaces the protected-`main` CI, real production deployment/build-log, post-deploy smoke, and incident evidence described below. Preview deployments must not be production, promoted, aliased, or implemented as a persistent project-level Preview configuration change.
 

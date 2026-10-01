@@ -91,10 +91,10 @@ jobs:
           node scripts/run-preview-outage-rehearsal.mjs --output reports/prelaunch-rehearsal/preview-outage.json
           test -f reports/prelaunch-rehearsal/preview-outage.json
 
-      - name: Aggregate candidate release rehearsal
-        run: |
-          pnpm run rehearse:prelaunch -- --release-gate --aggregate-only --candidate-commit "${{ inputs.candidate_commit }}" --preview-browser-record reports/prelaunch-rehearsal/preview-browser.json --preview-outage-record reports/prelaunch-rehearsal/preview-outage.json
-          test -f reports/prelaunch-rehearsal/release-records.json
+      # Aggregation intentionally happens only after an authorized maintainer has
+      # removed both temporary Preview configurations and capability secrets.
+      # Download this run's artifact, write the safe restoration record described
+      # in docs/production-release-runbook.md, then run aggregate-only locally.
 
       - name: Summarize prelaunch rehearsal
         if: always()
