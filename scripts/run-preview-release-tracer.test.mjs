@@ -52,7 +52,7 @@ test('provisions, verifies, runs with protected page and API transport, and clea
     },
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.equal(closed, true);
   assert.equal(studentBrowser.close instanceof Function, true);
   assert.deepEqual(browserOptions, {
@@ -114,7 +114,7 @@ test('scrubs sensitive failure details and always delegates lifecycle cleanup', 
     runStudentSpec: async () => { throw new Error('sensitive-bypass runner-capability cookie'); },
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.deepEqual(result, {
     outcome: 'failed',
     target: metadata.url,
@@ -125,7 +125,7 @@ test('scrubs sensitive failure details and always delegates lifecycle cleanup', 
   assert.equal(JSON.stringify(result).includes('runner-capability'), false);
 });
 
-test('records a scrubbed lifecycle failure when Preview fixture provisioning is denied', async () => {
+test('records a scrubbed lifecycle failure when Preview fixture preflight is denied', async () => {
   let browserStarted = false;
   const result = await runPreviewReleaseTracer({
     candidateCommit: 'candidate-commit',
@@ -144,7 +144,7 @@ test('records a scrubbed lifecycle failure when Preview fixture provisioning is 
     outcome: 'failed',
     target: metadata.url,
     candidateCommit: 'candidate-commit',
-    errorCategory: 'fixture-provision-failed',
+    errorCategory: 'fixture-preflight-failed',
   });
   assert.equal(JSON.stringify(result).includes('sensitive-bypass'), false);
   assert.equal(JSON.stringify(result).includes('runner-capability'), false);
@@ -174,6 +174,6 @@ test('requires independent attestation before it creates any Preview lifecycle o
   });
 
   assert.equal(phases[0], 'attestation');
-  assert.equal(result.errorCategory, 'fixture-provision-failed');
+  assert.equal(result.errorCategory, 'fixture-preflight-failed');
   assert.equal(JSON.stringify(result).includes('deployment-read-token'), false);
 });

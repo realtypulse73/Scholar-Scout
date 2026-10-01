@@ -36,7 +36,7 @@ test('proves the Preview outage before input processing and cleans its lifecycle
     },
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.deepEqual(result, {
     candidateCommit: 'candidate-commit',
     target: metadata.url,
@@ -81,7 +81,7 @@ test('records a scrubbed lifecycle failure when outage cleanup is denied', async
     }),
   });
 
-  assert.deepEqual(phases, ['POST', 'GET', 'DELETE']);
+  assert.deepEqual(phases, ['HEAD', 'POST', 'GET', 'DELETE']);
   assert.deepEqual(result, {
     candidateCommit: 'candidate-commit',
     target: metadata.url,
@@ -116,6 +116,6 @@ test('requires independent attestation before it creates outage lifecycle or POS
   });
 
   assert.equal(phases[0], 'attestation');
-  assert.equal(result.errorCategory, 'fixture-provision-failed');
+  assert.equal(result.errorCategory, 'fixture-preflight-failed');
   assert.equal(JSON.stringify(result).includes('deployment-read-token'), false);
 });

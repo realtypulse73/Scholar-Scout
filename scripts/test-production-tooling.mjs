@@ -419,7 +419,7 @@ test('prelaunch rehearsal writes readiness artifacts and summary', async () => {
   assert.match(summary, /skipped/);
 });
 
-test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, and Preview records', async () => {
+test('release rehearsal requires distinct candidate-bound quality, high-risk, browser, Preview, and restoration records', async () => {
   const rehearsal = await readFile(
     path.join(process.cwd(), 'scripts/prelaunch-rehearsal.mjs'),
     'utf8',
@@ -428,16 +428,109 @@ test('release rehearsal requires distinct candidate-bound quality, high-risk, br
     path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
     'utf8',
   );
+  const runbook = await readFile(
+    path.join(process.cwd(), 'docs/production-release-runbook.md'),
+    'utf8',
+  );
 
   assert.match(rehearsal, /candidate-quality/);
   assert.match(rehearsal, /high-risk/);
   assert.match(rehearsal, /local-browser/);
   assert.match(rehearsal, /preview-browser/);
   assert.match(rehearsal, /preview-outage/);
+  assert.match(rehearsal, /preview-restoration/);
+  assert.match(rehearsal, /previewRestorationRecord/);
+  assert.match(rehearsal, /baselineVercelOverrideRemoved/);
+  assert.match(rehearsal, /outageVercelOverrideRemoved/);
+  assert.match(rehearsal, /baselineActionsCapabilitySecretRemoved/);
+  assert.match(rehearsal, /outageActionsCapabilitySecretRemoved/);
+  assert.match(rehearsal, /localHandoffRemoved/);
+  assert.match(rehearsal, /valuesRotated/);
+  assert.match(rehearsal, /--preview-restoration-record/);
   assert.match(rehearsal, /\['pnpm', \['install', '--frozen-lockfile', '--ignore-scripts'\]\]/);
   assert.match(rehearsal, /run-e2e-fixture\.mjs/);
   assert.match(workflow, /run-preview-release-tracer/);
   assert.match(workflow, /preview-outage/);
+  assert.match(runbook, /SCHOLARSCOUT_E2E_FIXTURE=true/);
+  assert.match(runbook, /SCHOLARSCOUT_E2E_FIXTURE_ID/);
+  assert.match(runbook, /SCHOLARSCOUT_BLOB_DATA_PATH/);
+  assert.match(runbook, /SCHOLARSCOUT_DATA_ADAPTER/);
+  assert.match(runbook, /SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN/);
+  assert.match(runbook, /SCHOLARSCOUT_PREVIEW_COMMUNITY_RATE_LIMIT_OUTAGE/);
+});
+
+test('aggregate-only rejects absent or incomplete Preview restoration evidence', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'scholarscout-preview-restoration-'));
+  const candidateCommit = 'candidate-restoration-test';
+  const lane = (target) => ({
+    candidateCommit,
+    recordedAt: '2026-10-01T00:00:00.000Z',
+    target,
+    outcome: 'passed',
+  });
+
+  try {
+    await writeFile(path.join(tempDir, 'candidate-quality.json'), JSON.stringify(lane('quality')));
+    await writeFile(path.join(tempDir, 'high-risk.json'), JSON.stringify(lane('high-risk')));
+    await writeFile(path.join(tempDir, 'local-browser.json'), JSON.stringify(lane('local')));
+    await writeFile(path.join(tempDir, 'preview-browser.json'), JSON.stringify(lane('preview-browser')));
+    await writeFile(path.join(tempDir, 'preview-outage.json'), JSON.stringify(lane('preview-outage')));
+
+    const args = [
+      'scripts/prelaunch-rehearsal.mjs',
+      '--release-gate',
+      '--aggregate-only',
+      '--output-dir',
+      tempDir,
+      '--candidate-commit',
+      candidateCommit,
+      '--preview-browser-record',
+      path.join(tempDir, 'preview-browser.json'),
+      '--preview-outage-record',
+      path.join(tempDir, 'preview-outage.json'),
+    ];
+    const missing = await runNode(args);
+    assert.equal(missing.code, 1);
+    assert.match(missing.stderr, /every candidate-bound lane must pass independently/);
+
+    await writeFile(path.join(tempDir, 'preview-restoration.json'), JSON.stringify({
+      candidateCommit,
+      recordedAt: '2026-10-01T00:01:00.000Z',
+      outcome: 'passed',
+      restoration: {
+        baselineVercelOverrideRemoved: true,
+        baselinePreviewRefRemoved: true,
+        baselineActionsCapabilitySecretRemoved: true,
+        outageVercelOverrideRemoved: true,
+        outagePreviewRefRemoved: true,
+        outageActionsCapabilitySecretRemoved: true,
+        localHandoffRemoved: true,
+        valuesRotated: false,
+      },
+    }));
+    const incomplete = await runNode([...args, '--preview-restoration-record', path.join(tempDir, 'preview-restoration.json')]);
+    assert.equal(incomplete.code, 1);
+
+    await writeFile(path.join(tempDir, 'preview-restoration.json'), JSON.stringify({
+      candidateCommit,
+      recordedAt: '2026-10-01T00:02:00.000Z',
+      outcome: 'passed',
+      restoration: {
+        baselineVercelOverrideRemoved: true,
+        baselinePreviewRefRemoved: true,
+        baselineActionsCapabilitySecretRemoved: true,
+        outageVercelOverrideRemoved: true,
+        outagePreviewRefRemoved: true,
+        outageActionsCapabilitySecretRemoved: true,
+        localHandoffRemoved: true,
+        valuesRotated: true,
+      },
+    }));
+    const complete = await runNode([...args, '--preview-restoration-record', path.join(tempDir, 'preview-restoration.json')]);
+    assert.equal(complete.code, 0, complete.stderr);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('release rehearsal fails locally and records a scrubbed failed quality lane', async () => {
@@ -492,7 +585,7 @@ test('release rehearsal fails locally and records a scrubbed failed quality lane
   }
 });
 
-test('prelaunch workflow orders candidate proof before independent Preview lanes and aggregation', async () => {
+test('prelaunch workflow orders candidate proof before independent Preview lanes and defers aggregation until cleanup', async () => {
   const workflow = await readFile(
     path.join(process.cwd(), '.github/workflows/prelaunch-rehearsal.yml'),
     'utf8',
@@ -501,18 +594,19 @@ test('prelaunch workflow orders candidate proof before independent Preview lanes
   const localProof = workflow.indexOf('Run candidate quality, high-risk, and local browser proof');
   const previewBrowser = workflow.indexOf('Protected Preview browser proof');
   const previewOutage = workflow.indexOf('Separate Preview outage and restoration proof');
-  const aggregate = workflow.indexOf('Aggregate candidate release rehearsal');
 
   assert.ok(localProof >= 0);
   assert.ok(previewBrowser > localProof);
   assert.ok(previewOutage > previewBrowser);
-  assert.ok(aggregate > previewOutage);
+  assert.ok(previewOutage > previewBrowser);
   assert.match(workflow, /baseline_preview_url:/);
   assert.match(workflow, /outage_preview_url:/);
   assert.match(workflow, /deployments:\s*read/);
   assert.match(workflow, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN:\s*\$\{\{ github\.token \}\}/);
   assert.match(workflow, /SCHOLARSCOUT_BASELINE_PREVIEW_URL:\s*\$\{\{ inputs\.baseline_preview_url \}\}/);
   assert.match(workflow, /SCHOLARSCOUT_OUTAGE_PREVIEW_URL:\s*\$\{\{ inputs\.outage_preview_url \}\}/);
+  assert.match(workflow, /removed both temporary Preview configurations and capability secrets/);
+  assert.doesNotMatch(workflow, /--aggregate-only/);
   const jobEnvironment = workflow.slice(workflow.indexOf('    env:'), workflow.indexOf('    steps:'));
   assert.doesNotMatch(jobEnvironment, /SCHOLARSCOUT_GITHUB_DEPLOYMENTS_TOKEN/);
   assert.doesNotMatch(workflow, /SCHOLARSCOUT_PREVIEW_METADATA|SCHOLARSCOUT_PREVIEW_OUTAGE_METADATA/);
