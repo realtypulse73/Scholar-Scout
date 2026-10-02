@@ -62,16 +62,16 @@ describe('catalogue discovery model', () => {
       assetPath: '/images/learning-environment.png',
       alt: 'A Scholar Scout illustrative learning environment.',
       label: 'Scholar Scout illustration',
-      sourceLabel: 'Scholar Scout illustration record',
-      sourceUrl: 'https://example.edu/illustration-record',
-      rightsBasis: 'scholarscout-owned',
-      reviewedAt: '2026-09-20',
+      disclosure: 'AI-generated illustration — not an official campus photograph',
     };
     (reviewed as typeof reviewed & { mediaCandidates: unknown[] }).mediaCandidates = [{ embedUrl: 'https://example.edu/embed' }];
 
     const [item] = buildCatalogueDiscoveryModel({ records: [reviewed], searchParams: { metro: 'greater-houston' } }).items;
 
     expect(item.renderableMedia).toEqual(reviewed.renderableMedia);
+    expect(Object.keys(item.renderableMedia ?? []).sort()).toEqual([
+      'alt', 'assetPath', 'disclosure', 'kind', 'label',
+    ]);
     expect(item).not.toHaveProperty('mediaCandidates');
     expect(item).not.toHaveProperty('contributorMediaState');
     expect(item).not.toHaveProperty('attestation');

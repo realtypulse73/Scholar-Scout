@@ -157,25 +157,61 @@ describe('catalogue publication editorial checklist', () => {
 });
 
 describe('reviewed media projection', () => {
-  it('uses D-03 order and never returns an embed instruction', () => {
+  const originalGenericIllustration = {
+    kind: 'illustration',
+    assetPath: '/images/learning-environment.png',
+    alt: 'A Scholar Scout illustrative learning environment.',
+    label: 'Illustration',
+    sourceLabel: 'Scholar Scout illustration record',
+    sourceUrl: 'https://example.edu/illustration-record',
+    rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' },
+    reviewedAt: '2026-09-20',
+    illustration: {
+      classification: 'original-generic-learning-environment',
+      accessibleDescription: 'A Scholar Scout illustrative learning environment.',
+      disclosure: 'AI-generated illustration — not an official campus photograph',
+      representation: 'generic-learning-environment',
+      identityClaim: 'none',
+      sourceCategory: 'original-scholarscout',
+      referenceCategory: 'none',
+      depictsRealCampus: false,
+    },
+  } as const;
+
+  it('uses D-03 order and returns only the fixed-disclosure original generic illustration', () => {
     const result = resolveRenderableMedia([
       {
         kind: 'approved-embed', embedUrl: 'https://example.edu/embed', alt: 'Provider embed', label: 'Provider-approved embed', sourceLabel: 'Embed approval', sourceUrl: 'https://example.edu/embed-approval', rights: { kind: 'approved-embed', sourceUrl: 'https://example.edu/embed-approval', status: 'valid' }, reviewedAt: '2026-09-20',
       },
-      {
-        kind: 'illustration', assetPath: '/images/learning-environment.png', alt: 'A Scholar Scout illustrative learning environment.', label: 'Illustration', sourceLabel: 'Scholar Scout illustration record', sourceUrl: 'https://example.edu/illustration-record', rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' }, reviewedAt: '2026-09-20',
-      },
+      originalGenericIllustration,
     ], now);
 
     expect(result).toEqual({
-      renderableMedia: expect.objectContaining({
+      renderableMedia: {
         kind: 'illustration',
         label: 'Scholar Scout illustration',
         assetPath: '/images/learning-environment.png',
-      }),
+        alt: 'A Scholar Scout illustrative learning environment.',
+        disclosure: 'AI-generated illustration — not an official campus photograph',
+      },
       mediaFallback: false,
     });
-    expect(result.renderableMedia).not.toHaveProperty('embedUrl');
+    expect(Object.keys(result.renderableMedia ?? []).sort()).toEqual([
+      'alt', 'assetPath', 'disclosure', 'kind', 'label',
+    ]);
+  });
+
+  it.each([
+    ['missing classification', { illustration: undefined }],
+    ['missing accessible description', { illustration: { ...originalGenericIllustration.illustration, accessibleDescription: '' } }],
+    ['wrong disclosure', { illustration: { ...originalGenericIllustration.illustration, disclosure: 'Illustration' } }],
+    ['named school representation', { illustration: { ...originalGenericIllustration.illustration, representation: 'named-school' } }],
+    ['endorsement identity claim', { illustration: { ...originalGenericIllustration.illustration, identityClaim: 'endorsed-provider' } }],
+    ['unapproved source category', { illustration: { ...originalGenericIllustration.illustration, sourceCategory: 'provider-media' } }],
+    ['unapproved reference category', { illustration: { ...originalGenericIllustration.illustration, referenceCategory: 'street-view' } }],
+    ['real campus likeness', { illustration: { ...originalGenericIllustration.illustration, depictsRealCampus: true } }],
+  ])('falls back when illustration evidence has %s', (_, change) => {
+    expect(resolveRenderableMedia([{ ...originalGenericIllustration, ...change }] as never, now)).toEqual({ mediaFallback: true });
   });
 
   it.each([
@@ -215,16 +251,7 @@ describe('reviewed media projection', () => {
         rights: { kind: 'approved-embed', sourceUrl: 'https://example.edu/embed-approval', status: 'valid' },
         reviewedAt: '2026-09-20',
       },
-      {
-        kind: 'illustration',
-        assetPath: '/images/learning-environment.png',
-        alt: 'A Scholar Scout illustrative learning environment.',
-        label: 'Illustration',
-        sourceLabel: 'Scholar Scout illustration record',
-        sourceUrl: 'https://example.edu/illustration-record',
-        rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' },
-        reviewedAt: '2026-09-20',
-      },
+      originalGenericIllustration,
       local,
     ], now);
 
