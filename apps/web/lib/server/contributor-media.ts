@@ -39,6 +39,10 @@ export type IssueContributorMediaUploadResult =
   | { status: 'issued'; capability: { uploadId: string; status: 'Draft'; revision: number } }
   | { status: 'forbidden' | 'invalid-programme' | 'conflict' };
 
+export type AuthorizeContributorMediaDirectUploadResult =
+  | { status: 'authorized'; revision: number; pathname: string }
+  | { status: 'denied' };
+
 export type CompleteContributorMediaUploadResult =
   | { status: 'ready'; submission: ContributorPrivateStatus }
   | { status: 'action-needed'; submission: ContributorPrivateStatus }
@@ -201,9 +205,45 @@ export async function issueContributorMediaUpload(input: {
   });
 }
 
+/** Rechecks the private Draft owner immediately before a Blob PUT token is signed. */
+export async function authorizeContributorMediaDirectUpload(input: {
+  actor: AccountStudentActor;
+  uploadId: string;
+  expectedRevision: number;
+  kind: 'video' | 'poster';
+  now?: Date;
+}): Promise<AuthorizeContributorMediaDirectUploadResult> {
+  if (!isContributorSubmissionId(input.uploadId)
+    || !Number.isSafeInteger(input.expectedRevision)
+    || input.expectedRevision < 1) {
+    return { status: 'denied' };
+  }
+
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const state = (await readScholarScoutData()).contributorMediaState;
+  if (!state || !getActiveContributorInvitation(state, input.actor.accountId, input.now ?? new Date())) {
+    return { status: 'denied' };
+  }
+  const submission = state.submissions.find((item) => item.accountId === input.actor.accountId);
+  const revision = submission?.revision ?? 1;
+  if (!submission || submission.status !== 'Draft' || revision !== input.expectedRevision
+    || submission.mediaPackage?.id !== input.uploadId) {
+    return { status: 'denied' };
+  }
+
+  return {
+    status: 'authorized',
+    revision,
+    pathname: input.kind === 'video'
+      ? submission.mediaPackage.videoObjectKey
+      : submission.mediaPackage.posterObjectKey,
+  };
+}
+
 /** Callback-only seam: marks an object received without exposing its private key. */
 export async function recordContributorMediaObject(input: {
   uploadId: string;
+  expectedRevision: number;
   kind: 'video' | 'poster';
   contentType: string;
   size: number;
@@ -217,7 +257,11 @@ export async function recordContributorMediaObject(input: {
   if (!parsed.ok) return;
   await commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
-    const submission = state.submissions.find((item) => item.mediaPackage?.id === input.uploadId);
+    const submission = state.submissions.find((item) => (
+      item.status === 'Draft'
+      && (item.revision ?? 1) === input.expectedRevision
+      && item.mediaPackage?.id === input.uploadId
+    ));
     if (!submission?.mediaPackage) return;
     if (input.kind === 'video') submission.mediaPackage.videoUploaded = true;
     else submission.mediaPackage.posterUploaded = true;

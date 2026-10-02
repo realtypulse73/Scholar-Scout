@@ -8,6 +8,8 @@ import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
 import { GET as getCatalogueMedia } from '@/app/api/catalogue-media/[publicId]/route';
 import { GET as getReviewQueue, POST as reviewMedia } from '@/app/api/admin/contributor-media/review/route';
 import { getServerSession } from 'next-auth';
+import { issueSignedToken } from '@vercel/blob';
+import { handleUploadPresigned } from '@vercel/blob/client';
 import {
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
@@ -16,6 +18,12 @@ import {
 import { resolveStudentActor } from '@/lib/server/student-actor';
 
 jest.mock('@/lib/server/programme-records', () => ({ getGovernedProgrammes: jest.fn() }));
+jest.mock('@vercel/blob', () => ({
+  del: jest.fn(),
+  get: jest.fn(),
+  issueSignedToken: jest.fn(),
+}));
+jest.mock('@vercel/blob/client', () => ({ handleUploadPresigned: jest.fn() }));
 
 jest.mock('@/lib/server/contributor-media', () => ({
   ...jest.requireActual('@/lib/server/contributor-media'),
@@ -67,6 +75,8 @@ describe('contributor media routes', () => {
   const originalVercelEnv = process.env.VERCEL_ENV;
   const originalPreviewOwnerDemo = process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO;
   const originalPreviewOwnerEmail = process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL;
+  const originalPrivateMediaStoreId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  const originalPrivateMediaWebhookKey = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY;
   let store: MemoryDataStore;
 
   beforeEach(() => {
@@ -98,6 +108,10 @@ describe('contributor media routes', () => {
     restoreEnvironment('VERCEL_ENV', originalVercelEnv);
     restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO', originalPreviewOwnerDemo);
     restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL', originalPreviewOwnerEmail);
+    restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID', originalPrivateMediaStoreId);
+    restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY', originalPrivateMediaWebhookKey);
+    jest.mocked(handleUploadPresigned).mockReset();
+    jest.mocked(issueSignedToken).mockReset();
   });
 
   it('allows an editor to invite a known account using trusted staff authority', async () => {
@@ -278,6 +292,62 @@ describe('contributor media routes', () => {
     const body = await response.json() as Record<string, unknown>;
     expect(body).toEqual({ capability: { uploadId: 'opaque-upload-id', status: 'Draft', revision: 1 } });
     expect(JSON.stringify(body)).not.toMatch(/blob|pathname|url|signer/i);
+  });
+
+  it.each([
+    ['the current invited Draft owner', undefined, undefined, 200, 1],
+    ['an uninvited actor', 'withdrawn', undefined, 400, 0],
+    ['an invited peer', undefined, 'student-2', 400, 0],
+    ['a stale revision', undefined, undefined, 400, 0, 2],
+    ['an unknown package', undefined, undefined, 400, 0, 1, 'unknown-package'],
+  ])('issues a direct Blob token only for %s', async (
+    _label,
+    invitationStatus,
+    accountId,
+    expectedStatus,
+    signerCalls,
+    expectedRevision = 1,
+    uploadId = 'package-1',
+  ) => {
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY = 'webhook-key';
+    store.data.contributorMediaState = {
+      invitations: [{
+        id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1',
+        status: invitationStatus ?? 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2026-10-16T00:00:00.000Z',
+      }],
+      submissions: [{
+        id: 'submission-1', accountId: accountId ?? 'student-1', status: 'Draft', signerName: 'Student One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+        revision: 1,
+        mediaPackage: {
+          id: 'package-1', programmeId: 'programme-1',
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png', videoUploaded: false, posterUploaded: false,
+        },
+      }],
+    } as ScholarScoutData['contributorMediaState'];
+    jest.mocked(issueSignedToken).mockResolvedValue('signed-token' as never);
+    jest.mocked(handleUploadPresigned).mockImplementation(async ({ getSignedToken }) => {
+      const result = await getSignedToken(
+        `contributor-media/${uploadId}/video.mp4`,
+        JSON.stringify({ uploadId, kind: 'video', expectedRevision }),
+        false,
+      );
+      return { clientToken: result.token } as never;
+    });
+
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST', body: JSON.stringify({ type: 'blob.generate-client-token' }),
+    }));
+
+    expect(response.status).toBe(expectedStatus);
+    expect(issueSignedToken).toHaveBeenCalledTimes(signerCalls);
+    if (expectedStatus === 200) {
+      expect(handleUploadPresigned).toHaveBeenCalledTimes(1);
+      expect(JSON.stringify(await response.json())).not.toMatch(/account|object|path|invite/i);
+    }
   });
 
   it('maps failed server inspection to Action needed without returning private object details', async () => {
