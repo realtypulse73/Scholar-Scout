@@ -20,6 +20,7 @@ import {
 import { commitConditionalMutation, type ConditionalMutationResult } from '@/lib/server/persistence-operations';
 import type { AccountStudentActor } from '@/lib/server/student-actor';
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
+import { isPreviewOwnerMediaDemoActor } from '@/lib/server/preview-owner-media-demo';
 
 export type GrantInvitationResult =
   | { status: 'granted' | 'existing'; invitation: ContributorMediaInvitation }
@@ -289,10 +290,14 @@ export async function reviewContributorMedia(input: {
   }
   const governedProgrammeIds = await getGovernedProgrammeIds();
   const now = input.now ?? new Date();
+  const permitsOwnerSelfApproval = input.decision === 'approve'
+    && isPreviewOwnerMediaDemoActor(input.actor);
   return commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
     const submission = state.submissions.find((item) => item.id === input.submissionId);
-    if (!submission || !submission.mediaPackage || submission.accountId === input.actor.id) {
+    if (!submission || !submission.mediaPackage || (
+      submission.accountId === input.actor.id && !permitsOwnerSelfApproval
+    )) {
       return { status: 'forbidden' };
     }
     if (!governedProgrammeIds.has(submission.mediaPackage.programmeId)) return { status: 'invalid-link' };

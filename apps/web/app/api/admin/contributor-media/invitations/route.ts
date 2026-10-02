@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import { grantContributorMediaInvitation } from '@/lib/server/contributor-media';
 import { requireActiveStaff } from '@/lib/server/active-staff';
+import { isPreviewOwnerMediaDemoActor } from '@/lib/server/preview-owner-media-demo';
 
 const MAX_INVITATION_REQUEST_BYTES = 1024;
 
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
       { error: 'Invalid contributor invitation.' },
       { status: body.error === 'body-too-large' ? 413 : 400 },
     );
+  }
+
+  if (
+    body.value.accountId === authorization.actor.id
+    && !isPreviewOwnerMediaDemoActor(authorization.actor)
+  ) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const result = await grantContributorMediaInvitation({
