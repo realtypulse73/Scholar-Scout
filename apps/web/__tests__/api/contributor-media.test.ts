@@ -310,6 +310,40 @@ describe('contributor media routes', () => {
     expect(getReleasedContributorMedia).toHaveBeenCalledWith('not-a-public-id');
   });
 
+  it('denies the private-media proxy when the current revocation overlay wins after a release', async () => {
+    const publicId = 'media-12345678-1234-1234-1234-123456789abc';
+    store.data.cataloguePublicationState = {
+      activeSnapshotId: 'snapshot-1',
+      snapshots: [{
+        id: 'snapshot-1',
+        records: [{ id: 'programme-1', revision: 4, contributorMedia: { publicId } }],
+      }],
+      candidates: [{
+        id: 'programme-1', revision: 4, lifecycle: 'approved',
+        approval: { revision: 4 },
+      }],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
+    store.data.contributorMediaState = {
+      invitations: [],
+      revokedPublicIds: [publicId],
+      submissions: [{
+        id: 'submission-revoked', accountId: 'student-1', status: 'Approved for release', signerName: 'Student One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T00:00:00.000Z', createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-02T00:00:00.000Z',
+        revision: 2, publicId, reviewerId: 'reviewer-1', reviewedAt: '2026-10-02T00:00:00.000Z',
+        releaseCandidateId: 'programme-1', releaseCandidateRevision: 4,
+        mediaPackage: {
+          id: 'package-revoked', programmeId: 'programme-1',
+          videoObjectKey: 'contributor-media/package-revoked/video.mp4',
+          posterObjectKey: 'contributor-media/package-revoked/poster.png', videoUploaded: true, posterUploaded: true,
+        },
+      }],
+    };
+
+    const actual = jest.requireActual<typeof import('@/lib/server/contributor-media')>('@/lib/server/contributor-media');
+    await expect(actual.getReleasedContributorMedia(publicId)).resolves.toBeNull();
+  });
+
   it('streams an authorized opaque ID without exposing a Blob URL or private metadata', async () => {
     jest.mocked(getReleasedContributorMedia).mockResolvedValue({
       stream: new ReadableStream({ start(controller) { controller.close(); } }),

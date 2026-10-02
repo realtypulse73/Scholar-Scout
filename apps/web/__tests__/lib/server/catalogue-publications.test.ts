@@ -519,6 +519,51 @@ describe('weekly catalogue publication', () => {
     }
   });
 
+  it('keeps factual records and official sources while the active revocation overlay removes contributor media', async () => {
+    await approve(validCandidate);
+    const data = await store.read();
+    data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'contribution-revoked', accountId: 'contributor-1', status: 'Approved for release', signerName: 'Private Contributor',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: NOW.toISOString(), createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(), revision: 2,
+        reviewerId: reviewer.id, reviewedAt: NOW.toISOString(),
+        releaseCandidateId: validCandidate.id, releaseCandidateRevision: 1,
+        mediaPackage: {
+          id: 'package-revoked', programmeId: validCandidate.id,
+          videoObjectKey: 'contributor-media/package-revoked/video.mp4',
+          posterObjectKey: 'contributor-media/package-revoked/poster.png', videoUploaded: true, posterUploaded: true,
+        },
+      }],
+    };
+    await store.write(data);
+    const release = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-28T13:00:00.000Z'),
+    });
+    const publicId = release.snapshot.records[0]?.contributorMedia?.publicId;
+    expect(publicId).toBeDefined();
+
+    const revoked = await store.read();
+    revoked.contributorMediaState!.submissions[0]!.status = 'Removed';
+    revoked.contributorMediaState!.submissions[0]!.revision = 3;
+    revoked.contributorMediaState!.revokedPublicIds = [publicId!];
+    await store.write(revoked);
+
+    const snapshot = await getPublishedCatalogueSnapshot();
+    expect(snapshot).toMatchObject({
+      status: 'published',
+      records: [expect.objectContaining({
+        id: validCandidate.id,
+        source: expect.objectContaining({ sourceUrl: validCandidate.source.sourceUrl }),
+        facts: expect.objectContaining({ skillTaught: expect.anything() }),
+      })],
+    });
+    if (snapshot.status === 'published') expect(snapshot.records[0]?.contributorMedia).toBeUndefined();
+  });
+
   it('rejects an out-of-window or duplicate normal release but accepts the next ISO week', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
     await reviewCatalogueCandidate({

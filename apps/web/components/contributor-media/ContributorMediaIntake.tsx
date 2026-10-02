@@ -21,6 +21,26 @@ export default function ContributorMediaIntake({ programmes, initialStatus }: Co
   const [message, setMessage] = useState('Choose one MP4 video and one JPEG or PNG poster. Server inspection decides review readiness.');
   const [submitting, setSubmitting] = useState(false);
 
+  async function removeSubmission() {
+    setSubmitting(true);
+    setMessage('Removing your private submission.');
+    try {
+      const response = await fetch('/api/contributor-media/remove', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedRevision: status.revision }),
+      });
+      const body = await response.json() as { submission?: ContributorPrivateStatus; error?: string };
+      if (!response.ok || !body.submission) throw new Error(body.error ?? 'We could not remove your submission.');
+      setStatus(body.submission);
+      setMessage('Removed. A new invitation, submission, and review are required for future content.');
+    } catch (error) {
+      setMessage(error instanceof Error ? `Action needed: ${error.message}` : 'Action needed: try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const error = validateFiles(programmeId, video, poster);
@@ -72,6 +92,7 @@ export default function ContributorMediaIntake({ programmes, initialStatus }: Co
 
   return <form className="mt-6 space-y-5" onSubmit={submit}>
     <p className="rounded-xl border border-border bg-ink-50 p-4 text-sm text-ink-700" aria-live="polite">Current private status: <strong>{status.status}</strong>. {message}</p>
+    {status.status === 'Removed' ? null : <>
     <label className="block text-sm font-semibold" htmlFor="contributor-programme">Programme
       <select id="contributor-programme" className="mt-2 w-full rounded-lg border border-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-600" value={programmeId} onChange={(event) => setProgrammeId(event.target.value)} required>
         <option value="">Choose a current programme</option>
@@ -85,6 +106,8 @@ export default function ContributorMediaIntake({ programmes, initialStatus }: Co
       <input id="contributor-poster" className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600" type="file" accept="image/jpeg,image/png" onChange={(event) => setPoster(event.target.files?.[0] ?? null)} required />
     </label>
     <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Checking private package…' : 'Prepare private upload'}</button>
+    <button className="min-h-11 rounded-lg border border-danger-600 px-5 py-3 font-semibold text-danger-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={removeSubmission} type="button">{submitting ? 'Removing submission…' : 'Remove my submission'}</button>
+    </>}
   </form>;
 }
 

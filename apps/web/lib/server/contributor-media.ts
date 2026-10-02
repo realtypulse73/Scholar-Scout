@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { randomUUID } from 'node:crypto';
-import { get } from '@vercel/blob';
+import { del, get } from '@vercel/blob';
 import mediaInfoFactory from 'mediainfo.js';
 import {
   validateContributorMediaPackage,
@@ -10,6 +10,7 @@ import {
   createEmptyContributorMediaState,
   getActiveContributorInvitation,
   getContributorPrivateStatus,
+  isContributorMediaPublicIdRevoked,
   type ContributorAttestation,
   type ContributorMediaInvitation,
   type ContributorMediaReviewItem,
@@ -49,6 +50,10 @@ export type ReviewContributorMediaResult =
   | { status: 'conflict' }
   | { status: 'invalid-link' };
 
+export type RemoveContributorMediaResult =
+  | { status: 'removed'; submission: ContributorPrivateStatus; objectKeys: string[] }
+  | { status: 'forbidden' | 'conflict' };
+
 export interface ReleasedContributorMedia {
   stream: ReadableStream<Uint8Array>;
   contentType: 'video/mp4';
@@ -67,7 +72,9 @@ export async function getReleasedContributorMedia(publicId: string): Promise<Rel
   const record = activeSnapshot?.records.find((item) => item.contributorMedia?.publicId === publicId);
   const submission = data.contributorMediaState?.submissions.find((item) => item.publicId === publicId);
   const candidate = publicationState?.candidates.find((item) => item.id === record?.id);
-  if (!record || !submission || !candidate || submission.status !== 'Approved for release'
+  if (!record || !submission || !candidate || !data.contributorMediaState
+    || isContributorMediaPublicIdRevoked(data.contributorMediaState, publicId)
+    || submission.status !== 'Approved for release'
     || submission.releaseCandidateId !== record.id || submission.releaseCandidateRevision !== record.revision
     || candidate.lifecycle !== 'approved' || candidate.approval?.revision !== candidate.revision
     || candidate.revision !== record.revision || !submission.mediaPackage?.videoUploaded) {
@@ -135,7 +142,9 @@ export async function createContributorMediaDraft(input: {
     const invitation = getActiveContributorInvitation(state, input.actor.accountId, now);
     if (!invitation) return { status: 'forbidden' };
 
-    const existing = state.submissions.find((submission) => submission.accountId === input.actor.accountId) ?? null;
+    const existing = state.submissions.find((submission) => (
+      submission.accountId === input.actor.accountId && submission.status !== 'Removed'
+    )) ?? null;
     if (existing) {
       const matches = existing.signerName === input.attestation.signerName
         && existing.creatorAuthority === input.attestation.creatorAuthority
@@ -245,7 +254,12 @@ export async function getContributorMediaPrivateStatus(
   const { readScholarScoutData } = await import('@/lib/server/data-store');
   const state = ensureContributorMediaState(await readScholarScoutData());
   const invitation = getActiveContributorInvitation(state, actor.accountId, now);
-  const submission = state.submissions.find((candidate) => candidate.accountId === actor.accountId) ?? null;
+  const submission = state.submissions.find((candidate) => (
+    candidate.accountId === actor.accountId && candidate.status !== 'Removed'
+  )) ?? state.submissions.find((candidate) => candidate.accountId === actor.accountId) ?? null;
+  if (submission?.status === 'Removed') {
+    return { status: submission.status, revision: submission.revision ?? 1 };
+  }
   return getContributorPrivateStatus({
     accountId: actor.accountId,
     invitation,
@@ -344,6 +358,59 @@ export async function reviewContributorMedia(input: {
   });
 }
 
+/** Revokes an owner's current package before attempting private-object cleanup. */
+export async function removeContributorMediaSubmission(input: {
+  actor: AccountStudentActor;
+  expectedRevision: number;
+  now?: Date;
+}): Promise<ConditionalMutationResult<RemoveContributorMediaResult>> {
+  if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
+    return { status: 'applied', value: { status: 'conflict' } };
+  }
+  const now = input.now ?? new Date();
+  const applyRemoval = (): Promise<ConditionalMutationResult<RemoveContributorMediaResult>> => commitConditionalMutation<RemoveContributorMediaResult>((data) => {
+    const state = ensureContributorMediaState(data);
+    const submission = state.submissions.find((item) => (
+      item.accountId === input.actor.accountId && item.status !== 'Removed'
+    )) ?? state.submissions.find((item) => item.accountId === input.actor.accountId);
+    if (!submission) return { status: 'forbidden' } as RemoveContributorMediaResult;
+    const revision = submission.revision ?? 1;
+    if (submission.status === 'Removed') {
+      return { status: 'removed', submission: { status: 'Removed', revision }, objectKeys: [] };
+    }
+    if (revision !== input.expectedRevision) return { status: 'conflict' } as RemoveContributorMediaResult;
+
+    state.invitations.forEach((invitation) => {
+      if (invitation.accountId === input.actor.accountId && invitation.status === 'active') {
+        invitation.status = 'withdrawn';
+      }
+    });
+    submission.status = 'Removed';
+    submission.revision = revision + 1;
+    submission.updatedAt = now.toISOString();
+    if (submission.publicId) {
+      const revokedPublicIds = state.revokedPublicIds ?? (state.revokedPublicIds = []);
+      if (!revokedPublicIds.includes(submission.publicId)) revokedPublicIds.push(submission.publicId);
+    }
+    const objectKeys = submission.mediaPackage
+      ? [submission.mediaPackage.videoObjectKey, submission.mediaPackage.posterObjectKey]
+      : [];
+    return {
+      status: 'removed' as const,
+      submission: { status: 'Removed', revision: submission.revision },
+      objectKeys,
+    };
+  });
+
+  let result = await applyRemoval();
+  // A release may win the document CAS without changing the owner's submitted revision; retry once so revocation wins.
+  if (result.status === 'conflict') result = await applyRemoval();
+  if (result.status === 'conflict' || result.value.status !== 'removed') return result;
+
+  await deletePrivateContributorMedia(result.value.objectKeys);
+  return result;
+}
+
 function ensureContributorMediaState(data: { contributorMediaState?: ContributorMediaState }): ContributorMediaState {
   if (!data.contributorMediaState) {
     data.contributorMediaState = createEmptyContributorMediaState();
@@ -431,5 +498,15 @@ async function inspectPrivateMediaPackage(videoObjectKey: string, posterObjectKe
     return validateInspectedContributorVideo({ contentType: video.blob.contentType, durationMs });
   } catch {
     return { ok: false };
+  }
+}
+
+async function deletePrivateContributorMedia(objectKeys: string[]): Promise<void> {
+  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  if (objectKeys.length === 0 || !storeId) return;
+  try {
+    await del(objectKeys, { storeId });
+  } catch {
+    // The revocation overlay is already durable; cleanup failure must never restore reachability.
   }
 }

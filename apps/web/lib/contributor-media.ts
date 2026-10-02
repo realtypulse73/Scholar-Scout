@@ -7,7 +7,7 @@ export const CONTRIBUTOR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
 export const CONTRIBUTOR_POSTER_MAX_BYTES = 5 * 1024 * 1024;
 export const CONTRIBUTOR_VIDEO_MAX_DURATION_MS = 30_000;
 
-export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed' | 'Approved for release';
+export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed' | 'Approved for release' | 'Removed';
 export type ContributorMediaFileKind = 'video' | 'poster';
 export type ContributorMediaApprovalMode = 'independent' | 'preview-owner-demo';
 
@@ -64,6 +64,8 @@ export interface ContributorMediaSubmission {
 export interface ContributorMediaState {
   invitations: ContributorMediaInvitation[];
   submissions: ContributorMediaSubmission[];
+  /** Current public-media revocations applied to immutable catalogue snapshots. */
+  revokedPublicIds?: string[];
 }
 
 export interface ContributorAttestation {
@@ -137,7 +139,12 @@ export interface ContributorMediaReviewItem {
 }
 
 export function createEmptyContributorMediaState(): ContributorMediaState {
-  return { invitations: [], submissions: [] };
+  return { invitations: [], submissions: [], revokedPublicIds: [] };
+}
+
+/** Returns whether the current contributor lifecycle has revoked an otherwise immutable projection. */
+export function isContributorMediaPublicIdRevoked(state: ContributorMediaState, publicId: string): boolean {
+  return state.revokedPublicIds?.includes(publicId) ?? false;
 }
 
 export function createContributorInvitation(input: {
@@ -245,7 +252,12 @@ export function isContributorMediaState(input: unknown): input is ContributorMed
     return false;
   }
   return input.invitations.every(isContributorInvitation)
-    && input.submissions.every(isContributorSubmission);
+    && input.submissions.every(isContributorSubmission)
+    && (input.revokedPublicIds === undefined || (
+      Array.isArray(input.revokedPublicIds)
+      && input.revokedPublicIds.every(isPublicMediaId)
+      && new Set(input.revokedPublicIds).size === input.revokedPublicIds.length
+    ));
 }
 
 function isExactAttestation(input: unknown): input is Record<string, unknown> {
@@ -283,7 +295,7 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
     && typeof input.id === 'string'
     && typeof input.accountId === 'string'
     && (input.status === 'Draft' || input.status === 'Ready for review' || input.status === 'Action needed'
-      || input.status === 'Approved for release')
+      || input.status === 'Approved for release' || input.status === 'Removed')
     && normalizeSignerName(input.signerName) === input.signerName
     && input.creatorAuthority === true
     && input.recognisablePeopleConsent === true

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import {
   createContributorMediaPublicProjection,
   isContributorMediaState,
+  isContributorMediaPublicIdRevoked,
   PREVIEW_OWNER_MEDIA_DEMO_LABEL,
   type ContributorMediaPublicProjection,
 } from '@/lib/contributor-media';
@@ -505,7 +506,7 @@ export async function getPublishedCatalogueSnapshot(): Promise<
     status: 'published',
     snapshotId: active.id,
     version: active.sequence,
-    records: omitInactivePreviewOwnerDemoMedia(
+    records: omitInactiveContributorMedia(
       clonePublicRecords(active.records),
       data.contributorMediaState,
     ),
@@ -1035,7 +1036,7 @@ function assertContributorMediaReleaseEligibility(input: {
   for (const candidate of input.selected) {
     if (candidate.retirementIntent) continue;
     const related = input.state.submissions.filter((submission) => (
-      submission.mediaPackage?.programmeId === candidate.id
+      submission.status !== 'Removed' && submission.mediaPackage?.programmeId === candidate.id
     ));
     if (related.length === 0) continue;
     if (related.length !== 1) throw new ContributorMediaReleaseEligibilityError();
@@ -1068,21 +1069,25 @@ function assertContributorMediaReleaseEligibility(input: {
   return projections;
 }
 
-function omitInactivePreviewOwnerDemoMedia(
+function omitInactiveContributorMedia(
   records: CataloguePublishedRecord[],
   state: unknown,
 ): CataloguePublishedRecord[] {
-  if (isPreviewOwnerMediaDemoRuntime()) return records;
-  const previewPublicIds = isContributorMediaState(state)
-    ? new Set(state.submissions
+  const contributorState = isContributorMediaState(state) ? state : null;
+  const previewRuntime = isPreviewOwnerMediaDemoRuntime();
+  const previewPublicIds = contributorState && !previewRuntime
+    ? new Set(contributorState.submissions
       .filter((submission) => submission.approvalMode === 'preview-owner-demo' && submission.publicId)
       .map((submission) => submission.publicId))
     : new Set<string>();
   return records.map((record) => {
-    if (!record.contributorMedia || (
-      !previewPublicIds.has(record.contributorMedia.publicId)
-      && record.contributorMedia.label !== PREVIEW_OWNER_MEDIA_DEMO_LABEL
-    )) return record;
+    const publicId = record.contributorMedia?.publicId;
+    const revoked = Boolean(publicId && contributorState && isContributorMediaPublicIdRevoked(contributorState, publicId));
+    const inactivePreviewDemo = Boolean(publicId && !previewRuntime && (
+      previewPublicIds.has(publicId)
+      || record.contributorMedia?.label === PREVIEW_OWNER_MEDIA_DEMO_LABEL
+    ));
+    if (!record.contributorMedia || (!revoked && !inactivePreviewDemo)) return record;
     const withoutContributorMedia = { ...record };
     delete withoutContributorMedia.contributorMedia;
     return withoutContributorMedia;
