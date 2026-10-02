@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CataloguePublicationManager from '@/components/admin/CataloguePublicationManager';
+import ContributorMediaReviewManager from '@/components/admin/ContributorMediaReviewManager';
 import StaffGate from '@/components/auth/StaffGate';
 
 export const metadata = {
@@ -15,7 +16,10 @@ export default function CataloguePublicationsPage() {
         <Link href="/admin/programmes" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Programme admin</Link>
       </nav>
       <section className="mx-auto max-w-6xl px-5 pb-10 pt-4 sm:px-6 lg:px-8">
-        <StaffGate><CataloguePublicationManager /></StaffGate>
+        <StaffGate>
+          <CataloguePublicationManager />
+          <ContributorMediaReviewManager />
+        </StaffGate>
       </section>
     </main>
   );

@@ -1,6 +1,7 @@
 import {
   createContributorInvitation,
   getContributorPrivateStatus,
+  isContributorMediaState,
   validateContributorMediaPackage,
   validateInspectedContributorVideo,
   validateContributorAttestation,
@@ -163,7 +164,6 @@ describe('contributor media domain contracts', () => {
     expect(validateInspectedContributorVideo(null)).toEqual({ ok: false, error: 'invalid-video' });
   });
 });
-import { isContributorMediaState } from '@/lib/contributor-media';
 
 describe('reviewed contributor media lifecycle', () => {
   it('accepts a private approved submission with review identity while preserving it as private state', () => {
@@ -182,6 +182,8 @@ describe('reviewed contributor media lifecycle', () => {
         revision: 2,
         reviewerId: 'reviewer-1',
         reviewedAt: '2026-10-02T12:00:00.000Z',
+        releaseCandidateId: 'programme-1',
+        releaseCandidateRevision: 3,
       }],
     })).toBe(true);
   });

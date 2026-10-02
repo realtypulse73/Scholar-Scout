@@ -4,6 +4,7 @@ import { POST as createInvitation } from '@/app/api/admin/contributor-media/invi
 import { POST as attest } from '@/app/api/contributor-media/attestation/route';
 import { POST as completeMedia } from '@/app/api/contributor-media/complete/route';
 import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
+import { GET as getReviewQueue, POST as reviewMedia } from '@/app/api/admin/contributor-media/review/route';
 import { getServerSession } from 'next-auth';
 import {
   setScholarScoutDataStoreForTests,
@@ -11,6 +12,8 @@ import {
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
 import { resolveStudentActor } from '@/lib/server/student-actor';
+
+jest.mock('@/lib/server/programme-records', () => ({ getGovernedProgrammes: jest.fn() }));
 
 jest.mock('@/lib/server/contributor-media', () => ({
   ...jest.requireActual('@/lib/server/contributor-media'),
@@ -22,6 +25,7 @@ import {
   completeContributorMediaUpload,
   issueContributorMediaUpload,
 } from '@/lib/server/contributor-media';
+import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }), { virtual: true });
@@ -72,12 +76,14 @@ describe('contributor media routes', () => {
       accountId: 'student-1',
       storageKey: 'account:student-1',
     });
+    jest.mocked(getGovernedProgrammes).mockResolvedValue([{ id: 'programme-1', publicationStatus: 'published' }] as never);
   });
 
   afterEach(() => {
     setScholarScoutDataStoreForTests(null);
     jest.mocked(getServerSession).mockReset();
     jest.mocked(resolveStudentActor).mockReset();
+    jest.mocked(getGovernedProgrammes).mockReset();
     restoreEnvironment('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
     restoreEnvironment('SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES', originalCapabilities);
   });
@@ -209,6 +215,87 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ submission: { status: 'Action needed', revision: 1 } });
+  });
+
+  it('lets only an independent reviewer approve a current private package', async () => {
+    store.data.cataloguePublicationState = {
+      schemaVersion: 1,
+      candidates: [{
+        id: 'programme-1',
+        revision: 4,
+        lifecycle: 'approved',
+        retirementIntent: false,
+        approval: { reviewerId: 'catalogue-reviewer', reviewedAt: '2026-10-02T00:00:00.000Z', revision: 4 },
+      }],
+      auditEvents: [],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
+    store.data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'submission-1',
+        accountId: 'student-1',
+        status: 'Ready for review',
+        signerName: 'Student One',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T00:00:00.000Z',
+        createdAt: '2026-10-02T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z',
+        revision: 1,
+        mediaPackage: {
+          id: 'package-1', programmeId: 'programme-1',
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png',
+          videoUploaded: true, posterUploaded: true,
+        },
+      }],
+    };
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'reviewer@example.com';
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+      'reviewer@example.com': ['reviewer'],
+    });
+    jest.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'reviewer-1', email: 'reviewer@example.com' },
+    } as never);
+
+    const queue = await getReviewQueue();
+    expect(queue.status).toBe(200);
+    await expect(queue.json()).resolves.toEqual({
+      items: [expect.objectContaining({ id: 'submission-1', signerName: 'Student One', programmeId: 'programme-1' })],
+    });
+
+    const response = await reviewMedia(new Request('http://localhost/api/admin/contributor-media/review', {
+      method: 'POST',
+      body: JSON.stringify({ submissionId: 'submission-1', expectedRevision: 1, decision: 'approve' }),
+    }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ submission: { status: 'Approved for release', revision: 2 } });
+    expect(store.data.contributorMediaState?.submissions[0]).toMatchObject({
+      reviewerId: 'reviewer-1',
+      releaseCandidateId: 'programme-1',
+      releaseCandidateRevision: 4,
+    });
+  });
+
+  it('rejects self-review before approving private evidence', async () => {
+    store.data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'submission-self', accountId: 'reviewer-1', status: 'Ready for review', signerName: 'Reviewer One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T00:00:00.000Z', createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-02T00:00:00.000Z', revision: 1,
+        mediaPackage: { id: 'package-self', programmeId: 'programme-1', videoObjectKey: 'contributor-media/package-self/video.mp4', posterObjectKey: 'contributor-media/package-self/poster.png', videoUploaded: true, posterUploaded: true },
+      }],
+    };
+    process.env.SCHOLARSCOUT_STAFF_EMAILS = 'reviewer@example.com';
+    process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({ 'reviewer@example.com': ['reviewer'] });
+    jest.mocked(getServerSession).mockResolvedValue({ user: { id: 'reviewer-1', email: 'reviewer@example.com' } } as never);
+
+    const response = await reviewMedia(new Request('http://localhost/api/admin/contributor-media/review', {
+      method: 'POST', body: JSON.stringify({ submissionId: 'submission-self', expectedRevision: 1, decision: 'approve' }),
+    }));
+    expect(response.status).toBe(403);
+    expect(store.data.contributorMediaState?.submissions[0]?.status).toBe('Ready for review');
   });
 });
 

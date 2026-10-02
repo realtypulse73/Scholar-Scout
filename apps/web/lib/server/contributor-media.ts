@@ -12,12 +12,14 @@ import {
   getContributorPrivateStatus,
   type ContributorAttestation,
   type ContributorMediaInvitation,
+  type ContributorMediaReviewItem,
   type ContributorMediaState,
   type ContributorMediaSubmission,
   type ContributorPrivateStatus,
 } from '@/lib/contributor-media';
 import { commitConditionalMutation, type ConditionalMutationResult } from '@/lib/server/persistence-operations';
 import type { AccountStudentActor } from '@/lib/server/student-actor';
+import type { ActiveStaffActor } from '@/lib/server/active-staff';
 
 export type GrantInvitationResult =
   | { status: 'granted' | 'existing'; invitation: ContributorMediaInvitation }
@@ -36,6 +38,12 @@ export type CompleteContributorMediaUploadResult =
   | { status: 'ready'; submission: ContributorPrivateStatus }
   | { status: 'action-needed'; submission: ContributorPrivateStatus }
   | { status: 'forbidden' | 'conflict' };
+
+export type ReviewContributorMediaResult =
+  | { status: 'approved' | 'action-needed' | 'existing'; submission: ContributorPrivateStatus }
+  | { status: 'forbidden' }
+  | { status: 'conflict' }
+  | { status: 'invalid-link' };
 
 export async function grantContributorMediaInvitation(input: {
   accountId: string;
@@ -90,8 +98,8 @@ export async function createContributorMediaDraft(input: {
       accountId: input.actor.accountId,
       status: 'Draft',
       signerName: input.attestation.signerName,
-      creatorAuthority: true,
-      recognisablePeopleConsent: true,
+      creatorAuthority: true as const,
+      recognisablePeopleConsent: true as const,
       attestedAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -192,6 +200,90 @@ export async function getContributorMediaPrivateStatus(
   });
 }
 
+/** Reads attestation and inspection evidence only for independently authorized staff review. */
+export async function getContributorMediaReviewQueue(): Promise<ContributorMediaReviewItem[]> {
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const data = await readScholarScoutData();
+  const state = ensureContributorMediaState(data);
+  const candidates = data.cataloguePublicationState?.candidates ?? [];
+  const governedProgrammeIds = await getGovernedProgrammeIds();
+  return state.submissions
+    .filter((submission) => (
+      submission.status === 'Ready for review'
+      && submission.mediaPackage
+      && isCurrentCandidate(candidates, submission.mediaPackage.programmeId)
+      && governedProgrammeIds.has(submission.mediaPackage.programmeId)
+    ))
+    .map((submission) => ({
+      id: submission.id,
+      accountId: submission.accountId,
+      status: submission.status as ContributorMediaReviewItem['status'],
+      revision: submission.revision ?? 1,
+      programmeId: submission.mediaPackage!.programmeId,
+      signerName: submission.signerName,
+      attestedAt: submission.attestedAt,
+      creatorAuthority: true as const,
+      recognisablePeopleConsent: true as const,
+      videoUploaded: submission.mediaPackage!.videoUploaded,
+      posterUploaded: submission.mediaPackage!.posterUploaded,
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+/** Applies one private, revision-checked reviewer decision without creating a public media projection. */
+export async function reviewContributorMedia(input: {
+  actor: ActiveStaffActor;
+  submissionId: string;
+  expectedRevision: number;
+  decision: 'approve' | 'action-needed';
+  now?: Date;
+}): Promise<ConditionalMutationResult<ReviewContributorMediaResult>> {
+  if (!(input.actor.capabilities instanceof Set) || !input.actor.capabilities.has('reviewer')) {
+    return { status: 'applied', value: { status: 'forbidden' } };
+  }
+  if (!isContributorSubmissionId(input.submissionId) || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
+    return { status: 'applied', value: { status: 'conflict' } };
+  }
+  const governedProgrammeIds = await getGovernedProgrammeIds();
+  const now = input.now ?? new Date();
+  return commitConditionalMutation((data) => {
+    const state = ensureContributorMediaState(data);
+    const submission = state.submissions.find((item) => item.id === input.submissionId);
+    if (!submission || !submission.mediaPackage || submission.accountId === input.actor.id) {
+      return { status: 'forbidden' };
+    }
+    if (!governedProgrammeIds.has(submission.mediaPackage.programmeId)) return { status: 'invalid-link' };
+    const revision = submission.revision ?? 1;
+    if (submission.status === 'Approved for release') {
+      return submission.reviewerId === input.actor.id && revision === input.expectedRevision
+        ? { status: 'existing', submission: { status: submission.status, revision } }
+        : { status: 'conflict' };
+    }
+    if (submission.status !== 'Ready for review' || revision !== input.expectedRevision) {
+      return { status: 'conflict' };
+    }
+    const candidate = (data.cataloguePublicationState?.candidates ?? [])
+      .find((item) => item.id === submission.mediaPackage!.programmeId);
+    if (!candidate || !isCurrentCandidate([candidate], submission.mediaPackage.programmeId)) {
+      return { status: 'invalid-link' };
+    }
+    const nextRevision = revision + 1;
+    submission.status = input.decision === 'approve' ? 'Approved for release' : 'Action needed';
+    submission.revision = nextRevision;
+    submission.updatedAt = now.toISOString();
+    if (input.decision === 'approve') {
+      submission.reviewerId = input.actor.id;
+      submission.reviewedAt = submission.updatedAt;
+      submission.releaseCandidateId = candidate.id;
+      submission.releaseCandidateRevision = candidate.revision;
+    }
+    return {
+      status: input.decision === 'approve' ? 'approved' : 'action-needed',
+      submission: { status: submission.status, revision: nextRevision },
+    };
+  });
+}
+
 function ensureContributorMediaState(data: { contributorMediaState?: ContributorMediaState }): ContributorMediaState {
   if (!data.contributorMediaState) {
     data.contributorMediaState = createEmptyContributorMediaState();
@@ -209,6 +301,33 @@ function createPrivateMediaPackage(programmeId: string) {
     videoUploaded: false,
     posterUploaded: false,
   };
+}
+
+function isCurrentCandidate(candidates: Array<{
+  id: string;
+  revision: number;
+  lifecycle: string;
+  retirementIntent?: boolean;
+  approval: { revision: number } | null;
+}>, programmeId: string): boolean {
+  return candidates.some((candidate) => (
+    candidate.id === programmeId
+    && candidate.lifecycle === 'approved'
+    && !candidate.retirementIntent
+    && candidate.approval?.revision === candidate.revision
+  ));
+}
+
+async function getGovernedProgrammeIds(): Promise<Set<string>> {
+  const { getGovernedProgrammes } = await import('@/lib/server/programme-records');
+  const programmes = await getGovernedProgrammes();
+  return new Set(programmes
+    .filter((programme) => (programme.publicationStatus ?? 'published') === 'published')
+    .map((programme) => programme.id));
+}
+
+function isContributorSubmissionId(value: string): boolean {
+  return /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
 }
 
 async function resolveCanonicalProgrammeId(programmeId: string): Promise<string | null> {

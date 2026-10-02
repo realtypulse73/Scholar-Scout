@@ -7,7 +7,7 @@ export const CONTRIBUTOR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
 export const CONTRIBUTOR_POSTER_MAX_BYTES = 5 * 1024 * 1024;
 export const CONTRIBUTOR_VIDEO_MAX_DURATION_MS = 30_000;
 
-export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed';
+export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed' | 'Approved for release';
 export type ContributorMediaFileKind = 'video' | 'poster';
 
 export interface ContributorMediaFile {
@@ -52,6 +52,10 @@ export interface ContributorMediaSubmission {
   updatedAt: string;
   revision?: number;
   mediaPackage?: ContributorPrivateMediaPackage;
+  reviewerId?: string;
+  reviewedAt?: string;
+  releaseCandidateId?: string;
+  releaseCandidateRevision?: number;
 }
 
 export interface ContributorMediaState {
@@ -73,6 +77,21 @@ export type ContributorAttestationValidation =
 export interface ContributorPrivateStatus {
   status: ContributorSubmissionStatus;
   revision: number;
+}
+
+/** Private reviewer-only evidence. This DTO must never cross a learner-facing route. */
+export interface ContributorMediaReviewItem {
+  id: string;
+  accountId: string;
+  status: 'Ready for review' | 'Action needed' | 'Approved for release';
+  revision: number;
+  programmeId: string;
+  signerName: string;
+  attestedAt: string;
+  creatorAuthority: true;
+  recognisablePeopleConsent: true;
+  videoUploaded: boolean;
+  posterUploaded: boolean;
 }
 
 export function createEmptyContributorMediaState(): ContributorMediaState {
@@ -221,7 +240,8 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
   return isRecord(input)
     && typeof input.id === 'string'
     && typeof input.accountId === 'string'
-    && (input.status === 'Draft' || input.status === 'Ready for review' || input.status === 'Action needed')
+    && (input.status === 'Draft' || input.status === 'Ready for review' || input.status === 'Action needed'
+      || input.status === 'Approved for release')
     && normalizeSignerName(input.signerName) === input.signerName
     && input.creatorAuthority === true
     && input.recognisablePeopleConsent === true
@@ -229,7 +249,17 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
     && isTimestamp(input.createdAt)
     && isTimestamp(input.updatedAt)
     && (input.revision === undefined || isRevision(input.revision))
-    && (input.mediaPackage === undefined || isPrivateMediaPackage(input.mediaPackage));
+    && (input.mediaPackage === undefined || isPrivateMediaPackage(input.mediaPackage))
+    && (input.reviewerId === undefined || isStableId(input.reviewerId))
+    && (input.reviewedAt === undefined || isTimestamp(input.reviewedAt))
+    && (input.releaseCandidateId === undefined || isStableId(input.releaseCandidateId))
+    && (input.releaseCandidateRevision === undefined || isRevision(input.releaseCandidateRevision))
+    && (input.status !== 'Approved for release' || (
+      isStableId(input.reviewerId)
+      && isTimestamp(input.reviewedAt)
+      && isStableId(input.releaseCandidateId)
+      && isRevision(input.releaseCandidateRevision)
+    ));
 }
 
 function parseMediaFile(input: unknown): ContributorMediaFile | null {
