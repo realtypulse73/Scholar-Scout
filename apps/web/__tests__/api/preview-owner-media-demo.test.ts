@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { GET, POST } from '@/app/api/admin/contributor-media/preview-demo/route';
 import { requireActiveStaff } from '@/lib/server/active-staff';
 import { grantContributorMediaInvitation } from '@/lib/server/contributor-media';

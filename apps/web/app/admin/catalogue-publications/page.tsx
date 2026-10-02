@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import CataloguePublicationManager from '@/components/admin/CataloguePublicationManager';
 import ContributorMediaReviewManager from '@/components/admin/ContributorMediaReviewManager';
+import PreviewOwnerMediaDemo from '@/components/admin/PreviewOwnerMediaDemo';
 import StaffGate from '@/components/auth/StaffGate';
 
 export const metadata = {
@@ -19,6 +20,7 @@ export default function CataloguePublicationsPage() {
         <StaffGate>
           <CataloguePublicationManager />
           <ContributorMediaReviewManager />
+          <PreviewOwnerMediaDemo />
         </StaffGate>
       </section>
     </main>

@@ -11,8 +11,8 @@ describe('PreviewOwnerMediaDemo', () => {
 
   it('shows the labelled owner-only Preview control and performs a bodyless mutation', async () => {
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ available: true }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ status: 'ready' }), { status: 200 })) as never;
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ available: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: 'ready' }) }) as never;
 
     render(<PreviewOwnerMediaDemo />);
 
@@ -29,7 +29,7 @@ describe('PreviewOwnerMediaDemo', () => {
   });
 
   it('does not reveal the control when the server reports generic absence', async () => {
-    global.fetch = jest.fn().mockResolvedValue(new Response(null, { status: 404 })) as never;
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 }) as never;
 
     render(<PreviewOwnerMediaDemo />);
 
