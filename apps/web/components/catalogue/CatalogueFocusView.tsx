@@ -65,7 +65,7 @@ export default function CatalogueFocusView({
 
       <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8">
         <div className="min-w-0 space-y-6">
-          <DiscoveryPreviewSlot media={item.renderableMedia} />
+          <DiscoveryPreviewSlot media={item.renderableMedia} contributorMedia={item.contributorMedia} />
           <section className="rounded-card border border-ink-200 bg-white p-5" aria-labelledby="facts-heading">
             <h2 id="facts-heading" className="text-xl font-semibold">Facts and sources</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">Each detail is a reviewed factual record, not an eligibility, admission, job, pay, funding, enlistment, or outcome decision.</p>

@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import type { ContributorMediaPublicProjection } from '@/lib/contributor-media';
 import type { CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
 interface DiscoveryPreviewSlotProps {
   media?: CatalogueRenderableMedia;
+  contributorMedia?: ContributorMediaPublicProjection;
   playback?: {
     shouldPlay: boolean;
     reducedMotion: boolean;
@@ -14,7 +16,7 @@ interface DiscoveryPreviewSlotProps {
 }
 
 /** Renders only the immutable local presentation projection from a reviewed snapshot. */
-export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPreviewSlotProps) {
+export default function DiscoveryPreviewSlot({ media, contributorMedia, playback }: DiscoveryPreviewSlotProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [playbackRejected, setPlaybackRejected] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -22,6 +24,9 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
   const isPlaybackControlled = playback !== undefined;
   const shouldPlay = playback?.shouldPlay ?? false;
   const reducedMotion = playback?.reducedMotion ?? false;
+  const videoSource = media?.kind === 'local-preview'
+    ? media.assetPath
+    : contributorMedia?.mediaRoute;
 
   function closeAbout(): void {
     setIsAboutOpen(false);
@@ -38,7 +43,7 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
   }, [isAboutOpen]);
 
   useEffect(() => {
-    if (media?.kind !== 'local-preview' || !isPlaybackControlled || !videoRef.current) return;
+    if (!videoSource || !isPlaybackControlled || !videoRef.current) return;
     const video = videoRef.current;
     setPlaybackRejected(false);
     if (!shouldPlay || reducedMotion) {
@@ -53,9 +58,9 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
       active = false;
       video.pause();
     };
-  }, [isPlaybackControlled, media?.kind, reducedMotion, shouldPlay]);
+  }, [isPlaybackControlled, reducedMotion, shouldPlay, videoSource]);
 
-  if (!media) return (
+  if (!media && !contributorMedia) return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-dashed border-brand-300 bg-brand-50 p-5">
       <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Media preview</p>
       <h2 className="mt-2 text-xl font-semibold text-ink-900">Visual media needs rights review</h2>
@@ -67,7 +72,7 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
     </section>
   );
 
-  const localPreview = media.kind === 'local-preview' ? media : null;
+  const localPreview = media?.kind === 'local-preview' ? media : null;
   const reviewedMonthYear = localPreview ? new Intl.DateTimeFormat('en', {
     month: 'long',
     year: 'numeric',
@@ -77,12 +82,12 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
 
   return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-brand-300 bg-brand-50 p-5">
-      {media.kind === 'local-preview' ? (
-        <video ref={videoRef} aria-label={media.alt} className="w-full rounded-control bg-ink-900" controls={!playback} loop muted playsInline preload="metadata">
-          <source src={media.assetPath} />
+      {videoSource ? (
+        <video ref={videoRef} aria-label={localPreview?.alt ?? contributorMedia!.label} className="w-full rounded-control bg-ink-900" controls={!playback} loop muted playsInline preload="metadata">
+          <source src={videoSource} />
         </video>
-      ) : <Image src={media.assetPath} alt={media.alt} width={960} height={540} className="w-full rounded-control object-cover" />}
-      {media.kind === 'local-preview' && playback ? (
+      ) : <Image src={media!.assetPath} alt={media!.alt} width={960} height={540} className="w-full rounded-control object-cover" />}
+      {videoSource && playback ? (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -101,10 +106,15 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
       ) : null}
       {playbackRejected ? <p className="mt-3 text-sm text-ink-700">Preview could not start automatically. Facts and source actions remain available.</p> : null}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <p className="text-sm font-semibold text-ink-900">{media.label}</p>
+        <p className="text-sm font-semibold text-ink-900">{contributorMedia?.label ?? media!.label}</p>
         {localPreview ? <button ref={triggerRef} type="button" onClick={() => setIsAboutOpen(true)} className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">About this media</button> : null}
       </div>
-      <p className="mt-2 text-sm leading-6 text-ink-700">Scholar Scout is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.</p>
+      {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">{media.disclosure}</p> : null}
+      <p className="mt-2 text-sm leading-6 text-ink-700">
+        {contributorMedia?.nonEndorsement
+          ?? 'Scholar Scout is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.'}
+      </p>
+      {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">This illustration is supporting context. Facts and official source actions below remain the record to verify.</p> : null}
       {isAboutOpen && localPreview && reviewedMonthYear && rightsBasis ? (
         <div role="dialog" aria-modal="true" aria-label="About this media" className="mt-4 rounded-control border border-ink-300 bg-white p-4 shadow-sm">
           <p className="font-semibold text-ink-900">About this media</p>
