@@ -45,6 +45,49 @@ export type ReviewContributorMediaResult =
   | { status: 'conflict' }
   | { status: 'invalid-link' };
 
+export interface ReleasedContributorMedia {
+  stream: ReadableStream<Uint8Array>;
+  contentType: 'video/mp4';
+}
+
+/** Resolves a private video only after rechecking the active governed release and canonical programme link. */
+export async function getReleasedContributorMedia(publicId: string): Promise<ReleasedContributorMedia | null> {
+  if (!/^media-[a-f0-9-]{36}$/i.test(publicId)) return null;
+
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const data = await readScholarScoutData();
+  const publicationState = data.cataloguePublicationState;
+  const activeSnapshot = publicationState?.activeSnapshotId === undefined
+    ? undefined
+    : publicationState.snapshots?.find((snapshot) => snapshot.id === publicationState.activeSnapshotId);
+  const record = activeSnapshot?.records.find((item) => item.contributorMedia?.publicId === publicId);
+  const submission = data.contributorMediaState?.submissions.find((item) => item.publicId === publicId);
+  const candidate = publicationState?.candidates.find((item) => item.id === record?.id);
+  if (!record || !submission || !candidate || submission.status !== 'Approved for release'
+    || submission.releaseCandidateId !== record.id || submission.releaseCandidateRevision !== record.revision
+    || candidate.lifecycle !== 'approved' || candidate.approval?.revision !== candidate.revision
+    || candidate.revision !== record.revision || !submission.mediaPackage?.videoUploaded) {
+    return null;
+  }
+
+  const { getCurrentGovernedProgrammeIds } = await import('@/lib/server/programme-records');
+  if (!(await getCurrentGovernedProgrammeIds()).has(record.id)) return null;
+
+  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  if (!storeId) return null;
+  try {
+    const result = await get(submission.mediaPackage.videoObjectKey, {
+      access: 'private',
+      storeId,
+      useCache: false,
+    });
+    if (!result || result.statusCode !== 200 || result.blob.contentType !== 'video/mp4') return null;
+    return { stream: result.stream, contentType: 'video/mp4' };
+  } catch {
+    return null;
+  }
+}
+
 export async function grantContributorMediaInvitation(input: {
   accountId: string;
   staffId: string;

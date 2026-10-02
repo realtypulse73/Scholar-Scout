@@ -13,6 +13,10 @@ import {
   type SourceMetadata,
 } from '@/lib/catalogue-contract';
 import { QUALIFICATION_KINDS, type QualificationKind } from '@/lib/qualification-record';
+import {
+  isContributorMediaPublicProjection,
+  type ContributorMediaPublicProjection,
+} from '@/lib/contributor-media';
 import { createHash } from 'node:crypto';
 
 export const CATALOGUE_CHECKLIST_DISCLOSURE =
@@ -184,6 +188,7 @@ export interface CataloguePublishedRecord {
   documentedSupport?: SourcedFact<string>;
   media?: { url?: string; alt?: string };
   renderableMedia?: CatalogueRenderableMedia;
+  contributorMedia?: ContributorMediaPublicProjection;
   mediaFallback: boolean;
 }
 
@@ -485,7 +490,7 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
   if (Object.keys(value).some((key) => ![
     'id', 'revision', 'title', 'regionId', 'region', 'source', 'facts', 'claimBoundary',
     'publishedRequirements', 'reviewedDescription', 'documentedSupport', 'media',
-    'renderableMedia', 'mediaFallback',
+    'renderableMedia', 'contributorMedia', 'mediaFallback',
   ].includes(key))) return false;
   if (!isBoundedRequiredText(value.title, 240) || !isBoundedRequiredText(value.regionId, 80)
     || !isBoundedClaim(value.claimBoundary)
@@ -507,7 +512,8 @@ function isCataloguePublishedRecord(value: unknown): value is CataloguePublished
     return false;
   }
   return (value.media === undefined || isMedia(value.media))
-    && (value.renderableMedia === undefined || isRenderableMedia(value.renderableMedia));
+    && (value.renderableMedia === undefined || isRenderableMedia(value.renderableMedia))
+    && (value.contributorMedia === undefined || isContributorMediaPublicProjection(value.contributorMedia));
 }
 
 function isCandidateStoredFields(value: Record<string, unknown>): boolean {

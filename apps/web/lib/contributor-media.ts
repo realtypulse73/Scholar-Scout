@@ -56,6 +56,7 @@ export interface ContributorMediaSubmission {
   reviewedAt?: string;
   releaseCandidateId?: string;
   releaseCandidateRevision?: number;
+  publicId?: string;
 }
 
 export interface ContributorMediaState {
@@ -77,6 +78,39 @@ export type ContributorAttestationValidation =
 export interface ContributorPrivateStatus {
   status: ContributorSubmissionStatus;
   revision: number;
+}
+
+export const CONTRIBUTOR_MEDIA_LABEL = 'Student-contributed perspective';
+export const CONTRIBUTOR_MEDIA_NON_ENDORSEMENT =
+  'This student-contributed perspective does not represent school endorsement.';
+
+/** The complete learner-safe representation of an independently governed contributor package. */
+export interface ContributorMediaPublicProjection {
+  publicId: string;
+  mediaRoute: string;
+  label: typeof CONTRIBUTOR_MEDIA_LABEL;
+  nonEndorsement: typeof CONTRIBUTOR_MEDIA_NON_ENDORSEMENT;
+}
+
+export function createContributorMediaPublicProjection(publicId: string): ContributorMediaPublicProjection {
+  return {
+    publicId,
+    mediaRoute: `/api/catalogue-media/${encodeURIComponent(publicId)}`,
+    label: CONTRIBUTOR_MEDIA_LABEL,
+    nonEndorsement: CONTRIBUTOR_MEDIA_NON_ENDORSEMENT,
+  };
+}
+
+export function isContributorMediaPublicProjection(input: unknown): input is ContributorMediaPublicProjection {
+  if (!isRecord(input) || !isPublicMediaId(input.publicId)
+    || input.mediaRoute !== `/api/catalogue-media/${encodeURIComponent(input.publicId)}`
+    || input.label !== CONTRIBUTOR_MEDIA_LABEL
+    || input.nonEndorsement !== CONTRIBUTOR_MEDIA_NON_ENDORSEMENT) {
+    return false;
+  }
+  return Object.keys(input).every((key) => (
+    key === 'publicId' || key === 'mediaRoute' || key === 'label' || key === 'nonEndorsement'
+  ));
 }
 
 /** Private reviewer-only evidence. This DTO must never cross a learner-facing route. */
@@ -254,6 +288,7 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
     && (input.reviewedAt === undefined || isTimestamp(input.reviewedAt))
     && (input.releaseCandidateId === undefined || isStableId(input.releaseCandidateId))
     && (input.releaseCandidateRevision === undefined || isRevision(input.releaseCandidateRevision))
+    && (input.publicId === undefined || isPublicMediaId(input.publicId))
     && (input.status !== 'Approved for release' || (
       isStableId(input.reviewerId)
       && isTimestamp(input.reviewedAt)
@@ -282,6 +317,10 @@ function isStableId(value: unknown): value is string {
 
 function isObjectKey(value: unknown): value is string {
   return typeof value === 'string' && /^contributor-media\/[a-zA-Z0-9_-]{1,160}\/(video|poster)\.(mp4|jpg|png)$/.test(value);
+}
+
+function isPublicMediaId(value: unknown): value is string {
+  return typeof value === 'string' && /^media-[a-f0-9-]{36}$/i.test(value);
 }
 
 function isRevision(value: unknown): value is number {

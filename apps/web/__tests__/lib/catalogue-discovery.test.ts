@@ -79,6 +79,28 @@ describe('catalogue discovery model', () => {
     expect(item.renderableMedia).not.toHaveProperty('embedUrl');
   });
 
+  it('preserves an anonymous governed contribution without changing discovery order or leaking private media state', () => {
+    const model = buildCatalogueDiscoveryModel({
+      records: [{
+        ...record('catalogue:media'),
+        contributorMedia: {
+          publicId: 'media-12345678-1234-1234-1234-123456789abc',
+          mediaRoute: '/api/catalogue-media/media-12345678-1234-1234-1234-123456789abc',
+          label: 'Student-contributed perspective',
+          nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
+        },
+      }, record('catalogue:other')],
+      searchParams: { metro: 'greater-houston' },
+      now: new Date('2026-09-23T00:00:00.000Z'),
+    });
+
+    expect(model.items.map((item) => item.id)).toEqual(['catalogue:media', 'catalogue:other']);
+    expect(model.items[0]?.contributorMedia).toEqual(expect.objectContaining({
+      mediaRoute: '/api/catalogue-media/media-12345678-1234-1234-1234-123456789abc',
+    }));
+    expect(JSON.stringify(model.items[0]?.contributorMedia)).not.toMatch(/account|signer|attest|blob|object|review|audit|rank|analytics/i);
+  });
+
   it('retains complete factual sources and official verification when media falls back', () => {
     const reviewed = record('catalogue:fallback');
     reviewed.mediaFallback = true;

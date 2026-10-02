@@ -1,7 +1,11 @@
 import 'server-only';
 
 import { randomUUID } from 'node:crypto';
-import { isContributorMediaState } from '@/lib/contributor-media';
+import {
+  createContributorMediaPublicProjection,
+  isContributorMediaState,
+  type ContributorMediaPublicProjection,
+} from '@/lib/contributor-media';
 import {
   CATALOGUE_CHECKLIST_DISCLOSURE,
   createEmptyCataloguePublicationState,
@@ -312,7 +316,7 @@ export async function publishWeeklyCatalogueSnapshot(input: {
       || candidate.approval?.revision !== candidate.revision)) {
       throw new CatalogueReleaseSelectionError();
     }
-    assertContributorMediaReleaseEligibility({
+    const contributorMediaByCandidate = assertContributorMediaReleaseEligibility({
       state: data.contributorMediaState,
       selected: selected.filter((candidate): candidate is CatalogueCandidate => candidate !== undefined),
       publisherId: input.actor.id,
@@ -347,7 +351,7 @@ export async function publishWeeklyCatalogueSnapshot(input: {
         retired.push({ id: candidate.id, revision: candidate.revision });
         return candidate;
       }
-      records.set(candidate.id, toPublishedRecord(candidate, now));
+      records.set(candidate.id, toPublishedRecord(candidate, now, contributorMediaByCandidate.get(candidate.id)));
       included.push({ id: candidate.id, revision: candidate.revision });
       return candidate;
     });
@@ -1017,8 +1021,9 @@ function assertContributorMediaReleaseEligibility(input: {
   state: unknown;
   selected: CatalogueCandidate[];
   publisherId: string;
-}): void {
-  if (input.state === undefined) return;
+}): Map<string, ContributorMediaPublicProjection> {
+  const projections = new Map<string, ContributorMediaPublicProjection>();
+  if (input.state === undefined) return projections;
   if (!isContributorMediaState(input.state)) throw new ContributorMediaReleaseEligibilityError();
   for (const candidate of input.selected) {
     if (candidate.retirementIntent) continue;
@@ -1034,10 +1039,15 @@ function assertContributorMediaReleaseEligibility(input: {
       || submission.reviewerId === undefined
       || submission.reviewerId === submission.accountId
       || input.publisherId === submission.accountId
-      || input.publisherId === submission.reviewerId) {
+      || input.publisherId === submission.reviewerId
+      || !submission.mediaPackage?.videoUploaded
+      || !submission.mediaPackage.posterUploaded) {
       throw new ContributorMediaReleaseEligibilityError();
     }
+    submission.publicId ??= `media-${randomUUID()}`;
+    projections.set(candidate.id, createContributorMediaPublicProjection(submission.publicId));
   }
+  return projections;
 }
 
 function normalizeReleaseSelection(candidateIds: string[]): string[] {
@@ -1053,6 +1063,7 @@ function normalizeReleaseSelection(candidateIds: string[]): string[] {
 function toPublishedRecord(
   candidate: CatalogueCandidate,
   now: Date,
+  contributorMedia?: ContributorMediaPublicProjection,
 ): CataloguePublishedRecord {
   const media = resolveRenderableMedia(candidate.mediaCandidates, now);
   return {
@@ -1074,6 +1085,7 @@ function toPublishedRecord(
       ? {}
       : { documentedSupport: candidate.documentedSupport }),
     ...(media.renderableMedia === undefined ? {} : { renderableMedia: media.renderableMedia }),
+    ...(contributorMedia === undefined ? {} : { contributorMedia }),
     mediaFallback: media.mediaFallback,
   };
 }

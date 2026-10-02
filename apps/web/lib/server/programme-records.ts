@@ -111,6 +111,14 @@ export async function getGovernedProgrammes() {
   return mergeProgrammes(programmes, publishedRecords);
 }
 
+/** Resolves only currently published canonical programme IDs for dependent governed release checks. */
+export async function getCurrentGovernedProgrammeIds(): Promise<Set<string>> {
+  const currentProgrammes = await getGovernedProgrammes();
+  return new Set(currentProgrammes
+    .filter((programme) => (programme.publicationStatus ?? 'published') === 'published')
+    .map((programme) => programme.id));
+}
+
 export function mergeProgrammes(seedProgrammes: Programme[], records: Programme[]) {
   const recordIds = new Set(records.map((record) => record.id));
   return [

@@ -4,6 +4,7 @@ import { POST as createInvitation } from '@/app/api/admin/contributor-media/invi
 import { POST as attest } from '@/app/api/contributor-media/attestation/route';
 import { POST as completeMedia } from '@/app/api/contributor-media/complete/route';
 import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
+import { GET as getCatalogueMedia } from '@/app/api/catalogue-media/[publicId]/route';
 import { GET as getReviewQueue, POST as reviewMedia } from '@/app/api/admin/contributor-media/review/route';
 import { getServerSession } from 'next-auth';
 import {
@@ -19,10 +20,12 @@ jest.mock('@/lib/server/contributor-media', () => ({
   ...jest.requireActual('@/lib/server/contributor-media'),
   issueContributorMediaUpload: jest.fn(),
   completeContributorMediaUpload: jest.fn(),
+  getReleasedContributorMedia: jest.fn(),
 }));
 
 import {
   completeContributorMediaUpload,
+  getReleasedContributorMedia,
   issueContributorMediaUpload,
 } from '@/lib/server/contributor-media';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
@@ -215,6 +218,36 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ submission: { status: 'Action needed', revision: 1 } });
+  });
+
+  it('returns one generic failure for unknown or private catalogue-media IDs', async () => {
+    jest.mocked(getReleasedContributorMedia).mockResolvedValue(null);
+
+    const response = await getCatalogueMedia(
+      new Request('http://localhost/api/catalogue-media/not-a-public-id'),
+      { params: Promise.resolve({ publicId: 'not-a-public-id' }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe('');
+    expect(getReleasedContributorMedia).toHaveBeenCalledWith('not-a-public-id');
+  });
+
+  it('streams an authorized opaque ID without exposing a Blob URL or private metadata', async () => {
+    jest.mocked(getReleasedContributorMedia).mockResolvedValue({
+      stream: new ReadableStream({ start(controller) { controller.close(); } }),
+      contentType: 'video/mp4',
+    });
+
+    const response = await getCatalogueMedia(
+      new Request('http://localhost/api/catalogue-media/media-12345678-1234-1234-1234-123456789abc'),
+      { params: Promise.resolve({ publicId: 'media-12345678-1234-1234-1234-123456789abc' }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('video/mp4');
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(JSON.stringify(Object.fromEntries(response.headers))).not.toMatch(/blob|object|signer|account/i);
   });
 
   it('lets only an independent reviewer approve a current private package', async () => {

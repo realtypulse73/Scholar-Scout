@@ -410,6 +410,54 @@ describe('weekly catalogue publication', () => {
     });
   });
 
+  it('creates an anonymous projection only when the approved private package enters the governed release', async () => {
+    await approve(validCandidate);
+    const data = await store.read();
+    data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'contribution-1',
+        accountId: 'contributor-1',
+        status: 'Approved for release',
+        signerName: 'Private Contributor',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+        attestedAt: NOW.toISOString(),
+        createdAt: NOW.toISOString(),
+        updatedAt: NOW.toISOString(),
+        revision: 2,
+        reviewerId: reviewer.id,
+        reviewedAt: NOW.toISOString(),
+        releaseCandidateId: validCandidate.id,
+        releaseCandidateRevision: 1,
+        mediaPackage: {
+          id: 'package-1',
+          programmeId: validCandidate.id,
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png',
+          videoUploaded: true,
+          posterUploaded: true,
+        },
+      }],
+    };
+    await store.write(data);
+
+    const result = await publishWeeklyCatalogueSnapshot({
+      actor: administrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-28T13:00:00.000Z'),
+    });
+    const projection = result.snapshot.records[0]?.contributorMedia;
+
+    expect(projection).toMatchObject({
+      publicId: expect.stringMatching(/^media-[a-f0-9-]{36}$/),
+      mediaRoute: expect.stringMatching(/^\/api\/catalogue-media\/media-/),
+      label: 'Student-contributed perspective',
+      nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
+    });
+    expect(JSON.stringify(projection)).not.toMatch(/account|signer|attest|blob|object|review|audit|rank|analytics/i);
+  });
+
   it('rejects an out-of-window or duplicate normal release but accepts the next ISO week', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
     await reviewCatalogueCandidate({
