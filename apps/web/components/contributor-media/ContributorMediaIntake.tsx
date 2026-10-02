@@ -23,8 +23,8 @@ export default function ContributorMediaIntake({ programmes, initialStatus }: Co
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const error = validateFiles(programmeId, video, poster);
-    if (error) {
-      setMessage(error);
+    if (error || !video || !poster) {
+      setMessage(error ?? 'Action needed: choose a programme, one video, and one poster.');
       return;
     }
     setSubmitting(true);
