@@ -835,6 +835,15 @@ describe('catalogue conflict and recovery commands', () => {
       candidateIds: [validCandidate.id],
       now: new Date('2026-09-21T13:00:00.000Z'),
     })).rejects.toThrow('contributor-media-release-ineligible');
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: {
+        id: reviewer.id,
+        email: reviewer.email,
+        capabilities: new Set(['reviewer', 'administrator'] as const),
+      },
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    })).rejects.toThrow('contributor-media-release-ineligible');
     expect((await getPublishedCatalogueSnapshot()).records).toEqual([]);
   });
 });

@@ -8,6 +8,7 @@ import {
   CatalogueCandidateRevisionConflictError,
   CataloguePublicationConflictError,
   CatalogueReleaseAuthorizationError,
+  ContributorMediaReleaseEligibilityError,
   CatalogueReleaseScheduleError,
   CatalogueReleaseSelectionError,
   getCatalogueCandidateHistory,
@@ -215,7 +216,7 @@ async function handleRecoveryAction(
     if (error instanceof CatalogueCandidateChecklistError || error instanceof CatalogueReleaseSelectionError) {
       return NextResponse.json({ error: 'The catalogue recovery request needs correction before it can be released.' }, { status: 400 });
     }
-    if (error instanceof CatalogueReleaseAuthorizationError) {
+    if (error instanceof CatalogueReleaseAuthorizationError || error instanceof ContributorMediaReleaseEligibilityError) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (error instanceof CatalogueCandidateRevisionConflictError || error instanceof CataloguePublicationConflictError) {

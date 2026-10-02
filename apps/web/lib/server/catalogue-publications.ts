@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { randomUUID } from 'node:crypto';
+import { isContributorMediaState } from '@/lib/contributor-media';
 import {
   CATALOGUE_CHECKLIST_DISCLOSURE,
   createEmptyCataloguePublicationState,
@@ -92,6 +93,14 @@ export class CatalogueReleaseSelectionError extends Error {
   constructor() {
     super('catalogue-release-selection-invalid');
     this.name = 'CatalogueReleaseSelectionError';
+  }
+}
+
+/** An approved private contribution is release eligibility only, never a second publication path. */
+export class ContributorMediaReleaseEligibilityError extends Error {
+  constructor() {
+    super('contributor-media-release-ineligible');
+    this.name = 'ContributorMediaReleaseEligibilityError';
   }
 }
 
@@ -303,6 +312,11 @@ export async function publishWeeklyCatalogueSnapshot(input: {
       || candidate.approval?.revision !== candidate.revision)) {
       throw new CatalogueReleaseSelectionError();
     }
+    assertContributorMediaReleaseEligibility({
+      state: data.contributorMediaState,
+      selected: selected.filter((candidate): candidate is CatalogueCandidate => candidate !== undefined),
+      publisherId: input.actor.id,
+    });
 
     const priorSnapshot = state.activeSnapshotId
       ? state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId)
@@ -996,6 +1010,33 @@ function authorizeRelease(
     : hasCapability(actor, 'administrator') || hasCapability(actor, 'reviewer');
   if (!authorized || (kind === 'emergency' && (!reason || reason.trim().length === 0 || reason.length > 500))) {
     throw new CatalogueReleaseAuthorizationError();
+  }
+}
+
+function assertContributorMediaReleaseEligibility(input: {
+  state: unknown;
+  selected: CatalogueCandidate[];
+  publisherId: string;
+}): void {
+  if (input.state === undefined) return;
+  if (!isContributorMediaState(input.state)) throw new ContributorMediaReleaseEligibilityError();
+  for (const candidate of input.selected) {
+    if (candidate.retirementIntent) continue;
+    const related = input.state.submissions.filter((submission) => (
+      submission.mediaPackage?.programmeId === candidate.id
+    ));
+    if (related.length === 0) continue;
+    if (related.length !== 1) throw new ContributorMediaReleaseEligibilityError();
+    const submission = related[0];
+    if (submission.status !== 'Approved for release'
+      || submission.releaseCandidateId !== candidate.id
+      || submission.releaseCandidateRevision !== candidate.revision
+      || submission.reviewerId === undefined
+      || submission.reviewerId === submission.accountId
+      || input.publisherId === submission.accountId
+      || input.publisherId === submission.reviewerId) {
+      throw new ContributorMediaReleaseEligibilityError();
+    }
   }
 }
 
