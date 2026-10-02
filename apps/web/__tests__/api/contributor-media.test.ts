@@ -2,6 +2,8 @@
 
 import { POST as createInvitation } from '@/app/api/admin/contributor-media/invitations/route';
 import { POST as attest } from '@/app/api/contributor-media/attestation/route';
+import { POST as completeMedia } from '@/app/api/contributor-media/complete/route';
+import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
 import { getServerSession } from 'next-auth';
 import {
   setScholarScoutDataStoreForTests,
@@ -9,6 +11,17 @@ import {
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
 import { resolveStudentActor } from '@/lib/server/student-actor';
+
+jest.mock('@/lib/server/contributor-media', () => ({
+  ...jest.requireActual('@/lib/server/contributor-media'),
+  issueContributorMediaUpload: jest.fn(),
+  completeContributorMediaUpload: jest.fn(),
+}));
+
+import {
+  completeContributorMediaUpload,
+  issueContributorMediaUpload,
+} from '@/lib/server/contributor-media';
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/auth', () => ({ authOptions: {} }), { virtual: true });
@@ -153,6 +166,49 @@ describe('contributor media routes', () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: 'Contributor invitation required.' });
     expect(store.data.contributorMediaState?.submissions).toEqual([]);
+  });
+
+  it('returns only an opaque upload capability after server-side binding', async () => {
+    jest.mocked(issueContributorMediaUpload).mockResolvedValue({
+      status: 'applied',
+      value: {
+        status: 'issued',
+        capability: { uploadId: 'opaque-upload-id', status: 'Draft', revision: 1 },
+      },
+    } as never);
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST',
+      body: JSON.stringify({
+        programmeId: 'programme-1',
+        expectedRevision: 1,
+        files: [
+          { kind: 'video', contentType: 'video/mp4', size: 1024 },
+          { kind: 'poster', contentType: 'image/png', size: 1024 },
+        ],
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as Record<string, unknown>;
+    expect(body).toEqual({ capability: { uploadId: 'opaque-upload-id', status: 'Draft', revision: 1 } });
+    expect(JSON.stringify(body)).not.toMatch(/blob|pathname|url|signer/i);
+  });
+
+  it('maps failed server inspection to Action needed without returning private object details', async () => {
+    jest.mocked(completeContributorMediaUpload).mockResolvedValue({
+      status: 'applied',
+      value: {
+        status: 'action-needed',
+        submission: { status: 'Action needed', revision: 1 },
+      },
+    } as never);
+    const response = await completeMedia(new Request('http://localhost/api/contributor-media/complete', {
+      method: 'POST',
+      body: JSON.stringify({ uploadId: 'opaque-upload-id', expectedRevision: 1 }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ submission: { status: 'Action needed', revision: 1 } });
   });
 });
 

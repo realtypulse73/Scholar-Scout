@@ -3,7 +3,33 @@ const MAX_SIGNER_NAME_LENGTH = 120;
 const SIGNER_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
 
 export type ContributorInvitationStatus = 'active' | 'disabled' | 'withdrawn';
-export type ContributorSubmissionStatus = 'Draft';
+export const CONTRIBUTOR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
+export const CONTRIBUTOR_POSTER_MAX_BYTES = 5 * 1024 * 1024;
+export const CONTRIBUTOR_VIDEO_MAX_DURATION_MS = 30_000;
+
+export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed';
+export type ContributorMediaFileKind = 'video' | 'poster';
+
+export interface ContributorMediaFile {
+  kind: ContributorMediaFileKind;
+  contentType: string;
+  size: number;
+}
+
+export interface ContributorMediaPackageRequest {
+  programmeId: string;
+  expectedRevision: number;
+  files: ContributorMediaFile[];
+}
+
+export interface ContributorPrivateMediaPackage {
+  id: string;
+  programmeId: string;
+  videoObjectKey: string;
+  posterObjectKey: string;
+  videoUploaded: boolean;
+  posterUploaded: boolean;
+}
 
 export interface ContributorMediaInvitation {
   id: string;
@@ -24,6 +50,8 @@ export interface ContributorMediaSubmission {
   attestedAt: string;
   createdAt: string;
   updatedAt: string;
+  revision?: number;
+  mediaPackage?: ContributorPrivateMediaPackage;
 }
 
 export interface ContributorMediaState {
@@ -44,6 +72,7 @@ export type ContributorAttestationValidation =
 
 export interface ContributorPrivateStatus {
   status: ContributorSubmissionStatus;
+  revision: number;
 }
 
 export function createEmptyContributorMediaState(): ContributorMediaState {
@@ -112,7 +141,42 @@ export function getContributorPrivateStatus(input: {
   ) {
     return null;
   }
-  return { status: input.submission.status };
+  return { status: input.submission.status, revision: input.submission.revision ?? 1 };
+}
+
+export function validateContributorMediaPackage(input: unknown):
+  | { ok: true; value: ContributorMediaPackageRequest }
+  | { ok: false; error: 'invalid-package' } {
+  if (!isRecord(input) || !isStableId(input.programmeId) || !isRevision(input.expectedRevision)
+    || !Array.isArray(input.files) || input.files.length !== 2) {
+    return { ok: false, error: 'invalid-package' };
+  }
+  const files = input.files.map(parseMediaFile);
+  if (files.some((file) => file === null)) return { ok: false, error: 'invalid-package' };
+  const typedFiles = files as ContributorMediaFile[];
+  const video = typedFiles.filter((file) => file.kind === 'video');
+  const poster = typedFiles.filter((file) => file.kind === 'poster');
+  if (video.length !== 1 || poster.length !== 1 || video[0].contentType !== 'video/mp4'
+    || !['image/jpeg', 'image/png'].includes(poster[0].contentType)
+    || video[0].size > CONTRIBUTOR_VIDEO_MAX_BYTES || poster[0].size > CONTRIBUTOR_POSTER_MAX_BYTES) {
+    return { ok: false, error: 'invalid-package' };
+  }
+  return {
+    ok: true,
+    value: { programmeId: input.programmeId, expectedRevision: input.expectedRevision, files: typedFiles },
+  };
+}
+
+export function validateInspectedContributorVideo(input: unknown):
+  | { ok: true }
+  | { ok: false; error: 'invalid-video' } {
+  const durationMs = isRecord(input) ? input.durationMs : undefined;
+  if (!isRecord(input) || input.contentType !== 'video/mp4'
+    || !Number.isInteger(durationMs) || typeof durationMs !== 'number' || durationMs < 0
+    || durationMs > CONTRIBUTOR_VIDEO_MAX_DURATION_MS) {
+    return { ok: false, error: 'invalid-video' };
+  }
+  return { ok: true };
 }
 
 export function isContributorMediaState(input: unknown): input is ContributorMediaState {
@@ -157,13 +221,41 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
   return isRecord(input)
     && typeof input.id === 'string'
     && typeof input.accountId === 'string'
-    && input.status === 'Draft'
+    && (input.status === 'Draft' || input.status === 'Ready for review' || input.status === 'Action needed')
     && normalizeSignerName(input.signerName) === input.signerName
     && input.creatorAuthority === true
     && input.recognisablePeopleConsent === true
     && isTimestamp(input.attestedAt)
     && isTimestamp(input.createdAt)
-    && isTimestamp(input.updatedAt);
+    && isTimestamp(input.updatedAt)
+    && (input.revision === undefined || isRevision(input.revision))
+    && (input.mediaPackage === undefined || isPrivateMediaPackage(input.mediaPackage));
+}
+
+function parseMediaFile(input: unknown): ContributorMediaFile | null {
+  const size = isRecord(input) ? input.size : undefined;
+  if (!isRecord(input) || (input.kind !== 'video' && input.kind !== 'poster')
+    || typeof input.contentType !== 'string' || !Number.isSafeInteger(size)
+    || typeof size !== 'number' || size < 1) return null;
+  return { kind: input.kind, contentType: input.contentType, size };
+}
+
+function isPrivateMediaPackage(input: unknown): input is ContributorPrivateMediaPackage {
+  return isRecord(input) && isStableId(input.id) && isStableId(input.programmeId)
+    && isObjectKey(input.videoObjectKey) && isObjectKey(input.posterObjectKey)
+    && typeof input.videoUploaded === 'boolean' && typeof input.posterUploaded === 'boolean';
+}
+
+function isStableId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
+}
+
+function isObjectKey(value: unknown): value is string {
+  return typeof value === 'string' && /^contributor-media\/[a-zA-Z0-9_-]{1,160}\/(video|poster)\.(mp4|jpg|png)$/.test(value);
+}
+
+function isRevision(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function isTimestamp(value: unknown): value is string {

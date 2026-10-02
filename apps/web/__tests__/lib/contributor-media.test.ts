@@ -1,6 +1,8 @@
 import {
   createContributorInvitation,
   getContributorPrivateStatus,
+  validateContributorMediaPackage,
+  validateInspectedContributorVideo,
   validateContributorAttestation,
 } from '@/lib/contributor-media';
 
@@ -68,7 +70,7 @@ describe('contributor media domain contracts', () => {
         createdAt: '2026-09-29T00:00:00.000Z',
         updatedAt: '2026-09-29T00:00:00.000Z',
       },
-    })).toEqual({ status: 'Draft' });
+    })).toEqual({ status: 'Draft', revision: 1 });
   });
 
   it('never projects a private status when the invitation belongs to another account', () => {
@@ -109,5 +111,55 @@ describe('contributor media domain contracts', () => {
       recognisablePeopleConsent: true,
       other: true,
     }).ok).toBe(false);
+  });
+
+  it('accepts exactly one bounded MP4 and JPEG/PNG poster package', () => {
+    expect(validateContributorMediaPackage({
+      programmeId: 'programme-1',
+      expectedRevision: 1,
+      files: [
+        { kind: 'video', contentType: 'video/mp4', size: 25 * 1024 * 1024 },
+        { kind: 'poster', contentType: 'image/jpeg', size: 5 * 1024 * 1024 },
+      ],
+    })).toEqual({
+      ok: true,
+      value: {
+        programmeId: 'programme-1',
+        expectedRevision: 1,
+        files: [
+          { kind: 'video', contentType: 'video/mp4', size: 25 * 1024 * 1024 },
+          { kind: 'poster', contentType: 'image/jpeg', size: 5 * 1024 * 1024 },
+        ],
+      },
+    });
+  });
+
+  it('fails closed for invalid package counts, MIME claims, byte limits, and inspected duration', () => {
+    expect(validateContributorMediaPackage({
+      programmeId: 'programme-1', expectedRevision: 1, files: [],
+    }).ok).toBe(false);
+    expect(validateContributorMediaPackage({
+      programmeId: 'programme-1',
+      expectedRevision: 1,
+      files: [
+        { kind: 'video', contentType: 'video/quicktime', size: 100 },
+        { kind: 'poster', contentType: 'image/png', size: 100 },
+      ],
+    }).ok).toBe(false);
+    expect(validateContributorMediaPackage({
+      programmeId: 'programme-1',
+      expectedRevision: 1,
+      files: [
+        { kind: 'video', contentType: 'video/mp4', size: 25 * 1024 * 1024 + 1 },
+        { kind: 'poster', contentType: 'image/png', size: 100 },
+      ],
+    }).ok).toBe(false);
+    expect(validateInspectedContributorVideo({
+      contentType: 'video/mp4', durationMs: 30_000,
+    })).toEqual({ ok: true });
+    expect(validateInspectedContributorVideo({
+      contentType: 'video/mp4', durationMs: 30_001,
+    })).toEqual({ ok: false, error: 'invalid-video' });
+    expect(validateInspectedContributorVideo(null)).toEqual({ ok: false, error: 'invalid-video' });
   });
 });

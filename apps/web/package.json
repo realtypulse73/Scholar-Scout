@@ -18,6 +18,7 @@
     "@upstash/ratelimit": "2.0.8",
     "@upstash/redis": "1.38.0",
     "@vercel/blob": "^2.3.3",
+    "mediainfo.js": "0.3.8",
     "next": "^15.5.15",
     "next-auth": "^4.24.14",
     "openai": "^6.10.0",
