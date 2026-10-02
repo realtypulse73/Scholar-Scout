@@ -458,6 +458,67 @@ describe('weekly catalogue publication', () => {
     expect(JSON.stringify(projection)).not.toMatch(/account|signer|attest|blob|object|review|audit|rank|analytics/i);
   });
 
+  it('permits only the active Preview owner demo marker through release and omits it outside Preview', async () => {
+    await approve(validCandidate);
+    const owner = {
+      id: 'owner-1',
+      email: 'owner@example.com',
+      capabilities: new Set(['editor', 'reviewer', 'administrator'] as const),
+    };
+    const originalEnvironment = {
+      VERCEL: process.env.VERCEL,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO,
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL,
+    };
+    process.env.VERCEL = '1';
+    process.env.VERCEL_ENV = 'preview';
+    process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO = 'true';
+    process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL = owner.email;
+    try {
+      const data = await store.read();
+      data.contributorMediaState = {
+        invitations: [],
+        submissions: [{
+          id: 'contribution-preview', accountId: owner.id, status: 'Approved for release', signerName: 'Preview Owner',
+          creatorAuthority: true, recognisablePeopleConsent: true,
+          attestedAt: NOW.toISOString(), createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(), revision: 2,
+          reviewerId: owner.id, reviewedAt: NOW.toISOString(),
+          approvalMode: 'preview-owner-demo',
+          releaseCandidateId: validCandidate.id, releaseCandidateRevision: 1,
+          mediaPackage: {
+            id: 'package-preview', programmeId: validCandidate.id,
+            videoObjectKey: 'contributor-media/package-preview/video.mp4',
+            posterObjectKey: 'contributor-media/package-preview/poster.png', videoUploaded: true, posterUploaded: true,
+          },
+        }],
+      };
+      await store.write(data);
+
+      await publishWeeklyCatalogueSnapshot({
+        actor: owner,
+        candidateIds: [validCandidate.id],
+        now: new Date('2026-09-28T13:00:00.000Z'),
+      });
+      const preview = await getPublishedCatalogueSnapshot();
+      expect(preview).toMatchObject({
+        status: 'published',
+        records: [expect.objectContaining({
+          contributorMedia: expect.objectContaining({ label: 'Preview demo: Student-contributed perspective' }),
+        })],
+      });
+
+      process.env.VERCEL_ENV = 'production';
+      const production = await getPublishedCatalogueSnapshot();
+      expect(production).toMatchObject({ status: 'published', records: [expect.not.objectContaining({ contributorMedia: expect.anything() })] });
+    } finally {
+      restoreEnvironment('VERCEL', originalEnvironment.VERCEL);
+      restoreEnvironment('VERCEL_ENV', originalEnvironment.VERCEL_ENV);
+      restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO', originalEnvironment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO);
+      restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL', originalEnvironment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL);
+    }
+  });
+
   it('rejects an out-of-window or duplicate normal release but accepts the next ISO week', async () => {
     await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
     await reviewCatalogueCandidate({
@@ -895,6 +956,14 @@ describe('catalogue conflict and recovery commands', () => {
     expect((await getPublishedCatalogueSnapshot()).records).toEqual([]);
   });
 });
+
+function restoreEnvironment(name: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
+  }
+  process.env[name] = value;
+}
 
 function evidence() {
   return {

@@ -200,4 +200,41 @@ describe('reviewed contributor media lifecycle', () => {
       }],
     })).toBe(true);
   });
+
+  it('accepts only the bounded approval modes and keeps the Preview demo projection anonymous', () => {
+    const previewProjection = createContributorMediaPublicProjection(
+      'public-media-opaque-id',
+      'preview-owner-demo',
+    );
+    expect(previewProjection).toEqual({
+      publicId: 'public-media-opaque-id',
+      mediaRoute: '/api/catalogue-media/public-media-opaque-id',
+      label: 'Preview demo: Student-contributed perspective',
+      nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
+    });
+    expect(JSON.stringify(previewProjection)).not.toMatch(/account|signer|attest|blob|object|review|audit|provider|rank|analytics/i);
+
+    expect(isContributorMediaState({
+      invitations: [],
+      submissions: [{
+        id: 'submission-preview', accountId: 'owner-1', status: 'Approved for release', signerName: 'Preview Owner',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T12:00:00.000Z', createdAt: '2026-10-02T12:00:00.000Z', updatedAt: '2026-10-02T12:00:00.000Z',
+        revision: 2, reviewerId: 'owner-1', reviewedAt: '2026-10-02T12:00:00.000Z',
+        releaseCandidateId: 'programme-1', releaseCandidateRevision: 3,
+        approvalMode: 'preview-owner-demo',
+      }],
+    })).toBe(true);
+    expect(isContributorMediaState({
+      invitations: [],
+      submissions: [{
+        id: 'submission-invalid', accountId: 'owner-1', status: 'Approved for release', signerName: 'Preview Owner',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T12:00:00.000Z', createdAt: '2026-10-02T12:00:00.000Z', updatedAt: '2026-10-02T12:00:00.000Z',
+        revision: 2, reviewerId: 'owner-1', reviewedAt: '2026-10-02T12:00:00.000Z',
+        releaseCandidateId: 'programme-1', releaseCandidateRevision: 3,
+        approvalMode: 'unbounded-exception',
+      }],
+    })).toBe(false);
+  });
 });
