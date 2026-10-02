@@ -107,7 +107,7 @@ describe('contributor media routes', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ submission: { status: 'Draft' } });
+    await expect(response.json()).resolves.toEqual({ submission: { status: 'Draft', revision: 1 } });
   });
 
   it('does not reveal any private contributor fields to unauthenticated or uninvited accounts', async () => {

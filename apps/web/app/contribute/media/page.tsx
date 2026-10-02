@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import ContributorMediaIntake from '@/components/contributor-media/ContributorMediaIntake';
 import { getContributorMediaPrivateStatus } from '@/lib/server/contributor-media';
+import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { resolveStudentActor } from '@/lib/server/student-actor';
 
 export const metadata = {
@@ -32,10 +34,10 @@ export default async function ContributorMediaPage() {
             with an invited account to continue.
           </p>
         ) : status ? (
-          <div className="mt-6 rounded-xl border border-border bg-ink-50 p-4" aria-live="polite">
-            <h2 className="font-semibold">Current private status: {status.status}</h2>
-            <p className="mt-1 text-sm text-ink-700">Your submission is private. We will provide the next secure step after review preparation.</p>
-          </div>
+          <ContributorMediaIntake
+            initialStatus={status}
+            programmes={(await getGovernedProgrammes()).map((programme) => ({ id: programme.id, name: programme.name }))}
+          />
         ) : (
           <p className="mt-6 text-sm text-ink-700">No active contributor draft is available for this account.</p>
         )}
