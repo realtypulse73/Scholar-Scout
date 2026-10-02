@@ -7,6 +7,16 @@ const REQUIRED_CAPABILITIES = ['editor', 'reviewer', 'administrator'] as const;
 
 export type PreviewOwnerMediaDemoEnvironment = Readonly<Record<string, string | undefined>>;
 
+/** Returns true only for the exact server-only Preview runtime configuration. */
+export function isPreviewOwnerMediaDemoRuntime(
+  environment: PreviewOwnerMediaDemoEnvironment = process.env,
+): boolean {
+  return environment.VERCEL === '1'
+    && environment.VERCEL_ENV === 'preview'
+    && environment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO === 'true'
+    && normalizeSingleEmail(environment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL) !== null;
+}
+
 /**
  * Authorizes the narrowly configured owner-only demo exception. This server-only
  * check deliberately fails closed unless the trusted actor and Vercel Preview
@@ -17,9 +27,7 @@ export function isPreviewOwnerMediaDemoActor(
   environment: PreviewOwnerMediaDemoEnvironment = process.env,
 ): boolean {
   if (
-    environment.VERCEL !== '1'
-    || environment.VERCEL_ENV !== 'preview'
-    || environment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO !== 'true'
+    !isPreviewOwnerMediaDemoRuntime(environment)
     || !isStableActorId(actor.id)
     || !(actor.capabilities instanceof Set)
     || !REQUIRED_CAPABILITIES.every((capability) => actor.capabilities!.has(capability))

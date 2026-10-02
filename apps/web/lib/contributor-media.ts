@@ -9,6 +9,7 @@ export const CONTRIBUTOR_VIDEO_MAX_DURATION_MS = 30_000;
 
 export type ContributorSubmissionStatus = 'Draft' | 'Ready for review' | 'Action needed' | 'Approved for release';
 export type ContributorMediaFileKind = 'video' | 'poster';
+export type ContributorMediaApprovalMode = 'independent' | 'preview-owner-demo';
 
 export interface ContributorMediaFile {
   kind: ContributorMediaFileKind;
@@ -57,6 +58,7 @@ export interface ContributorMediaSubmission {
   releaseCandidateId?: string;
   releaseCandidateRevision?: number;
   publicId?: string;
+  approvalMode?: ContributorMediaApprovalMode;
 }
 
 export interface ContributorMediaState {
@@ -81,6 +83,7 @@ export interface ContributorPrivateStatus {
 }
 
 export const CONTRIBUTOR_MEDIA_LABEL = 'Student-contributed perspective';
+export const PREVIEW_OWNER_MEDIA_DEMO_LABEL = 'Preview demo: Student-contributed perspective';
 export const CONTRIBUTOR_MEDIA_NON_ENDORSEMENT =
   'This student-contributed perspective does not represent school endorsement.';
 
@@ -88,15 +91,20 @@ export const CONTRIBUTOR_MEDIA_NON_ENDORSEMENT =
 export interface ContributorMediaPublicProjection {
   publicId: string;
   mediaRoute: string;
-  label: typeof CONTRIBUTOR_MEDIA_LABEL;
+  label: typeof CONTRIBUTOR_MEDIA_LABEL | typeof PREVIEW_OWNER_MEDIA_DEMO_LABEL;
   nonEndorsement: typeof CONTRIBUTOR_MEDIA_NON_ENDORSEMENT;
 }
 
-export function createContributorMediaPublicProjection(publicId: string): ContributorMediaPublicProjection {
+export function createContributorMediaPublicProjection(
+  publicId: string,
+  approvalMode: ContributorMediaApprovalMode = 'independent',
+): ContributorMediaPublicProjection {
   return {
     publicId,
     mediaRoute: `/api/catalogue-media/${encodeURIComponent(publicId)}`,
-    label: CONTRIBUTOR_MEDIA_LABEL,
+    label: approvalMode === 'preview-owner-demo'
+      ? PREVIEW_OWNER_MEDIA_DEMO_LABEL
+      : CONTRIBUTOR_MEDIA_LABEL,
     nonEndorsement: CONTRIBUTOR_MEDIA_NON_ENDORSEMENT,
   };
 }
@@ -104,7 +112,7 @@ export function createContributorMediaPublicProjection(publicId: string): Contri
 export function isContributorMediaPublicProjection(input: unknown): input is ContributorMediaPublicProjection {
   if (!isRecord(input) || !isPublicMediaId(input.publicId)
     || input.mediaRoute !== `/api/catalogue-media/${encodeURIComponent(input.publicId)}`
-    || input.label !== CONTRIBUTOR_MEDIA_LABEL
+    || (input.label !== CONTRIBUTOR_MEDIA_LABEL && input.label !== PREVIEW_OWNER_MEDIA_DEMO_LABEL)
     || input.nonEndorsement !== CONTRIBUTOR_MEDIA_NON_ENDORSEMENT) {
     return false;
   }
@@ -289,6 +297,9 @@ function isContributorSubmission(input: unknown): input is ContributorMediaSubmi
     && (input.releaseCandidateId === undefined || isStableId(input.releaseCandidateId))
     && (input.releaseCandidateRevision === undefined || isRevision(input.releaseCandidateRevision))
     && (input.publicId === undefined || isPublicMediaId(input.publicId))
+    && (input.approvalMode === undefined
+      || input.approvalMode === 'independent'
+      || input.approvalMode === 'preview-owner-demo')
     && (input.status !== 'Approved for release' || (
       isStableId(input.reviewerId)
       && isTimestamp(input.reviewedAt)

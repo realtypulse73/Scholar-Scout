@@ -20,7 +20,10 @@ import {
 import { commitConditionalMutation, type ConditionalMutationResult } from '@/lib/server/persistence-operations';
 import type { AccountStudentActor } from '@/lib/server/student-actor';
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
-import { isPreviewOwnerMediaDemoActor } from '@/lib/server/preview-owner-media-demo';
+import {
+  isPreviewOwnerMediaDemoActor,
+  isPreviewOwnerMediaDemoRuntime,
+} from '@/lib/server/preview-owner-media-demo';
 
 export type GrantInvitationResult =
   | { status: 'granted' | 'existing'; invitation: ContributorMediaInvitation }
@@ -68,6 +71,12 @@ export async function getReleasedContributorMedia(publicId: string): Promise<Rel
     || submission.releaseCandidateId !== record.id || submission.releaseCandidateRevision !== record.revision
     || candidate.lifecycle !== 'approved' || candidate.approval?.revision !== candidate.revision
     || candidate.revision !== record.revision || !submission.mediaPackage?.videoUploaded) {
+    return null;
+  }
+  if (
+    submission.approvalMode === 'preview-owner-demo'
+    && !isPreviewOwnerMediaDemoRuntime()
+  ) {
     return null;
   }
 
@@ -322,6 +331,9 @@ export async function reviewContributorMedia(input: {
     if (input.decision === 'approve') {
       submission.reviewerId = input.actor.id;
       submission.reviewedAt = submission.updatedAt;
+      submission.approvalMode = permitsOwnerSelfApproval
+        ? 'preview-owner-demo'
+        : 'independent';
       submission.releaseCandidateId = candidate.id;
       submission.releaseCandidateRevision = candidate.revision;
     }

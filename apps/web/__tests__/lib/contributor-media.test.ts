@@ -212,7 +212,7 @@ describe('reviewed contributor media lifecycle', () => {
       label: 'Preview demo: Student-contributed perspective',
       nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
     });
-    expect(JSON.stringify(previewProjection)).not.toMatch(/account|signer|attest|blob|object|review|audit|provider|rank|analytics/i);
+    expect(JSON.stringify(previewProjection)).not.toMatch(/account|signer|attest|blob|object|reviewer|audit|provider|rank|analytics/i);
 
     expect(isContributorMediaState({
       invitations: [],

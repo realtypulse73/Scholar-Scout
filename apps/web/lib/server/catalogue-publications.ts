@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import {
   createContributorMediaPublicProjection,
   isContributorMediaState,
+  PREVIEW_OWNER_MEDIA_DEMO_LABEL,
   type ContributorMediaPublicProjection,
 } from '@/lib/contributor-media';
 import {
@@ -29,6 +30,7 @@ import {
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
 import { readScholarScoutData } from '@/lib/server/data-store';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
+import { isPreviewOwnerMediaDemoActor, isPreviewOwnerMediaDemoRuntime } from '@/lib/server/preview-owner-media-demo';
 
 export class CataloguePublicationConflictError extends Error {
   constructor() {
@@ -319,7 +321,7 @@ export async function publishWeeklyCatalogueSnapshot(input: {
     const contributorMediaByCandidate = assertContributorMediaReleaseEligibility({
       state: data.contributorMediaState,
       selected: selected.filter((candidate): candidate is CatalogueCandidate => candidate !== undefined),
-      publisherId: input.actor.id,
+      publisher: input.actor,
     });
 
     const priorSnapshot = state.activeSnapshotId
@@ -419,7 +421,8 @@ export async function previewWeeklyCatalogueRelease(input: {
   authorizeRelease(input.actor, 'weekly', undefined);
   const candidateIds = normalizeReleaseSelection(input.candidateIds);
   const now = input.now ?? new Date();
-  const state = getReleaseState((await readScholarScoutData()).cataloguePublicationState);
+  const data = await readScholarScoutData();
+  const state = getReleaseState(data.cataloguePublicationState);
   const periodKey = getWeeklyReleasePeriodKey(now);
   const withinWindow = isWithinNormalWeeklyReleaseWindow(now);
   const alreadyPublished = state.manifests.some((manifest) => (
@@ -492,7 +495,8 @@ export async function getPublishedCatalogueSnapshot(): Promise<
   | { status: 'empty'; records: [] }
   | { status: 'published'; snapshotId: string; version: number; records: CataloguePublishedRecord[] }
 > {
-  const state = getReleaseState((await readScholarScoutData()).cataloguePublicationState);
+  const data = await readScholarScoutData();
+  const state = getReleaseState(data.cataloguePublicationState);
   const active = state.activeSnapshotId
     ? state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId)
     : undefined;
@@ -501,7 +505,10 @@ export async function getPublishedCatalogueSnapshot(): Promise<
     status: 'published',
     snapshotId: active.id,
     version: active.sequence,
-    records: clonePublicRecords(active.records),
+    records: omitInactivePreviewOwnerDemoMedia(
+      clonePublicRecords(active.records),
+      data.contributorMediaState,
+    ),
   };
 }
 
@@ -1020,7 +1027,7 @@ function authorizeRelease(
 function assertContributorMediaReleaseEligibility(input: {
   state: unknown;
   selected: CatalogueCandidate[];
-  publisherId: string;
+  publisher: ActiveStaffActor;
 }): Map<string, ContributorMediaPublicProjection> {
   const projections = new Map<string, ContributorMediaPublicProjection>();
   if (input.state === undefined) return projections;
@@ -1033,21 +1040,52 @@ function assertContributorMediaReleaseEligibility(input: {
     if (related.length === 0) continue;
     if (related.length !== 1) throw new ContributorMediaReleaseEligibilityError();
     const submission = related[0];
+    const isPreviewOwnerDemo = submission.approvalMode === 'preview-owner-demo'
+      && submission.accountId === input.publisher.id
+      && submission.reviewerId === input.publisher.id
+      && isPreviewOwnerMediaDemoActor(input.publisher);
+    const isIndependentApproval = submission.approvalMode !== 'preview-owner-demo'
+      && submission.reviewerId !== submission.accountId
+      && input.publisher.id !== submission.accountId
+      && input.publisher.id !== submission.reviewerId;
     if (submission.status !== 'Approved for release'
       || submission.releaseCandidateId !== candidate.id
       || submission.releaseCandidateRevision !== candidate.revision
       || submission.reviewerId === undefined
-      || submission.reviewerId === submission.accountId
-      || input.publisherId === submission.accountId
-      || input.publisherId === submission.reviewerId
+      || (!isPreviewOwnerDemo && !isIndependentApproval)
       || !submission.mediaPackage?.videoUploaded
       || !submission.mediaPackage.posterUploaded) {
       throw new ContributorMediaReleaseEligibilityError();
     }
     submission.publicId ??= `media-${randomUUID()}`;
-    projections.set(candidate.id, createContributorMediaPublicProjection(submission.publicId));
+    projections.set(candidate.id, createContributorMediaPublicProjection(
+      submission.publicId,
+      submission.approvalMode === 'preview-owner-demo'
+        ? 'preview-owner-demo'
+        : 'independent',
+    ));
   }
   return projections;
+}
+
+function omitInactivePreviewOwnerDemoMedia(
+  records: CataloguePublishedRecord[],
+  state: unknown,
+): CataloguePublishedRecord[] {
+  if (isPreviewOwnerMediaDemoRuntime()) return records;
+  const previewPublicIds = isContributorMediaState(state)
+    ? new Set(state.submissions
+      .filter((submission) => submission.approvalMode === 'preview-owner-demo' && submission.publicId)
+      .map((submission) => submission.publicId))
+    : new Set<string>();
+  return records.map((record) => {
+    if (!record.contributorMedia || (
+      !previewPublicIds.has(record.contributorMedia.publicId)
+      && record.contributorMedia.label !== PREVIEW_OWNER_MEDIA_DEMO_LABEL
+    )) return record;
+    const { contributorMedia: _omitted, ...withoutContributorMedia } = record;
+    return withoutContributorMedia;
+  });
 }
 
 function normalizeReleaseSelection(candidateIds: string[]): string[] {
