@@ -411,7 +411,13 @@ describe('weekly catalogue publication', () => {
   });
 
   it('rejects an out-of-window or duplicate normal release but accepts the next ISO week', async () => {
-    await approve(validCandidate);
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
 
     await expect(publishWeeklyCatalogueSnapshot({
       actor: administrator,
@@ -780,6 +786,56 @@ describe('catalogue conflict and recovery commands', () => {
     expect((await getCatalogueSnapshotHistory())).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'restore', lineage: expect.objectContaining({ restoredFromSnapshotId: weekly.snapshot.id }) }),
     ]));
+  });
+  it('rejects a publisher who is the approved contribution reviewer or contributor', async () => {
+    await stageCatalogueCandidate({ actor: editor, candidate: validCandidate, now: NOW });
+    await reviewCatalogueCandidate({
+      actor: reviewer,
+      candidateId: validCandidate.id,
+      expectedRevision: 1,
+      now: NOW,
+    });
+    const data = await store.read();
+    data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'contribution-1',
+        accountId: 'contributor-1',
+        status: 'Approved for release',
+        signerName: 'Private Contributor',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+        attestedAt: NOW.toISOString(),
+        createdAt: NOW.toISOString(),
+        updatedAt: NOW.toISOString(),
+        revision: 2,
+        reviewerId: reviewer.id,
+        reviewedAt: NOW.toISOString(),
+        releaseCandidateId: validCandidate.id,
+        releaseCandidateRevision: 1,
+        mediaPackage: {
+          id: 'package-1',
+          programmeId: validCandidate.id,
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png',
+          videoUploaded: true,
+          posterUploaded: true,
+        },
+      }],
+    };
+    await store.write(data);
+    const contributorAdministrator = {
+      id: 'contributor-1',
+      email: 'contributor-admin@example.com',
+      capabilities: new Set(['administrator'] as const),
+    };
+
+    await expect(publishWeeklyCatalogueSnapshot({
+      actor: contributorAdministrator,
+      candidateIds: [validCandidate.id],
+      now: new Date('2026-09-21T13:00:00.000Z'),
+    })).rejects.toThrow('contributor-media-release-ineligible');
+    expect((await getPublishedCatalogueSnapshot()).records).toEqual([]);
   });
 });
 
