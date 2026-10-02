@@ -42,6 +42,8 @@ describe('DiscoveryPreviewSlot', () => {
 
     expect(screen.getByRole('img', { name: /clearly illustrative workshop/i })).toBeInTheDocument();
     expect(screen.getByText('Scholar Scout illustration')).toBeInTheDocument();
+    expect(screen.getByText('AI-generated illustration — not an official campus photograph')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'About this media' })).not.toBeInTheDocument();
     expect(document.querySelector('iframe')).not.toBeInTheDocument();
 
     rerender(<DiscoveryPreviewSlot />);
@@ -63,6 +65,27 @@ describe('DiscoveryPreviewSlot', () => {
     expect(dialog).toHaveTextContent(/reviewed: september 2026/i);
     expect(dialog).toHaveTextContent(/attribution: workshop media team/i);
     expect(screen.getByText(/not affiliated with or endorsed by the provider/i)).toBeInTheDocument();
+    expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
+  });
+
+  it('renders only the anonymous, non-endorsing contributor projection without browser storage or a provider source', () => {
+    const getItem = jest.spyOn(Storage.prototype, 'getItem');
+    const setItem = jest.spyOn(Storage.prototype, 'setItem');
+
+    render(<DiscoveryPreviewSlot contributorMedia={{
+      publicId: 'media-12345678-1234-1234-1234-123456789abc',
+      mediaRoute: '/api/catalogue-media/media-12345678-1234-1234-1234-123456789abc',
+      label: 'Student-contributed perspective',
+      nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
+    }} />);
+
+    expect(screen.getByLabelText('Student-contributed perspective')).toBeInTheDocument();
+    expect(screen.getByText('Student-contributed perspective')).toBeInTheDocument();
+    expect(screen.getByText(/does not represent school endorsement/i)).toBeInTheDocument();
+    expect(document.querySelector('source')).toHaveAttribute('src', '/api/catalogue-media/media-12345678-1234-1234-1234-123456789abc');
+    expect(screen.queryByRole('button', { name: 'About this media' })).not.toBeInTheDocument();
+    expect(getItem).not.toHaveBeenCalled();
+    expect(setItem).not.toHaveBeenCalled();
     expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
   });
 });
