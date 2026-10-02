@@ -60,6 +60,21 @@ export interface CatalogueMediaRights {
 
 export type CatalogueMediaCandidateKind = 'local-preview' | 'approved-embed' | 'illustration';
 
+export const SYNTHETIC_ILLUSTRATION_DISCLOSURE =
+  'AI-generated illustration — not an official campus photograph';
+
+/** Private review classification required before a generic illustration may reach learners. */
+export interface CatalogueIllustrationClassification {
+  classification: 'original-generic-learning-environment';
+  accessibleDescription: string;
+  disclosure: typeof SYNTHETIC_ILLUSTRATION_DISCLOSURE;
+  representation: 'generic-learning-environment';
+  identityClaim: 'none';
+  sourceCategory: 'original-scholarscout';
+  referenceCategory: 'none';
+  depictsRealCampus: false;
+}
+
 /** Staff-reviewed media evidence. Only the resolver's narrow projection may cross into a snapshot. */
 export interface CatalogueMediaCandidate {
   kind: CatalogueMediaCandidateKind;
@@ -72,11 +87,12 @@ export interface CatalogueMediaCandidate {
   rights: CatalogueMediaRights;
   reviewedAt: string;
   attribution?: string;
+  illustration?: CatalogueIllustrationClassification;
 }
 
 /** Serializable, local-only presentation data exposed to learner surfaces. */
-export interface CatalogueRenderableMedia {
-  kind: 'local-preview' | 'illustration';
+export interface CatalogueLocalPreviewMedia {
+  kind: 'local-preview';
   assetPath: string;
   alt: string;
   label: string;
@@ -86,6 +102,17 @@ export interface CatalogueRenderableMedia {
   reviewedAt: string;
   attribution?: string;
 }
+
+/** Learner-safe illustration context; private source and review evidence must not cross this boundary. */
+export interface CatalogueIllustrationMedia {
+  kind: 'illustration';
+  assetPath: string;
+  alt: string;
+  label: 'Scholar Scout illustration';
+  disclosure: typeof SYNTHETIC_ILLUSTRATION_DISCLOSURE;
+}
+
+export type CatalogueRenderableMedia = CatalogueLocalPreviewMedia | CatalogueIllustrationMedia;
 
 export interface CatalogueCandidateInput {
   id?: string;
@@ -602,16 +629,31 @@ function isMediaCandidate(value: unknown): value is CatalogueMediaCandidate {
     return false;
   }
   if (value.kind === 'approved-embed') {
-    return isHttpUrl(value.embedUrl) && value.assetPath === undefined
+    return isHttpUrl(value.embedUrl) && value.assetPath === undefined && value.illustration === undefined
       && Object.keys(value).every((key) => ['kind', 'embedUrl', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rights', 'reviewedAt', 'attribution'].includes(key));
   }
+  if (value.kind === 'illustration') {
+    return isLocalMediaPath(value.assetPath) && value.embedUrl === undefined
+      && isIllustrationClassification(value.illustration)
+      && value.alt === value.illustration.accessibleDescription
+      && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rights', 'reviewedAt', 'attribution', 'illustration'].includes(key));
+  }
   return isLocalMediaPath(value.assetPath) && value.embedUrl === undefined
+    && value.illustration === undefined
     && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rights', 'reviewedAt', 'attribution'].includes(key));
 }
 
 function isRenderableMedia(value: unknown): value is CatalogueRenderableMedia {
-  if (!isRecord(value) || (value.kind !== 'local-preview' && value.kind !== 'illustration')
-    || !isLocalMediaPath(value.assetPath) || !isBoundedRequiredText(value.alt, 500)
+  if (!isRecord(value) || !isLocalMediaPath(value.assetPath) || !isBoundedRequiredText(value.alt, 500)
+    || typeof value.label !== 'string') {
+    return false;
+  }
+  if (value.kind === 'illustration') {
+    return value.label === 'Scholar Scout illustration'
+      && value.disclosure === SYNTHETIC_ILLUSTRATION_DISCLOSURE
+      && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'disclosure'].includes(key));
+  }
+  if (value.kind !== 'local-preview'
     || !isBoundedRequiredText(value.label, 120) || !isBoundedRequiredText(value.sourceLabel, 240)
     || !isHttpUrl(value.sourceUrl) || !isNonEmbedRightsKind(value.rightsBasis)
     || typeof value.reviewedAt !== 'string' || !isIsoDate(value.reviewedAt)
@@ -619,6 +661,28 @@ function isRenderableMedia(value: unknown): value is CatalogueRenderableMedia {
     return false;
   }
   return Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'sourceLabel', 'sourceUrl', 'rightsBasis', 'reviewedAt', 'attribution'].includes(key));
+}
+
+function isIllustrationClassification(value: unknown): value is CatalogueIllustrationClassification {
+  return isRecord(value)
+    && value.classification === 'original-generic-learning-environment'
+    && isBoundedRequiredText(value.accessibleDescription, 500)
+    && value.disclosure === SYNTHETIC_ILLUSTRATION_DISCLOSURE
+    && value.representation === 'generic-learning-environment'
+    && value.identityClaim === 'none'
+    && value.sourceCategory === 'original-scholarscout'
+    && value.referenceCategory === 'none'
+    && value.depictsRealCampus === false
+    && Object.keys(value).every((key) => [
+      'classification',
+      'accessibleDescription',
+      'disclosure',
+      'representation',
+      'identityClaim',
+      'sourceCategory',
+      'referenceCategory',
+      'depictsRealCampus',
+    ].includes(key));
 }
 
 function hasUnique(values: string[]): boolean {
@@ -786,14 +850,23 @@ function isEligibleCandidate(candidate: CatalogueMediaCandidate, now: Date): boo
 }
 
 function toRenderableMedia(candidate: CatalogueMediaCandidate): CatalogueRenderableMedia {
+  if (candidate.kind === 'illustration') {
+    return {
+      kind: 'illustration',
+      assetPath: candidate.assetPath!,
+      alt: candidate.alt,
+      label: 'Scholar Scout illustration',
+      disclosure: SYNTHETIC_ILLUSTRATION_DISCLOSURE,
+    };
+  }
   return {
-    kind: candidate.kind === 'illustration' ? 'illustration' : 'local-preview',
+    kind: 'local-preview',
     assetPath: candidate.assetPath!,
     alt: candidate.alt,
-    label: candidate.kind === 'illustration' ? 'Scholar Scout illustration' : candidate.label,
+    label: candidate.label,
     sourceLabel: candidate.sourceLabel,
     sourceUrl: candidate.sourceUrl,
-    rightsBasis: candidate.rights.kind as CatalogueRenderableMedia['rightsBasis'],
+    rightsBasis: candidate.rights.kind as CatalogueLocalPreviewMedia['rightsBasis'],
     reviewedAt: candidate.reviewedAt,
     ...(candidate.attribution === undefined ? {} : { attribution: candidate.attribution }),
   };
@@ -839,7 +912,7 @@ function isMediaRightsKind(value: unknown): value is MediaRightsKind {
     || value === 'provider-approved' || value === 'approved-embed';
 }
 
-function isNonEmbedRightsKind(value: unknown): value is CatalogueRenderableMedia['rightsBasis'] {
+function isNonEmbedRightsKind(value: unknown): value is CatalogueLocalPreviewMedia['rightsBasis'] {
   return value === 'scholarscout-owned' || value === 'licensed' || value === 'provider-approved';
 }
 

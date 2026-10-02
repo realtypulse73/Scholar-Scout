@@ -36,7 +36,7 @@ describe('DiscoveryPreviewSlot', () => {
       assetPath: '/images/scholarscout-workshop.png',
       alt: 'A clearly illustrative workshop learning environment.',
       label: 'Scholar Scout illustration',
-      rightsBasis: 'scholarscout-owned',
+      disclosure: 'AI-generated illustration — not an official campus photograph',
     };
     const { rerender } = render(<DiscoveryPreviewSlot media={illustration} />);
 

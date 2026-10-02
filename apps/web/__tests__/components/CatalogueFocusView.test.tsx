@@ -125,12 +125,11 @@ describe('CatalogueFocusView', () => {
       item={{
         ...item,
         renderableMedia: {
-          ...item.renderableMedia!,
           kind: 'illustration',
           assetPath: '/images/scholarscout-workshop.png',
           alt: 'A Scholar Scout illustrative workshop learning environment.',
           label: 'Scholar Scout illustration',
-          rightsBasis: 'scholarscout-owned',
+          disclosure: 'AI-generated illustration — not an official campus photograph',
         },
       }}
       backHref="/programmes?metro=greater-new-orleans"

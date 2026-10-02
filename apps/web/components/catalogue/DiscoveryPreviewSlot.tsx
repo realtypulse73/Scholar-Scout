@@ -67,12 +67,13 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
     </section>
   );
 
-  const reviewedMonthYear = new Intl.DateTimeFormat('en', {
+  const localPreview = media.kind === 'local-preview' ? media : null;
+  const reviewedMonthYear = localPreview ? new Intl.DateTimeFormat('en', {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${media.reviewedAt}T00:00:00.000Z`));
-  const rightsBasis = media.rightsBasis.replaceAll('-', ' ');
+  }).format(new Date(`${localPreview.reviewedAt}T00:00:00.000Z`)) : null;
+  const rightsBasis = localPreview?.rightsBasis.replaceAll('-', ' ');
 
   return (
     <section aria-label="Media preview" className="min-w-0 rounded-card border border-brand-300 bg-brand-50 p-5">
@@ -101,17 +102,17 @@ export default function DiscoveryPreviewSlot({ media, playback }: DiscoveryPrevi
       {playbackRejected ? <p className="mt-3 text-sm text-ink-700">Preview could not start automatically. Facts and source actions remain available.</p> : null}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="text-sm font-semibold text-ink-900">{media.label}</p>
-        <button ref={triggerRef} type="button" onClick={() => setIsAboutOpen(true)} className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">About this media</button>
+        {localPreview ? <button ref={triggerRef} type="button" onClick={() => setIsAboutOpen(true)} className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">About this media</button> : null}
       </div>
       <p className="mt-2 text-sm leading-6 text-ink-700">Scholar Scout is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.</p>
-      {isAboutOpen ? (
+      {isAboutOpen && localPreview && reviewedMonthYear && rightsBasis ? (
         <div role="dialog" aria-modal="true" aria-label="About this media" className="mt-4 rounded-control border border-ink-300 bg-white p-4 shadow-sm">
           <p className="font-semibold text-ink-900">About this media</p>
           <dl className="mt-3 space-y-2 text-sm text-ink-700">
-            <div><dt className="inline font-semibold">Source: </dt><dd className="inline"><a href={media.sourceUrl} target="_blank" rel="noreferrer" className="text-brand-700 underline underline-offset-4">{media.sourceLabel} (opens a new tab)</a></dd></div>
+            <div><dt className="inline font-semibold">Source: </dt><dd className="inline"><a href={localPreview.sourceUrl} target="_blank" rel="noreferrer" className="text-brand-700 underline underline-offset-4">{localPreview.sourceLabel} (opens a new tab)</a></dd></div>
             <div><dt className="inline font-semibold">Permission basis: </dt><dd className="inline">{rightsBasis}</dd></div>
             <div><dt className="inline font-semibold">Reviewed: </dt><dd className="inline">{reviewedMonthYear}</dd></div>
-            {media.attribution ? <div><dt className="inline font-semibold">Attribution: </dt><dd className="inline">{media.attribution}</dd></div> : null}
+            {localPreview.attribution ? <div><dt className="inline font-semibold">Attribution: </dt><dd className="inline">{localPreview.attribution}</dd></div> : null}
           </dl>
           <button type="button" onClick={closeAbout} className="mt-4 min-h-touch rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Close</button>
         </div>
