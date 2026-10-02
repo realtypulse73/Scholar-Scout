@@ -62,6 +62,10 @@ class MemoryDataStore implements ScholarScoutDataStore {
 describe('contributor media routes', () => {
   const originalStaffEmails = process.env.SCHOLARSCOUT_STAFF_EMAILS;
   const originalCapabilities = process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES;
+  const originalVercel = process.env.VERCEL;
+  const originalVercelEnv = process.env.VERCEL_ENV;
+  const originalPreviewOwnerDemo = process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO;
+  const originalPreviewOwnerEmail = process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL;
   let store: MemoryDataStore;
 
   beforeEach(() => {
@@ -89,6 +93,10 @@ describe('contributor media routes', () => {
     jest.mocked(getGovernedProgrammes).mockReset();
     restoreEnvironment('SCHOLARSCOUT_STAFF_EMAILS', originalStaffEmails);
     restoreEnvironment('SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES', originalCapabilities);
+    restoreEnvironment('VERCEL', originalVercel);
+    restoreEnvironment('VERCEL_ENV', originalVercelEnv);
+    restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO', originalPreviewOwnerDemo);
+    restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL', originalPreviewOwnerEmail);
   });
 
   it('allows an editor to invite a known account using trusted staff authority', async () => {
@@ -99,6 +107,49 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ invitation: expect.objectContaining({ accountId: 'student-1' }) });
+  });
+
+  it('allows the exact configured Preview owner to self-invite without a browser demo switch', async () => {
+    store.data.users.push({
+      id: 'owner-1',
+      name: 'Preview Owner',
+      email: 'owner@example.com',
+      role: 'staff',
+      passwordHash: 'test-only',
+      createdAt: '2026-10-02T00:00:00.000Z',
+    });
+    configurePreviewOwnerDemo();
+
+    const response = await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
+      method: 'POST',
+      body: JSON.stringify({ accountId: 'owner-1' }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ invitation: expect.objectContaining({ accountId: 'owner-1' }) });
+    expect(store.data.contributorMediaState?.invitations[0]).toMatchObject({
+      accountId: 'owner-1',
+      createdByStaffId: 'owner-1',
+    });
+  });
+
+  it.each([
+    ['Production', { VERCEL: '1', VERCEL_ENV: 'production', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com' }],
+    ['local runtime', { VERCEL: undefined, VERCEL_ENV: undefined, SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com' }],
+    ['missing opt-in', { VERCEL: '1', VERCEL_ENV: 'preview', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: undefined, SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com' }],
+    ['malformed owner', { VERCEL: '1', VERCEL_ENV: 'preview', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true', SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com,other@example.com' }],
+  ])('denies owner self-invitation for %s configuration without mutating state', async (_label, environment) => {
+    store.data.users.push({
+      id: 'owner-1', name: 'Preview Owner', email: 'owner@example.com', role: 'staff', passwordHash: 'test-only', createdAt: '2026-10-02T00:00:00.000Z',
+    });
+    configurePreviewOwnerDemo(environment);
+
+    const response = await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
+      method: 'POST', body: JSON.stringify({ accountId: 'owner-1' }),
+    }));
+
+    expect(response.status).toBe(403);
+    expect(store.data.contributorMediaState?.invitations ?? []).toEqual([]);
   });
 
   it('allows only the invited account to create an adult-attested private Draft', async () => {
@@ -330,7 +381,64 @@ describe('contributor media routes', () => {
     expect(response.status).toBe(403);
     expect(store.data.contributorMediaState?.submissions[0]?.status).toBe('Ready for review');
   });
+
+  it('allows only the exact configured Preview owner to self-approve their current package', async () => {
+    store.data.cataloguePublicationState = {
+      schemaVersion: 1,
+      candidates: [{
+        id: 'programme-1', revision: 4, lifecycle: 'approved', retirementIntent: false,
+        approval: { reviewerId: 'catalogue-reviewer', reviewedAt: '2026-10-02T00:00:00.000Z', revision: 4 },
+      }],
+      auditEvents: [],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
+    store.data.contributorMediaState = {
+      invitations: [],
+      submissions: [{
+        id: 'submission-owner', accountId: 'owner-1', status: 'Ready for review', signerName: 'Preview Owner',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T00:00:00.000Z', createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-02T00:00:00.000Z', revision: 1,
+        mediaPackage: { id: 'package-owner', programmeId: 'programme-1', videoObjectKey: 'contributor-media/package-owner/video.mp4', posterObjectKey: 'contributor-media/package-owner/poster.png', videoUploaded: true, posterUploaded: true },
+      }],
+    };
+    configurePreviewOwnerDemo();
+
+    const response = await reviewMedia(new Request('http://localhost/api/admin/contributor-media/review', {
+      method: 'POST', body: JSON.stringify({ submissionId: 'submission-owner', expectedRevision: 1, decision: 'approve' }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(store.data.contributorMediaState?.submissions[0]).toMatchObject({
+      status: 'Approved for release',
+      reviewerId: 'owner-1',
+    });
+  });
 });
+
+function configurePreviewOwnerDemo(environment: Record<string, string | undefined> = {}): void {
+  setEnvironment('VERCEL', environment, '1');
+  setEnvironment('VERCEL_ENV', environment, 'preview');
+  setEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO', environment, 'true');
+  setEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL', environment, 'owner@example.com');
+  process.env.SCHOLARSCOUT_STAFF_EMAILS = 'owner@example.com';
+  process.env.SCHOLARSCOUT_CATALOGUE_STAFF_CAPABILITIES = JSON.stringify({
+    'owner@example.com': ['editor', 'reviewer', 'administrator'],
+  });
+  jest.mocked(getServerSession).mockResolvedValue({
+    user: { id: 'owner-1', email: 'owner@example.com' },
+  } as never);
+}
+
+function setEnvironment(
+  name: string,
+  environment: Record<string, string | undefined>,
+  defaultValue: string,
+): void {
+  const value = Object.prototype.hasOwnProperty.call(environment, name)
+    ? environment[name]
+    : defaultValue;
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
 
 function restoreEnvironment(name: string, value: string | undefined): void {
   if (value === undefined) {
