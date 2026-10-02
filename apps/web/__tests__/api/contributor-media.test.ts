@@ -3,6 +3,7 @@
 import { POST as createInvitation } from '@/app/api/admin/contributor-media/invitations/route';
 import { POST as attest } from '@/app/api/contributor-media/attestation/route';
 import { POST as completeMedia } from '@/app/api/contributor-media/complete/route';
+import { POST as removeSubmission } from '@/app/api/contributor-media/remove/route';
 import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
 import { GET as getCatalogueMedia } from '@/app/api/catalogue-media/[publicId]/route';
 import { GET as getReviewQueue, POST as reviewMedia } from '@/app/api/admin/contributor-media/review/route';
@@ -178,6 +179,31 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' });
+  });
+
+  it('lets the trusted owner remove a private draft repeatedly without exposing media details', async () => {
+    await createInvitation(new Request('http://localhost/api/admin/contributor-media/invitations', {
+      method: 'POST', body: JSON.stringify({ accountId: 'student-1' }),
+    }));
+    await attest(new Request('http://localhost/api/contributor-media/attestation', {
+      method: 'POST',
+      body: JSON.stringify({
+        adultAffirmed: true, signerName: 'Student One', creatorAuthority: true, recognisablePeopleConsent: true,
+      }),
+    }));
+
+    const first = await removeSubmission(new Request('http://localhost/api/contributor-media/remove', {
+      method: 'POST', body: JSON.stringify({ expectedRevision: 1 }),
+    }));
+    const repeated = await removeSubmission(new Request('http://localhost/api/contributor-media/remove', {
+      method: 'POST', body: JSON.stringify({ expectedRevision: 1 }),
+    }));
+
+    expect(first.status).toBe(200);
+    expect(repeated.status).toBe(200);
+    await expect(first.json()).resolves.toEqual({ submission: { status: 'Removed', revision: 2 } });
+    await expect(repeated.json()).resolves.toEqual({ submission: { status: 'Removed', revision: 2 } });
+    expect(JSON.stringify(store.data.contributorMediaState)).not.toMatch(/blob|object.*url|analytics|provider/i);
   });
 
   it('preserves the first acknowledgement and rejects a changed acknowledgement without another Draft', async () => {

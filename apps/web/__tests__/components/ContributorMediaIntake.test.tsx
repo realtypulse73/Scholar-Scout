@@ -14,4 +14,11 @@ describe('ContributorMediaIntake', () => {
     expect(await screen.findByText(/Action needed: use one MP4 video/i)).toBeInTheDocument();
     expect(window.localStorage.getItem('contributor-media')).toBeNull();
   });
+
+  it('shows a visible removal control for every non-final private lifecycle without browser storage', () => {
+    render(<ContributorMediaIntake programmes={[]} initialStatus={{ status: 'Ready for review', revision: 2 }} />);
+
+    expect(screen.getByRole('button', { name: /remove my submission/i })).toBeInTheDocument();
+    expect(window.localStorage.getItem('contributor-media')).toBeNull();
+  });
 });

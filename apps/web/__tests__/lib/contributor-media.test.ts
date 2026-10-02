@@ -201,6 +201,21 @@ describe('reviewed contributor media lifecycle', () => {
     })).toBe(true);
   });
 
+  it('accepts a removed private submission only as lifecycle evidence, never a learner projection', () => {
+    expect(isContributorMediaState({
+      invitations: [{
+        id: 'invitation-1', accountId: 'contributor-1', createdByStaffId: 'editor-1', status: 'withdrawn',
+        createdAt: '2026-10-02T12:00:00.000Z', expiresAt: '2026-10-16T12:00:00.000Z',
+      }],
+      submissions: [{
+        id: 'submission-removed', accountId: 'contributor-1', status: 'Removed', signerName: 'Taylor Contributor',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T12:00:00.000Z', createdAt: '2026-10-02T12:00:00.000Z', updatedAt: '2026-10-02T12:01:00.000Z',
+        revision: 3,
+      }],
+    })).toBe(true);
+  });
+
   it('accepts only the bounded approval modes and keeps the Preview demo projection anonymous', () => {
     const previewProjection = createContributorMediaPublicProjection(
       'public-media-opaque-id',
