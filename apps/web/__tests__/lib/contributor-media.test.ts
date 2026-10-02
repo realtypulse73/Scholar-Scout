@@ -163,3 +163,26 @@ describe('contributor media domain contracts', () => {
     expect(validateInspectedContributorVideo(null)).toEqual({ ok: false, error: 'invalid-video' });
   });
 });
+import { isContributorMediaState } from '@/lib/contributor-media';
+
+describe('reviewed contributor media lifecycle', () => {
+  it('accepts a private approved submission with review identity while preserving it as private state', () => {
+    expect(isContributorMediaState({
+      invitations: [],
+      submissions: [{
+        id: 'submission-1',
+        accountId: 'contributor-1',
+        status: 'Approved for release',
+        signerName: 'Taylor Contributor',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+        attestedAt: '2026-10-02T12:00:00.000Z',
+        createdAt: '2026-10-02T12:00:00.000Z',
+        updatedAt: '2026-10-02T12:00:00.000Z',
+        revision: 2,
+        reviewerId: 'reviewer-1',
+        reviewedAt: '2026-10-02T12:00:00.000Z',
+      }],
+    })).toBe(true);
+  });
+});
