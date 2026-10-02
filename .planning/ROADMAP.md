@@ -185,23 +185,23 @@ Plans:
 
 ### Phase 13.2: Staff Media Intake, Permission Review, and Houston Tillotson Pilot (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** An invited, signed-in adult can privately submit one short original video and poster fallback with explicit rights attestation while governed staff review, release, or remove it; a separately server-gated Preview-only owner demo exception remains anonymous, non-endorsing, and unavailable in Production.
+**Requirements**: SPEC-01, SPEC-02, SPEC-03, SPEC-04, SPEC-05, SPEC-06, SPEC-07
 **Depends on:** Phase 13
-**Plans:** 1/8 plans executed
+**Plans:** 6/9 plans executed
 
 Plans:
 
 - [x] 13.2-01-PLAN.md
-- [ ] 13.2-02-PLAN.md
-- [ ] 13.2-03-PLAN.md
-- [ ] 13.2-04-PLAN.md
-- [ ] 13.2-05-PLAN.md
-- [ ] 13.2-06-PLAN.md
+- [x] 13.2-02-PLAN.md
+- [x] 13.2-03-PLAN.md
+- [x] 13.2-04-PLAN.md
+- [x] 13.2-05-PLAN.md
+- [x] 13.2-06-PLAN.md
 - [ ] 13.2-07-PLAN.md
 - [ ] 13.2-08-PLAN.md
+- [ ] 13.2-09-PLAN.md — Add the narrowly configured Preview-only owner demo exception without weakening the ordinary independent workflow.
 
-- [ ] TBD (run /gsd-plan-phase 13.2 to break down)
 
 ### Phase 13.1: Visual-First Discovery Experience (INSERTED)
 
