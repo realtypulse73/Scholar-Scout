@@ -5,15 +5,15 @@ milestone_name: Regional Opportunity Navigator
 current_phase: 13.1
 current_phase_name: Visual-First Discovery Experience
 status: ready_to_execute
-stopped_at: Completed 13.2-08-PLAN.md
-last_updated: "2026-10-02T13:27:22.386Z"
+stopped_at: Completed 13.2-10-PLAN.md
+last_updated: "2026-10-02T14:22:34.106Z"
 last_activity: 2026-09-29
 last_activity_desc: media-free Phase 13.1 specification and four-wave plan passed independent review; no asset or permission checkpoint remains
 progress:
   total_phases: 9
   completed_phases: 6
-  total_plans: 44
-  completed_plans: 40
+  total_plans: 45
+  completed_plans: 41
   percent: 67
 ---
 
@@ -124,6 +124,7 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 | Phase 13.2 P02 | 8min | 1 tasks | 2 files |
 | Phase 13.2 P07 | 8min | 1 tasks | 8 files |
 | Phase 13.2 P08 | 10m | 2 tasks | 7 files |
+| Phase 13.2 P10 | 48min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -233,6 +234,7 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 - [Phase ?]: Use a private active-revocation overlay to deny only contributor-media projection and proxy delivery while preserving factual catalogue records.
 - [Phase ?]: Require fixed-disclosure original generic illustrations and omit their provenance from learner DTOs.
 - [Phase ?]: Render contributor media only through the existing opaque first-party route with anonymous non-endorsement copy.
+- [Phase ?]: Require direct Blob PUT token issuance and callback mutation to re-authorize the exact invited Draft owner and current opaque revision.
 
 ### Roadmap Evolution
 
@@ -280,6 +282,6 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 
 ## Session Continuity
 
-Last session: 2026-10-02T13:27:06.339Z
-Stopped at: Completed 13.2-08-PLAN.md
+Last session: 2026-10-02T14:22:34.058Z
+Stopped at: Completed 13.2-10-PLAN.md
 Resume file: None

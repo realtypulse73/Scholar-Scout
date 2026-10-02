@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 6
+open_count: 5
 waived_count: 0
-fixed_count: 0
-total_count: 6
-last_updated: 2026-10-02T13:27:03.026Z
+fixed_count: 3
+total_count: 8
+last_updated: 2026-10-02T14:23:20.114Z
 ---
 
 # Broken Windows Ledger
@@ -19,8 +19,10 @@ last_updated: 2026-10-02T13:27:03.026Z
 | 2 | 09 | deviation | apps/web/__tests__/lib/catalogue-contract.test.ts | 646 | Corrected the isolated documented-source chronology regression setup so it tests the required later source date. | open |  | 2026-09-22T22:15:36.081Z |  |
 | 3 | 09 | deviation | apps/web/lib/catalogue-contract.ts |  | Narrowed source-date guard to a type predicate for the chronology validation. | open |  | 2026-09-22T23:02:16.769Z |  |
 | 4 | quick | deviation | apps/web/__tests__/api/register.test.ts |  | Corrected the registration test environment fixture so strict TypeScript accepts the planned local and Vercel cases. | open |  | 2026-09-24T15:43:19.371Z |  |
-| 5 | 13.2 | unrun-verify | apps/web/lib/server/contributor-media.ts |  | pnpm build:vercel is blocked by the existing unresolved mediainfo.js MediaInfoModule.wasm import. | open |  | 2026-10-02T13:27:02.512Z |  |
+| 5 | 13.2 | unrun-verify | apps/web/lib/server/contributor-media.ts |  | pnpm build:vercel is blocked by the existing unresolved mediainfo.js MediaInfoModule.wasm import. | fixed |  | 2026-10-02T13:27:02.512Z | 2026-10-02T14:23:19.027Z |
 | 6 | 13.2 | deviation | apps/web/components/catalogue/DiscoveryPreviewSlot.tsx |  | Existing media details were narrowed to local previews because learner-safe illustration DTOs omit review and provenance fields. | open |  | 2026-10-02T13:27:03.026Z |  |
+| 7 | 13.2 | deviation | apps/web/lib/server/contributor-media.ts |  | Bound private Blob completion mutation to the current Draft revision to prevent stale callback mutation. | fixed |  | 2026-10-02T14:22:45.847Z | 2026-10-02T14:23:19.583Z |
+| 8 | 13.2 | deviation | apps/web/__tests__/lib/server/contributor-media.test.ts |  | Used an isolated worktree-local TEMP directory to complete the full Jest suite after a system-temp EPERM lock. | fixed |  | 2026-10-02T14:22:46.371Z | 2026-10-02T14:23:20.114Z |
 
 ````json
 [
@@ -79,10 +81,10 @@ last_updated: 2026-10-02T13:27:03.026Z
     "file": "apps/web/lib/server/contributor-media.ts",
     "line": null,
     "description": "pnpm build:vercel is blocked by the existing unresolved mediainfo.js MediaInfoModule.wasm import.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-02T13:27:02.512Z",
-    "resolved_at": null
+    "resolved_at": "2026-10-02T14:23:19.027Z"
   },
   {
     "id": 6,
@@ -95,6 +97,30 @@ last_updated: 2026-10-02T13:27:03.026Z
     "reason": "",
     "recorded_at": "2026-10-02T13:27:03.026Z",
     "resolved_at": null
+  },
+  {
+    "id": 7,
+    "kind": "deviation",
+    "phase": "13.2",
+    "file": "apps/web/lib/server/contributor-media.ts",
+    "line": null,
+    "description": "Bound private Blob completion mutation to the current Draft revision to prevent stale callback mutation.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-02T14:22:45.847Z",
+    "resolved_at": "2026-10-02T14:23:19.583Z"
+  },
+  {
+    "id": 8,
+    "kind": "deviation",
+    "phase": "13.2",
+    "file": "apps/web/__tests__/lib/server/contributor-media.test.ts",
+    "line": null,
+    "description": "Used an isolated worktree-local TEMP directory to complete the full Jest suite after a system-temp EPERM lock.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-02T14:22:46.371Z",
+    "resolved_at": "2026-10-02T14:23:20.114Z"
   }
 ]
 ````
