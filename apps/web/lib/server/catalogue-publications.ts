@@ -1083,7 +1083,8 @@ function omitInactivePreviewOwnerDemoMedia(
       !previewPublicIds.has(record.contributorMedia.publicId)
       && record.contributorMedia.label !== PREVIEW_OWNER_MEDIA_DEMO_LABEL
     )) return record;
-    const { contributorMedia: _omitted, ...withoutContributorMedia } = record;
+    const withoutContributorMedia = { ...record };
+    delete withoutContributorMedia.contributorMedia;
     return withoutContributorMedia;
   });
 }
