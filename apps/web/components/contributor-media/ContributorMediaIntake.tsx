@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { uploadPresigned } from '@vercel/blob/client';
 import {
   CONTRIBUTOR_POSTER_MAX_BYTES,
   CONTRIBUTOR_VIDEO_MAX_BYTES,
@@ -43,6 +44,15 @@ export default function ContributorMediaIntake({ programmes, initialStatus }: Co
       const uploadBody = await uploadResponse.json() as { capability?: { uploadId: string; revision: number }; error?: string };
       if (!uploadResponse.ok || !uploadBody.capability) throw new Error(uploadBody.error ?? 'We could not prepare your private upload.');
       setMessage('Your upload is in progress. Keep this page open until it completes.');
+      const payloadBase = { uploadId: uploadBody.capability.uploadId };
+      await uploadPresigned(`contributor-media/${uploadBody.capability.uploadId}/video.mp4`, video, {
+        access: 'private', handleUploadUrl: '/api/contributor-media/upload',
+        clientPayload: JSON.stringify({ ...payloadBase, kind: 'video' }),
+      });
+      await uploadPresigned(`contributor-media/${uploadBody.capability.uploadId}/poster.png`, poster, {
+        access: 'private', handleUploadUrl: '/api/contributor-media/upload',
+        clientPayload: JSON.stringify({ ...payloadBase, kind: 'poster' }),
+      });
       const completionResponse = await fetch('/api/contributor-media/complete', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ uploadId: uploadBody.capability.uploadId, expectedRevision: uploadBody.capability.revision }),

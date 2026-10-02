@@ -1,4 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+
+jest.mock('@vercel/blob/client', () => ({ uploadPresigned: jest.fn() }));
+
 import ContributorMediaIntake from '@/components/contributor-media/ContributorMediaIntake';
 
 describe('ContributorMediaIntake', () => {
