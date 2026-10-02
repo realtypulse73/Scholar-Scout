@@ -1,4 +1,5 @@
 import {
+  createContributorMediaPublicProjection,
   createContributorInvitation,
   getContributorPrivateStatus,
   isContributorMediaState,
@@ -8,6 +9,18 @@ import {
 } from '@/lib/contributor-media';
 
 describe('contributor media domain contracts', () => {
+  it('creates a fixed anonymous learner projection from only an opaque public ID', () => {
+    const projection = createContributorMediaPublicProjection('public-media-opaque-id');
+
+    expect(projection).toEqual({
+      publicId: 'public-media-opaque-id',
+      mediaRoute: '/api/catalogue-media/public-media-opaque-id',
+      label: 'Student-contributed perspective',
+      nonEndorsement: 'This student-contributed perspective does not represent school endorsement.',
+    });
+    expect(JSON.stringify(projection)).not.toMatch(/account|signer|attest|blob|object|review|audit/i);
+  });
+
   it('normalizes a valid adult attestation without exposing its signer publicly', () => {
     const result = validateContributorAttestation({
       adultAffirmed: true,
