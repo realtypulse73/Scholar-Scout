@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 4
+open_count: 6
 waived_count: 0
 fixed_count: 0
-total_count: 4
-last_updated: 2026-09-24T15:43:19.371Z
+total_count: 6
+last_updated: 2026-10-02T13:27:03.026Z
 ---
 
 # Broken Windows Ledger
@@ -19,6 +19,8 @@ last_updated: 2026-09-24T15:43:19.371Z
 | 2 | 09 | deviation | apps/web/__tests__/lib/catalogue-contract.test.ts | 646 | Corrected the isolated documented-source chronology regression setup so it tests the required later source date. | open |  | 2026-09-22T22:15:36.081Z |  |
 | 3 | 09 | deviation | apps/web/lib/catalogue-contract.ts |  | Narrowed source-date guard to a type predicate for the chronology validation. | open |  | 2026-09-22T23:02:16.769Z |  |
 | 4 | quick | deviation | apps/web/__tests__/api/register.test.ts |  | Corrected the registration test environment fixture so strict TypeScript accepts the planned local and Vercel cases. | open |  | 2026-09-24T15:43:19.371Z |  |
+| 5 | 13.2 | unrun-verify | apps/web/lib/server/contributor-media.ts |  | pnpm build:vercel is blocked by the existing unresolved mediainfo.js MediaInfoModule.wasm import. | open |  | 2026-10-02T13:27:02.512Z |  |
+| 6 | 13.2 | deviation | apps/web/components/catalogue/DiscoveryPreviewSlot.tsx |  | Existing media details were narrowed to local previews because learner-safe illustration DTOs omit review and provenance fields. | open |  | 2026-10-02T13:27:03.026Z |  |
 
 ````json
 [
@@ -68,6 +70,30 @@ last_updated: 2026-09-24T15:43:19.371Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-24T15:43:19.371Z",
+    "resolved_at": null
+  },
+  {
+    "id": 5,
+    "kind": "unrun-verify",
+    "phase": "13.2",
+    "file": "apps/web/lib/server/contributor-media.ts",
+    "line": null,
+    "description": "pnpm build:vercel is blocked by the existing unresolved mediainfo.js MediaInfoModule.wasm import.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-02T13:27:02.512Z",
+    "resolved_at": null
+  },
+  {
+    "id": 6,
+    "kind": "deviation",
+    "phase": "13.2",
+    "file": "apps/web/components/catalogue/DiscoveryPreviewSlot.tsx",
+    "line": null,
+    "description": "Existing media details were narrowed to local previews because learner-safe illustration DTOs omit review and provenance fields.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-02T13:27:03.026Z",
     "resolved_at": null
   }
 ]
