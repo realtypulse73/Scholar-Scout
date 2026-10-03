@@ -4,6 +4,9 @@ import ProgrammeAdminManager from '@/components/admin/ProgrammeAdminManager';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
+// The governed catalogue is durable runtime state and must not be read while building.
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Programme Admin | ScholarScout',
   description:
