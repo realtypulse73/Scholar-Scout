@@ -4,6 +4,9 @@ import { Badge, Card } from '@/components/ui';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { buildExecutiveCommandCenterSnapshot } from '@/lib/executive-command-center';
 
+// The governed catalogue is durable runtime state and must not be read while building.
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Executive Command Center | ScholarScout',
   description:
