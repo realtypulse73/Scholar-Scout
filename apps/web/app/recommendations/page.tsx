@@ -10,6 +10,10 @@ export const metadata = {
     'A decision dashboard that turns ScholarScout matches into ranked options, pathways, and practical next steps.',
 };
 
+// Governed catalogue records are durable state and must be read for the request,
+// not while Vercel evaluates static routes during a build.
+export const dynamic = 'force-dynamic';
+
 export default async function RecommendationsPage() {
   const programmes = await getGovernedProgrammes();
 
