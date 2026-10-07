@@ -241,19 +241,28 @@ describe('rate-limit policies', () => {
   });
 
   it('fails closed when the external limiter cannot reserve a key', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation();
     const unavailableLimiter: AtomicReservationLimiter = {
       reserve: jest.fn(async () => {
-        throw new Error('Redis is unavailable');
+        throw new Error('Redis authentication token is unavailable');
       }),
     };
     const service = createRateLimitService({ limiter: unavailableLimiter, now: () => now });
 
-    await expect(service.reserveAdvisorGuest('guest-1')).resolves.toEqual({
-      status: 'unavailable',
-      allowed: false,
-      resetAt: null,
-      retryAfterSeconds: null,
-    });
+    try {
+      await expect(service.reserveAdvisorGuest('guest-1')).resolves.toEqual({
+        status: 'unavailable',
+        allowed: false,
+        resetAt: null,
+        retryAfterSeconds: null,
+      });
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Scholar Scout atomic rate-limit reservation failed',
+        { policy: 'advisor-guest', failure: 'authentication' },
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('fails closed when no atomic limiter is configured', async () => {
