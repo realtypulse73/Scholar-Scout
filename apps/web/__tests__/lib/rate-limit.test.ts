@@ -24,6 +24,7 @@ import {
   createLimiterCacheKey,
   createRateLimitService,
   createUpstashAtomicReservationLimiter,
+  getRateLimitProviderConfiguration,
   isPreviewCommunityOutageEnabled,
   REGISTRATION_POLICY,
   reserveCommunitySubmission,
@@ -318,6 +319,40 @@ describe('rate-limit policies', () => {
         originalOutageFlag,
       );
     }
+  });
+});
+
+describe('getRateLimitProviderConfiguration', () => {
+  it('prefers the existing prefixed variable names when both forms are present', () => {
+    expect(
+      getRateLimitProviderConfiguration({
+        UPSTASH_REDIS_REST_KV_REST_API_URL: 'https://canonical.example',
+        UPSTASH_REDIS_REST_KV_REST_API_TOKEN: 'canonical-token',
+        KV_REST_API_URL: 'https://preview.example',
+        KV_REST_API_TOKEN: 'preview-token',
+      }),
+    ).toEqual({
+      url: 'https://canonical.example',
+      token: 'canonical-token',
+    });
+  });
+
+  it('accepts the Vercel-managed Upstash Redis variables used by Preview', () => {
+    expect(
+      getRateLimitProviderConfiguration({
+        KV_REST_API_URL: ' https://preview.example ',
+        KV_REST_API_TOKEN: ' preview-token ',
+      }),
+    ).toEqual({
+      url: 'https://preview.example',
+      token: 'preview-token',
+    });
+  });
+
+  it('fails closed when neither complete variable pair is available', () => {
+    expect(
+      getRateLimitProviderConfiguration({ KV_REST_API_URL: 'https://preview.example' }),
+    ).toBeNull();
   });
 });
 

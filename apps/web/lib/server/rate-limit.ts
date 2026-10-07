@@ -248,16 +248,52 @@ function getAtomicReservationLimiter(): AtomicReservationLimiter | null {
     return activeLimiter;
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL?.trim();
-  const token = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN?.trim();
+  const configuration = getRateLimitProviderConfiguration();
 
-  if (!url || !token) {
+  if (!configuration) {
     activeLimiter = null;
     return activeLimiter;
   }
 
-  activeLimiter = createUpstashAtomicReservationLimiter(new Redis({ url, token }));
+  activeLimiter = createUpstashAtomicReservationLimiter(new Redis(configuration));
   return activeLimiter;
+}
+
+/**
+ * Reads the legacy prefixed variables first, then Vercel's current
+ * Vercel-managed Upstash Redis names. Incomplete configuration remains
+ * unavailable so reservation callers continue to fail closed.
+ */
+export function getRateLimitProviderConfiguration(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): { url: string; token: string } | null {
+  const url = firstDefinedEnvironmentValue(
+    env,
+    'UPSTASH_REDIS_REST_KV_REST_API_URL',
+    'KV_REST_API_URL',
+  );
+  const token = firstDefinedEnvironmentValue(
+    env,
+    'UPSTASH_REDIS_REST_KV_REST_API_TOKEN',
+    'KV_REST_API_TOKEN',
+  );
+
+  return url && token ? { url, token } : null;
+}
+
+function firstDefinedEnvironmentValue(
+  env: Readonly<Record<string, string | undefined>>,
+  ...names: string[]
+): string | null {
+  for (const name of names) {
+    const value = env[name]?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 async function reserve(
