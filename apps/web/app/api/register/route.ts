@@ -32,13 +32,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const trustedIp = getTrustedRequestIp(request.headers);
 
     if (trustedIp.status !== 'available') {
-      return unavailableResponse();
+      return unavailableResponse('trusted-ip-unavailable');
     }
 
     const reservation = await reserveRegistration(trustedIp.ip);
 
     if (reservation.status === 'unavailable') {
-      return unavailableResponse();
+      return unavailableResponse('rate-limit-unavailable');
     }
 
     if (reservation.status === 'denied') {
@@ -102,7 +102,11 @@ function parseRegistrationPayload(value: unknown): RegistrationPayload | null {
   return { email, name, password };
 }
 
-function unavailableResponse(): NextResponse {
+function unavailableResponse(
+  reason: 'trusted-ip-unavailable' | 'rate-limit-unavailable',
+): NextResponse {
+  console.error('Scholar Scout registration temporarily unavailable', { reason });
+
   return NextResponse.json(
     { error: 'registration-service-unavailable' },
     { status: 503 },
