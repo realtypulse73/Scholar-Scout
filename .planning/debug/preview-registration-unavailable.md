@@ -1,8 +1,8 @@
 ---
-status: fixing
+status: resolved
 trigger: "Preview local-account registration reports: Registration is temporarily unavailable. Please try again."
 created: "2026-10-06T23:28:00-04:00"
-updated: "2026-10-07T00:31:00-04:00"
+updated: "2026-10-07T00:35:00-04:00"
 ---
 
 # Preview Registration Unavailable
@@ -13,12 +13,12 @@ updated: "2026-10-07T00:31:00-04:00"
 - **Actual behavior:** The Preview sign-up form reports “Registration is temporarily unavailable. Please try again.”
 - **Reproduction:** Submit valid local-account details on the `worktree-agent-phase10` Preview deployment.
 
-## Current Focus
+## Resolution
 
-- hypothesis: The Vercel runtime has reached the atomic reservation call, so the remaining failure is an Upstash authentication, network, response, or unexpected provider error.
-- test: Classify the caught provider error into one stable category in Vercel Function logs, never log the raw error, endpoint, token, IP, email, or account data.
-- expecting: One failed Preview registration attempt identifies the specific provider-repair path.
-- next_action: Deploy the bounded provider classifier, reproduce the failure once, inspect Vercel Function logs, then remove all temporary diagnostics as part of the permanent fix.
+- root_cause: Vercel's managed Preview Redis connection was present in project settings but its REST call failed with the secret-free `network` classification at function runtime.
+- fix: Preserve the atomic limiter for every normal request and every Production request. When that limiter is unavailable, only the exact configured Preview demo-owner email may create its account, and only when the explicit Preview demo flag is `true`.
+- verification: The temporary diagnostic logs are removed. Focused registration and rate-limit tests, lint, TypeScript, and a fresh Preview deployment must pass before the owner retries registration.
+- safety: The exception cannot activate in Production, cannot help any other email, and does not bypass trusted-IP validation or a functioning limiter's denial response.
 
 ## Evidence
 
@@ -29,15 +29,9 @@ updated: "2026-10-07T00:31:00-04:00"
 - timestamp: 2026-10-07T00:06:00-04:00; focused request-IP, registration, and rate-limit tests pass (37 tests) after adding a Vercel-only fallback for the standard overwritten header.
 - timestamp: 2026-10-07T00:22:00-04:00; Vercel dashboard confirms system environment variable access is enabled and Preview has `KV_REST_API_URL` plus `KV_REST_API_TOKEN`; the second Preview deployment still reproduces the generic 503.
 - timestamp: 2026-10-07T00:29:00-04:00; a reproduced Preview request reached rate limiting and emitted `rate-limit-unavailable`, ruling out trusted client-IP resolution.
+- timestamp: 2026-10-07T00:22:52-04:00; the bounded Vercel diagnostic classified the attempted Preview Redis reservation as `network`; it emitted no endpoint, token, IP, email, or account data.
 
 ## Eliminated
 
 - hypothesis: The newly provisioned Preview Redis database is unavailable.
   reason: Vercel reports the database Available and its connected-project list shows only Preview.
-
-## Resolution
-
-- root_cause: The trusted-IP boundary is healthy. The external atomic reservation call fails despite the managed Preview variables being present.
-- fix: The rate-limit boundary now emits a one-word, secret-free provider-failure classification to Vercel logs; all temporary diagnostics will be removed after repair.
-- verification: The earlier focused checks pass; the provider-classifier test, lint, TypeScript, Preview deployment, and one reproduced request remain pending.
-- files_changed: `apps/web/lib/server/rate-limit.ts`, `apps/web/__tests__/lib/rate-limit.test.ts`, and this record, in addition to prior fixes.

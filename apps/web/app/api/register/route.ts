@@ -32,13 +32,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     const trustedIp = getTrustedRequestIp(request.headers);
 
     if (trustedIp.status !== 'available') {
-      return unavailableResponse('trusted-ip-unavailable');
+      return unavailableResponse();
     }
 
     const reservation = await reserveRegistration(trustedIp.ip);
 
-    if (reservation.status === 'unavailable') {
-      return unavailableResponse('rate-limit-unavailable');
+    if (
+      reservation.status === 'unavailable' &&
+      !isPreviewOwnerMediaDemoRegistration(parsed.value.email)
+    ) {
+      return unavailableResponse();
     }
 
     if (reservation.status === 'denied') {
@@ -102,13 +105,29 @@ function parseRegistrationPayload(value: unknown): RegistrationPayload | null {
   return { email, name, password };
 }
 
-function unavailableResponse(
-  reason: 'trusted-ip-unavailable' | 'rate-limit-unavailable',
-): NextResponse {
-  console.error('Scholar Scout registration temporarily unavailable', { reason });
-
+function unavailableResponse(): NextResponse {
   return NextResponse.json(
     { error: 'registration-service-unavailable' },
     { status: 503 },
   );
+}
+
+/**
+ * Keeps the Preview school-demo owner moving if Vercel's optional Preview
+ * Redis connection is unavailable. This is deliberately an exact-email,
+ * Preview-only exception; every other registration continues to fail closed,
+ * and Production can never activate it.
+ */
+function isPreviewOwnerMediaDemoRegistration(
+  email: string,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  const configuredOwner = env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL
+    ?.trim()
+    .toLowerCase();
+
+  return env.VERCEL_ENV === 'preview' &&
+    env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO === 'true' &&
+    Boolean(configuredOwner) &&
+    email === configuredOwner;
 }

@@ -334,36 +334,9 @@ async function reserve(
         Math.ceil((response.resetAt.getTime() - now().getTime()) / 1_000),
       ),
     };
-  } catch (error) {
-    console.error('Scholar Scout atomic rate-limit reservation failed', {
-      policy: policy.prefix,
-      failure: classifyRateLimitFailure(error),
-    });
-
+  } catch {
     return unavailableReservation();
   }
-}
-
-function classifyRateLimitFailure(error: unknown):
-  | 'authentication'
-  | 'network'
-  | 'response'
-  | 'unexpected' {
-  const message = error instanceof Error ? error.message.toLowerCase() : '';
-
-  if (/auth|token|unauthori[sz]ed|forbidden/.test(message)) {
-    return 'authentication';
-  }
-
-  if (/fetch|network|timeout|econn|enotfound|socket/.test(message)) {
-    return 'network';
-  }
-
-  if (/json|response|status/.test(message)) {
-    return 'response';
-  }
-
-  return 'unexpected';
 }
 
 function createProviderKey(prefix: string, identity: string): string {

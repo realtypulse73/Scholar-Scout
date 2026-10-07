@@ -140,6 +140,56 @@ describe('POST /api/register', () => {
     expect(createUserMock).not.toHaveBeenCalled();
   });
 
+  it('allows only the configured Preview demo owner through a provider outage', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'development',
+      VERCEL: '1',
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    reserveRegistrationMock.mockResolvedValue({
+      status: 'unavailable',
+      allowed: false,
+      resetAt: null,
+      retryAfterSeconds: null,
+    });
+
+    const ownerResponse = await POST(createRequest({ email: 'OWNER@example.com' }));
+    const otherResponse = await POST(createRequest({ email: 'student@example.com' }));
+
+    expect(ownerResponse.status).toBe(200);
+    expect(otherResponse.status).toBe(503);
+    expect(createUserMock).toHaveBeenCalledTimes(1);
+    expect(createUserMock).toHaveBeenCalledWith({
+      email: 'owner@example.com',
+      name: 'Student',
+      password: 'secure-password',
+      role: 'student',
+    });
+  });
+
+  it('does not enable the Preview demo exception in Production', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'production',
+      VERCEL: '1',
+      VERCEL_ENV: 'production',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    reserveRegistrationMock.mockResolvedValue({
+      status: 'unavailable',
+      allowed: false,
+      resetAt: null,
+      retryAfterSeconds: null,
+    });
+
+    expect((await POST(createRequest({ email: 'owner@example.com' }))).status).toBe(503);
+    expect(createUserMock).not.toHaveBeenCalled();
+  });
+
   it('derives the server-side role and accepts only bounded account fields', async () => {
     const response = await POST(createRequest({ role: 'staff' }));
 
