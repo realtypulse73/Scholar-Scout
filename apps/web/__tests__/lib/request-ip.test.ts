@@ -15,6 +15,21 @@ describe('trusted request IP resolution', () => {
     });
   });
 
+  it('uses Vercel\'s overwritten standard forwarding header when its companion header is absent', () => {
+    const headers = new Headers({ 'x-forwarded-for': '203.0.113.11' });
+
+    expect(getTrustedRequestIp(headers, { VERCEL: '1' })).toEqual({
+      status: 'available',
+      ip: '203.0.113.11',
+    });
+  });
+
+  it('does not trust the standard forwarding header outside Vercel', () => {
+    const headers = new Headers({ 'x-forwarded-for': '203.0.113.11' });
+
+    expect(getTrustedRequestIp(headers, {})).toEqual({ status: 'unavailable' });
+  });
+
   it('ignores client-controlled forwarding headers', () => {
     const headers = new Headers({
       'x-vercel-forwarded-for': '2001:db8::1',

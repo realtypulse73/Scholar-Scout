@@ -20,11 +20,19 @@ export function isLocalDevelopmentAuthenticationEnvironment(
 }
 
 /**
- * Resolves the client IP only from Vercel's overwritten client-address header.
- * Caller-controlled forwarded headers are deliberately ignored.
+ * Resolves the client IP from Vercel's overwritten client-address headers.
+ * The ordinary forwarded header is considered only on Vercel and only when
+ * Vercel's companion header is absent, so non-Vercel callers cannot choose a
+ * rate-limit identity.
  */
-export function getTrustedRequestIp(headers: Headers): TrustedRequestIp {
-  const value = headers.get('x-vercel-forwarded-for')?.trim();
+export function getTrustedRequestIp(
+  headers: Headers,
+  env: RuntimeEnvironment = process.env,
+): TrustedRequestIp {
+  const vercelValue = headers.get('x-vercel-forwarded-for')?.trim();
+  const value = vercelValue || (env.VERCEL?.trim()
+    ? headers.get('x-forwarded-for')?.trim()
+    : undefined);
 
   if (!value || value.includes(',') || isIP(value) === 0) {
     return { status: 'unavailable' };
