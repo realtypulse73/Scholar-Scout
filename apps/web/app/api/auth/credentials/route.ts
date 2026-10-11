@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isExactObject, parseJsonRequest } from '@/lib/api-request';
 import {
   issueCredentialGrant,
+  issuePreviewOwnerCredentialGrant,
   verifyUserCredentials,
 } from '@/lib/server/data-store';
 import {
@@ -29,6 +30,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   let credentialIp = 'local-development';
+  let usePreviewOwnerCredentialGrant = false;
 
   if (!isLocalDevelopmentAuthenticationEnvironment()) {
     const trustedIp = getTrustedRequestIp(request.headers);
@@ -38,6 +40,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return unavailableResponse();
       }
       credentialIp = 'preview-owner-demo';
+      usePreviewOwnerCredentialGrant = true;
     } else {
       const reservation = await reserveSignInAttempt({
         email: parsed.value.email,
@@ -49,6 +52,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         !isPreviewOwnerMediaDemoCredentialExchange(parsed.value.email)
       ) {
         return unavailableResponse();
+      }
+
+      if (reservation.status === 'unavailable') {
+        usePreviewOwnerCredentialGrant = true;
       }
 
       if (reservation.status === 'denied') {
@@ -74,13 +81,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: result.status }, { status: 401 });
   }
 
-  return NextResponse.json({
-    grant: issueCredentialGrant({
+  const grant = usePreviewOwnerCredentialGrant
+    ? issuePreviewOwnerCredentialGrant({ user: result.user })
+    : issueCredentialGrant({
       email: parsed.value.email,
       ip: credentialIp,
       user: result.user,
-    }),
-  });
+    });
+
+  return grant
+    ? NextResponse.json({ grant })
+    : unavailableResponse();
 }
 
 function parseCredentialPayload(value: unknown): CredentialPayload | null {

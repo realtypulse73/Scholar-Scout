@@ -15,10 +15,10 @@ updated: "2026-10-11"
 
 ## Current Focus
 
-- hypothesis: The exact-owner exception must also cover Vercel's missing trusted request address, because this Preview deployment rejects the request before the reservation call.
-- test: Add focused tests for a missing trusted request address while retaining exact Preview-owner, other-account, and Production boundaries.
-- expecting: Only the configured Preview owner can proceed without a trusted request address; all other Preview accounts and every Production account receive the existing safe unavailable response.
-- next_action: Commit and deploy the corrected Preview boundary, then repeat the owner sign-in test.
+- hypothesis: A normal credential grant is held only in process memory, but the credential exchange and Auth.js callback may execute in different Vercel Preview functions.
+- test: Make the owner-only emergency handoff cryptographically verifiable in either Preview function while retaining the normal single-use in-process grant everywhere else.
+- expecting: Only the exact configured Preview owner can complete the short-lived signed handoff; Production and every other account reject it.
+- next_action: Commit and deploy the cross-function Preview handoff, then repeat the owner sign-in test.
 
 ## Evidence
 
@@ -29,9 +29,12 @@ updated: "2026-10-11"
 - timestamp: "2026-10-11"; the newly deployed Preview build still returns the temporary-unavailable sign-in response after the owner flag and email were saved and redeployed.
 - timestamp: "2026-10-11"; source review shows both Preview exceptions run only after `getTrustedRequestIp` rejects an omitted Vercel address, so neither exception can activate in this deployment.
 - timestamp: "2026-10-11"; focused tests now pass with 28 assertions, including missing-trusted-address cases for the exact Preview owner, other Preview accounts, and Production.
+- timestamp: "2026-10-11"; the newly deployed Preview build still reports temporary sign-in unavailability after the request-address boundary was corrected and the owner settings were redeployed.
+- timestamp: "2026-10-11"; the normal credential handoff uses a process-global in-memory map, while the exchange route and Auth.js callback can execute in separate Vercel Preview functions.
+- timestamp: "2026-10-11"; focused authentication tests, lint, TypeScript, and diff checks pass after adding a signed, two-minute, Preview-owner-only cross-function handoff with no password material.
 
 ## Resolution
 
-- root_cause: The owner-only exception was evaluated only after the trusted Vercel request-address check. This Preview deployment omits that address, so the request was rejected before either the registration or credential-exchange exception could activate.
-- fix: When and only when the request belongs to the exact configured Preview demo owner, permit registration or credential exchange to proceed after an unavailable trusted-address check. The existing limiter denial response, every other account, and Production remain fail-closed.
+- root_cause: The request-address fix permitted the credential exchange, but the exchange route stored the normal short-lived grant only in its process memory. The subsequent Auth.js callback can run in a different Vercel Preview function and therefore cannot consume that in-memory grant.
+- fix: When and only when the exact configured Preview demo owner reaches the existing emergency boundary, issue a two-minute HMAC-signed assertion containing only safe account claims. The Auth.js callback verifies it against the Preview environment, current owner email, and `NEXTAUTH_SECRET`; normal flows remain single-use in-memory grants. Production and every other account reject the assertion.
 - verification: Focused API tests, lint, TypeScript, and `git diff --check` pass locally. A new Preview deployment and owner sign-in remain required.

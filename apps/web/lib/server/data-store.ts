@@ -8,6 +8,7 @@ import {
 
 import {
   createHash,
+  createHmac,
   randomBytes,
   randomUUID,
   scrypt,
@@ -85,12 +86,19 @@ export type CredentialVerificationResult =
 
 const CREDENTIAL_GRANT_TTL_MS = 2 * 60 * 1_000;
 const CREDENTIAL_GRANT_STORE_KEY = Symbol.for('scholar-scout.credential-grants');
+const PREVIEW_OWNER_CREDENTIAL_GRANT_PREFIX = 'preview-owner';
 
 interface CredentialGrantRecord {
   email: string;
   ip: string;
   expiresAt: number;
   user: StoredUser;
+}
+
+interface PreviewOwnerCredentialGrantPayload {
+  email: string;
+  expiresAt: number;
+  user: Pick<StoredUser, 'id' | 'name' | 'email' | 'role'>;
 }
 
 /**
@@ -1328,6 +1336,72 @@ export function consumeCredentialGrant(grant: string): StoredUser | null {
   return storedGrant.user;
 }
 
+/**
+ * Issues a short-lived, signed credential handoff only for the configured
+ * Preview demo owner when Vercel cannot provide its usual request controls.
+ * Unlike the normal in-memory handoff, this crosses isolated Preview functions.
+ */
+export function issuePreviewOwnerCredentialGrant(input: {
+  user: StoredUser;
+  now?: Date;
+  env?: Readonly<Record<string, string | undefined>>;
+}): string | null {
+  const env = input.env ?? process.env;
+  if (!isConfiguredPreviewOwner(input.user.email, env)) return null;
+
+  const secret = env.NEXTAUTH_SECRET?.trim();
+  if (!secret) return null;
+
+  const payload: PreviewOwnerCredentialGrantPayload = {
+    email: normalizeEmail(input.user.email),
+    expiresAt: (input.now?.getTime() ?? Date.now()) + CREDENTIAL_GRANT_TTL_MS,
+    user: {
+      id: input.user.id,
+      name: input.user.name,
+      email: normalizeEmail(input.user.email),
+      role: input.user.role,
+    },
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signedValue = `${PREVIEW_OWNER_CREDENTIAL_GRANT_PREFIX}.${encodedPayload}`;
+  const signature = createHmac('sha256', secret).update(signedValue).digest('base64url');
+
+  return `${signedValue}.${signature}`;
+}
+
+/** Verifies a Preview-only signed handoff without retaining password material. */
+export function consumePreviewOwnerCredentialGrant(
+  grant: string,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  now = Date.now(),
+): StoredUser | null {
+  const secret = env.NEXTAUTH_SECRET?.trim();
+  const [prefix, encodedPayload, signature, extra] = grant.split('.');
+  if (!secret || prefix !== PREVIEW_OWNER_CREDENTIAL_GRANT_PREFIX || !encodedPayload || !signature || extra) {
+    return null;
+  }
+
+  const signedValue = `${prefix}.${encodedPayload}`;
+  const expectedSignature = createHmac('sha256', secret).update(signedValue).digest('base64url');
+  if (!constantTimeEqual(signature, expectedSignature)) return null;
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+
+  if (!isPreviewOwnerCredentialGrantPayload(payload) || payload.expiresAt <= now) return null;
+  if (!isConfiguredPreviewOwner(payload.email, env) || payload.user.email !== payload.email) return null;
+
+  return {
+    ...payload.user,
+    passwordHash: '',
+    createdAt: '',
+  };
+}
+
 export async function getUserById(userId: string) {
   const data = await readScholarScoutData();
   return data.users.find((user) => user.id === userId) ?? null;
@@ -2008,6 +2082,43 @@ function isStoredUser(value: unknown): value is StoredUser {
     typeof value.passwordHash === 'string' &&
     typeof value.createdAt === 'string'
   );
+}
+
+function isPreviewOwnerCredentialGrantPayload(
+  value: unknown,
+): value is PreviewOwnerCredentialGrantPayload {
+  if (!isPlainObject(value) || !isPlainObject(value.user)) return false;
+
+  const user = value.user;
+  return (
+    typeof value.email === 'string'
+    && typeof value.expiresAt === 'number'
+    && Number.isFinite(value.expiresAt)
+    && typeof user.id === 'string'
+    && typeof user.name === 'string'
+    && typeof user.email === 'string'
+    && (user.role === 'student' || user.role === 'staff')
+  );
+}
+
+function isConfiguredPreviewOwner(
+  email: string,
+  env: Readonly<Record<string, string | undefined>>,
+): boolean {
+  const configuredOwner = env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL
+    ?.trim()
+    .toLowerCase();
+
+  return env.VERCEL_ENV === 'preview'
+    && env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO === 'true'
+    && Boolean(configuredOwner)
+    && normalizeEmail(email) === configuredOwner;
+}
+
+function constantTimeEqual(left: string, right: string): boolean {
+  const leftValue = Buffer.from(left);
+  const rightValue = Buffer.from(right);
+  return leftValue.length === rightValue.length && timingSafeEqual(leftValue, rightValue);
 }
 
 function isAuditEvent(value: unknown): value is AuditEvent {

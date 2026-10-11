@@ -13,6 +13,8 @@ import {
 } from '@/lib/server/student-actor';
 import {
   hashGuestCredential,
+  consumePreviewOwnerCredentialGrant,
+  issuePreviewOwnerCredentialGrant,
   readScholarScoutData,
   registerGuestLifecycle,
   createUser,
@@ -347,6 +349,7 @@ describe('credential exchange controls', () => {
       NODE_ENV: 'development',
       VERCEL: '1',
       VERCEL_ENV: 'preview',
+      NEXTAUTH_SECRET: 'preview-secret',
       SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
       SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
     };
@@ -377,6 +380,7 @@ describe('credential exchange controls', () => {
       NODE_ENV: 'development',
       VERCEL: '1',
       VERCEL_ENV: 'preview',
+      NEXTAUTH_SECRET: 'preview-secret',
       SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
       SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
     };
@@ -397,7 +401,11 @@ describe('credential exchange controls', () => {
     }));
 
     expect(ownerResponse.status).toBe(200);
-    await expect(ownerResponse.json()).resolves.toEqual({ grant: expect.any(String) });
+    const ownerBody = await ownerResponse.json() as { grant: string };
+    expect(ownerBody).toEqual({ grant: expect.any(String) });
+    await expect(
+      credentialProvider.options.authorize({ grant: ownerBody.grant }),
+    ).resolves.toMatchObject({ id: expect.any(String), email: 'owner@example.com' });
     expect(otherResponse.status).toBe(503);
   });
 
@@ -416,6 +424,39 @@ describe('credential exchange controls', () => {
       email: 'owner@example.com',
       password: 'secure-password',
     }))).status).toBe(503);
+  });
+
+  it('rejects a Preview-owner handoff outside its configured Preview boundary', () => {
+    const previewEnvironment = {
+      NEXTAUTH_SECRET: 'preview-secret',
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    const now = new Date('2026-10-11T12:00:00.000Z');
+    const grant = issuePreviewOwnerCredentialGrant({
+      user: {
+        id: 'owner-id',
+        name: 'Owner',
+        email: 'owner@example.com',
+        role: 'student',
+        passwordHash: 'never-in-grant',
+        createdAt: now.toISOString(),
+      },
+      now,
+      env: previewEnvironment,
+    });
+
+    expect(grant).toEqual(expect.any(String));
+    expect(grant).not.toContain('never-in-grant');
+    expect(consumePreviewOwnerCredentialGrant(grant!, previewEnvironment, now.getTime() + 1))
+      .toMatchObject({ id: 'owner-id', email: 'owner@example.com' });
+    expect(consumePreviewOwnerCredentialGrant(grant!, {
+      ...previewEnvironment,
+      VERCEL_ENV: 'production',
+    }, now.getTime() + 1)).toBeNull();
+    expect(consumePreviewOwnerCredentialGrant(grant!, previewEnvironment, now.getTime() + 2 * 60 * 1_000))
+      .toBeNull();
   });
 
   it('issues a single-use grant after asynchronous verification and rejects raw credential callbacks', async () => {

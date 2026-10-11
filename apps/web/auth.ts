@@ -4,6 +4,7 @@ import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import {
   consumeCredentialGrant,
+  consumePreviewOwnerCredentialGrant,
   findOrCreateOAuthUser,
 } from '@/lib/server/data-store';
 import { resolveNextAuthSecret } from '@/lib/server/local-auth-secret';
@@ -29,7 +30,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = consumeCredentialGrant(grant);
+        const user = consumeCredentialGrant(grant)
+          ?? consumePreviewOwnerCredentialGrant(grant);
 
         if (!user) {
           return null;
