@@ -42,7 +42,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       ip: trustedIp.ip,
     });
 
-    if (reservation.status === 'unavailable') {
+    if (
+      reservation.status === 'unavailable' &&
+      !isPreviewOwnerMediaDemoCredentialExchange(parsed.value.email)
+    ) {
       return unavailableResponse();
     }
 
@@ -107,4 +110,23 @@ function unavailableResponse(): NextResponse {
     { error: 'credential-service-unavailable' },
     { status: 503 },
   );
+}
+
+/**
+ * Keeps only the configured Preview school-demo owner moving if Vercel's
+ * optional Preview Redis connection is unavailable. Production and every
+ * other account continue to fail closed.
+ */
+function isPreviewOwnerMediaDemoCredentialExchange(
+  email: string,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  const configuredOwner = env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL
+    ?.trim()
+    .toLowerCase();
+
+  return env.VERCEL_ENV === 'preview' &&
+    env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO === 'true' &&
+    Boolean(configuredOwner) &&
+    email === configuredOwner;
 }

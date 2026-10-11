@@ -341,6 +341,53 @@ describe('credential exchange controls', () => {
     expect((await exchangeCredentials(createCredentialsRequest())).status).toBe(503);
   });
 
+  it('allows only the configured Preview demo owner through a provider outage', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'development',
+      VERCEL: '1',
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    setAtomicReservationLimiterForTests(null);
+    await createUser({
+      email: 'owner@example.com',
+      name: 'Owner',
+      password: 'secure-password',
+      role: 'student',
+    });
+
+    const ownerResponse = await exchangeCredentials(createCredentialsRequest({
+      email: 'OWNER@example.com',
+      password: 'secure-password',
+    }));
+    const otherResponse = await exchangeCredentials(createCredentialsRequest({
+      password: 'secure-password',
+    }));
+
+    expect(ownerResponse.status).toBe(200);
+    await expect(ownerResponse.json()).resolves.toEqual({ grant: expect.any(String) });
+    expect(otherResponse.status).toBe(503);
+  });
+
+  it('keeps the configured owner fail-closed in Production during a provider outage', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'production',
+      VERCEL: '1',
+      VERCEL_ENV: 'production',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    setAtomicReservationLimiterForTests(null);
+
+    expect((await exchangeCredentials(createCredentialsRequest({
+      email: 'owner@example.com',
+      password: 'secure-password',
+    }))).status).toBe(503);
+  });
+
   it('issues a single-use grant after asynchronous verification and rejects raw credential callbacks', async () => {
     const limiter = createFixedWindowLimiter(5);
     setAtomicReservationLimiterForTests(limiter);
@@ -413,7 +460,7 @@ describe('credential exchange controls', () => {
 });
 
 function createCredentialsRequest(
-  input?: { password?: string },
+  input?: { email?: string; password?: string },
   headers: Record<string, string> = {},
   includeTrustedVercelHeader = true,
 ): Request {
@@ -425,7 +472,7 @@ function createCredentialsRequest(
       ...headers,
     },
     body: JSON.stringify({
-      email: 'student@example.com',
+      email: input?.email ?? 'student@example.com',
       password: input?.password ?? 'not-the-password',
     }),
   });
