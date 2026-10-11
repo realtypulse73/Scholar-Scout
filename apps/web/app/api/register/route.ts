@@ -32,29 +32,31 @@ export async function POST(request: Request): Promise<NextResponse> {
     const trustedIp = getTrustedRequestIp(request.headers);
 
     if (trustedIp.status !== 'available') {
-      return unavailableResponse();
-    }
+      if (!isPreviewOwnerMediaDemoRegistration(parsed.value.email)) {
+        return unavailableResponse();
+      }
+    } else {
+      const reservation = await reserveRegistration(trustedIp.ip);
 
-    const reservation = await reserveRegistration(trustedIp.ip);
+      if (
+        reservation.status === 'unavailable' &&
+        !isPreviewOwnerMediaDemoRegistration(parsed.value.email)
+      ) {
+        return unavailableResponse();
+      }
 
-    if (
-      reservation.status === 'unavailable' &&
-      !isPreviewOwnerMediaDemoRegistration(parsed.value.email)
-    ) {
-      return unavailableResponse();
-    }
-
-    if (reservation.status === 'denied') {
-      return NextResponse.json(
-        {
-          error: 'registration-rate-limited',
-          resetAt: reservation.resetAt.toISOString(),
-        },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
-        },
-      );
+      if (reservation.status === 'denied') {
+        return NextResponse.json(
+          {
+            error: 'registration-rate-limited',
+            resetAt: reservation.resetAt.toISOString(),
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
+          },
+        );
+      }
     }
   }
 

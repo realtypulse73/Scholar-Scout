@@ -371,6 +371,36 @@ describe('credential exchange controls', () => {
     expect(otherResponse.status).toBe(503);
   });
 
+  it('allows only the configured Preview demo owner when Vercel omits a trusted IP', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'development',
+      VERCEL: '1',
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    getTrustedRequestIpMock.mockReturnValue({ status: 'unavailable' });
+    await createUser({
+      email: 'owner@example.com',
+      name: 'Owner',
+      password: 'secure-password',
+      role: 'student',
+    });
+
+    const ownerResponse = await exchangeCredentials(createCredentialsRequest({
+      email: 'owner@example.com',
+      password: 'secure-password',
+    }));
+    const otherResponse = await exchangeCredentials(createCredentialsRequest({
+      password: 'secure-password',
+    }));
+
+    expect(ownerResponse.status).toBe(200);
+    await expect(ownerResponse.json()).resolves.toEqual({ grant: expect.any(String) });
+    expect(otherResponse.status).toBe(503);
+  });
+
   it('keeps the configured owner fail-closed in Production during a provider outage', async () => {
     process.env = {
       ...originalEnv,

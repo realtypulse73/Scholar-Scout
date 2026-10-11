@@ -15,10 +15,10 @@ updated: "2026-10-11"
 
 ## Current Focus
 
-- hypothesis: Credential exchange still fails closed on the unavailable Preview rate-limit reservation, while registration alone has the exact-email Preview-owner exception.
-- test: Add focused tests covering the exact configured Preview owner, another Preview account, and Production when the limiter is unavailable.
-- expecting: Only the configured Preview owner can receive a credential grant during that temporary dependency outage.
-- next_action: Deploy the committed Preview fix and repeat the owner sign-in test.
+- hypothesis: The exact-owner exception must also cover Vercel's missing trusted request address, because this Preview deployment rejects the request before the reservation call.
+- test: Add focused tests for a missing trusted request address while retaining exact Preview-owner, other-account, and Production boundaries.
+- expecting: Only the configured Preview owner can proceed without a trusted request address; all other Preview accounts and every Production account receive the existing safe unavailable response.
+- next_action: Commit and deploy the corrected Preview boundary, then repeat the owner sign-in test.
 
 ## Evidence
 
@@ -26,9 +26,12 @@ updated: "2026-10-11"
 - timestamp: "2026-10-11"; `app/api/auth/credentials/route.ts` returns `credential-service-unavailable` before password verification whenever the atomic sign-in reservation is unavailable.
 - timestamp: "2026-10-11"; `app/api/register/route.ts` already carries an exact-email, Preview-only owner exception for the same external Preview rate-limit dependency.
 - timestamp: "2026-10-11"; focused registration and credential-exchange tests pass with 26 assertions, including the owner-only Preview exception and Production denial; lint and TypeScript checks also pass.
+- timestamp: "2026-10-11"; the newly deployed Preview build still returns the temporary-unavailable sign-in response after the owner flag and email were saved and redeployed.
+- timestamp: "2026-10-11"; source review shows both Preview exceptions run only after `getTrustedRequestIp` rejects an omitted Vercel address, so neither exception can activate in this deployment.
+- timestamp: "2026-10-11"; focused tests now pass with 28 assertions, including missing-trusted-address cases for the exact Preview owner, other Preview accounts, and Production.
 
 ## Resolution
 
-- root_cause: The account-creation exception did not cover the separate credential-exchange endpoint, which independently reserves a sign-in rate-limit window before verifying the account password.
-- fix: When and only when the atomic reservation is unavailable, permit the exact configured Preview demo owner through credential exchange. The existing trusted-IP requirement, a functioning limiter's denial response, every other account, and Production all remain fail-closed.
+- root_cause: The owner-only exception was evaluated only after the trusted Vercel request-address check. This Preview deployment omits that address, so the request was rejected before either the registration or credential-exchange exception could activate.
+- fix: When and only when the request belongs to the exact configured Preview demo owner, permit registration or credential exchange to proceed after an unavailable trusted-address check. The existing limiter denial response, every other account, and Production remain fail-closed.
 - verification: Focused API tests, lint, TypeScript, and `git diff --check` pass locally. A new Preview deployment and owner sign-in remain required.

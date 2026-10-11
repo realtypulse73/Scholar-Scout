@@ -170,6 +170,31 @@ describe('POST /api/register', () => {
     });
   });
 
+  it('allows only the configured Preview demo owner when Vercel omits a trusted IP', async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'development',
+      VERCEL: '1',
+      VERCEL_ENV: 'preview',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO: 'true',
+      SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL: 'owner@example.com',
+    };
+    getTrustedRequestIpMock.mockReturnValue({ status: 'unavailable' });
+
+    const ownerResponse = await POST(createRequest({ email: 'OWNER@example.com' }));
+    const otherResponse = await POST(createRequest({ email: 'student@example.com' }));
+
+    expect(ownerResponse.status).toBe(200);
+    expect(otherResponse.status).toBe(503);
+    expect(reserveRegistrationMock).not.toHaveBeenCalled();
+    expect(createUserMock).toHaveBeenCalledWith({
+      email: 'owner@example.com',
+      name: 'Student',
+      password: 'secure-password',
+      role: 'student',
+    });
+  });
+
   it('does not enable the Preview demo exception in Production', async () => {
     process.env = {
       ...originalEnv,

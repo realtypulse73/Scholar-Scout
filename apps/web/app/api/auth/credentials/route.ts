@@ -34,32 +34,35 @@ export async function POST(request: Request): Promise<NextResponse> {
     const trustedIp = getTrustedRequestIp(request.headers);
 
     if (trustedIp.status !== 'available') {
-      return unavailableResponse();
+      if (!isPreviewOwnerMediaDemoCredentialExchange(parsed.value.email)) {
+        return unavailableResponse();
+      }
+      credentialIp = 'preview-owner-demo';
+    } else {
+      const reservation = await reserveSignInAttempt({
+        email: parsed.value.email,
+        ip: trustedIp.ip,
+      });
+
+      if (
+        reservation.status === 'unavailable' &&
+        !isPreviewOwnerMediaDemoCredentialExchange(parsed.value.email)
+      ) {
+        return unavailableResponse();
+      }
+
+      if (reservation.status === 'denied') {
+        return NextResponse.json(
+          { error: 'rate-limited', resetAt: reservation.resetAt.toISOString() },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
+          },
+        );
+      }
+
+      credentialIp = trustedIp.ip;
     }
-
-    const reservation = await reserveSignInAttempt({
-      email: parsed.value.email,
-      ip: trustedIp.ip,
-    });
-
-    if (
-      reservation.status === 'unavailable' &&
-      !isPreviewOwnerMediaDemoCredentialExchange(parsed.value.email)
-    ) {
-      return unavailableResponse();
-    }
-
-    if (reservation.status === 'denied') {
-      return NextResponse.json(
-        { error: 'rate-limited', resetAt: reservation.resetAt.toISOString() },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(reservation.retryAfterSeconds) },
-        },
-      );
-    }
-
-    credentialIp = trustedIp.ip;
   }
 
   const result = await verifyUserCredentials(
