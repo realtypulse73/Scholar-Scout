@@ -188,7 +188,7 @@ Plans:
 **Goal:** An invited, signed-in adult can privately submit one short original video and poster fallback with explicit rights attestation while governed staff review, release, or remove it; a separately server-gated Preview-only owner demo exception remains anonymous, non-endorsing, and unavailable in Production.
 **Requirements**: SPEC-01, SPEC-02, SPEC-03, SPEC-04, SPEC-05, SPEC-06, SPEC-07
 **Depends on:** Phase 13
-**Plans:** 10/10 plans executed
+**Plans:** 10/11 plans executed
 
 Plans:
 
@@ -202,6 +202,7 @@ Plans:
 - [x] 13.2-08-PLAN.md
 - [x] 13.2-09-PLAN.md — Add the narrowly configured Preview-only owner demo exception without weakening the ordinary independent workflow.
 - [x] 13.2-10-PLAN.md — Re-authorize private Blob direct-upload tokens against the owner’s active invited Draft and current revision.
+- [ ] 13.2-11-PLAN.md — Close the invited contributor attestation-screen gap and enter the existing private uploader.
 
 ### Phase 13.1: Visual-First Discovery Experience (INSERTED)
 
