@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 4 plans ready for execution
 Status: Ready to execute
-Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave plan passed independent review; no asset or permission checkpoint remains
+Last activity: 2026-10-14 — completed quick task 261014-x96: added a Preview-owner contributor-workflow link after invitation success
 
 ## Performance Metrics
 
@@ -272,6 +272,7 @@ Last activity: 2026-09-29 — media-free Phase 13.1 specification and four-wave 
 | 260922-6jm | Add Greater Kingston, Jamaica to the v1.1 Regional Opportunity Navigator scope, research plan, requirements, and roadmap. | 2026-09-22 | 5e389ad | [260922-6jm-add-greater-kingston-jamaica-to-the-v1-1](./quick/260922-6jm-add-greater-kingston-jamaica-to-the-v1-1/) |
 | 260924-ftn | Allow safe local development registration without weakening Vercel production registration controls — verified | 2026-09-24 | a126265 | [260924-ftn-allow-safe-local-development-registratio](./quick/260924-ftn-allow-safe-local-development-registratio/) |
 | 260924-gl9 | Allow the local development credential exchange used immediately after registration without weakening Vercel production or Preview sign-in controls — verified | 2026-09-24 | c44eb98 | [260924-gl9-allow-the-local-development-credential-e](./quick/260924-gl9-allow-the-local-development-credential-e/) |
+| 261014-x96 | Add an accessible Preview contributor workflow link after invitation success | 2026-10-14 | efbc2d2 | [261014-x96-add-an-accessible-preview-contributor-wo](./quick/261014-x96-add-an-accessible-preview-contributor-wo/) |
 
 ## Deferred Items
 
