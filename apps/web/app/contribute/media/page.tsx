@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import ContributorMediaIntake from '@/components/contributor-media/ContributorMediaIntake';
-import { getContributorMediaPrivateStatus } from '@/lib/server/contributor-media';
+import { getContributorMediaPrivateIntakeState } from '@/lib/server/contributor-media';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { resolveStudentActor } from '@/lib/server/student-actor';
 
@@ -11,9 +11,12 @@ export const metadata = {
 
 export default async function ContributorMediaPage() {
   const actor = await resolveStudentActor({ allowGuest: false });
-  const status = actor?.kind === 'account'
-    ? await getContributorMediaPrivateStatus(actor)
+  const intakeState = actor?.kind === 'account'
+    ? await getContributorMediaPrivateIntakeState(actor)
     : null;
+  const programmes = intakeState && intakeState.status !== 'unavailable'
+    ? (await getGovernedProgrammes()).map((programme) => ({ id: programme.id, name: programme.name }))
+    : [];
 
   return (
     <main className="min-h-screen bg-ink-50 px-5 py-10 text-ink-900 sm:px-6 lg:px-8">
@@ -33,10 +36,15 @@ export default async function ContributorMediaPage() {
             </Link>{' '}
             with an invited account to continue.
           </p>
-        ) : status ? (
+        ) : intakeState?.status === 'attestation-required' ? (
           <ContributorMediaIntake
-            initialStatus={status}
-            programmes={(await getGovernedProgrammes()).map((programme) => ({ id: programme.id, name: programme.name }))}
+            initialStatus={null}
+            programmes={programmes}
+          />
+        ) : intakeState?.status === 'submission' ? (
+          <ContributorMediaIntake
+            initialStatus={intakeState.submission}
+            programmes={programmes}
           />
         ) : (
           <p className="mt-6 text-sm text-ink-700">No active contributor draft is available for this account.</p>

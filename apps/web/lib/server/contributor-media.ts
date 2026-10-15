@@ -43,6 +43,11 @@ export type AuthorizeContributorMediaDirectUploadResult =
   | { status: 'authorized'; revision: number; pathname: string }
   | { status: 'denied' };
 
+export type ContributorMediaPrivateIntakeState =
+  | { status: 'unavailable' }
+  | { status: 'attestation-required' }
+  | { status: 'submission'; submission: ContributorPrivateStatus };
+
 export type CompleteContributorMediaUploadResult =
   | { status: 'ready'; submission: ContributorPrivateStatus }
   | { status: 'action-needed'; submission: ContributorPrivateStatus }
@@ -298,9 +303,7 @@ export async function getContributorMediaPrivateStatus(
   const { readScholarScoutData } = await import('@/lib/server/data-store');
   const state = ensureContributorMediaState(await readScholarScoutData());
   const invitation = getActiveContributorInvitation(state, actor.accountId, now);
-  const submission = state.submissions.find((candidate) => (
-    candidate.accountId === actor.accountId && candidate.status !== 'Removed'
-  )) ?? state.submissions.find((candidate) => candidate.accountId === actor.accountId) ?? null;
+  const submission = findContributorSubmission(state, actor.accountId);
   if (submission?.status === 'Removed') {
     return { status: submission.status, revision: submission.revision ?? 1 };
   }
@@ -309,6 +312,27 @@ export async function getContributorMediaPrivateStatus(
     invitation,
     submission,
   });
+}
+
+/** Projects only the trusted actor's contributor intake availability to the browser. */
+export async function getContributorMediaPrivateIntakeState(
+  actor: AccountStudentActor,
+  now = new Date(),
+): Promise<ContributorMediaPrivateIntakeState> {
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const state = ensureContributorMediaState(await readScholarScoutData());
+  const invitation = getActiveContributorInvitation(state, actor.accountId, now);
+  if (!invitation) return { status: 'unavailable' };
+
+  const submission = findContributorSubmission(state, actor.accountId);
+  const privateStatus = getContributorPrivateStatus({
+    accountId: actor.accountId,
+    invitation,
+    submission,
+  });
+  return privateStatus
+    ? { status: 'submission', submission: privateStatus }
+    : { status: 'attestation-required' };
 }
 
 /** Reads attestation and inspection evidence only for independently authorized staff review. */
@@ -499,6 +523,15 @@ async function getGovernedProgrammeIds(): Promise<Set<string>> {
 
 function isContributorSubmissionId(value: string): boolean {
   return /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
+}
+
+function findContributorSubmission(
+  state: ContributorMediaState,
+  accountId: string,
+): ContributorMediaSubmission | null {
+  return state.submissions.find((submission) => (
+    submission.accountId === accountId && submission.status !== 'Removed'
+  )) ?? state.submissions.find((submission) => submission.accountId === accountId) ?? null;
 }
 
 async function resolveCanonicalProgrammeId(programmeId: string): Promise<string | null> {

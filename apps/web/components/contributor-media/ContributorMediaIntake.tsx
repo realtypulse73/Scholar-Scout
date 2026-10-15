@@ -5,15 +5,99 @@ import { uploadPresigned } from '@vercel/blob/client';
 import {
   CONTRIBUTOR_POSTER_MAX_BYTES,
   CONTRIBUTOR_VIDEO_MAX_BYTES,
+  type ContributorAttestation,
   type ContributorPrivateStatus,
 } from '@/lib/contributor-media';
 
 interface ContributorMediaIntakeProps {
   programmes: { id: string; name: string }[];
-  initialStatus: ContributorPrivateStatus;
+  initialStatus: ContributorPrivateStatus | null;
 }
 
 export default function ContributorMediaIntake({ programmes, initialStatus }: ContributorMediaIntakeProps) {
+  const [status, setStatus] = useState(initialStatus);
+
+  if (!status) {
+    return <ContributorAttestationForm onSubmission={setStatus} />;
+  }
+
+  return <ContributorMediaUploader programmes={programmes} initialStatus={status} />;
+}
+
+function ContributorAttestationForm({ onSubmission }: { onSubmission: (submission: ContributorPrivateStatus) => void }) {
+  const [signerName, setSignerName] = useState('');
+  const [adultAffirmed, setAdultAffirmed] = useState(false);
+  const [creatorAuthority, setCreatorAuthority] = useState(false);
+  const [recognisablePeopleConsent, setRecognisablePeopleConsent] = useState(false);
+  const [message, setMessage] = useState('Complete the adult attestation before preparing your private upload.');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submitAttestation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedSignerName = signerName.trim();
+    if (!adultAffirmed || !normalizedSignerName || !creatorAuthority || !recognisablePeopleConsent) {
+      setMessage('Action needed: complete every attestation field before continuing.');
+      return;
+    }
+    const attestation: ContributorAttestation = {
+      adultAffirmed: true,
+      signerName: normalizedSignerName,
+      creatorAuthority: true,
+      recognisablePeopleConsent: true,
+    };
+
+    setSubmitting(true);
+    setMessage('Creating your private contributor draft.');
+    try {
+      const response = await fetch('/api/contributor-media/attestation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(attestation),
+      });
+      const body = await response.json() as { submission?: ContributorPrivateStatus; error?: string };
+      if (!response.ok || !body.submission) throw new Error(body.error ?? 'We could not create your private contributor draft.');
+      onSubmission(body.submission);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Action needed: ${error.message}` : 'Action needed: try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return <form className="mt-6 space-y-5" onSubmit={submitAttestation}>
+    <p className="rounded-xl border border-border bg-ink-50 p-4 text-sm text-ink-700" aria-live="polite">{message}</p>
+    <label className="block text-sm font-semibold" htmlFor="contributor-signer-name">Signer name
+      <input
+        id="contributor-signer-name"
+        className="mt-2 w-full rounded-lg border border-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-600"
+        value={signerName}
+        onChange={(event) => setSignerName(event.target.value)}
+        required
+      />
+    </label>
+    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-adult-affirmed">
+      <input id="contributor-adult-affirmed" checked={adultAffirmed} onChange={(event) => setAdultAffirmed(event.target.checked)} required type="checkbox" />
+      I am 18 or older.
+    </label>
+    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-creator-authority">
+      <input id="contributor-creator-authority" checked={creatorAuthority} onChange={(event) => setCreatorAuthority(event.target.checked)} required type="checkbox" />
+      I created this material or have the authority to submit it.
+    </label>
+    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-recognisable-people-consent">
+      <input id="contributor-recognisable-people-consent" checked={recognisablePeopleConsent} onChange={(event) => setRecognisablePeopleConsent(event.target.checked)} required type="checkbox" />
+      I have consent from every recognisable person in this material.
+    </label>
+    <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Creating private draft…' : 'Continue to private upload'}</button>
+  </form>;
+}
+
+function ContributorMediaUploader({
+  programmes,
+  initialStatus,
+}: {
+  programmes: { id: string; name: string }[];
+  initialStatus: ContributorPrivateStatus;
+}) {
   const [programmeId, setProgrammeId] = useState('');
   const [video, setVideo] = useState<File | null>(null);
   const [poster, setPoster] = useState<File | null>(null);
