@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 type Availability = 'loading' | 'available' | 'unavailable';
@@ -63,10 +64,18 @@ export default function PreviewOwnerMediaDemo() {
         {submissionState === 'pending' ? 'Creating invitation…' : 'Create my Preview invitation'}
       </button>
       <p className="mt-3 text-sm text-ink-700" aria-live="polite">
-        {submissionState === 'ready' && 'Your private Preview invitation is ready. Continue through the normal contributor workflow.'}
+        {submissionState === 'ready' && 'Your private Preview invitation is ready.'}
         {submissionState === 'conflict' && 'The invitation changed. Reload and try again.'}
         {submissionState === 'unavailable' && 'This Preview demo is unavailable. Reload and try again.'}
       </p>
+      {submissionState === 'ready' ? (
+        <Link
+          href="/contribute/media"
+          className="mt-3 inline-flex min-h-10 items-center rounded-md border border-brand-700 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+          Continue to contributor media
+        </Link>
+      ) : null}
     </section>
   );
 }

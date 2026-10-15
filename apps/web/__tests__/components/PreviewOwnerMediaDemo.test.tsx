@@ -23,6 +23,10 @@ describe('PreviewOwnerMediaDemo', () => {
     fireEvent.click(screen.getByRole('button', { name: /create my Preview invitation/i }));
 
     expect(await screen.findByText(/invitation is ready/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /continue to contributor media/i })).toHaveAttribute(
+      'href',
+      '/contribute/media',
+    );
     expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/admin/contributor-media/preview-demo', {
       method: 'POST',
     });
