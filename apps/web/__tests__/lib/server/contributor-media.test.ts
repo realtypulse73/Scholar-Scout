@@ -2,6 +2,7 @@
 
 import {
   authorizeContributorMediaDirectUpload,
+  getContributorMediaPrivateIntakeState,
 } from '@/lib/server/contributor-media';
 import {
   setScholarScoutDataStoreForTests,
@@ -109,5 +110,42 @@ describe('contributor direct upload authorization', () => {
       kind: 'video',
       now: NOW,
     })).resolves.toEqual({ status: 'denied' });
+  });
+});
+
+describe('getContributorMediaPrivateIntakeState', () => {
+  let store: MemoryDataStore;
+
+  beforeEach(() => {
+    store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+  });
+
+  afterEach(() => setScholarScoutDataStoreForTests(null));
+
+  it('projects only a redacted existing submission for the trusted invited account', async () => {
+    await expect(getContributorMediaPrivateIntakeState(owner, NOW)).resolves.toEqual({
+      status: 'submission',
+      submission: { status: 'Draft', revision: 3 },
+    });
+  });
+
+  it('allows attestation only for an active invitee without a private submission', async () => {
+    store.data.contributorMediaState!.submissions = [];
+
+    await expect(getContributorMediaPrivateIntakeState(owner, NOW)).resolves.toEqual({
+      status: 'attestation-required',
+    });
+  });
+
+  it.each([
+    ['no invitation', (data: ScholarScoutData) => { data.contributorMediaState!.invitations = []; }],
+    ['a disabled invitation', (data: ScholarScoutData) => { data.contributorMediaState!.invitations[0].status = 'disabled'; }],
+    ['a withdrawn invitation', (data: ScholarScoutData) => { data.contributorMediaState!.invitations[0].status = 'withdrawn'; }],
+    ['an expired invitation', (data: ScholarScoutData) => { data.contributorMediaState!.invitations[0].expiresAt = '2026-10-01T11:59:59.000Z'; }],
+  ])('does not expose attestation capability for %s', async (_label, change) => {
+    change(store.data);
+
+    await expect(getContributorMediaPrivateIntakeState(owner, NOW)).resolves.toEqual({ status: 'unavailable' });
   });
 });

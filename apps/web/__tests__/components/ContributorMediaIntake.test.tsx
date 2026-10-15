@@ -55,4 +55,75 @@ describe('ContributorMediaIntake', () => {
     });
     global.fetch = originalFetch;
   });
+
+  it('requires the local adult attestation before calling the existing route', async () => {
+    const fetchMock = jest.fn();
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock as typeof fetch;
+    render(<ContributorMediaIntake programmes={[]} initialStatus={null} />);
+
+    expect(screen.getByLabelText('Signer name')).toBeInTheDocument();
+    expect(screen.getByLabelText(/I am 18 or older/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/I created this material/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/consent from every recognisable person/i)).toBeInTheDocument();
+
+    fireEvent.submit(screen.getByRole('button', { name: /continue to private upload/i }).closest('form')!);
+
+    expect(await screen.findByText(/complete every attestation field/i)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('contributor-media')).toBeNull();
+    global.fetch = originalFetch;
+  });
+
+  it('posts only the existing attestation contract and reveals the uploader after a Draft response', async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ submission: { status: 'Draft', revision: 4 } }),
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<ContributorMediaIntake programmes={[{ id: 'programme-1', name: 'Pilot programme' }]} initialStatus={null} />);
+
+    fireEvent.change(screen.getByLabelText('Signer name'), { target: { value: 'Jordan Scout' } });
+    fireEvent.click(screen.getByLabelText(/I am 18 or older/i));
+    fireEvent.click(screen.getByLabelText(/I created this material/i));
+    fireEvent.click(screen.getByLabelText(/consent from every recognisable person/i));
+    fireEvent.submit(screen.getByRole('button', { name: /continue to private upload/i }).closest('form')!);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith('/api/contributor-media/attestation', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        adultAffirmed: true,
+        signerName: 'Jordan Scout',
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+      }),
+    });
+    expect(await screen.findByLabelText('Programme')).toBeInTheDocument();
+    expect(window.localStorage.getItem('contributor-media')).toBeNull();
+    global.fetch = originalFetch;
+  });
+
+  it('keeps a safe rejected attestation response actionable without revealing upload controls', async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Contributor invitation required.' }),
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<ContributorMediaIntake programmes={[]} initialStatus={null} />);
+
+    fireEvent.change(screen.getByLabelText('Signer name'), { target: { value: 'Jordan Scout' } });
+    fireEvent.click(screen.getByLabelText(/I am 18 or older/i));
+    fireEvent.click(screen.getByLabelText(/I created this material/i));
+    fireEvent.click(screen.getByLabelText(/consent from every recognisable person/i));
+    fireEvent.submit(screen.getByRole('button', { name: /continue to private upload/i }).closest('form')!);
+
+    expect(await screen.findByText(/Contributor invitation required/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Programme')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('contributor-media')).toBeNull();
+    global.fetch = originalFetch;
+  });
 });
