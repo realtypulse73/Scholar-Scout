@@ -31,9 +31,9 @@ next_action: "Add the narrow trace inclusion and inspected-result category, then
 
 ## Resolution
 
-root_cause: "The externalized mediainfo.js CommonJS loader dynamically reads MediaInfoModule.wasm, which was not present in the contributor completion route's server trace. The prior catch-all boundary returned Action needed without a non-sensitive operational category."
-fix: "Added a route-scoped outputFileTracingIncludes entry for MediaInfoModule.wasm and categorized inspection outcomes without exposing object keys, store identifiers, or uploaded content."
-verification: "Focused contributor-media route tests pass (28 tests), typecheck and lint pass, and the production-equivalent build trace for /api/contributor-media/complete contains MediaInfoModule.wasm. A focused test re-inspects the same already-stored package and transitions it to Ready for review without replacement upload objects."
+root_cause: "The externalized mediainfo.js CommonJS loader dynamically reads MediaInfoModule.wasm, which was not present in the contributor completion route's server trace. The prior catch-all inspection boundary returned Action needed without a non-sensitive operational category. The first Preview deployment used pnpm's workspace junction and Vercel rejected the resulting serverless package as containing a symlink."
+fix: "Trace from the workspace root and include the narrow physical pnpm package glob for the contributor completion route; preserve the categorized, non-sensitive inspection outcomes."
+verification: "Focused contributor-media route tests pass (28 tests), typecheck and lint pass, and the Vercel-equivalent build completes with the workspace trace root. A focused test re-inspects the same already-stored package and transitions it to Ready for review without replacement upload objects. The corrected physical-package trace requires a fresh Preview deployment."
 files_changed:
   - "apps/web/next.config.mjs"
   - "apps/web/lib/server/contributor-media.ts"
