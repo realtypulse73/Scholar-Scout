@@ -1,5 +1,5 @@
 ---
-status: validated-awaiting-preview
+status: awaiting-owner-verification
 trigger: "Latest Austin Preview sign-in returns a 500 ScholarScoutDataStoreReadError after the Greater Austin governed-region update."
 created: "2026-10-18"
 updated: "2026-10-18"
@@ -19,7 +19,7 @@ updated: "2026-10-18"
 - test: Recompute only the derived candidate checklist while parsing otherwise structurally valid persisted candidates, then verify the record is readable and preserves all candidate facts and audit entries.
 - expecting: The latest Preview reads the document and signs in; Production, credentials, roles, contributor media, and candidate facts remain untouched.
 - resolution: Recompute derived checklists only for draft candidates while reading persisted data; the enclosing document must still pass the existing strict import validator before it is accepted.
-- next_action: Commit and deploy the Preview-only compatibility repair, then repeat the configured owner sign-in check on the newest Preview URL.
+- next_action: The configured Preview owner must complete one local sign-in on the latest Preview URL; a synthetic non-owner request is expected to remain fail-closed with 503.
 
 ## Evidence
 
@@ -28,3 +28,7 @@ updated: "2026-10-18"
 - timestamp: "2026-10-18"; the new candidate was staged by an older Preview build with a `regional-boundary` correction; current source adds `greater-austin`, so strict stored-checklist equality no longer holds when the candidate is re-evaluated.
 - timestamp: "2026-10-18"; regression coverage proves a stale draft checklist is recalculated on read without rewriting the persisted source document, while a non-draft stale checklist remains invalid.
 - timestamp: "2026-10-18"; focused datastore and catalogue suites passed (83 tests), and web TypeScript validation passed.
+- timestamp: "2026-10-18"; commit `cd5c9ff` deployed Ready as Preview `scholar-scout-794qjz56j-scholar-scout.vercel.app`; its runtime logs show the governed catalogue pages, including `/admin/programmes`, returning 200 instead of the previous invalid-data prerender failure.
+- timestamp: "2026-10-18"; Vercel Environment Variables confirms both Preview-owner variables exist in Preview and system environment variables are enabled. A deliberately non-owner synthetic credential request returned 503, which is the expected fail-closed behavior and is not evidence of an owner-account failure.
+- timestamp: "2026-10-18"; the remaining configured-owner password is private and cannot be exercised by the agent. Owner sign-in remains the single manual verification step; no further safe code or Vercel setting change is indicated.
+- timestamp: "2026-10-18"; the current Preview sign-in route returned 200 and rendered its local email/password form at `https://scholar-scout-794qjz56j-scholar-scout.vercel.app/auth/sign-in` without submitting credentials.
