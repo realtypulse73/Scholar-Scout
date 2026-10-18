@@ -64,6 +64,30 @@ export const catalogueRegions = deepFreeze<CatalogueRegion[]>([
     },
   },
   {
+    id: 'greater-austin',
+    label: 'Greater Austin',
+    officialBoundary: {
+      authority: 'us-census-omb-cbsa',
+      boundaryId: '12420',
+      boundaryVersion: 'OMB July 2023 delineation',
+      sourceLabel: 'U.S. Census July 2023 OMB CBSA map',
+      sourceUrl: 'https://www.census.gov/geographies/reference-maps/2023/geo/cbsa.html',
+      sourceDate: unavailableSourceDate(),
+      checkedAt: CHECKED_AT,
+    },
+    localFocus: {
+      authority: 'City of Austin',
+      anchorLabel: 'Austin City Hall — 301 W. 2nd St., Austin, TX 78701',
+      latitude: 30.26499,
+      longitude: -97.74774,
+      radiusMiles: 10,
+      sourceLabel: 'City of Austin contact record',
+      sourceUrl: 'https://www.austintexas.gov/contact',
+      sourceDate: unavailableSourceDate(),
+      checkedAt: CHECKED_AT,
+    },
+  },
+  {
     id: 'greater-chicago',
     label: 'Greater Chicago',
     officialBoundary: {

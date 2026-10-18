@@ -125,6 +125,7 @@ describe('catalogue contract', () => {
   it('keeps the approved region and pathway vocabulary stable', () => {
     expect(CATALOGUE_REGION_IDS).toEqual([
       'greater-houston',
+      'greater-austin',
       'greater-chicago',
       'greater-buffalo',
       'greater-atlanta',

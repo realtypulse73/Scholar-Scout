@@ -1,5 +1,6 @@
 export const CATALOGUE_REGION_IDS = [
   'greater-houston',
+  'greater-austin',
   'greater-chicago',
   'greater-buffalo',
   'greater-atlanta',
@@ -178,6 +179,7 @@ const REGION_BOUNDARY_REQUIREMENTS: Readonly<Record<CatalogueRegionId, {
   boundaryId: string | null;
 }>> = {
   'greater-houston': { authority: 'us-census-omb-cbsa', boundaryId: '26420' },
+  'greater-austin': { authority: 'us-census-omb-cbsa', boundaryId: '12420' },
   'greater-chicago': { authority: 'us-census-omb-cbsa', boundaryId: '16980' },
   'greater-buffalo': { authority: 'us-census-omb-cbsa', boundaryId: '15380' },
   'greater-atlanta': { authority: 'us-census-omb-cbsa', boundaryId: '12060' },

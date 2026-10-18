@@ -23,6 +23,13 @@ const expectedRegions = [
     anchorUrl: 'https://houstontx.gov/contactus/',
   },
   {
+    id: 'greater-austin',
+    label: 'Greater Austin',
+    boundaryId: '12420',
+    anchorLabel: 'Austin City Hall — 301 W. 2nd St., Austin, TX 78701',
+    anchorUrl: 'https://www.austintexas.gov/contact',
+  },
+  {
     id: 'greater-chicago',
     label: 'Greater Chicago',
     boundaryId: '16980',
@@ -53,9 +60,9 @@ const expectedRegions = [
 ] as const;
 
 describe('catalogue regional fixtures', () => {
-  it('freezes the six approved source-bearing regions in controlled order', () => {
+  it('freezes the approved source-bearing regions in controlled order', () => {
     expect(catalogueRegions.map((region) => region.id)).toEqual(CATALOGUE_REGION_IDS);
-    expect(catalogueRegions).toHaveLength(6);
+    expect(catalogueRegions).toHaveLength(7);
 
     for (const expected of expectedRegions) {
       const region = catalogueRegions.find((candidate) => candidate.id === expected.id);
@@ -121,12 +128,12 @@ describe('catalogue regional fixtures', () => {
 });
 
 describe('catalogue coverage fixtures', () => {
-  it('publishes all 36 controlled pairs in region/pathway order as not-yet-verified', () => {
+  it('publishes all 42 controlled pairs in region/pathway order as not-yet-verified', () => {
     const expectedKeys = CATALOGUE_REGION_IDS.flatMap((regionId) => (
       CATALOGUE_PATHWAYS.map((pathway) => `${regionId}:${pathway}`)
     ));
 
-    expect(catalogueCoverage).toHaveLength(36);
+    expect(catalogueCoverage).toHaveLength(42);
     expect(catalogueCoverage.map((row) => `${row.regionId}:${row.pathway}`)).toEqual(expectedKeys);
     expect(catalogueCoverage.every((row) => row.state === 'not-yet-verified' && row.reviewedAt === checkedAt)).toBe(true);
     expect(validateCoverageMatrix(catalogueRegions, catalogueCoverage, new Date('2026-09-22T00:00:00.000Z'))).toEqual([]);
