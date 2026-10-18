@@ -196,9 +196,25 @@ export async function issueContributorMediaUpload(input: {
     const state = ensureContributorMediaState(data);
     if (!getActiveContributorInvitation(state, input.actor.accountId, now)) return { status: 'forbidden' };
     const submission = state.submissions.find((item) => item.accountId === input.actor.accountId);
-    if (!submission || submission.status !== 'Draft' || (submission.revision ?? 1) !== parsed.value.expectedRevision) {
+    const revision = submission?.revision ?? 1;
+    if (!submission || revision !== parsed.value.expectedRevision) {
       return { status: 'conflict' };
     }
+    if (submission.status === 'Action needed') {
+      // Retry with new keys so an earlier inspection failure never overwrites or
+      // deletes the original private objects. The revision invalidates old tokens.
+      const mediaPackage = createPrivateMediaPackage(programmeId);
+      const nextRevision = revision + 1;
+      submission.status = 'Draft';
+      submission.revision = nextRevision;
+      submission.mediaPackage = mediaPackage;
+      submission.updatedAt = now.toISOString();
+      return {
+        status: 'issued',
+        capability: { uploadId: mediaPackage.id, status: 'Draft', revision: nextRevision },
+      };
+    }
+    if (submission.status !== 'Draft') return { status: 'conflict' };
     const mediaPackage = submission.mediaPackage ?? createPrivateMediaPackage(programmeId);
     if (mediaPackage.programmeId !== programmeId) return { status: 'conflict' };
     submission.mediaPackage = mediaPackage;

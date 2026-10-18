@@ -350,6 +350,55 @@ describe('contributor media routes', () => {
     }
   });
 
+  it('retries the current Action needed package with new private object keys and a new revision', async () => {
+    const { issueContributorMediaUpload: issueContributorMediaUploadActual } = jest.requireActual<typeof import('@/lib/server/contributor-media')>('@/lib/server/contributor-media');
+    const originalPackage = {
+      id: 'failed-package',
+      programmeId: 'programme-1',
+      videoObjectKey: 'contributor-media/failed-package/video.mp4',
+      posterObjectKey: 'contributor-media/failed-package/poster.png',
+      videoUploaded: true,
+      posterUploaded: true,
+    };
+    store.data.contributorMediaState = {
+      invitations: [{
+        id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1',
+        status: 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2027-10-16T00:00:00.000Z',
+      }],
+      submissions: [{
+        id: 'submission-1', accountId: 'student-1', status: 'Action needed', signerName: 'Student One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+        revision: 1, mediaPackage: originalPackage,
+      }],
+    } as ScholarScoutData['contributorMediaState'];
+    jest.mocked(issueContributorMediaUpload).mockImplementation(issueContributorMediaUploadActual);
+
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST',
+      body: JSON.stringify({
+        programmeId: 'programme-1', expectedRevision: 1,
+        files: [
+          { kind: 'video', contentType: 'video/mp4', size: 1024 },
+          { kind: 'poster', contentType: 'image/png', size: 1024 },
+        ],
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      capability: expect.objectContaining({ status: 'Draft', revision: 2 }),
+    });
+    const submission = store.data.contributorMediaState?.submissions[0];
+    expect(submission).toMatchObject({ status: 'Draft', revision: 2 });
+    expect(submission?.mediaPackage).toEqual(expect.objectContaining({
+      programmeId: 'programme-1', videoUploaded: false, posterUploaded: false,
+    }));
+    expect(submission?.mediaPackage?.id).not.toBe(originalPackage.id);
+    expect(submission?.mediaPackage?.videoObjectKey).not.toBe(originalPackage.videoObjectKey);
+    expect(submission?.mediaPackage?.posterObjectKey).not.toBe(originalPackage.posterObjectKey);
+  });
+
   it('accepts a signed Blob completion without a browser session and records the uploaded object', async () => {
     process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
     process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY = 'webhook-key';
