@@ -314,7 +314,7 @@ describe('contributor media routes', () => {
     store.data.contributorMediaState = {
       invitations: [{
         id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1',
-        status: invitationStatus ?? 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2026-10-16T00:00:00.000Z',
+        status: invitationStatus ?? 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2027-10-16T00:00:00.000Z',
       }],
       submissions: [{
         id: 'submission-1', accountId: accountId ?? 'student-1', status: 'Draft', signerName: 'Student One',
@@ -348,6 +348,44 @@ describe('contributor media routes', () => {
       expect(handleUploadPresigned).toHaveBeenCalledTimes(1);
       expect(JSON.stringify(await response.json())).not.toMatch(/account|object|path|invite/i);
     }
+  });
+
+  it('accepts a signed Blob completion without a browser session and records the uploaded object', async () => {
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY = 'webhook-key';
+    store.data.contributorMediaState = {
+      invitations: [{
+        id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1',
+        status: 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2027-10-16T00:00:00.000Z',
+      }],
+      submissions: [{
+        id: 'submission-1', accountId: 'student-1', status: 'Draft', signerName: 'Student One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+        revision: 1,
+        mediaPackage: {
+          id: 'package-1', programmeId: 'programme-1',
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png', videoUploaded: false, posterUploaded: false,
+        },
+      }],
+    } as ScholarScoutData['contributorMediaState'];
+    jest.mocked(resolveStudentActor).mockResolvedValue(null);
+    jest.mocked(handleUploadPresigned).mockImplementation(async ({ onUploadCompleted }) => {
+      await onUploadCompleted?.({
+        blob: { pathname: 'contributor-media/package-1/video.mp4', contentType: 'video/mp4' } as never,
+        tokenPayload: JSON.stringify({ uploadId: 'package-1', kind: 'video', expectedRevision: 1 }),
+      });
+      return { type: 'blob.upload-completed' } as never;
+    });
+
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST', body: JSON.stringify({ type: 'blob.upload-completed' }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(issueSignedToken).not.toHaveBeenCalled();
+    expect(store.data.contributorMediaState?.submissions[0]?.mediaPackage?.videoUploaded).toBe(true);
   });
 
   it('maps failed server inspection to Action needed without returning private object details', async () => {

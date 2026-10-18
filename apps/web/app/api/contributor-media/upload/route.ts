@@ -12,11 +12,14 @@ import { resolveStudentActor, type AccountStudentActor } from '@/lib/server/stud
 const MAX_UPLOAD_REQUEST_BYTES = 4 * 1024;
 
 export async function POST(request: Request) {
-  const actor = await resolveAccountActor();
-  if (actor instanceof NextResponse) return actor;
   const body = await parseJsonRequest(request, { maxBytes: MAX_UPLOAD_REQUEST_BYTES, validate: (value) => value });
   if (!body.ok) return NextResponse.json({ error: 'Choose one supported video and poster.' }, { status: body.error === 'body-too-large' ? 413 : 400 });
-  if (isBlobUploadBody(body.value)) return handleDirectUpload(request, actor, body.value);
+  if (isBlobUploadBody(body.value)) {
+    const actor = await resolveStudentActor({ allowGuest: false });
+    return handleDirectUpload(request, actor?.kind === 'account' ? actor : null, body.value);
+  }
+  const actor = await resolveAccountActor();
+  if (actor instanceof NextResponse) return actor;
   const result = await issueContributorMediaUpload({ actor, request: body.value });
   if (result.status === 'conflict' || result.value.status === 'conflict') return conflict();
   if (result.value.status === 'forbidden') return NextResponse.json({ error: 'Contributor invitation required.' }, { status: 403 });
@@ -27,7 +30,7 @@ export async function POST(request: Request) {
 
 async function handleDirectUpload(
   request: Request,
-  actor: AccountStudentActor,
+  actor: AccountStudentActor | null,
   body: HandleUploadPresignedBody,
 ) {
   const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
@@ -39,6 +42,9 @@ async function handleDirectUpload(
       body,
       webhookPublicKey,
       getSignedToken: async (pathname, clientPayload) => {
+        if (!actor) {
+          throw new Error('Unauthorized private upload request.');
+        }
         const payload = parseUploadPayload(clientPayload);
         if (!payload) {
           throw new Error('Invalid private upload capability.');

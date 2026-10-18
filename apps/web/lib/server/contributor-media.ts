@@ -288,7 +288,14 @@ export async function completeContributorMediaUpload(input: {
     if (!submission || (submission.revision ?? 1) !== input.expectedRevision || submission.mediaPackage?.id !== input.uploadId) {
       return { status: 'conflict' };
     }
-    const ready = submission.mediaPackage.videoUploaded && submission.mediaPackage.posterUploaded && inspection.ok;
+    // The completed callback can arrive after this request. A successful server-side
+    // inspection has already read both exact private object keys, so it is the
+    // authoritative receipt evidence for this transition.
+    const ready = inspection.ok;
+    if (ready) {
+      submission.mediaPackage.videoUploaded = true;
+      submission.mediaPackage.posterUploaded = true;
+    }
     submission.status = ready ? 'Ready for review' : 'Action needed';
     submission.updatedAt = now.toISOString();
     const privateStatus = { status: submission.status, revision: submission.revision ?? 1 } as ContributorPrivateStatus;
@@ -550,7 +557,7 @@ async function inspectCurrentPrivatePackage(
   const submission = (await readScholarScoutData()).contributorMediaState?.submissions
     .find((item) => item.accountId === accountId && (item.revision ?? 1) === expectedRevision
       && item.mediaPackage?.id === uploadId);
-  if (!submission?.mediaPackage?.videoUploaded || !submission.mediaPackage.posterUploaded) return { ok: false };
+  if (!submission?.mediaPackage) return { ok: false };
   return inspectPrivateMediaPackage(submission.mediaPackage.videoObjectKey, submission.mediaPackage.posterObjectKey);
 }
 
