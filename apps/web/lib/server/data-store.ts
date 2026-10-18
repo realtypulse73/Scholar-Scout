@@ -48,6 +48,7 @@ import type { ShortlistPlanMap, ShortlistProgrammePlan } from '@/lib/shortlist';
 import {
   createEmptyCataloguePublicationState,
   isCataloguePublicationState,
+  reconcileDraftCatalogueChecklists,
   type CataloguePublicationState,
 } from '@/lib/catalogue-publication';
 import {
@@ -1964,13 +1965,25 @@ function isRecoveryPlanOutcome(value: unknown): value is RecoveryPlanOutcome {
 }
 
 function parseStoredScholarScoutData(input: unknown): ScholarScoutData {
-  const validation = validateScholarScoutDataImport(input);
+  const reconciledInput = reconcileStoredCatalogueDraftChecklists(input);
+  const validation = validateScholarScoutDataImport(reconciledInput);
 
-  if (!validation.isValid || !isPlainObject(input)) {
+  if (!validation.isValid || !isPlainObject(reconciledInput)) {
     throw new ScholarScoutDataStoreReadError('invalid-data');
   }
 
-  return normalizeScholarScoutData(input as unknown as ScholarScoutData);
+  return normalizeScholarScoutData(reconciledInput as unknown as ScholarScoutData);
+}
+
+function reconcileStoredCatalogueDraftChecklists(input: unknown): unknown {
+  if (!isPlainObject(input) || !('cataloguePublicationState' in input)) return input;
+
+  return {
+    ...input,
+    cataloguePublicationState: reconcileDraftCatalogueChecklists(
+      input.cataloguePublicationState,
+    ),
+  };
 }
 
 function createInitialData(): ScholarScoutData {

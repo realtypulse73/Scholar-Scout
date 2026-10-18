@@ -412,18 +412,71 @@ export function isCataloguePublicationState(value: unknown): value is CatalogueP
     || snapshotsById.has(value.activeSnapshotId);
 }
 
+/**
+ * Rebuilds only the derived checklist on persisted draft candidates when an
+ * editorial rule changes. The stored candidate facts, lifecycle, approval,
+ * audit history, and every non-draft candidate remain untouched.
+ */
+export function reconcileDraftCatalogueChecklists(value: unknown): unknown {
+  if (!isRecord(value) || !Array.isArray(value.candidates)) return value;
+
+  let changed = false;
+  const candidates = value.candidates.map((candidate) => {
+    if (!isRecord(candidate) || candidate.lifecycle !== 'draft' || candidate.approval !== null
+      || typeof candidate.updatedAt !== 'string') return candidate;
+    const expectedChecklist = evaluateCatalogueChecklist(
+      getCandidateInputFromStoredCandidate(candidate),
+      new Date(candidate.updatedAt),
+    );
+    if (canonicalJson(candidate.checklist) === canonicalJson(expectedChecklist)) return candidate;
+
+    changed = true;
+    return { ...candidate, checklist: expectedChecklist };
+  });
+
+  return changed
+    ? JSON.parse(JSON.stringify({ ...value, candidates })) as unknown
+    : value;
+}
+
 function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
+  if (!isCatalogueCandidateBase(value)) return false;
+
+  const expectedChecklist = evaluateCatalogueChecklist(
+    getCandidateInputFromStoredCandidate(value),
+    new Date(value.updatedAt),
+  );
+  if (canonicalJson(value.checklist) !== canonicalJson(expectedChecklist)) return false;
+  if (value.lifecycle === 'approved') {
+    return expectedChecklist.passed && isCompleteCandidateInput(value)
+      && value.approval !== null && value.approval.revision === value.revision
+      && isStableId(value.approval.reviewerId) && isIsoTimestamp(value.approval.reviewedAt);
+  }
+  return value.approval === null;
+}
+
+function isCatalogueCandidateBase(
+  value: unknown,
+): value is Record<string, unknown> & Pick<CatalogueCandidate,
+  'id' | 'title' | 'revision' | 'updatedAt' | 'checklist' | 'approval'> {
   if (!isRecord(value) || !isStableId(value.id) || typeof value.title !== 'string'
     || !isStableId(value.creatorId) || !isCandidateRevision(value.revision)
     || !isLifecycle(value.lifecycle) || typeof value.createdAt !== 'string'
     || typeof value.updatedAt !== 'string' || !isIsoTimestamp(value.createdAt)
     || !isIsoTimestamp(value.updatedAt) || !isCandidateApproval(value.approval)
     || !isCandidateStoredFields(value)
-    || (value.retirementIntent === undefined || typeof value.retirementIntent !== 'boolean')) return false;
+    || (value.retirementIntent === undefined || typeof value.retirementIntent !== 'boolean')
+    || !isChecklist(value.checklist)) return false;
 
-  const candidateInput: CatalogueCandidateInput = {
-    id: value.id,
-    title: value.title,
+  return true;
+}
+
+function getCandidateInputFromStoredCandidate(
+  value: Record<string, unknown>,
+): CatalogueCandidateInput {
+  return {
+    id: value.id as string,
+    title: value.title as string,
     ...(value.regionId === undefined ? {} : { regionId: value.regionId as CatalogueRegionId }),
     ...(value.region === undefined ? {} : { region: value.region as CatalogueRegion }),
     ...(value.source === undefined ? {} : { source: value.source as SourceMetadata }),
@@ -444,16 +497,6 @@ function isCatalogueCandidate(value: unknown): value is CatalogueCandidate {
       ? {}
       : { mediaCandidates: value.mediaCandidates as CatalogueMediaCandidate[] }),
   };
-  const expectedChecklist = evaluateCatalogueChecklist(candidateInput, new Date(value.updatedAt));
-  if (!isChecklist(value.checklist) || canonicalJson(value.checklist) !== canonicalJson(expectedChecklist)) {
-    return false;
-  }
-  if (value.lifecycle === 'approved') {
-    return expectedChecklist.passed && isCompleteCandidateInput(value)
-      && value.approval !== null && value.approval.revision === value.revision
-      && isStableId(value.approval.reviewerId) && isIsoTimestamp(value.approval.reviewedAt);
-  }
-  return value.approval === null;
 }
 
 function isCataloguePublicationAuditEvent(value: unknown): value is CataloguePublicationAuditEvent {

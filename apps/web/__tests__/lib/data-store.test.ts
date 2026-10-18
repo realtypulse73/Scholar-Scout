@@ -52,6 +52,11 @@ import {
   reviewCatalogueCandidate,
   stageCatalogueCandidate,
 } from '@/lib/server/catalogue-publications';
+import {
+  evaluateCatalogueChecklist,
+  reconcileDraftCatalogueChecklists,
+  type CatalogueCandidateInput,
+} from '@/lib/catalogue-publication';
 
 jest.mock('@vercel/blob', () => ({
   BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
@@ -68,7 +73,7 @@ const initialData: ScholarScoutData = {
   auditEvents: [],
 };
 
-const publicationCandidate = {
+const publicationCandidate: CatalogueCandidateInput & { id: string } = {
   id: 'catalogue:recovery-training',
   title: 'Recovery technical training',
   regionId: 'greater-houston',
@@ -111,6 +116,38 @@ class MemoryDataStore implements ScholarScoutDataStore {
 
 function cloneData(data: ScholarScoutData) {
   return JSON.parse(JSON.stringify(data)) as ScholarScoutData;
+}
+
+async function createStaleCatalogueChecklistData(updatedAt: string): Promise<ScholarScoutData> {
+  const store = new MemoryDataStore();
+  setScholarScoutDataStoreForTests(store);
+  await stageCatalogueCandidate({
+    actor: {
+      id: 'staff-1',
+      email: 'staff@example.com',
+      capabilities: new Set(['editor'] as const),
+    },
+    candidate: publicationCandidate,
+    now: new Date(updatedAt),
+  });
+  const data = await store.read();
+  expect(validateScholarScoutDataImport(data).isValid).toBe(true);
+  const candidate = data.cataloguePublicationState?.candidates[0];
+  if (!candidate) throw new Error('Expected staged catalogue candidate.');
+  expect(candidate.checklist).toEqual(evaluateCatalogueChecklist(
+    publicationCandidate,
+    new Date(updatedAt),
+  ));
+
+  candidate.checklist = {
+    ...candidate.checklist,
+    passed: false,
+    correctionCodes: ['regional-boundary'],
+    summary: candidate.checklist.summary.map((entry) => entry.category === 'regional-boundary'
+      ? { ...entry, status: 'needs-correction' }
+      : entry),
+  };
+  return data;
 }
 
 describe('ScholarScout data store adapter', () => {
@@ -490,6 +527,57 @@ describe('ScholarScout data store adapter', () => {
     try {
       const store = new JsonScholarScoutDataStore(filePath);
       await expect(store.read()).rejects.toMatchObject({
+        category: 'invalid-data',
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('reconciles a stale derived checklist for a persisted draft without rewriting its source document', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-catalogue-checklist-'));
+    const filePath = path.join(directory, 'data.json');
+    const updatedAt = '2026-10-18T12:00:00.000Z';
+    const staleData = await createStaleCatalogueChecklistData(updatedAt);
+    const expectedChecklist = evaluateCatalogueChecklist(
+      publicationCandidate,
+      new Date(updatedAt),
+    );
+
+    expect(validateScholarScoutDataImport(staleData).isValid).toBe(false);
+    const expectedState = cloneData(staleData);
+    expectedState.cataloguePublicationState!.candidates[0].checklist = expectedChecklist;
+    expect(validateScholarScoutDataImport(expectedState).isValid).toBe(true);
+    const reconciledState = reconcileDraftCatalogueChecklists(
+      staleData.cataloguePublicationState,
+    ) as ScholarScoutData['cataloguePublicationState'];
+    expect(reconciledState?.candidates[0].checklist)
+      .toEqual(expectedChecklist);
+    await writeFile(filePath, JSON.stringify(staleData), 'utf8');
+
+    try {
+      const read = await new JsonScholarScoutDataStore(filePath).read();
+
+      expect(read.cataloguePublicationState?.candidates).toEqual([expect.objectContaining({
+        id: publicationCandidate.id,
+        checklist: expectedChecklist,
+      })]);
+      expect(JSON.parse(await readFile(filePath, 'utf8'))).toEqual(staleData);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('does not reconcile stale checklists for non-draft candidates', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-catalogue-checklist-'));
+    const filePath = path.join(directory, 'data.json');
+    const updatedAt = '2026-10-18T12:00:00.000Z';
+    const staleData = await createStaleCatalogueChecklistData(updatedAt);
+    staleData.cataloguePublicationState!.candidates[0].lifecycle = 'quarantined';
+    await writeFile(filePath, JSON.stringify(staleData), 'utf8');
+
+    try {
+      await expect(new JsonScholarScoutDataStore(filePath).read()).rejects.toMatchObject({
         category: 'invalid-data',
       });
     } finally {
