@@ -3,6 +3,7 @@
 import { POST as createInvitation } from '@/app/api/admin/contributor-media/invitations/route';
 import { POST as attest } from '@/app/api/contributor-media/attestation/route';
 import { POST as completeMedia } from '@/app/api/contributor-media/complete/route';
+import { POST as reinspectMedia } from '@/app/api/contributor-media/reinspect/route';
 import { POST as removeSubmission } from '@/app/api/contributor-media/remove/route';
 import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
 import { GET as getCatalogueMedia } from '@/app/api/catalogue-media/[publicId]/route';
@@ -31,11 +32,13 @@ jest.mock('@/lib/server/contributor-media', () => ({
   ...jest.requireActual('@/lib/server/contributor-media'),
   issueContributorMediaUpload: jest.fn(),
   completeContributorMediaUpload: jest.fn(),
+  reinspectCurrentContributorMediaPackage: jest.fn(),
   getReleasedContributorMedia: jest.fn(),
 }));
 
 import {
   completeContributorMediaUpload,
+  reinspectCurrentContributorMediaPackage,
   getReleasedContributorMedia,
   issueContributorMediaUpload,
 } from '@/lib/server/contributor-media';
@@ -456,6 +459,21 @@ describe('contributor media routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ submission: { status: 'Action needed', revision: 1 } });
+  });
+
+  it('rechecks an existing Action needed package without accepting client package identifiers', async () => {
+    jest.mocked(reinspectCurrentContributorMediaPackage).mockResolvedValue({
+      status: 'applied',
+      value: { status: 'ready', submission: { status: 'Ready for review', revision: 1 } },
+    } as never);
+
+    const response = await reinspectMedia();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ submission: { status: 'Ready for review', revision: 1 } });
+    expect(reinspectCurrentContributorMediaPackage).toHaveBeenCalledWith({
+      actor: { kind: 'account', accountId: 'student-1', storageKey: 'account:student-1' },
+    });
   });
 
   it('classifies a media-inspection runtime failure without logging private package details', async () => {

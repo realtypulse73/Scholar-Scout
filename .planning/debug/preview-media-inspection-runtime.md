@@ -15,10 +15,10 @@ updated: "2026-10-18"
 
 ## Current Focus
 
-hypothesis: "The externalized mediainfo.js runtime dynamically reads MediaInfoModule.wasm, but Vercel's function trace does not include or resolve that asset. The current catch-all inspection boundary hides the safe failure category."
-test: "Narrow the completion-route trace to the WASM asset; preserve fail-closed inspection and surface only a non-sensitive internal category in tests."
-expecting: "The existing fresh package can be re-inspected on the new Preview deployment without replacing its private objects."
-next_action: "Add the narrow trace inclusion and inspected-result category, then run focused tests and deploy Preview."
+hypothesis: "Resolved. The externalized mediainfo.js runtime dynamically reads MediaInfoModule.wasm, so the completion route needs the physical package asset traced for Vercel."
+test: "Provide an authenticated, owner-scoped reinspection action that reads only the existing Action needed package server-side and never accepts client object identifiers."
+expecting: "The existing fresh package can be re-inspected on Preview without replacing its private objects."
+next_action: "Deploy the owner-scoped reinspection action to Preview and have the signed-in contributor select it once."
 
 ## Evidence
 
@@ -32,10 +32,12 @@ next_action: "Add the narrow trace inclusion and inspected-result category, then
 ## Resolution
 
 root_cause: "The externalized mediainfo.js CommonJS loader dynamically reads MediaInfoModule.wasm, which was not present in the contributor completion route's server trace. The prior catch-all inspection boundary returned Action needed without a non-sensitive operational category. The first Preview deployment used pnpm's workspace junction and Vercel rejected the resulting serverless package as containing a symlink."
-fix: "Trace from the workspace root and include the narrow physical pnpm package glob for the contributor completion route; preserve the categorized, non-sensitive inspection outcomes."
-verification: "Focused contributor-media route tests pass (28 tests), typecheck and lint pass, and the Vercel-equivalent build completes with the workspace trace root. A focused test re-inspects the same already-stored package and transitions it to Ready for review without replacement upload objects. The corrected physical-package trace requires a fresh Preview deployment."
+fix: "Trace from the workspace root and include the narrow physical pnpm package glob for the contributor completion route; preserve categorized, non-sensitive inspection outcomes. Add an authenticated owner-scoped reinspection route and Action needed UI control that reuses the existing server-side package rather than requesting new files."
+verification: "Focused contributor-media route tests pass (29 tests), lint and typecheck pass, and the Vercel-equivalent build completes. The reinspection test proves an already-stored package transitions to Ready for review without replacement upload objects. The prior physical trace correction is Ready on Preview; the reinspection action requires a fresh Preview deployment."
 files_changed:
   - "apps/web/next.config.mjs"
+  - "apps/web/app/api/contributor-media/reinspect/route.ts"
+  - "apps/web/components/contributor-media/ContributorMediaIntake.tsx"
   - "apps/web/lib/server/contributor-media.ts"
   - "apps/web/__tests__/api/contributor-media.test.ts"
   - ".planning/debug/preview-media-inspection-runtime.md"

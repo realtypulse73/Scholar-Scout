@@ -125,6 +125,24 @@ function ContributorMediaUploader({
     }
   }
 
+  async function reinspectSubmission() {
+    setSubmitting(true);
+    setMessage('Rechecking your existing private package. No files will be uploaded.');
+    try {
+      const response = await fetch('/api/contributor-media/reinspect', { method: 'POST' });
+      const body = await response.json() as { submission?: ContributorPrivateStatus; error?: string };
+      if (!response.ok || !body.submission) throw new Error(body.error ?? 'We could not recheck your private package.');
+      setStatus(body.submission);
+      setMessage(body.submission.status === 'Ready for review'
+        ? 'Ready for review. Your existing private package passed server inspection.'
+        : 'Action needed: server inspection could not confirm the existing package. No files were uploaded.');
+    } catch (error) {
+      setMessage(error instanceof Error ? `Action needed: ${error.message}` : 'Action needed: try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const error = validateFiles(programmeId, video, poster);
@@ -192,6 +210,7 @@ function ContributorMediaUploader({
     <label className="block text-sm font-semibold" htmlFor="contributor-poster">JPEG or PNG poster (up to 5 MiB)
       <input id="contributor-poster" className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600" type="file" accept="image/jpeg,image/png" onChange={(event) => setPoster(event.target.files?.[0] ?? null)} required />
     </label>
+    {status.status === 'Action needed' ? <button className="min-h-11 rounded-lg border border-brand-700 px-5 py-3 font-semibold text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={reinspectSubmission} type="button">{submitting ? 'Rechecking private package…' : 'Recheck existing private package'}</button> : null}
     <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Checking private package…' : 'Prepare private upload'}</button>
     <button className="min-h-11 rounded-lg border border-danger-600 px-5 py-3 font-semibold text-danger-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={removeSubmission} type="button">{submitting ? 'Removing submission…' : 'Remove my submission'}</button>
     </>}

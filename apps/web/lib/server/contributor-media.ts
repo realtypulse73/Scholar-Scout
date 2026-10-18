@@ -331,6 +331,23 @@ export async function completeContributorMediaUpload(input: {
   });
 }
 
+/** Re-inspects the account's existing Action needed package without issuing new upload URLs. */
+export async function reinspectCurrentContributorMediaPackage(input: {
+  actor: AccountStudentActor;
+  now?: Date;
+}): Promise<ConditionalMutationResult<CompleteContributorMediaUploadResult>> {
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const submission = (await readScholarScoutData()).contributorMediaState?.submissions
+    .find((item) => item.accountId === input.actor.accountId && item.status === 'Action needed' && item.mediaPackage);
+  if (!submission?.mediaPackage) return { status: 'conflict' };
+  return completeContributorMediaUpload({
+    actor: input.actor,
+    uploadId: submission.mediaPackage.id,
+    expectedRevision: submission.revision ?? 1,
+    now: input.now,
+  });
+}
+
 export async function getContributorMediaPrivateStatus(
   actor: AccountStudentActor,
   now = new Date(),
