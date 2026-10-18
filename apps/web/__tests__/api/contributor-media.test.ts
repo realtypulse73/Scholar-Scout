@@ -8,8 +8,9 @@ import { POST as uploadMedia } from '@/app/api/contributor-media/upload/route';
 import { GET as getCatalogueMedia } from '@/app/api/catalogue-media/[publicId]/route';
 import { GET as getReviewQueue, POST as reviewMedia } from '@/app/api/admin/contributor-media/review/route';
 import { getServerSession } from 'next-auth';
-import { issueSignedToken } from '@vercel/blob';
+import { get, issueSignedToken } from '@vercel/blob';
 import { handleUploadPresigned } from '@vercel/blob/client';
+import mediaInfoFactory from 'mediainfo.js';
 import {
   setScholarScoutDataStoreForTests,
   type ScholarScoutData,
@@ -24,6 +25,7 @@ jest.mock('@vercel/blob', () => ({
   issueSignedToken: jest.fn(),
 }));
 jest.mock('@vercel/blob/client', () => ({ handleUploadPresigned: jest.fn() }));
+jest.mock('mediainfo.js', () => ({ __esModule: true, default: jest.fn() }));
 
 jest.mock('@/lib/server/contributor-media', () => ({
   ...jest.requireActual('@/lib/server/contributor-media'),
@@ -112,6 +114,8 @@ describe('contributor media routes', () => {
     restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY', originalPrivateMediaWebhookKey);
     jest.mocked(handleUploadPresigned).mockReset();
     jest.mocked(issueSignedToken).mockReset();
+    jest.mocked(get).mockReset();
+    jest.mocked(mediaInfoFactory).mockReset();
   });
 
   it('allows an editor to invite a known account using trusted staff authority', async () => {
@@ -454,6 +458,72 @@ describe('contributor media routes', () => {
     await expect(response.json()).resolves.toEqual({ submission: { status: 'Action needed', revision: 1 } });
   });
 
+  it('classifies a media-inspection runtime failure without logging private package details', async () => {
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
+    store.data.contributorMediaState = draftContributorSubmission('package-1');
+    jest.mocked(get).mockResolvedValueOnce({
+      statusCode: 200,
+      blob: { contentType: 'video/mp4', size: 1024 },
+      stream: byteStream('video'),
+    } as never).mockResolvedValueOnce({
+      statusCode: 200,
+      blob: { contentType: 'image/png', size: 1024 },
+      stream: byteStream('poster'),
+    } as never);
+    (mediaInfoFactory as unknown as jest.Mock).mockRejectedValue(new Error('Wasm asset unavailable'));
+    const warning = jest.spyOn(console, 'warn').mockImplementation();
+    const { completeContributorMediaUpload: completeActual } = jest.requireActual<typeof import('@/lib/server/contributor-media')>('@/lib/server/contributor-media');
+
+    const result = await completeActual({
+      actor: { kind: 'account', accountId: 'student-1', storageKey: 'account:student-1' },
+      uploadId: 'package-1', expectedRevision: 1,
+    });
+
+    if (result.status !== 'applied') throw new Error('Expected an applied inspection mutation.');
+    expect(result.value).toEqual({
+      status: 'action-needed',
+      submission: { status: 'Action needed', revision: 1 },
+    });
+    expect(warning).toHaveBeenCalledWith('Contributor media inspection did not pass.', {
+      category: 'runtime-unavailable',
+    });
+    expect(JSON.stringify(warning.mock.calls)).not.toMatch(/package-1|contributor-media|student-1|store-private/i);
+    warning.mockRestore();
+  });
+
+  it('accepts an already-uploaded valid package when the server inspection runtime is available', async () => {
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
+    store.data.contributorMediaState = draftContributorSubmission('package-1');
+    jest.mocked(get).mockResolvedValueOnce({
+      statusCode: 200,
+      blob: { contentType: 'video/mp4', size: 1024 },
+      stream: byteStream('video'),
+    } as never).mockResolvedValueOnce({
+      statusCode: 200,
+      blob: { contentType: 'image/png', size: 1024 },
+      stream: byteStream('poster'),
+    } as never);
+    const close = jest.fn();
+    (mediaInfoFactory as unknown as jest.Mock).mockResolvedValue({
+      analyzeData: jest.fn().mockResolvedValue({ media: { track: [{ '@type': 'General', Duration: 16_000 }] } }),
+      close,
+    } as never);
+    const { completeContributorMediaUpload: completeActual } = jest.requireActual<typeof import('@/lib/server/contributor-media')>('@/lib/server/contributor-media');
+
+    const result = await completeActual({
+      actor: { kind: 'account', accountId: 'student-1', storageKey: 'account:student-1' },
+      uploadId: 'package-1', expectedRevision: 1,
+    });
+
+    if (result.status !== 'applied') throw new Error('Expected an applied inspection mutation.');
+    expect(result.value).toEqual({
+      status: 'ready',
+      submission: { status: 'Ready for review', revision: 1 },
+    });
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(store.data.contributorMediaState?.submissions[0]?.status).toBe('Ready for review');
+  });
+
   it('returns one generic failure for unknown or private catalogue-media IDs', async () => {
     jest.mocked(getReleasedContributorMedia).mockResolvedValue(null);
 
@@ -663,4 +733,33 @@ function restoreEnvironment(name: string, value: string | undefined): void {
     return;
   }
   process.env[name] = value;
+}
+
+function byteStream(value: string): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(value));
+      controller.close();
+    },
+  });
+}
+
+function draftContributorSubmission(packageId: string): ScholarScoutData['contributorMediaState'] {
+  return {
+    invitations: [{
+      id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1', status: 'active',
+      createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2027-10-16T00:00:00.000Z',
+    }],
+    submissions: [{
+      id: 'submission-1', accountId: 'student-1', status: 'Draft', signerName: 'Student One',
+      creatorAuthority: true, recognisablePeopleConsent: true,
+      attestedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+      revision: 1,
+      mediaPackage: {
+        id: packageId, programmeId: 'programme-1',
+        videoObjectKey: `contributor-media/${packageId}/video.mp4`,
+        posterObjectKey: `contributor-media/${packageId}/poster.png`, videoUploaded: true, posterUploaded: true,
+      },
+    }],
+  };
 }

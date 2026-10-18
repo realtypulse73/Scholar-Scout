@@ -2,7 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { del, get } from '@vercel/blob';
-import mediaInfoFactory from 'mediainfo.js';
+import mediaInfoFactory, { type MediaInfo } from 'mediainfo.js';
 import {
   validateContributorMediaPackage,
   validateInspectedContributorVideo,
@@ -52,6 +52,14 @@ export type CompleteContributorMediaUploadResult =
   | { status: 'ready'; submission: ContributorPrivateStatus }
   | { status: 'action-needed'; submission: ContributorPrivateStatus }
   | { status: 'forbidden' | 'conflict' };
+
+type PrivateMediaInspectionResult =
+  | { ok: true; category: 'passed' }
+  | {
+    ok: false;
+    category: 'configuration-unavailable' | 'private-object-unavailable' | 'package-metadata-invalid'
+      | 'object-read-failed' | 'runtime-unavailable' | 'media-invalid';
+  };
 
 export type ReviewContributorMediaResult =
   | { status: 'approved' | 'action-needed' | 'existing'; submission: ContributorPrivateStatus }
@@ -308,6 +316,10 @@ export async function completeContributorMediaUpload(input: {
     // inspection has already read both exact private object keys, so it is the
     // authoritative receipt evidence for this transition.
     const ready = inspection.ok;
+    if (!ready) {
+      // Keep private object identifiers and uploaded content out of operational logs.
+      console.warn('Contributor media inspection did not pass.', { category: inspection.category });
+    }
     if (ready) {
       submission.mediaPackage.videoUploaded = true;
       submission.mediaPackage.posterUploaded = true;
@@ -568,36 +580,65 @@ async function inspectCurrentPrivatePackage(
   accountId: string,
   uploadId: string,
   expectedRevision: number,
-): Promise<{ ok: boolean }> {
+): Promise<PrivateMediaInspectionResult> {
   const { readScholarScoutData } = await import('@/lib/server/data-store');
   const submission = (await readScholarScoutData()).contributorMediaState?.submissions
     .find((item) => item.accountId === accountId && (item.revision ?? 1) === expectedRevision
       && item.mediaPackage?.id === uploadId);
-  if (!submission?.mediaPackage) return { ok: false };
+  if (!submission?.mediaPackage) return { ok: false, category: 'private-object-unavailable' };
   return inspectPrivateMediaPackage(submission.mediaPackage.videoObjectKey, submission.mediaPackage.posterObjectKey);
 }
 
 /** Uses Vercel's automatic OIDC credentials scoped to the connected private store. */
-async function inspectPrivateMediaPackage(videoObjectKey: string, posterObjectKey: string): Promise<{ ok: boolean }> {
+async function inspectPrivateMediaPackage(
+  videoObjectKey: string,
+  posterObjectKey: string,
+): Promise<PrivateMediaInspectionResult> {
   const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
-  if (!storeId) return { ok: false };
+  if (!storeId) return { ok: false, category: 'configuration-unavailable' };
+  let video: Awaited<ReturnType<typeof get>>;
+  let poster: Awaited<ReturnType<typeof get>>;
   try {
-    const [video, poster] = await Promise.all([
+    [video, poster] = await Promise.all([
       get(videoObjectKey, { access: 'private', storeId, useCache: false }),
       get(posterObjectKey, { access: 'private', storeId, useCache: false }),
     ]);
-    if (!video || !poster || video.statusCode !== 200 || poster.statusCode !== 200
-      || video.blob.contentType !== 'video/mp4' || !['image/jpeg', 'image/png'].includes(poster.blob.contentType)
-      || video.blob.size > 25 * 1024 * 1024 || poster.blob.size > 5 * 1024 * 1024) return { ok: false };
-    const bytes = new Uint8Array(await new Response(video.stream).arrayBuffer());
-    const mediaInfo = await mediaInfoFactory({ format: 'object', chunkSize: 1_048_576 });
-    const result = await mediaInfo.analyzeData(bytes.byteLength, (size, offset) => bytes.slice(offset, offset + size));
-    mediaInfo.close();
+  } catch {
+    return { ok: false, category: 'private-object-unavailable' };
+  }
+  if (!video || !poster || video.statusCode !== 200 || poster.statusCode !== 200) {
+    return { ok: false, category: 'private-object-unavailable' };
+  }
+  if (video.blob.contentType !== 'video/mp4' || !['image/jpeg', 'image/png'].includes(poster.blob.contentType)
+    || video.blob.size > 25 * 1024 * 1024 || poster.blob.size > 5 * 1024 * 1024) {
+    return { ok: false, category: 'package-metadata-invalid' };
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await new Response(video.stream).arrayBuffer());
+  } catch {
+    return { ok: false, category: 'object-read-failed' };
+  }
+  let mediaInfo: MediaInfo<'object'>;
+  try {
+    mediaInfo = await mediaInfoFactory({ format: 'object', chunkSize: 1_048_576 });
+  } catch {
+    return { ok: false, category: 'runtime-unavailable' };
+  }
+  try {
+    const result = await mediaInfo.analyzeData(
+      bytes.byteLength,
+      (size: number, offset: number) => bytes.slice(offset, offset + size),
+    );
     const general = result.media?.track.find((track) => track['@type'] === 'General');
     const durationMs = typeof general?.Duration === 'number' ? Math.round(general.Duration) : Number.NaN;
-    return validateInspectedContributorVideo({ contentType: video.blob.contentType, durationMs });
+    return validateInspectedContributorVideo({ contentType: video.blob.contentType, durationMs }).ok
+      ? { ok: true, category: 'passed' }
+      : { ok: false, category: 'media-invalid' };
   } catch {
-    return { ok: false };
+    return { ok: false, category: 'media-invalid' };
+  } finally {
+    mediaInfo.close();
   }
 }
 
