@@ -6,17 +6,41 @@ import { useEffect, useState } from 'react';
 type Availability = 'loading' | 'available' | 'unavailable';
 type SubmissionState = 'idle' | 'pending' | 'ready' | 'conflict' | 'unavailable';
 
+interface PreviewReconciliation {
+  submissionId: string;
+  expectedRevision: number;
+  programmeId: string;
+  candidates: Array<{ id: string; title: string }>;
+}
+
 /** Owner-only entry point for the server-authorized Preview test-media exception. */
 export default function PreviewOwnerMediaDemo() {
   const [availability, setAvailability] = useState<Availability>('loading');
   const [submissionState, setSubmissionState] = useState<SubmissionState>('idle');
+  const [reconciliation, setReconciliation] = useState<PreviewReconciliation | null>(null);
+  const [candidateId, setCandidateId] = useState('');
+  const [linkState, setLinkState] = useState<SubmissionState>('idle');
 
   useEffect(() => {
     let active = true;
     void fetch('/api/admin/contributor-media/preview-demo')
       .then(async (response) => {
         const body = response.ok ? await response.json() as { available?: unknown } : null;
-        if (active) setAvailability(body?.available === true ? 'available' : 'unavailable');
+        if (!active || body?.available !== true) {
+          if (active) setAvailability('unavailable');
+          return;
+        }
+        setAvailability('available');
+        void fetch('/api/admin/contributor-media/preview-demo/link')
+          .then(async (linkResponse) => {
+            const linkBody = linkResponse.ok
+              ? await linkResponse.json() as { reconciliation?: PreviewReconciliation | null }
+              : null;
+            if (active) setReconciliation(linkBody?.reconciliation ?? null);
+          })
+          .catch(() => {
+            if (active) setReconciliation(null);
+          });
       })
       .catch(() => {
         if (active) setAvailability('unavailable');
@@ -39,6 +63,33 @@ export default function PreviewOwnerMediaDemo() {
       }
     } catch {
       setSubmissionState('unavailable');
+    }
+  }
+
+  async function linkPackage(): Promise<void> {
+    if (!reconciliation || !candidateId) return;
+    setLinkState('pending');
+    try {
+      const response = await fetch('/api/admin/contributor-media/preview-demo/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: reconciliation.submissionId,
+          expectedRevision: reconciliation.expectedRevision,
+          candidateId,
+        }),
+      });
+      if (response.ok) {
+        setLinkState('ready');
+        setReconciliation(null);
+        window.dispatchEvent(new Event('scholarscout:contributor-media-reconciled'));
+      } else if (response.status === 409) {
+        setLinkState('conflict');
+      } else {
+        setLinkState('unavailable');
+      }
+    } catch {
+      setLinkState('unavailable');
     }
   }
 
@@ -75,6 +126,47 @@ export default function PreviewOwnerMediaDemo() {
         >
           Continue to contributor media
         </Link>
+      ) : null}
+      {reconciliation ? (
+        <section className="mt-5 rounded-md border border-amber-400 bg-white p-4" aria-labelledby="preview-owner-reconciliation-heading">
+          <h3 id="preview-owner-reconciliation-heading" className="font-semibold text-ink-900">
+            Link an existing private package for review
+          </h3>
+          <p className="mt-2 text-sm text-ink-700">
+            Select the matching approved catalogue record. This Preview-only repair keeps the package private and does not publish media.
+          </p>
+          <label className="mt-3 block text-sm font-semibold text-ink-800" htmlFor="preview-owner-candidate">
+            Approved catalogue record
+          </label>
+          <select
+            id="preview-owner-candidate"
+            className="mt-1 w-full rounded-md border border-ink-300 bg-white px-3 py-2 text-sm"
+            value={candidateId}
+            onChange={(event) => setCandidateId(event.target.value)}
+          >
+            <option value="">Select the matching record</option>
+            {reconciliation.candidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>{candidate.title} ({candidate.id})</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="mt-3 rounded-md bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={linkPackage}
+            disabled={!candidateId || linkState === 'pending' || linkState === 'ready'}
+          >
+            {linkState === 'pending' ? 'Linking package…' : 'Link private package for review'}
+          </button>
+          <p className="mt-3 text-sm text-ink-700" aria-live="polite">
+            {linkState === 'conflict' && 'The private package changed. Reload and try again.'}
+            {linkState === 'unavailable' && 'The private package could not be linked. Reload and try again.'}
+          </p>
+        </section>
+      ) : null}
+      {linkState === 'ready' ? (
+        <p className="mt-3 text-sm text-ink-700" role="status">
+          Private package linked. It is now available in Private contributor media review.
+        </p>
       ) : null}
     </section>
   );

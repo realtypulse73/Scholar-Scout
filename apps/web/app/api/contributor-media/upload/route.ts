@@ -23,7 +23,9 @@ export async function POST(request: Request) {
   const result = await issueContributorMediaUpload({ actor, request: body.value });
   if (result.status === 'conflict' || result.value.status === 'conflict') return conflict();
   if (result.value.status === 'forbidden') return NextResponse.json({ error: 'Contributor invitation required.' }, { status: 403 });
-  if (result.value.status === 'invalid-programme') return NextResponse.json({ error: 'Choose a current programme before uploading.' }, { status: 400 });
+  if (result.value.status === 'invalid-programme' || result.value.status === 'ineligible-programme') {
+    return NextResponse.json({ error: 'Choose a current approved programme before uploading.' }, { status: 400 });
+  }
   if (result.value.status !== 'issued') return conflict();
   return NextResponse.json({ capability: result.value.capability });
 }

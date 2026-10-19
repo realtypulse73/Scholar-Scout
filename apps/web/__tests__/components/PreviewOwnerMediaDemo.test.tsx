@@ -12,6 +12,7 @@ describe('PreviewOwnerMediaDemo', () => {
   it('shows the labelled owner-only Preview control and performs a bodyless mutation', async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ available: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ reconciliation: null }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: 'ready' }) }) as never;
 
     render(<PreviewOwnerMediaDemo />);
@@ -27,8 +28,38 @@ describe('PreviewOwnerMediaDemo', () => {
       'href',
       '/contribute/media',
     );
-    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/admin/contributor-media/preview-demo', {
+    expect(global.fetch).toHaveBeenNthCalledWith(3, '/api/admin/contributor-media/preview-demo', {
       method: 'POST',
+    });
+  });
+
+  it('requires an explicit approved candidate selection before linking an existing private package', async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ available: true }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          reconciliation: {
+            submissionId: 'submission-1', expectedRevision: 3, programmeId: 'legacy-programme-id',
+            candidates: [{ id: 'candidate-htu', title: 'Houston Tillotson University' }],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ submission: { status: 'Ready for review', revision: 4 } }) }) as never;
+
+    render(<PreviewOwnerMediaDemo />);
+
+    const select = await screen.findByLabelText(/approved catalogue record/i);
+    expect(screen.getByRole('button', { name: /link private package for review/i })).toBeDisabled();
+    fireEvent.change(select, { target: { value: 'candidate-htu' } });
+    fireEvent.click(screen.getByRole('button', { name: /link private package for review/i }));
+
+    expect(await screen.findByText(/private package linked/i)).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenNthCalledWith(3, '/api/admin/contributor-media/preview-demo/link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissionId: 'submission-1', expectedRevision: 3, candidateId: 'candidate-htu' }),
     });
   });
 

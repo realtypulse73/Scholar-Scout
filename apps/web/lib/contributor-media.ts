@@ -26,6 +26,8 @@ export interface ContributorMediaPackageRequest {
 export interface ContributorPrivateMediaPackage {
   id: string;
   programmeId: string;
+  /** Server-validated governed candidate selected for private review/release. */
+  candidateId?: string;
   videoObjectKey: string;
   posterObjectKey: string;
   videoUploaded: boolean;
@@ -330,6 +332,7 @@ function parseMediaFile(input: unknown): ContributorMediaFile | null {
 
 function isPrivateMediaPackage(input: unknown): input is ContributorPrivateMediaPackage {
   return isRecord(input) && isStableId(input.id) && isStableId(input.programmeId)
+    && (input.candidateId === undefined || isStableId(input.candidateId))
     && isObjectKey(input.videoObjectKey) && isObjectKey(input.posterObjectKey)
     && typeof input.videoUploaded === 'boolean' && typeof input.posterUploaded === 'boolean';
 }

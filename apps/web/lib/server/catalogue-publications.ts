@@ -1036,7 +1036,8 @@ function assertContributorMediaReleaseEligibility(input: {
   for (const candidate of input.selected) {
     if (candidate.retirementIntent) continue;
     const related = input.state.submissions.filter((submission) => (
-      submission.status !== 'Removed' && submission.mediaPackage?.programmeId === candidate.id
+      submission.status !== 'Removed'
+      && (submission.mediaPackage?.candidateId ?? submission.mediaPackage?.programmeId) === candidate.id
     ));
     if (related.length === 0) continue;
     if (related.length !== 1) throw new ContributorMediaReleaseEligibilityError();

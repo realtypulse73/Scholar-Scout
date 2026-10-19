@@ -21,6 +21,9 @@ export default function ContributorMediaReviewManager() {
 
   useEffect(() => {
     void loadQueue();
+    const refresh = () => { void loadQueue(); };
+    window.addEventListener('scholarscout:contributor-media-reconciled', refresh);
+    return () => window.removeEventListener('scholarscout:contributor-media-reconciled', refresh);
   }, []);
 
   async function loadQueue(): Promise<void> {

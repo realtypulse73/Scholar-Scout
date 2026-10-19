@@ -37,7 +37,7 @@ export type CreateContributorDraftResult =
 
 export type IssueContributorMediaUploadResult =
   | { status: 'issued'; capability: { uploadId: string; status: 'Draft'; revision: number } }
-  | { status: 'forbidden' | 'invalid-programme' | 'conflict' };
+  | { status: 'forbidden' | 'invalid-programme' | 'ineligible-programme' | 'conflict' };
 
 export type AuthorizeContributorMediaDirectUploadResult =
   | { status: 'authorized'; revision: number; pathname: string }
@@ -66,6 +66,17 @@ export type ReviewContributorMediaResult =
   | { status: 'forbidden' }
   | { status: 'conflict' }
   | { status: 'invalid-link' };
+
+export interface PreviewOwnerMediaReconciliation {
+  submissionId: string;
+  expectedRevision: number;
+  programmeId: string;
+  candidates: Array<{ id: string; title: string }>;
+}
+
+export type ReconcilePreviewOwnerMediaResult =
+  | { status: 'linked' | 'existing'; submission: ContributorPrivateStatus }
+  | { status: 'forbidden' | 'conflict' | 'invalid-link' };
 
 export type RemoveContributorMediaResult =
   | { status: 'removed'; submission: ContributorPrivateStatus; objectKeys: string[] }
@@ -199,6 +210,7 @@ export async function issueContributorMediaUpload(input: {
   if (!parsed.ok) return { status: 'applied', value: { status: 'invalid-programme' } };
   const programmeId = await resolveCanonicalProgrammeId(parsed.value.programmeId);
   if (!programmeId) return { status: 'applied', value: { status: 'invalid-programme' } };
+  const governedProgrammeIds = await getGovernedProgrammeIds();
   const now = input.now ?? new Date();
   return commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
@@ -208,10 +220,15 @@ export async function issueContributorMediaUpload(input: {
     if (!submission || revision !== parsed.value.expectedRevision) {
       return { status: 'conflict' };
     }
+    const candidate = (data.cataloguePublicationState?.candidates ?? [])
+      .find((item) => item.id === programmeId);
+    if (!candidate || !governedProgrammeIds.has(candidate.id) || !isCurrentCandidate([candidate], candidate.id)) {
+      return { status: 'ineligible-programme' };
+    }
     if (submission.status === 'Action needed') {
       // Retry with new keys so an earlier inspection failure never overwrites or
       // deletes the original private objects. The revision invalidates old tokens.
-      const mediaPackage = createPrivateMediaPackage(programmeId);
+      const mediaPackage = createPrivateMediaPackage(programmeId, candidate.id);
       const nextRevision = revision + 1;
       submission.status = 'Draft';
       submission.revision = nextRevision;
@@ -223,8 +240,10 @@ export async function issueContributorMediaUpload(input: {
       };
     }
     if (submission.status !== 'Draft') return { status: 'conflict' };
-    const mediaPackage = submission.mediaPackage ?? createPrivateMediaPackage(programmeId);
+    const mediaPackage = submission.mediaPackage ?? createPrivateMediaPackage(programmeId, candidate.id);
     if (mediaPackage.programmeId !== programmeId) return { status: 'conflict' };
+    if (mediaPackage.candidateId === undefined) mediaPackage.candidateId = candidate.id;
+    if (mediaPackage.candidateId !== candidate.id) return { status: 'conflict' };
     submission.mediaPackage = mediaPackage;
     submission.updatedAt = now.toISOString();
     return {
@@ -398,15 +417,15 @@ export async function getContributorMediaReviewQueue(): Promise<ContributorMedia
     .filter((submission) => (
       submission.status === 'Ready for review'
       && submission.mediaPackage
-      && isCurrentCandidate(candidates, submission.mediaPackage.programmeId)
-      && governedProgrammeIds.has(submission.mediaPackage.programmeId)
+      && isCurrentCandidate(candidates, getLinkedCandidateId(submission.mediaPackage))
+      && governedProgrammeIds.has(getLinkedCandidateId(submission.mediaPackage))
     ))
     .map((submission) => ({
       id: submission.id,
       accountId: submission.accountId,
       status: submission.status as ContributorMediaReviewItem['status'],
       revision: submission.revision ?? 1,
-      programmeId: submission.mediaPackage!.programmeId,
+      programmeId: getLinkedCandidateId(submission.mediaPackage!),
       signerName: submission.signerName,
       attestedAt: submission.attestedAt,
       creatorAuthority: true as const,
@@ -443,7 +462,8 @@ export async function reviewContributorMedia(input: {
     )) {
       return { status: 'forbidden' };
     }
-    if (!governedProgrammeIds.has(submission.mediaPackage.programmeId)) return { status: 'invalid-link' };
+    const candidateId = getLinkedCandidateId(submission.mediaPackage);
+    if (!governedProgrammeIds.has(candidateId)) return { status: 'invalid-link' };
     const revision = submission.revision ?? 1;
     if (submission.status === 'Approved for release') {
       return submission.reviewerId === input.actor.id && revision === input.expectedRevision
@@ -454,8 +474,8 @@ export async function reviewContributorMedia(input: {
       return { status: 'conflict' };
     }
     const candidate = (data.cataloguePublicationState?.candidates ?? [])
-      .find((item) => item.id === submission.mediaPackage!.programmeId);
-    if (!candidate || !isCurrentCandidate([candidate], submission.mediaPackage.programmeId)) {
+      .find((item) => item.id === candidateId);
+    if (!candidate || !isCurrentCandidate([candidate], candidateId)) {
       return { status: 'invalid-link' };
     }
     const nextRevision = revision + 1;
@@ -474,6 +494,83 @@ export async function reviewContributorMedia(input: {
     return {
       status: input.decision === 'approve' ? 'approved' : 'action-needed',
       submission: { status: submission.status, revision: nextRevision },
+    };
+  });
+}
+
+/**
+ * Returns the exact Preview-owner's orphaned Ready-for-review package and only
+ * current approved governed candidates. It never derives a candidate from title
+ * or private media metadata.
+ */
+export async function getPreviewOwnerMediaReconciliation(
+  actor: ActiveStaffActor,
+): Promise<PreviewOwnerMediaReconciliation | null> {
+  if (!isPreviewOwnerMediaDemoActor(actor)) return null;
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const data = await readScholarScoutData();
+  const submission = data.contributorMediaState?.submissions.find((item) => (
+    item.accountId === actor.id
+    && item.status === 'Ready for review'
+    && item.mediaPackage
+    && item.mediaPackage.candidateId === undefined
+  ));
+  if (!submission?.mediaPackage) return null;
+  const governedProgrammeIds = await getGovernedProgrammeIds();
+  const candidates = (data.cataloguePublicationState?.candidates ?? [])
+    .filter((candidate) => governedProgrammeIds.has(candidate.id) && isCurrentCandidate([candidate], candidate.id))
+    .map((candidate) => ({ id: candidate.id, title: candidate.title }))
+    .sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id));
+  if (candidates.length === 0) return null;
+  return {
+    submissionId: submission.id,
+    expectedRevision: submission.revision ?? 1,
+    programmeId: submission.mediaPackage.programmeId,
+    candidates,
+  };
+}
+
+/** Links the Preview owner's existing package only after an exact current-candidate recheck. */
+export async function reconcilePreviewOwnerMedia(input: {
+  actor: ActiveStaffActor;
+  submissionId: string;
+  expectedRevision: number;
+  candidateId: string;
+  now?: Date;
+}): Promise<ConditionalMutationResult<ReconcilePreviewOwnerMediaResult>> {
+  if (!isPreviewOwnerMediaDemoActor(input.actor)) {
+    return { status: 'applied', value: { status: 'forbidden' } };
+  }
+  if (!isContributorSubmissionId(input.submissionId) || !isContributorSubmissionId(input.candidateId)
+    || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
+    return { status: 'applied', value: { status: 'conflict' } };
+  }
+  const governedProgrammeIds = await getGovernedProgrammeIds();
+  const timestamp = (input.now ?? new Date()).toISOString();
+  return commitConditionalMutation((data) => {
+    const submission = ensureContributorMediaState(data).submissions.find((item) => item.id === input.submissionId);
+    if (!submission || submission.accountId !== input.actor.id || submission.status !== 'Ready for review' || !submission.mediaPackage) {
+      return { status: 'forbidden' };
+    }
+    const revision = submission.revision ?? 1;
+    const existingCandidateId = submission.mediaPackage.candidateId;
+    if (existingCandidateId !== undefined) {
+      return existingCandidateId === input.candidateId && revision === input.expectedRevision
+        ? { status: 'existing', submission: { status: submission.status, revision } }
+        : { status: 'conflict' };
+    }
+    if (revision !== input.expectedRevision || !governedProgrammeIds.has(input.candidateId)) {
+      return { status: 'conflict' };
+    }
+    const candidate = (data.cataloguePublicationState?.candidates ?? [])
+      .find((item) => item.id === input.candidateId);
+    if (!candidate || !isCurrentCandidate([candidate], input.candidateId)) return { status: 'invalid-link' };
+    submission.mediaPackage.candidateId = candidate.id;
+    submission.revision = revision + 1;
+    submission.updatedAt = timestamp;
+    return {
+      status: 'linked',
+      submission: { status: submission.status, revision: submission.revision },
     };
   });
 }
@@ -538,16 +635,21 @@ function ensureContributorMediaState(data: { contributorMediaState?: Contributor
   return data.contributorMediaState;
 }
 
-function createPrivateMediaPackage(programmeId: string) {
+function createPrivateMediaPackage(programmeId: string, candidateId: string) {
   const id = randomUUID();
   return {
     id,
     programmeId,
+    candidateId,
     videoObjectKey: `contributor-media/${id}/video.mp4`,
     posterObjectKey: `contributor-media/${id}/poster.png`,
     videoUploaded: false,
     posterUploaded: false,
   };
+}
+
+function getLinkedCandidateId(mediaPackage: { programmeId: string; candidateId?: string }): string {
+  return mediaPackage.candidateId ?? mediaPackage.programmeId;
 }
 
 function isCurrentCandidate(candidates: Array<{

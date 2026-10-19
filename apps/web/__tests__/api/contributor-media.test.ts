@@ -379,6 +379,15 @@ describe('contributor media routes', () => {
         revision: 1, mediaPackage: originalPackage,
       }],
     } as ScholarScoutData['contributorMediaState'];
+    store.data.cataloguePublicationState = {
+      schemaVersion: 1,
+      candidates: [{
+        id: 'programme-1', title: 'Current programme', revision: 1, lifecycle: 'approved',
+        approval: { reviewerId: 'reviewer-1', reviewedAt: '2026-10-01T00:00:00.000Z', revision: 1 },
+      }],
+      snapshots: [],
+      auditEvents: [],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
     jest.mocked(issueContributorMediaUpload).mockImplementation(issueContributorMediaUploadActual);
 
     const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
