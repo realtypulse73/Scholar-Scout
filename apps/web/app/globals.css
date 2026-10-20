@@ -52,8 +52,37 @@ body {
   height: 18rem;
   border-radius: 9999px;
   background: radial-gradient(circle, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0));
-  animation: catalogue-focus-glow 8s ease-in-out infinite;
-  pointer-events: none;
+}
+
+.catalogue-focus-decoration-plane,
+.catalogue-focus-decoration-rule {
+  position: absolute;
+  display: block;
+}
+
+.catalogue-focus-decoration-plane {
+  inset: 2rem 3rem auto auto;
+  width: 11rem;
+  height: 11rem;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(226, 232, 240, 0.2));
+  transform: rotate(18deg);
+}
+
+.catalogue-focus-decoration-rule {
+  right: 2rem;
+  bottom: 3.5rem;
+  width: 13rem;
+  border-top: 1px solid rgba(38, 54, 74, 0.14);
+}
+
+.catalogue-focus-visual-plane {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(243, 245, 247, 0.96));
+}
+
+.catalogue-focus-content-plane {
+  overflow-wrap: anywhere;
 }
 
 .catalogue-visual-shell {

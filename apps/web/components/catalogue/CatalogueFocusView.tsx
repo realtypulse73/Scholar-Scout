@@ -44,7 +44,7 @@ export default function CatalogueFocusView({
   ] as const;
 
   return (
-    <main data-testid="catalogue-focus-layout" className="catalogue-focus min-h-screen min-w-0 max-w-full overflow-x-clip bg-ink-50 text-ink-900">
+    <main data-testid="catalogue-focus-layout" className="catalogue-focus catalogue-visual-shell min-h-screen min-w-0 max-w-full overflow-x-clip bg-ink-50 text-ink-900">
       <nav className="mx-auto flex w-full max-w-6xl min-w-0 flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6 lg:px-8" aria-label="Opportunity detail navigation">
         <Link href={backHref} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Back to results</Link>
         <div className="flex flex-wrap gap-2">
@@ -53,9 +53,12 @@ export default function CatalogueFocusView({
         </div>
       </nav>
 
-      <section className="relative overflow-hidden border-y border-ink-200 bg-white">
-        <div data-testid="catalogue-focus-decoration" className="catalogue-focus-decoration" aria-hidden="true" />
-        <div className="relative mx-auto w-full max-w-6xl min-w-0 px-5 py-10 sm:px-6 lg:px-8">
+      <section className="catalogue-focus-visual-plane relative overflow-hidden border-y border-ink-200 bg-white">
+        <div data-testid="catalogue-focus-decoration" className="catalogue-focus-decoration pointer-events-none" aria-hidden="true">
+          <span className="catalogue-focus-decoration-plane" />
+          <span className="catalogue-focus-decoration-rule" />
+        </div>
+        <div className="catalogue-focus-content-plane relative mx-auto w-full max-w-6xl min-w-0 px-5 py-10 sm:px-6 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">{item.pathway ? pathwayLabels[item.pathway] : 'Pathway needs confirmation'}</p>
           <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">{item.providerTitle}</h1>
           <p className="mt-3 max-w-3xl text-base leading-7 text-ink-600">{item.regionLabel} · {item.place.value ?? 'Location needs confirmation'} · {formatValue(item.delivery.value) ?? 'Delivery needs confirmation'}</p>
@@ -63,7 +66,7 @@ export default function CatalogueFocusView({
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8">
+      <div className="catalogue-focus-content-plane mx-auto grid w-full max-w-6xl min-w-0 gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8">
         <div className="min-w-0 space-y-6">
           <DiscoveryPreviewSlot media={item.renderableMedia} contributorMedia={item.contributorMedia} />
           <section className="rounded-card border border-ink-200 bg-white p-5" aria-labelledby="facts-heading">
