@@ -26,7 +26,7 @@ export interface ContributorMediaPackageRequest {
 export interface ContributorPrivateMediaPackage {
   id: string;
   programmeId: string;
-  /** Server-validated governed candidate selected for private review/release. */
+  /** Server-validated approved catalogue candidate selected for private review/release. */
   candidateId?: string;
   videoObjectKey: string;
   posterObjectKey: string;

@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import {
+  getPreviewOwnerMediaReconciliation,
   getContributorMediaReviewQueue,
   issueContributorMediaUpload,
   reconcilePreviewOwnerMedia,
@@ -10,10 +11,6 @@ import {
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
-import { getGovernedProgrammes } from '@/lib/server/programme-records';
-
-jest.mock('@/lib/server/programme-records', () => ({ getGovernedProgrammes: jest.fn() }));
-
 const owner = {
   id: 'owner-1',
   email: 'owner@example.com',
@@ -85,7 +82,6 @@ describe('Preview contributor-media reconciliation', () => {
     process.env.VERCEL_ENV = 'preview';
     process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO = 'true';
     process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL = owner.email;
-    jest.mocked(getGovernedProgrammes).mockResolvedValue([{ id: 'candidate-htu', publicationStatus: 'published' }] as never);
   });
 
   afterEach(() => {
@@ -98,8 +94,14 @@ describe('Preview contributor-media reconciliation', () => {
     }
   });
 
-  it('links only the exact Preview owner package to a selected approved candidate and makes it reviewable', async () => {
+  it('uses an approved catalogue candidate without a duplicate programme record for Preview review linkage', async () => {
     await expect(getContributorMediaReviewQueue()).resolves.toEqual([]);
+    await expect(getPreviewOwnerMediaReconciliation(owner)).resolves.toEqual({
+      submissionId: 'submission-1',
+      expectedRevision: 3,
+      programmeId: 'legacy-programme-id',
+      candidates: [{ id: 'candidate-htu', title: 'Houston Tillotson University' }],
+    });
 
     const result = await reconcilePreviewOwnerMedia({
       actor: owner,
@@ -129,25 +131,17 @@ describe('Preview contributor-media reconciliation', () => {
     ]);
   });
 
-  it('does not issue a future package when a governed programme lacks an approved candidate link', async () => {
+  it('issues a future package to an approved catalogue candidate without a duplicate programme record', async () => {
     store.data.contributorMediaState!.submissions[0] = {
       ...store.data.contributorMediaState!.submissions[0],
       status: 'Draft',
       revision: 1,
       mediaPackage: undefined,
     };
-    store.data.cataloguePublicationState = {
-      schemaVersion: 1,
-      candidates: [],
-      snapshots: [],
-      auditEvents: [],
-    } as unknown as ScholarScoutData['cataloguePublicationState'];
-    jest.mocked(getGovernedProgrammes).mockResolvedValue([{ id: 'legacy-programme-id', publicationStatus: 'published' }] as never);
-
     const result = await issueContributorMediaUpload({
       actor: { kind: 'account', accountId: owner.id, storageKey: `account:${owner.id}` },
       request: {
-        programmeId: 'legacy-programme-id', expectedRevision: 1,
+        programmeId: 'candidate-htu', expectedRevision: 1,
         files: [
           { kind: 'video', contentType: 'video/mp4', size: 1024 },
           { kind: 'poster', contentType: 'image/png', size: 1024 },
@@ -156,7 +150,13 @@ describe('Preview contributor-media reconciliation', () => {
       now: new Date('2026-10-19T13:00:00.000Z'),
     });
 
-    expect(result).toEqual({ status: 'applied', value: { status: 'ineligible-programme' } });
-    expect(store.data.contributorMediaState?.submissions[0]?.mediaPackage).toBeUndefined();
+    expect(result).toEqual({
+      status: 'applied',
+      value: { status: 'issued', capability: expect.objectContaining({ status: 'Draft', revision: 1 }) },
+    });
+    expect(store.data.contributorMediaState?.submissions[0]?.mediaPackage).toMatchObject({
+      programmeId: 'candidate-htu',
+      candidateId: 'candidate-htu',
+    });
   });
 });

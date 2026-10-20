@@ -87,7 +87,7 @@ export interface ReleasedContributorMedia {
   contentType: 'video/mp4';
 }
 
-/** Resolves a private video only after rechecking the active governed release and canonical programme link. */
+/** Resolves a private video only after rechecking the active approved catalogue release and candidate link. */
 export async function getReleasedContributorMedia(publicId: string): Promise<ReleasedContributorMedia | null> {
   if (!/^media-[a-f0-9-]{36}$/i.test(publicId)) return null;
 
@@ -104,7 +104,7 @@ export async function getReleasedContributorMedia(publicId: string): Promise<Rel
     || isContributorMediaPublicIdRevoked(data.contributorMediaState, publicId)
     || submission.status !== 'Approved for release'
     || submission.releaseCandidateId !== record.id || submission.releaseCandidateRevision !== record.revision
-    || candidate.lifecycle !== 'approved' || candidate.approval?.revision !== candidate.revision
+    || candidate.lifecycle !== 'approved' || candidate.retirementIntent || candidate.approval?.revision !== candidate.revision
     || candidate.revision !== record.revision || !submission.mediaPackage?.videoUploaded) {
     return null;
   }
@@ -114,9 +114,6 @@ export async function getReleasedContributorMedia(publicId: string): Promise<Rel
   ) {
     return null;
   }
-
-  const { getCurrentGovernedProgrammeIds } = await import('@/lib/server/programme-records');
-  if (!(await getCurrentGovernedProgrammeIds()).has(record.id)) return null;
 
   const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
   if (!storeId) return null;
@@ -208,9 +205,7 @@ export async function issueContributorMediaUpload(input: {
 }): Promise<ConditionalMutationResult<IssueContributorMediaUploadResult>> {
   const parsed = validateContributorMediaPackage(input.request);
   if (!parsed.ok) return { status: 'applied', value: { status: 'invalid-programme' } };
-  const programmeId = await resolveCanonicalProgrammeId(parsed.value.programmeId);
-  if (!programmeId) return { status: 'applied', value: { status: 'invalid-programme' } };
-  const governedProgrammeIds = await getGovernedProgrammeIds();
+  const programmeId = parsed.value.programmeId;
   const now = input.now ?? new Date();
   return commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
@@ -222,7 +217,7 @@ export async function issueContributorMediaUpload(input: {
     }
     const candidate = (data.cataloguePublicationState?.candidates ?? [])
       .find((item) => item.id === programmeId);
-    if (!candidate || !governedProgrammeIds.has(candidate.id) || !isCurrentCandidate([candidate], candidate.id)) {
+    if (!candidate || !isCurrentCandidate([candidate], candidate.id)) {
       return { status: 'ineligible-programme' };
     }
     if (submission.status === 'Action needed') {
@@ -412,13 +407,11 @@ export async function getContributorMediaReviewQueue(): Promise<ContributorMedia
   const data = await readScholarScoutData();
   const state = ensureContributorMediaState(data);
   const candidates = data.cataloguePublicationState?.candidates ?? [];
-  const governedProgrammeIds = await getGovernedProgrammeIds();
   return state.submissions
     .filter((submission) => (
       submission.status === 'Ready for review'
       && submission.mediaPackage
       && isCurrentCandidate(candidates, getLinkedCandidateId(submission.mediaPackage))
-      && governedProgrammeIds.has(getLinkedCandidateId(submission.mediaPackage))
     ))
     .map((submission) => ({
       id: submission.id,
@@ -450,7 +443,6 @@ export async function reviewContributorMedia(input: {
   if (!isContributorSubmissionId(input.submissionId) || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
     return { status: 'applied', value: { status: 'conflict' } };
   }
-  const governedProgrammeIds = await getGovernedProgrammeIds();
   const now = input.now ?? new Date();
   const permitsOwnerSelfApproval = input.decision === 'approve'
     && isPreviewOwnerMediaDemoActor(input.actor);
@@ -463,7 +455,6 @@ export async function reviewContributorMedia(input: {
       return { status: 'forbidden' };
     }
     const candidateId = getLinkedCandidateId(submission.mediaPackage);
-    if (!governedProgrammeIds.has(candidateId)) return { status: 'invalid-link' };
     const revision = submission.revision ?? 1;
     if (submission.status === 'Approved for release') {
       return submission.reviewerId === input.actor.id && revision === input.expectedRevision
@@ -500,7 +491,7 @@ export async function reviewContributorMedia(input: {
 
 /**
  * Returns the exact Preview-owner's orphaned Ready-for-review package and only
- * current approved governed candidates. It never derives a candidate from title
+ * current approved catalogue candidates. It never derives a candidate from title
  * or private media metadata.
  */
 export async function getPreviewOwnerMediaReconciliation(
@@ -516,9 +507,8 @@ export async function getPreviewOwnerMediaReconciliation(
     && item.mediaPackage.candidateId === undefined
   ));
   if (!submission?.mediaPackage) return null;
-  const governedProgrammeIds = await getGovernedProgrammeIds();
   const candidates = (data.cataloguePublicationState?.candidates ?? [])
-    .filter((candidate) => governedProgrammeIds.has(candidate.id) && isCurrentCandidate([candidate], candidate.id))
+    .filter((candidate) => isCurrentCandidate([candidate], candidate.id))
     .map((candidate) => ({ id: candidate.id, title: candidate.title }))
     .sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id));
   if (candidates.length === 0) return null;
@@ -545,7 +535,6 @@ export async function reconcilePreviewOwnerMedia(input: {
     || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
     return { status: 'applied', value: { status: 'conflict' } };
   }
-  const governedProgrammeIds = await getGovernedProgrammeIds();
   const timestamp = (input.now ?? new Date()).toISOString();
   return commitConditionalMutation((data) => {
     const submission = ensureContributorMediaState(data).submissions.find((item) => item.id === input.submissionId);
@@ -559,7 +548,7 @@ export async function reconcilePreviewOwnerMedia(input: {
         ? { status: 'existing', submission: { status: submission.status, revision } }
         : { status: 'conflict' };
     }
-    if (revision !== input.expectedRevision || !governedProgrammeIds.has(input.candidateId)) {
+    if (revision !== input.expectedRevision) {
       return { status: 'conflict' };
     }
     const candidate = (data.cataloguePublicationState?.candidates ?? [])
@@ -667,14 +656,6 @@ function isCurrentCandidate(candidates: Array<{
   ));
 }
 
-async function getGovernedProgrammeIds(): Promise<Set<string>> {
-  const { getGovernedProgrammes } = await import('@/lib/server/programme-records');
-  const programmes = await getGovernedProgrammes();
-  return new Set(programmes
-    .filter((programme) => (programme.publicationStatus ?? 'published') === 'published')
-    .map((programme) => programme.id));
-}
-
 function isContributorSubmissionId(value: string): boolean {
   return /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
 }
@@ -686,13 +667,6 @@ function findContributorSubmission(
   return state.submissions.find((submission) => (
     submission.accountId === accountId && submission.status !== 'Removed'
   )) ?? state.submissions.find((submission) => submission.accountId === accountId) ?? null;
-}
-
-async function resolveCanonicalProgrammeId(programmeId: string): Promise<string | null> {
-  const { getGovernedProgrammes } = await import('@/lib/server/programme-records');
-  const programmes = await getGovernedProgrammes();
-  const programme = programmes.find((item) => item.id === programmeId && (item.publicationStatus ?? 'published') === 'published');
-  return programme?.id ?? null;
 }
 
 async function inspectCurrentPrivatePackage(
