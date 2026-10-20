@@ -97,6 +97,24 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getAllByText(/not yet verified/i)).not.toHaveLength(0);
   });
 
+  it('keeps the same visual arrival available with or without account-capable qualification editing', () => {
+    const model = buildCatalogueDiscoveryModel({ records: [publishedRecord], searchParams: { metro: 'greater-houston' } });
+    const { rerender } = render(<CatalogueDiscoveryOverview model={model} canEditQualifications={false} />);
+    const signedOutWelcome = screen.getByRole('heading', { name: /start with reviewed opportunities/i })
+      .closest('section');
+
+    expect(signedOutWelcome).not.toBeNull();
+    expect(within(signedOutWelcome!).getByRole('link', { name: /browse reviewed opportunities/i }))
+      .toHaveAttribute('href', '#catalogue-results-heading');
+
+    rerender(<CatalogueDiscoveryOverview model={model} canEditQualifications />);
+
+    const accountCapableWelcome = screen.getByRole('heading', { name: /start with reviewed opportunities/i })
+      .closest('section');
+    expect(accountCapableWelcome).toHaveTextContent(signedOutWelcome!.textContent ?? '');
+    expect(screen.getByRole('button', { name: /edit qualifications/i })).toBeInTheDocument();
+  });
+
   it('keeps one visual welcome ahead of factual discovery for media-bearing, no-media, and empty catalogue models', () => {
     const localMedia = {
       kind: 'local-preview' as const,

@@ -23,4 +23,22 @@ describe('CatalogueVisualWelcome', () => {
     expect(decoration).toHaveClass('pointer-events-none');
     expect(container.querySelector('.catalogue-visual-welcome > div:last-child')).toHaveClass('min-w-0');
   });
+
+  it('stays static when reduced motion is preferred', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn(() => ({
+        matches: true,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })),
+    });
+
+    const { container } = render(<CatalogueVisualWelcome regionLabel="Greater Houston" />);
+    const decoration = screen.getByTestId('catalogue-visual-welcome-decoration');
+
+    expect(decoration).toHaveClass('pointer-events-none');
+    expect(decoration.className).not.toMatch(/animate|motion/i);
+    expect(container.querySelectorAll('button, video, audio, source')).toHaveLength(0);
+  });
 });
