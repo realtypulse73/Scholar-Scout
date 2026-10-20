@@ -97,6 +97,46 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getAllByText(/not yet verified/i)).not.toHaveLength(0);
   });
 
+  it('keeps one visual welcome ahead of factual discovery for media-bearing, no-media, and empty catalogue models', () => {
+    const localMedia = {
+      kind: 'local-preview' as const,
+      assetPath: '/media/welding-workshop.mp4',
+      alt: 'A welding workshop learning environment.',
+      label: 'Provider-approved media',
+      sourceLabel: 'Welding pathway media approval',
+      sourceUrl: 'https://example.edu/media-approval',
+      rightsBasis: 'provider-approved' as const,
+      reviewedAt: '2026-09-20',
+    };
+    const models = [
+      buildCatalogueDiscoveryModel({
+        records: [{ ...publishedRecord, renderableMedia: localMedia }],
+        searchParams: { metro: 'greater-houston' },
+      }),
+      buildCatalogueDiscoveryModel({
+        records: [publishedRecord],
+        searchParams: { metro: 'greater-houston' },
+      }),
+      buildCatalogueDiscoveryModel({
+        records: [],
+        searchParams: { metro: 'greater-houston' },
+      }),
+    ];
+
+    for (const model of models) {
+      const { container, unmount } = render(<CatalogueDiscoveryOverview model={model} />);
+      const welcome = within(container).getByRole('heading', { name: /start with reviewed opportunities/i });
+      const filters = within(container).getByRole('form', { name: /catalogue filters/i });
+      const results = container.querySelector('#catalogue-results-heading');
+
+      expect(within(container).getAllByRole('heading', { name: /start with reviewed opportunities/i })).toHaveLength(1);
+      expect(welcome.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(results).not.toBeNull();
+      expect(welcome.compareDocumentPosition(results!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      unmount();
+    }
+  });
+
   it('announces active filters with labelled native controls and bounded result content', () => {
     const model = buildCatalogueDiscoveryModel({
       records: [publishedRecord],

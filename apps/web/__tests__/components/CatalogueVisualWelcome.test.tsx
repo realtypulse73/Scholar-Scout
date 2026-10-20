@@ -16,10 +16,11 @@ describe('CatalogueVisualWelcome', () => {
   });
 
   it('keeps decorative shapes out of the accessibility tree and pointer interactions', () => {
-    const { container } = render(<CatalogueVisualWelcome regionLabel="A very long reviewed regional opportunity label" />);
+    const { container } = render(<CatalogueVisualWelcome regionLabel="A very long reviewed regional opportunity label that still needs to wrap inside the factual catalogue welcome content plane" />);
 
     const decoration = container.querySelector('[data-testid="catalogue-visual-welcome-decoration"]');
     expect(decoration).toHaveAttribute('aria-hidden', 'true');
     expect(decoration).toHaveClass('pointer-events-none');
+    expect(container.querySelector('.catalogue-visual-welcome > div:last-child')).toHaveClass('min-w-0');
   });
 });
