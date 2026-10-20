@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
+import CatalogueVisualWelcome from '@/components/catalogue/CatalogueVisualWelcome';
 import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
 import {
   buildCatalogueDetailHref,
@@ -136,7 +137,7 @@ export default function CatalogueDiscoveryOverview({
   }
 
   return (
-    <main className="min-h-screen bg-ink-50 text-ink-900">
+    <main className="catalogue-visual-shell min-h-screen min-w-0 max-w-full overflow-x-clip bg-ink-50 text-ink-900">
       <section className="border-y border-ink-200 bg-white">
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Reviewed opportunity catalogue</p>
@@ -144,6 +145,7 @@ export default function CatalogueDiscoveryOverview({
           <p className="mt-3 max-w-3xl text-sm leading-6 text-ink-600 sm:text-base">Browse factual records from the current reviewed snapshot. Your controls narrow this list only; they do not assess eligibility or rank you.</p>
         </div>
       </section>
+      <CatalogueVisualWelcome regionLabel={region.label} />
       <div data-testid="catalogue-overview-layout" className="mx-auto grid w-full min-w-0 max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
           <form action="/programmes" className="space-y-5 rounded-card border border-ink-200 bg-white p-5 shadow-sm" aria-label="Catalogue filters">

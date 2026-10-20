@@ -56,6 +56,53 @@ body {
   pointer-events: none;
 }
 
+.catalogue-visual-shell {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(243, 245, 247, 0.96)),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.04), transparent 42%);
+}
+
+.catalogue-visual-welcome-decoration {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.catalogue-visual-welcome-plane,
+.catalogue-visual-welcome-rule {
+  position: absolute;
+  display: block;
+}
+
+.catalogue-visual-welcome-plane {
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(226, 232, 240, 0.2));
+}
+
+.catalogue-visual-welcome-plane-primary {
+  top: -6rem;
+  right: 8%;
+  width: 16rem;
+  height: 16rem;
+  transform: rotate(18deg);
+}
+
+.catalogue-visual-welcome-plane-secondary {
+  right: -5rem;
+  bottom: -7rem;
+  width: 19rem;
+  height: 13rem;
+  transform: rotate(-12deg);
+}
+
+.catalogue-visual-welcome-rule {
+  right: 0;
+  bottom: 1.25rem;
+  left: 54%;
+  border-top: 1px solid rgba(38, 54, 74, 0.14);
+}
+
 .transition-story-decoration {
   animation: transition-story-glow 10s ease-in-out infinite;
 }

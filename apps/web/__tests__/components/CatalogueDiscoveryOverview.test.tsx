@@ -83,7 +83,13 @@ describe('CatalogueDiscoveryOverview', () => {
   it('renders governed discovery actions without an account or profile', () => {
     const model = buildCatalogueDiscoveryModel({ records: [publishedRecord], searchParams: { metro: 'greater-houston' } });
     render(<CatalogueDiscoveryOverview model={model} />);
-    expect(screen.getByRole('heading', { name: /reviewed opportunities/i })).toBeInTheDocument();
+    const welcome = screen.getByRole('heading', { name: /start with reviewed opportunities/i });
+    const filters = screen.getByRole('form', { name: /catalogue filters/i });
+    const results = screen.getByRole('heading', { name: /reviewed cards/i });
+    expect(welcome.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(welcome.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('link', { name: /browse reviewed opportunities/i })).toHaveAttribute('href', '#catalogue-results-heading');
+    expect(screen.getByRole('heading', { name: /reviewed opportunities in greater houston/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/programme');
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
