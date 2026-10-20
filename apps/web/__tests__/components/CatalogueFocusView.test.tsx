@@ -158,6 +158,22 @@ describe('CatalogueFocusView', () => {
     expect(screen.getByTestId('catalogue-focus-decoration')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('uses a static, inert visual shell without adding media to a no-media detail', () => {
+    render(<CatalogueFocusView item={{ ...item, renderableMedia: undefined }} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
+
+    const layout = screen.getByTestId('catalogue-focus-layout');
+    const decoration = screen.getByTestId('catalogue-focus-decoration');
+    const facts = screen.getByRole('region', { name: /facts and sources/i });
+    const officialChoices = screen.getByRole('region', { name: /official verification and student choices/i });
+
+    expect(layout).toHaveClass('catalogue-visual-shell', 'min-w-0', 'max-w-full');
+    expect(decoration).toHaveAttribute('aria-hidden', 'true');
+    expect(decoration).toHaveClass('pointer-events-none');
+    expect(facts.compareDocumentPosition(officialChoices) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByRole('video')).not.toBeInTheDocument();
+  });
+
   it('renders every factual reason with source evidence, state, date, and a direct verification path', () => {
     render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
