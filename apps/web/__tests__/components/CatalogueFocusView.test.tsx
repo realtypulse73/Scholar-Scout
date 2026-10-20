@@ -174,6 +174,32 @@ describe('CatalogueFocusView', () => {
     expect(screen.queryByRole('video')).not.toBeInTheDocument();
   });
 
+  it('keeps long reviewed detail copy inside a width-safe factual plane', () => {
+    const longProviderTitle = 'Bayou Skills Academy for Electrical and Workforce Opportunity Navigation with Extended Reviewed Provider Copy';
+    const longRegionLabel = 'Greater New Orleans Regional Opportunity Network with Reviewed Education and Training Pathways';
+
+    render(<CatalogueFocusView
+      item={{
+        ...item,
+        providerTitle: longProviderTitle,
+        regionLabel: longRegionLabel,
+        renderableMedia: undefined,
+      }}
+      backHref="/programmes?metro=greater-new-orleans"
+      alternateHref="/programmes?metro=greater-new-orleans&pathway=university"
+    />);
+
+    const facts = screen.getByRole('region', { name: /facts and sources/i });
+    const choices = screen.getByRole('region', { name: /official verification and student choices/i });
+    const factualPlane = facts.closest('.catalogue-focus-content-plane');
+
+    expect(screen.getByRole('heading', { name: longProviderTitle })).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(longRegionLabel))).toBeInTheDocument();
+    expect(factualPlane).toHaveClass('min-w-0');
+    expect(facts.compareDocumentPosition(choices) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('catalogue-focus-decoration').querySelectorAll('a, button, input')).toHaveLength(0);
+  });
+
   it('renders every factual reason with source evidence, state, date, and a direct verification path', () => {
     render(<CatalogueFocusView item={item} backHref="/programmes?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
