@@ -20,9 +20,7 @@ body {
   }
 
   .transition-story {
-    background-image:
-      linear-gradient(90deg, rgba(248, 250, 252, 0.95) 0%, rgba(248, 250, 252, 0.82) 47%, rgba(248, 250, 252, 0.9) 100%),
-      url('/images/scholar-scout-transition-v1.png');
+    background-image: linear-gradient(90deg, rgba(248, 250, 252, 0.97) 0%, rgba(248, 250, 252, 0.85) 47%, rgba(248, 250, 252, 0.94) 100%);
     background-position: center;
     background-size: cover;
   }
@@ -30,9 +28,7 @@ body {
 
 .student-journey-scene {
   background-color: #F3F5F7;
-  background-image:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.86) 50%, rgba(243, 245, 247, 0.72) 100%),
-    url('/images/scholar-scout-transition-v1.png');
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.86) 50%, rgba(243, 245, 247, 0.82) 100%);
   background-position: center;
   background-size: cover;
 }
@@ -43,6 +39,78 @@ body {
 
 .student-light-trail {
   animation: student-light-trail 9s ease-in-out infinite;
+}
+
+.brand-wordmark {
+  letter-spacing: 0.12em;
+  transform: scaleX(1.06);
+  transform-origin: left center;
+}
+
+.journey-backdrop {
+  background-color: #dce7ef;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.78) 45%, rgba(243, 245, 247, 0.58) 100%),
+    var(--journey-image);
+  background-position: center;
+  background-size: cover;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.journey-backdrop--fixed {
+  inset: 0;
+  position: fixed;
+  z-index: 0;
+}
+
+.journey-backdrop--rural {
+  --journey-image: url('/images/journeys/rural-to-college-v1.png');
+}
+
+.journey-backdrop--city {
+  --journey-image: url('/images/journeys/city-to-college-v1.png');
+}
+
+.journey-backdrop--workplace {
+  --journey-image: url('/images/journeys/workplace-to-training-v1.png');
+}
+
+.journey-backdrop--next-step {
+  --journey-image: url('/images/journeys/next-step-learning-v1.png');
+}
+
+.journey-backdrop--reentry {
+  --journey-image: url('/images/journeys/reentry-to-opportunity-v1.png');
+}
+
+.journey-backdrop__motion {
+  animation: journey-light-sweep 16s ease-in-out infinite;
+  background: linear-gradient(110deg, transparent 42%, rgba(255, 255, 255, 0.22) 54%, transparent 66%);
+  inset: 0;
+  position: absolute;
+}
+
+.journey-backdrop--quiet .journey-backdrop__motion {
+  animation: none;
+  opacity: 0;
+}
+
+.journey-page-content > main {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+@keyframes journey-light-sweep {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: translateX(-6%);
+  }
+
+  50% {
+    opacity: 0.48;
+    transform: translateX(6%);
+  }
 }
 
 .catalogue-focus-decoration {
@@ -193,6 +261,14 @@ body {
   .student-light-trail {
     opacity: 0.5;
   }
+
+  .journey-backdrop {
+    background-position: 62% center;
+  }
+
+  .journey-page-content > main {
+    background-color: rgba(255, 255, 255, 0.94) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -200,6 +276,12 @@ body {
   .student-light-trail {
     animation: none;
     transform: none;
+  }
+
+  .journey-backdrop__motion {
+    animation: none;
+    transform: none;
+    opacity: 0;
   }
 
   .catalogue-focus-decoration {

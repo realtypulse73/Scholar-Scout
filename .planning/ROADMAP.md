@@ -183,6 +183,17 @@ Plans:
 
 **Risk:** Visual content can create copyright exposure, misleading affiliation, inaccessible motion, or a manipulative feed. Rights evidence and no-media/reduced-motion fallbacks are release-critical.
 
+### Phase 13.3: Shared original visual journey and wordmark system (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 13.3 to break down)
+
 ### Phase 13.2: Staff Media Intake, Permission Review, and Houston Tillotson Pilot (INSERTED)
 
 **Goal:** An invited, signed-in adult can privately submit one short original video and poster fallback with explicit rights attestation while governed staff review, release, or remove it; a separately server-gated Preview-only owner demo exception remains anonymous, non-endorsing, and unavailable in Production.

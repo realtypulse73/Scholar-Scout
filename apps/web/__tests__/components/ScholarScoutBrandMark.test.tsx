@@ -8,6 +8,7 @@ describe('ScholarScoutBrandMark', () => {
     render(<Link href="/"><ScholarScoutBrandMark size="compact" /></Link>);
     expect(screen.getByText('Scholar Scout')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Scholar Scout' })).toBeInTheDocument();
+    expect(screen.getByText('Scholar Scout')).toHaveClass('brand-wordmark');
     expect(document.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(document.querySelector('svg')).toHaveAttribute('focusable', 'false');
   });

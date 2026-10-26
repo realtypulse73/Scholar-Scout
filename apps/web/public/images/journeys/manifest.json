@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "owner": "Scholar Scout",
+  "usage": "Generic Scholar Scout editorial backdrops only. These images are not provider, school, programme, learner, admission, employment, or outcome evidence.",
+  "assets": [
+    {
+      "id": "rural-to-college-v1",
+      "path": "/images/journeys/rural-to-college-v1.png",
+      "theme": "rural",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "presentation": "decorative"
+    },
+    {
+      "id": "city-to-college-v1",
+      "path": "/images/journeys/city-to-college-v1.png",
+      "theme": "city",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "presentation": "decorative"
+    },
+    {
+      "id": "workplace-to-training-v1",
+      "path": "/images/journeys/workplace-to-training-v1.png",
+      "theme": "workplace",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "presentation": "decorative"
+    },
+    {
+      "id": "next-step-learning-v1",
+      "path": "/images/journeys/next-step-learning-v1.png",
+      "theme": "next-step",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "presentation": "decorative"
+    },
+    {
+      "id": "reentry-to-opportunity-v1",
+      "path": "/images/journeys/reentry-to-opportunity-v1.png",
+      "theme": "reentry",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "presentation": "decorative",
+      "guardrails": "Dignity-first adult re-entry context; use only as generic editorial story context, never to infer a visitor's history. No criminalizing or outcome claims."
+    }
+  ]
+}

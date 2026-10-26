@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import AuthSessionProvider from '@/components/auth/AuthSessionProvider';
+import LearnerVisualShell from '@/components/layout/LearnerVisualShell';
 import './globals.css';
 
 const spaceGrotesk = localFont({
@@ -30,7 +31,9 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          <LearnerVisualShell>{children}</LearnerVisualShell>
+        </AuthSessionProvider>
       </body>
     </html>
   );
