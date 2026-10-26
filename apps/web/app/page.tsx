@@ -51,7 +51,7 @@ const previewMatches = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-ink-900">
+    <main className="journey-page--home min-h-screen bg-white text-ink-900">
       <nav
         className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         aria-label="Main navigation"
