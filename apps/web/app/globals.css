@@ -27,8 +27,8 @@ body {
 }
 
 .student-journey-scene {
-  background-color: rgba(243, 245, 247, 0.18);
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(243, 245, 247, 0.12) 100%);
+  background-color: rgba(243, 245, 247, 0.08);
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.18) 50%, rgba(243, 245, 247, 0.08) 100%);
   background-position: center;
   background-size: cover;
 }
@@ -101,7 +101,7 @@ body {
 }
 
 .journey-page-content > .journey-page--home {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: transparent !important;
 }
 
 @keyframes journey-light-sweep {
@@ -275,7 +275,7 @@ body {
   }
 
   .journey-page-content > .journey-page--home {
-    background-color: rgba(255, 255, 255, 0.54) !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
   }
 }
 
