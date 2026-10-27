@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 13.1-04 Task 2 — required browser UAT
 Status: Awaiting human verification
-Last activity: 2026-10-26 — completed quick task 261026-u5h: all-caps metallic Scholar Scout wordmark Preview comparison; keyboard and reduced-motion Preview UAT remain pending
+Last activity: 2026-10-26 — completed quick task 261026-udv: chrome Scholar Scout wordmark Preview comparison; keyboard and reduced-motion Preview UAT remain pending
 
 ## Performance Metrics
 
@@ -276,6 +276,7 @@ Last activity: 2026-10-26 — completed quick task 261026-u5h: all-caps metallic
 | 261014-x96 | Add an accessible Preview contributor workflow link after invitation success | 2026-10-14 | efbc2d2 | [261014-x96-add-an-accessible-preview-contributor-wo](./quick/261014-x96-add-an-accessible-preview-contributor-wo/) |
 | 261026-tr8 | Apply the shared silver Scholar Scout wordmark across rendered product-name UI with contrast-safe variants. | 2026-10-26 | b60613e | [261026-tr8-apply-the-shared-silver-scholar-scout-wo](./quick/261026-tr8-apply-the-shared-silver-scholar-scout-wo/) |
 | 261026-u5h | Apply an all-caps bright metallic contrast-safe shared Scholar Scout wordmark for Preview comparison. | 2026-10-26 | 1e6c204 | [261026-u5h-apply-an-all-caps-bright-contrast-safe-s](./quick/261026-u5h-apply-an-all-caps-bright-contrast-safe-s/) |
+| 261026-udv | Apply a chrome-silver shared Scholar Scout wordmark with restrained blue and red accents for Preview comparison. | 2026-10-26 | 6bd0e23 | [261026-udv-apply-a-chrome-wordmark-with-subtle-accents](./quick/261026-udv-apply-a-chrome-wordmark-with-subtle-accents/) |
 
 ## Deferred Items
 
