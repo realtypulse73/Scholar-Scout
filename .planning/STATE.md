@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 13.1-04 Task 2 — required browser UAT
 Status: Awaiting human verification
-Last activity: 2026-10-26 — desktop, narrow-phone, and tablet Preview UAT passed; keyboard and reduced-motion checks remain pending
+Last activity: 2026-10-26 — completed quick task 261026-tr8: shared silver Scholar Scout wordmark refinement; keyboard and reduced-motion Preview UAT remain pending
 
 ## Performance Metrics
 
@@ -274,6 +274,7 @@ Last activity: 2026-10-26 — desktop, narrow-phone, and tablet Preview UAT pass
 | 260924-ftn | Allow safe local development registration without weakening Vercel production registration controls — verified | 2026-09-24 | a126265 | [260924-ftn-allow-safe-local-development-registratio](./quick/260924-ftn-allow-safe-local-development-registratio/) |
 | 260924-gl9 | Allow the local development credential exchange used immediately after registration without weakening Vercel production or Preview sign-in controls — verified | 2026-09-24 | c44eb98 | [260924-gl9-allow-the-local-development-credential-e](./quick/260924-gl9-allow-the-local-development-credential-e/) |
 | 261014-x96 | Add an accessible Preview contributor workflow link after invitation success | 2026-10-14 | efbc2d2 | [261014-x96-add-an-accessible-preview-contributor-wo](./quick/261014-x96-add-an-accessible-preview-contributor-wo/) |
+| 261026-tr8 | Apply the shared silver Scholar Scout wordmark across rendered product-name UI with contrast-safe variants. | 2026-10-26 | b60613e | [261026-tr8-apply-the-shared-silver-scholar-scout-wo](./quick/261026-tr8-apply-the-shared-silver-scholar-scout-wo/) |
 
 ## Deferred Items
 
