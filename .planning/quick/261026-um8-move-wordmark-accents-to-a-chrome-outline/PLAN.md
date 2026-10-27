@@ -10,7 +10,8 @@ description: Move shared Scholar Scout wordmark accents to an outline around a b
 2. Move restrained blue and red color accents to the surrounding stroke treatment rather than using them as fill bands.
 3. Make the shared inline variant fit naturally in body copy with stable baseline, spacing, wrapping, and responsive behavior; audit every default inline use through the shared component.
 4. Give the visual home-page top navigation a stable high-contrast surface, readable link states, and keyboard focus that do not depend on the decorative backdrop.
-5. Preserve contrast-safe solid fallbacks, focused regression coverage, and Preview-only deployment.
+5. Restore the exact `Private Contributor Pilot` heading and keep private signer/attestation controls readable without overlap.
+6. Preserve contrast-safe solid fallbacks, focused regression coverage, and Preview-only deployment.
 
 ## Guardrails
 
