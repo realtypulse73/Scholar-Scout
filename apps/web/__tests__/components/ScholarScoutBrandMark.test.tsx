@@ -49,4 +49,16 @@ describe('ScholarScoutBrandMark', () => {
       'brand-wordmark--metallic',
     );
   });
+
+  it('keeps inline references and the visual navigation inside stable layout and contrast boundaries', () => {
+    const css = readFileSync(join(process.cwd(), 'app', 'globals.css'), 'utf8');
+    const home = readFileSync(join(process.cwd(), 'app', 'page.tsx'), 'utf8');
+
+    expect(css).toContain('.brand-wordmark--inline {');
+    expect(css).toContain('display: inline;');
+    expect(css).toContain('vertical-align: baseline;');
+    expect(css).toContain('white-space: nowrap;');
+    expect(home).toContain('journey-primary-nav');
+    expect(home).toContain('journey-primary-nav-link');
+  });
 });
