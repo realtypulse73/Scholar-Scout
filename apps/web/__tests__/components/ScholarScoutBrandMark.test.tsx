@@ -28,8 +28,10 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toContain('.brand-wordmark::after');
     expect(css).toContain('scaleX(1.16)');
     expect(css).toContain('.brand-wordmark--metallic');
-    expect(css).toContain('color: #075dac');
+    expect(css).toContain('color: #2f4357');
     expect(css).toContain('.brand-wordmark--metallic-inverse');
+    expect(css).toContain('#78a7d5');
+    expect(css).toContain('#cf5368');
     expect(css).toContain('background-clip: text');
   });
 

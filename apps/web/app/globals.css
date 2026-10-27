@@ -48,39 +48,39 @@ body {
   font-weight: 900;
   letter-spacing: 0.09em;
   position: relative;
-  text-shadow: 0.035em 0 rgba(220, 38, 38, 0.2);
+  text-shadow: 0.035em 0 rgba(104, 32, 53, 0.18);
   transform: skewX(-8deg) scaleX(1.16);
   transform-origin: left center;
 }
 
 .brand-wordmark--metallic {
-  background: linear-gradient(105deg, #06468e 0%, #075dac 30%, #0a6ccc 50%, #075dac 70%, #053d7f 100%);
+  background: linear-gradient(105deg, #2f4357 0%, #9aaab8 18%, #f8fbff 37%, #78a7d5 48%, #dce4eb 58%, #cf5368 69%, #f8fbff 79%, #526777 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  color: #075dac;
+  color: #2f4357;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0.035em 0 rgba(5, 55, 114, 0.2);
+  text-shadow: 0.035em 0 rgba(104, 32, 53, 0.18);
 }
 
 .brand-wordmark--metallic-inverse {
-  background: linear-gradient(105deg, #78cdfb 0%, #b9e8ff 48%, #77c8f6 68%, #9cdcff 100%);
+  background: linear-gradient(105deg, #e2eaf0 0%, #f9fcff 30%, #84b9e8 47%, #edf3f7 59%, #e98594 69%, #f9fcff 82%, #c6d4de 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  color: #9cdcff;
+  color: #e2eaf0;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0.035em 0 rgba(2, 34, 73, 0.52);
+  text-shadow: 0.035em 0 rgba(12, 27, 43, 0.58);
 }
 
 @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
   .brand-wordmark--metallic {
     background: none;
-    color: #075dac;
+    color: #2f4357;
     -webkit-text-fill-color: currentColor;
   }
 
   .brand-wordmark--metallic-inverse {
     background: none;
-    color: #9cdcff;
+    color: #e2eaf0;
     -webkit-text-fill-color: currentColor;
   }
 }
