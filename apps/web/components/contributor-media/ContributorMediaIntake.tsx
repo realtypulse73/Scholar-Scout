@@ -75,17 +75,17 @@ function ContributorAttestationForm({ onSubmission }: { onSubmission: (submissio
         required
       />
     </label>
-    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-adult-affirmed">
-      <input id="contributor-adult-affirmed" checked={adultAffirmed} onChange={(event) => setAdultAffirmed(event.target.checked)} required type="checkbox" />
-      I am 18 or older.
+    <label className="flex items-start gap-3 text-sm text-ink-700" htmlFor="contributor-adult-affirmed">
+      <input className="mt-1 h-4 w-4 shrink-0" id="contributor-adult-affirmed" checked={adultAffirmed} onChange={(event) => setAdultAffirmed(event.target.checked)} required type="checkbox" />
+      <span className="min-w-0 leading-6">I am 18 or older.</span>
     </label>
-    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-creator-authority">
-      <input id="contributor-creator-authority" checked={creatorAuthority} onChange={(event) => setCreatorAuthority(event.target.checked)} required type="checkbox" />
-      I created this material or have the authority to submit it.
+    <label className="flex items-start gap-3 text-sm text-ink-700" htmlFor="contributor-creator-authority">
+      <input className="mt-1 h-4 w-4 shrink-0" id="contributor-creator-authority" checked={creatorAuthority} onChange={(event) => setCreatorAuthority(event.target.checked)} required type="checkbox" />
+      <span className="min-w-0 leading-6">I created this material or have the authority to submit it.</span>
     </label>
-    <label className="flex gap-3 text-sm text-ink-700" htmlFor="contributor-recognisable-people-consent">
-      <input id="contributor-recognisable-people-consent" checked={recognisablePeopleConsent} onChange={(event) => setRecognisablePeopleConsent(event.target.checked)} required type="checkbox" />
-      I have consent from every recognisable person in this material.
+    <label className="flex items-start gap-3 text-sm text-ink-700" htmlFor="contributor-recognisable-people-consent">
+      <input className="mt-1 h-4 w-4 shrink-0" id="contributor-recognisable-people-consent" checked={recognisablePeopleConsent} onChange={(event) => setRecognisablePeopleConsent(event.target.checked)} required type="checkbox" />
+      <span className="min-w-0 leading-6">I have consent from every recognisable person in this material.</span>
     </label>
     <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Creating private draft…' : 'Continue to private upload'}</button>
   </form>;

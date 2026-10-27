@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@vercel/blob/client', () => ({ uploadPresigned: jest.fn() }));
@@ -66,6 +68,8 @@ describe('ContributorMediaIntake', () => {
     expect(screen.getByLabelText(/I am 18 or older/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/I created this material/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/consent from every recognisable person/i)).toBeInTheDocument();
+    expect(screen.getByText('I have consent from every recognisable person in this material.')).toHaveClass('min-w-0', 'leading-6');
+    expect(screen.getByText('I have consent from every recognisable person in this material.').closest('label')).toHaveClass('items-start');
 
     fireEvent.submit(screen.getByRole('button', { name: /continue to private upload/i }).closest('form')!);
 
@@ -125,5 +129,11 @@ describe('ContributorMediaIntake', () => {
     expect(screen.queryByLabelText('Programme')).not.toBeInTheDocument();
     expect(window.localStorage.getItem('contributor-media')).toBeNull();
     global.fetch = originalFetch;
+  });
+
+  it('keeps the private contributor heading visible on the intake page', () => {
+    const page = readFileSync(join(process.cwd(), 'app', 'contribute', 'media', 'page.tsx'), 'utf8');
+
+    expect(page).toContain('<h1 className="text-3xl font-bold tracking-tight">Private Contributor Pilot</h1>');
   });
 });

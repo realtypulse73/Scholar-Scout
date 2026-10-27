@@ -22,8 +22,8 @@ export default async function ContributorMediaPage() {
   return (
     <main className="min-h-screen bg-ink-50 px-5 py-10 text-ink-900 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-2xl rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Private contributor pilot</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Share an original student perspective</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Private Contributor Pilot</h1>
+        <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-brand-700">Share an original student perspective</p>
         <p className="mt-4 text-ink-700">
           This invitation-only material is for <ScholarScoutWordmark />&apos;s governed school-information workflow.
           It is not an official Houston Tillotson University post, provider endorsement, attendance claim,
