@@ -68,54 +68,55 @@ body {
 }
 
 .brand-wordmark {
+  --brand-wordmark-edge-blue: rgba(27, 101, 173, 0.72);
+  --brand-wordmark-edge-red: rgba(192, 61, 80, 0.7);
   display: inline-block;
   padding-bottom: 0.28em;
   font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
   font-weight: 900;
   letter-spacing: 0.09em;
   position: relative;
-  text-shadow: 0.035em 0 rgba(104, 32, 53, 0.18);
+  text-shadow:
+    -0.036em 0 0 var(--brand-wordmark-edge-blue),
+    0.036em 0 0 var(--brand-wordmark-edge-red),
+    0 0.035em 0.06em rgba(38, 54, 74, 0.18);
   transform: skewX(-8deg) scaleX(1.16);
   transform-origin: left center;
 }
 
 .brand-wordmark--metallic {
-  background: linear-gradient(105deg, #718394 0%, #dce5ec 19%, #ffffff 44%, #c4d0da 62%, #f8fbff 79%, #8091a1 100%);
+  background: linear-gradient(105deg, #9fadb8 0%, #e6edf2 18%, #ffffff 42%, #c8d4dd 61%, #fbfdff 79%, #9aa9b5 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  color: #2f4357;
+  color: #f5f8fa;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 0.032em #3d79b8;
+  -webkit-text-stroke: 0.016em rgba(47, 66, 82, 0.74);
   paint-order: stroke fill;
-  text-shadow: 0.05em 0 #c6596c;
 }
 
 .brand-wordmark--metallic-inverse {
-  background: linear-gradient(105deg, #c9d5df 0%, #f9fcff 26%, #ffffff 52%, #d6e0e7 72%, #f8fbff 100%);
+  background: linear-gradient(105deg, #b5c3cd 0%, #ecf3f7 23%, #ffffff 50%, #d6e0e7 71%, #f9fcff 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  color: #e2eaf0;
+  color: #f8fbfd;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 0.032em #75aee1;
+  -webkit-text-stroke: 0.016em rgba(226, 236, 244, 0.88);
   paint-order: stroke fill;
-  text-shadow: 0.05em 0 #d87689;
 }
 
 @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
   .brand-wordmark--metallic {
     background: none;
-    color: #2f4357;
+    color: #526575;
     -webkit-text-fill-color: currentColor;
-    -webkit-text-stroke: 0;
-    text-shadow: none;
+    -webkit-text-stroke: 0.016em currentColor;
   }
 
   .brand-wordmark--metallic-inverse {
     background: none;
-    color: #e2eaf0;
+    color: #f3f7f9;
     -webkit-text-fill-color: currentColor;
-    -webkit-text-stroke: 0;
-    text-shadow: none;
+    -webkit-text-stroke: 0.016em currentColor;
   }
 }
 
@@ -133,13 +134,17 @@ body {
 }
 
 .brand-wordmark--inline.brand-wordmark--metallic {
-  -webkit-text-stroke-width: 0.022em;
-  text-shadow: 0.032em 0 #c6596c;
+  -webkit-text-stroke-width: 0.012em;
+  text-shadow:
+    -0.025em 0 0 var(--brand-wordmark-edge-blue),
+    0.025em 0 0 var(--brand-wordmark-edge-red);
 }
 
 .brand-wordmark--inline.brand-wordmark--metallic-inverse {
-  -webkit-text-stroke-width: 0.022em;
-  text-shadow: 0.032em 0 #d87689;
+  -webkit-text-stroke-width: 0.012em;
+  text-shadow:
+    -0.025em 0 0 var(--brand-wordmark-edge-blue),
+    0.025em 0 0 var(--brand-wordmark-edge-red);
 }
 
 .brand-wordmark--inline::after {

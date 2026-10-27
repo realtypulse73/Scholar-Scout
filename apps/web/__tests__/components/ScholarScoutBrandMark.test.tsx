@@ -28,10 +28,12 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toContain('.brand-wordmark::after');
     expect(css).toContain('scaleX(1.16)');
     expect(css).toContain('.brand-wordmark--metallic');
-    expect(css).toContain('color: #2f4357');
+    expect(css).toContain('color: #f5f8fa');
     expect(css).toContain('.brand-wordmark--metallic-inverse');
-    expect(css).toContain('-webkit-text-stroke: 0.032em #3d79b8');
-    expect(css).toContain('text-shadow: 0.05em 0 #c6596c');
+    expect(css).toContain('--brand-wordmark-edge-blue');
+    expect(css).toContain('--brand-wordmark-edge-red');
+    expect(css).toContain('-webkit-text-stroke: 0.016em rgba(47, 66, 82, 0.74)');
+    expect(css).toContain('0.036em 0 0 var(--brand-wordmark-edge-red)');
     expect(css).toContain('background-clip: text');
     expect(css).toContain('.brand-wordmark--inline.brand-wordmark--metallic');
     expect(css).toContain('transform: none;');
@@ -60,5 +62,14 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toContain('white-space: nowrap;');
     expect(home).toContain('journey-primary-nav');
     expect(home).toContain('journey-primary-nav-link');
+  });
+
+  it('keeps chrome as the letter fill and red and blue as balanced edge accents', () => {
+    const css = readFileSync(join(process.cwd(), 'app', 'globals.css'), 'utf8');
+
+    expect(css).toContain('background: linear-gradient(105deg, #9fadb8');
+    expect(css).toContain('-0.036em 0 0 var(--brand-wordmark-edge-blue)');
+    expect(css).toContain('0.036em 0 0 var(--brand-wordmark-edge-red)');
+    expect(css).not.toContain('text-shadow: 0.05em 0 #c6596c');
   });
 });
