@@ -30,9 +30,14 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toContain('.brand-wordmark--metallic');
     expect(css).toContain('color: #2f4357');
     expect(css).toContain('.brand-wordmark--metallic-inverse');
-    expect(css).toContain('#78a7d5');
-    expect(css).toContain('#cf5368');
+    expect(css).toContain('-webkit-text-stroke: 0.032em #3d79b8');
+    expect(css).toContain('text-shadow: 0.05em 0 #c6596c');
     expect(css).toContain('background-clip: text');
+    expect(css).toContain('.brand-wordmark--inline.brand-wordmark--metallic');
+    expect(css).toContain('transform: none;');
+    expect(css).toContain('.brand-wordmark--inline::after');
+    expect(css).toContain('.journey-primary-nav-link:focus-visible');
+    expect(css).toContain('background: rgba(255, 255, 255, 0.9)');
   });
 
   it('uses the shared semantic wordmark for inline product-name references', () => {

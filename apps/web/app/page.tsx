@@ -54,7 +54,7 @@ export default function Home() {
   return (
     <main className="journey-page--home min-h-screen bg-white text-ink-900">
       <nav
-        className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
+        className="journey-primary-nav mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         aria-label="Main navigation"
       >
         <Link href="/" aria-label="Scholar Scout" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
@@ -63,31 +63,31 @@ export default function Home() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Link
             href="/feed"
-            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+            className="journey-primary-nav-link hidden text-sm font-semibold sm:inline"
           >
             Feed
           </Link>
           <Link
             href="/advisor"
-            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+            className="journey-primary-nav-link hidden text-sm font-semibold sm:inline"
           >
             Advisor
           </Link>
           <Link
             href="/peer-community"
-            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+            className="journey-primary-nav-link hidden text-sm font-semibold sm:inline"
           >
             Peer community
           </Link>
           <Link
             href="/shortlist"
-            className="text-sm font-semibold text-ink-600 hover:text-brand-700"
+            className="journey-primary-nav-link text-sm font-semibold"
           >
             Shortlist
           </Link>
           <Link
             href="/admin/programmes"
-            className="hidden text-sm font-semibold text-ink-600 hover:text-brand-700 sm:inline"
+            className="journey-primary-nav-link hidden text-sm font-semibold sm:inline"
           >
             Admin
           </Link>
