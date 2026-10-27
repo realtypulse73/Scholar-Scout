@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 13.1-04 Task 2 — required browser UAT
 Status: Awaiting human verification
-Last activity: 2026-10-26 — completed quick task 261026-um8: chrome-outline wordmark, inline body-copy, navigation-contrast, and contributor-attestation-layout Preview refinement; keyboard and reduced-motion Preview UAT remain pending
+Last activity: 2026-10-26 — recorded the passing active-Draft contributor uploader responsive UAT; fresh-attestation and full private-media lifecycle UAT remain pending
 
 ## Performance Metrics
 
@@ -278,6 +278,7 @@ Last activity: 2026-10-26 — completed quick task 261026-um8: chrome-outline wo
 | 261026-u5h | Apply an all-caps bright metallic contrast-safe shared Scholar Scout wordmark for Preview comparison. | 2026-10-26 | 1e6c204 | [261026-u5h-apply-an-all-caps-bright-contrast-safe-s](./quick/261026-u5h-apply-an-all-caps-bright-contrast-safe-s/) |
 | 261026-udv | Apply a chrome-silver shared Scholar Scout wordmark with restrained blue and red accents for Preview comparison. | 2026-10-26 | 6bd0e23 | [261026-udv-apply-a-chrome-wordmark-with-subtle-accents](./quick/261026-udv-apply-a-chrome-wordmark-with-subtle-accents/) |
 | 261026-um8 | Move shared Scholar Scout wordmark accents to an outline around a bright chrome fill for Preview comparison. | 2026-10-26 | 7302d88 | [261026-um8-move-wordmark-accents-to-a-chrome-outline](./quick/261026-um8-move-wordmark-accents-to-a-chrome-outline/) |
+| 261026-uzh | Record the responsive Preview contributor-uploader UAT without overstating fresh-attestation evidence. | 2026-10-26 | pending | [261026-uzh-record-responsive-contributor-uploader-uat](./quick/261026-uzh-record-responsive-contributor-uploader-uat/) |
 
 ## Deferred Items
 
