@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13.1 — Visual-First Discovery Experience
 Plan: 13.1-04 Task 2 — required browser UAT
 Status: Awaiting human verification
-Last activity: 2026-10-26 — recorded the passing active-Draft contributor uploader responsive UAT; fresh-attestation and full private-media lifecycle UAT remain pending
+Last activity: 2026-10-26 — refined the shared chrome wordmark with balanced edge accents; fresh-attestation and full private-media lifecycle UAT remain pending
 
 ## Performance Metrics
 
@@ -279,6 +279,7 @@ Last activity: 2026-10-26 — recorded the passing active-Draft contributor uplo
 | 261026-udv | Apply a chrome-silver shared Scholar Scout wordmark with restrained blue and red accents for Preview comparison. | 2026-10-26 | 6bd0e23 | [261026-udv-apply-a-chrome-wordmark-with-subtle-accents](./quick/261026-udv-apply-a-chrome-wordmark-with-subtle-accents/) |
 | 261026-um8 | Move shared Scholar Scout wordmark accents to an outline around a bright chrome fill for Preview comparison. | 2026-10-26 | 7302d88 | [261026-um8-move-wordmark-accents-to-a-chrome-outline](./quick/261026-um8-move-wordmark-accents-to-a-chrome-outline/) |
 | 261026-uzh | Record the responsive Preview contributor-uploader UAT without overstating fresh-attestation evidence. | 2026-10-26 | 176ffda | [261026-uzh-record-responsive-contributor-uploader-uat](./quick/261026-uzh-record-responsive-contributor-uploader-uat/) |
+| 261026-v8q | Refine the shared Scholar Scout wordmark to a bright silver chrome fill with restrained red and blue edge accents, without altering motion, responsive layout, accessibility, or deployment scope. | 2026-10-26 | 0a23599 | [261026-v8q-refine-the-shared-scholar-scout-wordmark](./quick/261026-v8q-refine-the-shared-scholar-scout-wordmark/) |
 
 ## Deferred Items
 
