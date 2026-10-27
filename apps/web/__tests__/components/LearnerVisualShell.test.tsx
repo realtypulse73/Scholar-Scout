@@ -15,7 +15,7 @@ describe('LearnerVisualShell', () => {
     usePathnameMock.mockReset();
   });
 
-  it('uses a decorative city scene for catalogue-facing learner routes', () => {
+  it('uses a decorative paired urban-to-learning scene for catalogue-facing learner routes', () => {
     usePathnameMock.mockReturnValue('/programmes');
 
     const { container } = render(
@@ -26,8 +26,8 @@ describe('LearnerVisualShell', () => {
 
     const backdrop = container.querySelector('.journey-backdrop');
     expect(backdrop).toHaveAttribute('aria-hidden', 'true');
-    expect(backdrop).toHaveClass('journey-backdrop--city');
-    expect(container.querySelector('.journey-backdrop__motion')).toBeInTheDocument();
+    expect(backdrop).toHaveClass('journey-backdrop--urban');
+    expect(container.querySelector('.journey-backdrop__destination-motion')).toBeInTheDocument();
     expect(screen.getByText('Reviewed opportunities')).toBeInTheDocument();
   });
 
@@ -58,7 +58,7 @@ describe('LearnerVisualShell', () => {
     const { container } = render(<LearnerVisualShell>Sign in</LearnerVisualShell>);
 
     expect(container.querySelector('.journey-backdrop')).toHaveClass(
-      'journey-backdrop--next-step',
+      'journey-backdrop--urban',
       'journey-backdrop--quiet',
     );
   });
@@ -67,6 +67,6 @@ describe('LearnerVisualShell', () => {
     const css = readFileSync(join(process.cwd(), 'app', 'globals.css'), 'utf8');
 
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(css).toMatch(/\.journey-backdrop__motion\s*\{\s*animation:\s*none;\s*transform:\s*none;\s*opacity:\s*0;/);
+    expect(css).toMatch(/\.journey-backdrop__destination-motion\s*\{\s*animation:\s*none;\s*transform:\s*none;\s*opacity:\s*0\.14;/);
   });
 });

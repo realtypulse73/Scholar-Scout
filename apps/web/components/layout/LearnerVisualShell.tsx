@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { classNames } from '@/lib/class-names';
 
-type JourneyTheme = 'rural' | 'city' | 'workplace' | 'next-step' | 'reentry';
+type JourneyTheme = 'rural' | 'urban' | 'workplace' | 'reentry';
 
 const QUIET_PREFIXES = ['/admin', '/contribute/media', '/phase-5-accessibility-uat'];
 
@@ -21,15 +21,7 @@ function getJourneyTheme(pathname: string): JourneyTheme {
     return 'reentry';
   }
 
-  if (pathname.startsWith('/peer-community') || pathname.startsWith('/profile')) {
-    return 'next-step';
-  }
-
-  if (pathname.startsWith('/auth')) {
-    return 'next-step';
-  }
-
-  return 'city';
+  return 'urban';
 }
 
 export default function LearnerVisualShell({
@@ -55,7 +47,7 @@ export default function LearnerVisualShell({
           pathname.startsWith('/auth') && 'journey-backdrop--quiet',
         )}
       >
-        <span className="journey-backdrop__motion" />
+        <span className="journey-backdrop__destination-motion" />
       </div>
       <div className="journey-page-content relative z-10 min-h-screen">
         {children}

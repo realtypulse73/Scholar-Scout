@@ -1,41 +1,37 @@
 {
   "schemaVersion": 1,
   "owner": "Scholar Scout",
-  "usage": "Generic Scholar Scout editorial backdrops only. These images are not provider, school, programme, learner, admission, employment, or outcome evidence.",
+  "usage": "Generic Scholar Scout editorial paired-transition scenes only. These images are decorative, not provider, school, programme, learner, admission, employment, or outcome evidence.",
   "assets": [
     {
-      "id": "rural-to-college-v1",
-      "path": "/images/journeys/rural-to-college-v1.png",
+      "id": "urban-to-learning-paired-v2",
+      "path": "/images/journeys/urban-to-learning-paired-v2.png",
+      "theme": "urban",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3 revision",
+      "presentation": "decorative",
+      "guardrails": "Shows one adult on a generic neighbourhood-to-learning pathway; never infer a visitor's location, identity, background, or outcome."
+    },
+    {
+      "id": "rural-to-learning-paired-v2",
+      "path": "/images/journeys/rural-to-learning-paired-v2.png",
       "theme": "rural",
-      "source": "Original Scholar Scout artwork generated for Phase 13.3",
-      "presentation": "decorative"
+      "source": "Original Scholar Scout artwork generated for Phase 13.3 revision",
+      "presentation": "decorative",
+      "guardrails": "Shows one adult on a generic rural-to-learning pathway; never infer a visitor's location, identity, background, or outcome."
     },
     {
-      "id": "city-to-college-v1",
-      "path": "/images/journeys/city-to-college-v1.png",
-      "theme": "city",
-      "source": "Original Scholar Scout artwork generated for Phase 13.3",
-      "presentation": "decorative"
-    },
-    {
-      "id": "workplace-to-training-v1",
-      "path": "/images/journeys/workplace-to-training-v1.png",
+      "id": "workplace-to-learning-paired-v2",
+      "path": "/images/journeys/workplace-to-learning-paired-v2.png",
       "theme": "workplace",
-      "source": "Original Scholar Scout artwork generated for Phase 13.3",
-      "presentation": "decorative"
+      "source": "Original Scholar Scout artwork generated for Phase 13.3 revision",
+      "presentation": "decorative",
+      "guardrails": "Shows one adult on a generic work-to-learning pathway; never infer a visitor's employment, identity, background, or outcome."
     },
     {
-      "id": "next-step-learning-v1",
-      "path": "/images/journeys/next-step-learning-v1.png",
-      "theme": "next-step",
-      "source": "Original Scholar Scout artwork generated for Phase 13.3",
-      "presentation": "decorative"
-    },
-    {
-      "id": "reentry-to-opportunity-v1",
-      "path": "/images/journeys/reentry-to-opportunity-v1.png",
+      "id": "reentry-to-opportunity-paired-v2",
+      "path": "/images/journeys/reentry-to-opportunity-paired-v2.png",
       "theme": "reentry",
-      "source": "Original Scholar Scout artwork generated for Phase 13.3",
+      "source": "Original Scholar Scout artwork generated for Phase 13.3 revision",
       "presentation": "decorative",
       "guardrails": "Dignity-first adult re-entry context; use only as generic editorial story context, never to infer a visitor's history. No criminalizing or outcome claims."
     }

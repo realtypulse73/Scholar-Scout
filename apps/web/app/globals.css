@@ -42,15 +42,32 @@ body {
 }
 
 .brand-wordmark {
-  letter-spacing: 0.12em;
-  transform: scaleX(1.06);
+  display: inline-block;
+  padding-bottom: 0.28em;
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  position: relative;
+  text-shadow: 0.035em 0 rgba(220, 38, 38, 0.24);
+  transform: skewX(-8deg) scaleX(1.16);
   transform-origin: left center;
+}
+
+.brand-wordmark::after {
+  background: linear-gradient(90deg, currentColor 0 76%, transparent 76%);
+  bottom: 0;
+  content: '';
+  height: 0.13em;
+  left: 0;
+  opacity: 0.72;
+  position: absolute;
+  width: 100%;
 }
 
 .journey-backdrop {
   background-color: #dce7ef;
   background-image:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.78) 45%, rgba(243, 245, 247, 0.58) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 34%, rgba(243, 245, 247, 0.24) 58%, rgba(243, 245, 247, 0.06) 100%),
     var(--journey-image);
   background-position: center;
   background-size: cover;
@@ -65,35 +82,32 @@ body {
 }
 
 .journey-backdrop--rural {
-  --journey-image: url('/images/journeys/rural-to-college-v1.png');
+  --journey-image: url('/images/journeys/rural-to-learning-paired-v2.png');
 }
 
-.journey-backdrop--city {
-  --journey-image: url('/images/journeys/city-to-college-v1.png');
+.journey-backdrop--urban {
+  --journey-image: url('/images/journeys/urban-to-learning-paired-v2.png');
 }
 
 .journey-backdrop--workplace {
-  --journey-image: url('/images/journeys/workplace-to-training-v1.png');
-}
-
-.journey-backdrop--next-step {
-  --journey-image: url('/images/journeys/next-step-learning-v1.png');
+  --journey-image: url('/images/journeys/workplace-to-learning-paired-v2.png');
 }
 
 .journey-backdrop--reentry {
-  --journey-image: url('/images/journeys/reentry-to-opportunity-v1.png');
+  --journey-image: url('/images/journeys/reentry-to-opportunity-paired-v2.png');
 }
 
-.journey-backdrop__motion {
-  animation: journey-light-sweep 16s ease-in-out infinite;
-  background: linear-gradient(110deg, transparent 42%, rgba(255, 255, 255, 0.22) 54%, transparent 66%);
+.journey-backdrop__destination-motion {
+  animation: journey-destination-breathe 9s ease-in-out infinite;
+  background: radial-gradient(ellipse at 75% 50%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0) 62%);
+  clip-path: inset(0 0 0 48%);
   inset: 0;
   position: absolute;
 }
 
-.journey-backdrop--quiet .journey-backdrop__motion {
+.journey-backdrop--quiet .journey-backdrop__destination-motion {
   animation: none;
-  opacity: 0;
+  opacity: 0.14;
 }
 
 .journey-page-content > main {
@@ -104,16 +118,16 @@ body {
   background-color: transparent !important;
 }
 
-@keyframes journey-light-sweep {
+@keyframes journey-destination-breathe {
   0%,
   100% {
-    opacity: 0.24;
-    transform: translateX(-6%);
+    opacity: 0.14;
+    transform: scale(0.97);
   }
 
   50% {
-    opacity: 0.48;
-    transform: translateX(6%);
+    opacity: 0.42;
+    transform: scale(1.03);
   }
 }
 
@@ -286,10 +300,10 @@ body {
     transform: none;
   }
 
-  .journey-backdrop__motion {
+  .journey-backdrop__destination-motion {
     animation: none;
     transform: none;
-    opacity: 0;
+    opacity: 0.14;
   }
 
   .catalogue-focus-decoration {
