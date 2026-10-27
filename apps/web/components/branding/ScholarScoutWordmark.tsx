@@ -1,7 +1,7 @@
 import { classNames } from '@/lib/class-names';
 
 type ScholarScoutWordmarkSize = 'inline' | 'compact' | 'full' | 'display';
-type ScholarScoutWordmarkTone = 'silver' | 'inverse';
+type ScholarScoutWordmarkTone = 'metallic' | 'metallic-inverse';
 
 interface ScholarScoutWordmarkProps {
   size?: ScholarScoutWordmarkSize;
@@ -12,11 +12,12 @@ interface ScholarScoutWordmarkProps {
 /** Renders the product name with the shared, accessible Scholar Scout wordmark treatment. */
 export default function ScholarScoutWordmark({
   size = 'inline',
-  tone = 'silver',
+  tone = 'metallic',
   className,
 }: ScholarScoutWordmarkProps) {
   return (
     <span
+      aria-label="Scholar Scout"
       className={classNames(
         'brand-wordmark',
         `brand-wordmark--${size}`,
@@ -24,7 +25,7 @@ export default function ScholarScoutWordmark({
         className,
       )}
     >
-      Scholar Scout
+      SCHOLAR SCOUT
     </span>
   );
 }

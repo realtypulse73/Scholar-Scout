@@ -7,14 +7,15 @@ import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
 import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 
 describe('ScholarScoutBrandMark', () => {
-  it('renders a decorative scalable mark and visible Scholar Scout wordmark', () => {
+  it('renders a decorative scalable mark and visible all-caps Scholar Scout wordmark', () => {
     render(<Link href="/"><ScholarScoutBrandMark size="compact" /></Link>);
-    expect(screen.getByText('Scholar Scout')).toBeInTheDocument();
+    expect(screen.getByText('SCHOLAR SCOUT')).toBeInTheDocument();
+    expect(screen.getByText('SCHOLAR SCOUT')).toHaveAttribute('aria-label', 'Scholar Scout');
     expect(screen.getByRole('link', { name: 'Scholar Scout' })).toBeInTheDocument();
-    expect(screen.getByText('Scholar Scout')).toHaveClass('brand-wordmark');
-    expect(screen.getByText('Scholar Scout')).toHaveClass(
+    expect(screen.getByText('SCHOLAR SCOUT')).toHaveClass('brand-wordmark');
+    expect(screen.getByText('SCHOLAR SCOUT')).toHaveClass(
       'brand-wordmark--compact',
-      'brand-wordmark--silver',
+      'brand-wordmark--metallic',
     );
     expect(document.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(document.querySelector('svg')).toHaveAttribute('focusable', 'false');
@@ -26,18 +27,19 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toMatch(/\.brand-wordmark\s*\{[\s\S]*font-weight:\s*900;/);
     expect(css).toContain('.brand-wordmark::after');
     expect(css).toContain('scaleX(1.16)');
-    expect(css).toContain('.brand-wordmark--silver');
-    expect(css).toContain('color: #596779');
-    expect(css).toContain('.brand-wordmark--inverse');
+    expect(css).toContain('.brand-wordmark--metallic');
+    expect(css).toContain('color: #075dac');
+    expect(css).toContain('.brand-wordmark--metallic-inverse');
+    expect(css).toContain('background-clip: text');
   });
 
   it('uses the shared semantic wordmark for inline product-name references', () => {
     render(<ScholarScoutWordmark />);
 
-    expect(screen.getByText('Scholar Scout')).toHaveClass(
+    expect(screen.getByText('SCHOLAR SCOUT')).toHaveClass(
       'brand-wordmark',
       'brand-wordmark--inline',
-      'brand-wordmark--silver',
+      'brand-wordmark--metallic',
     );
   });
 });
