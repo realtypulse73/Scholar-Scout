@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import AuthForm from '@/components/auth/AuthForm';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import { Card } from '@/components/ui';
 
 export const metadata = {
@@ -18,7 +19,7 @@ export default function SignInPage() {
         <Card className="p-6">
           <h1 className="text-2xl font-semibold">Sign in</h1>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Sign in with your ScholarScout account. This build uses Auth.js
+            Sign in with your <ScholarScoutWordmark /> account. This build uses Auth.js
             credentials while OAuth provider credentials are pending.
           </p>
           <div className="mt-6">

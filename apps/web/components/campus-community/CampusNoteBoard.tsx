@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import Button from '@/components/ui/Button';
 import type { PublicCampusNote } from '@/lib/campus-community';
 
@@ -111,7 +112,7 @@ export default function CampusNoteBoard({ schoolSlug, uploaderUsername, programI
         {notes.length ? notes.map((note) => (
           <article key={note.id} className="rounded-card border border-border bg-silver p-3">
             <p className="break-words text-sm leading-6 text-ink-800">{note.body}</p>
-            <p className="mt-2 text-sm font-semibold text-ink-500">ScholarScout community member · {new Date(note.created_at).toLocaleDateString()}</p>
+            <p className="mt-2 text-sm font-semibold text-ink-500"><ScholarScoutWordmark /> community member · {new Date(note.created_at).toLocaleDateString()}</p>
             <button type="button" className="mt-2 min-h-touch rounded-control px-3 text-sm font-semibold text-ink-600 transition-colors hover:bg-white hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2" onClick={(event) => setReportingNote({ note, trigger: event.currentTarget })}>Report this note</button>
           </article>
         )) : <div className="rounded-card border border-border bg-silver p-4"><h3 className="text-xl font-semibold text-ink-900">Start the conversation</h3><p className="mt-2 text-sm leading-6 text-ink-600">Be the first to ask a question or share a helpful campus perspective. Keep personal contact details out of public notes.</p></div>}

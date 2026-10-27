@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import StaffGate from '@/components/auth/StaffGate';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import { Badge, Card } from '@/components/ui';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { buildExecutiveCommandCenterSnapshot } from '@/lib/executive-command-center';
@@ -23,8 +24,8 @@ export default async function CommandCenterPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <Link href="/" className="text-lg font-semibold text-brand-700">
-          ScholarScout
+        <Link href="/">
+          <ScholarScoutWordmark size="full" />
         </Link>
       </nav>
 

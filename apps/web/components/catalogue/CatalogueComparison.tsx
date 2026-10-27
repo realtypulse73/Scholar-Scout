@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import QualificationExplanation from '@/components/qualifications/QualificationExplanation';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import {
   SHORTLIST_STORAGE_KEY,
   parseShortlist,
@@ -94,7 +95,7 @@ export default function CatalogueComparison({
       <header className="rounded-card border border-border bg-white p-5 sm:p-6">
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Saved choices</p>
         <h1 id="catalogue-comparison-heading" className="mt-2 text-2xl font-semibold text-ink-900 sm:text-3xl">Compare reviewed opportunities</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-ink-600">Compare each published fact and verify it with the named source. Scholar Scout does not choose an opportunity for you.</p>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-ink-600">Compare each published fact and verify it with the named source. <ScholarScoutWordmark /> does not choose an opportunity for you.</p>
         <Link href="/programmes" className="mt-5 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Browse more opportunities</Link>
       </header>
 
@@ -187,7 +188,7 @@ function UnavailableChoice({ id, onRemove }: { id: string; onRemove: (id: string
     <article className="min-w-0 rounded-card border border-dashed border-ink-300 bg-white p-5" role="status" aria-label={`${id} is unavailable in the current reviewed snapshot`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Saved choice unavailable</p>
       <h2 className="mt-1 break-words text-lg font-semibold text-ink-900">{id}</h2>
-      <p className="mt-3 text-sm leading-6 text-ink-600">This saved choice is retired or is not in the current reviewed snapshot. Its current factual detail is unavailable, so Scholar Scout has not replaced it with another option.</p>
+      <p className="mt-3 text-sm leading-6 text-ink-600">This saved choice is retired or is not in the current reviewed snapshot. Its current factual detail is unavailable, so <ScholarScoutWordmark /> has not replaced it with another option.</p>
       <div className="mt-5 flex flex-wrap gap-3">
         <Link href="/programmes" className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Browse reviewed opportunities</Link>
         <button type="button" onClick={() => onRemove(id)} aria-label={`Remove unavailable choice ${id}`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:border-danger-600 hover:text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Remove saved choice</button>

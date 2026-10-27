@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import { Badge, Card } from '@/components/ui';
 import StudentJourneyScene from '@/components/visual/StudentJourneyScene';
 
@@ -10,11 +12,10 @@ const stats = [
   { label: 'rejection fees', value: '$0' },
 ];
 
-const valueProps = [
+const valueProps: { title: string; description: ReactNode }[] = [
   {
     title: 'Start with fit',
-    description:
-      'ScholarScout begins with goals, budget, location, support needs, and pathway preferences before suggesting programmes.',
+    description: <><ScholarScoutWordmark /> begins with goals, budget, location, support needs, and pathway preferences before suggesting programmes.</>,
   },
   {
     title: 'Keep options realistic',
@@ -106,8 +107,8 @@ export default function Home() {
             <Badge tone="brand" className="mb-5">
               Rejection-free discovery
             </Badge>
-            <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl">
-              ScholarScout
+            <h1 className="max-w-3xl text-4xl leading-tight sm:text-5xl">
+              <ScholarScoutWordmark size="display" />
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-600 sm:text-lg">
               Find post-secondary programmes that fit your goals, budget,

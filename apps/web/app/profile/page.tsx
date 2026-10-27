@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AuthStatusLink from '@/components/auth/AuthStatusLink';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import ProfileDashboard from '@/components/profile/ProfileDashboard';
 
 export const metadata = {
@@ -15,8 +16,8 @@ export default function ProfilePage() {
         className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         aria-label="Profile navigation"
       >
-        <Link href="/" className="text-lg font-semibold text-brand-700">
-          ScholarScout
+        <Link href="/">
+          <ScholarScoutWordmark size="full" />
         </Link>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link

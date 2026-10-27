@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import CatalogueOpportunityCard from '@/components/catalogue/CatalogueOpportunityCard';
 import DiscoveryPreviewSlot from '@/components/catalogue/DiscoveryPreviewSlot';
 import CatalogueVisualWelcome from '@/components/catalogue/CatalogueVisualWelcome';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import QualificationRecordForm from '@/components/qualifications/QualificationRecordForm';
 import {
   buildCatalogueDetailHref,
@@ -246,7 +247,7 @@ function VisualOpportunityCard({
         aria-label={`View ${item.providerTitle} details`}
         className="mt-4 inline-flex min-h-touch items-center rounded-control border border-brand-600 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
-        View details in Scholar Scout
+        View details in <ScholarScoutWordmark />
       </Link>
     </article>
   );

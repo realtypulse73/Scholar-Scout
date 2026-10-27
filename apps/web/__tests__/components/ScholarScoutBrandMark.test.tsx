@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Link from 'next/link';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 
 describe('ScholarScoutBrandMark', () => {
   it('renders a decorative scalable mark and visible Scholar Scout wordmark', () => {
@@ -11,7 +12,10 @@ describe('ScholarScoutBrandMark', () => {
     expect(screen.getByText('Scholar Scout')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Scholar Scout' })).toBeInTheDocument();
     expect(screen.getByText('Scholar Scout')).toHaveClass('brand-wordmark');
-    expect(screen.getByText('Scholar Scout')).toHaveClass('font-bold', 'uppercase');
+    expect(screen.getByText('Scholar Scout')).toHaveClass(
+      'brand-wordmark--compact',
+      'brand-wordmark--silver',
+    );
     expect(document.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(document.querySelector('svg')).toHaveAttribute('focusable', 'false');
   });
@@ -22,5 +26,18 @@ describe('ScholarScoutBrandMark', () => {
     expect(css).toMatch(/\.brand-wordmark\s*\{[\s\S]*font-weight:\s*900;/);
     expect(css).toContain('.brand-wordmark::after');
     expect(css).toContain('scaleX(1.16)');
+    expect(css).toContain('.brand-wordmark--silver');
+    expect(css).toContain('color: #596779');
+    expect(css).toContain('.brand-wordmark--inverse');
+  });
+
+  it('uses the shared semantic wordmark for inline product-name references', () => {
+    render(<ScholarScoutWordmark />);
+
+    expect(screen.getByText('Scholar Scout')).toHaveClass(
+      'brand-wordmark',
+      'brand-wordmark--inline',
+      'brand-wordmark--silver',
+    );
   });
 });

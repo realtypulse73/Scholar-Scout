@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import OpportunityMatchCard from '@/components/opportunities/OpportunityMatchCard';
 import SensitiveReferralPanel from '@/components/support/SensitiveReferralPanel';
 import { Badge, Card } from '@/components/ui';
@@ -107,7 +108,7 @@ export default function RecommendationDashboard({
           Recommendation dashboard
         </Badge>
         <p className="text-sm font-semibold text-ink-600">
-          Building your ScholarScout recommendations...
+          Building your <ScholarScoutWordmark /> recommendations...
         </p>
       </Card>
     );
@@ -123,7 +124,7 @@ export default function RecommendationDashboard({
           Complete onboarding to unlock recommendations
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          ScholarScout uses your interests, pathway preference, location,
+          <ScholarScoutWordmark /> uses your interests, pathway preference, location,
           affordability sensitivity, and ordinary support preferences to show
           options you can compare.
         </p>

@@ -48,9 +48,39 @@ body {
   font-weight: 900;
   letter-spacing: 0.09em;
   position: relative;
-  text-shadow: 0.035em 0 rgba(220, 38, 38, 0.24);
+  text-shadow: 0.035em 0 rgba(220, 38, 38, 0.2);
   transform: skewX(-8deg) scaleX(1.16);
   transform-origin: left center;
+}
+
+.brand-wordmark--silver {
+  color: #596779;
+}
+
+.brand-wordmark--inverse {
+  color: #eef2f6;
+  text-shadow: 0.035em 0 rgba(15, 23, 42, 0.28);
+}
+
+.brand-wordmark--inline {
+  font-size: 0.95em;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
+.brand-wordmark--compact {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.brand-wordmark--full {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.brand-wordmark--display {
+  font-size: inherit;
+  line-height: 0.92;
 }
 
 .brand-wordmark::after {

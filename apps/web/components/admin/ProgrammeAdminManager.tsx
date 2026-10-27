@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import { Badge, Button, Card, Input } from '@/components/ui';
 import {
   INTEREST_LABELS,
@@ -1099,7 +1100,7 @@ export default function ProgrammeAdminManager({
                   </div>
                   <div className="mt-4 rounded-card border border-warning-600 bg-warning-50 p-4">
                     <p className="font-semibold text-ink-900">
-                      This replaces the current Scholar Scout data as one operation. A recovery backup will be created first.
+                      This replaces the current <ScholarScoutWordmark /> data as one operation. A recovery backup will be created first.
                     </p>
                     <label htmlFor="recovery-reason" className="mt-3 block text-sm font-semibold text-ink-800">Operator reason</label>
                     <Input

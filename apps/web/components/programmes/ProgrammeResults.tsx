@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import OpportunityMatchCard from '@/components/opportunities/OpportunityMatchCard';
 import { Card } from '@/components/ui';
 import {
@@ -72,7 +73,7 @@ export default function ProgrammeResults({
         <p className="text-sm font-semibold text-ink-700">
           {profile
             ? 'Sorted by your saved preferences.'
-            : 'Sorted by ScholarScout baseline fit. Complete onboarding to personalize this list.'}
+            : <>Sorted by <ScholarScoutWordmark /> baseline fit. Complete onboarding to personalize this list.</>}
         </p>
       </div>
 

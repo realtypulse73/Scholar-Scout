@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import type { ContributorMediaPublicProjection } from '@/lib/contributor-media';
 import type { CatalogueRenderableMedia } from '@/lib/catalogue-publication';
 
@@ -112,7 +113,7 @@ export default function DiscoveryPreviewSlot({ media, contributorMedia, playback
       {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">{media.disclosure}</p> : null}
       <p className="mt-2 text-sm leading-6 text-ink-700">
         {contributorMedia?.nonEndorsement
-          ?? 'Scholar Scout is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.'}
+          ?? <><ScholarScoutWordmark /> is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.</>}
       </p>
       {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">This illustration is supporting context. Facts and official source actions below remain the record to verify.</p> : null}
       {isAboutOpen && localPreview && reviewedMonthYear && rightsBasis ? (

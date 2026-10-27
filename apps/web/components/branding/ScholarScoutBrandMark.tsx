@@ -1,4 +1,5 @@
 import { classNames } from '@/lib/class-names';
+import ScholarScoutWordmark from './ScholarScoutWordmark';
 
 interface ScholarScoutBrandMarkProps {
   size?: 'compact' | 'full';
@@ -16,14 +17,7 @@ export default function ScholarScoutBrandMark({
         <path d="M8 12h7v9H8zm9 0h7v9h-7z" fill="white" />
         <path d="M10 19c4-5 8-5 12-10" fill="none" stroke="#D7DEE6" strokeWidth="2" strokeLinecap="round" />
       </svg>
-      <span
-        className={classNames(
-          'brand-wordmark inline-block font-bold uppercase leading-none',
-          size === 'compact' ? 'text-sm' : 'text-base',
-        )}
-      >
-        Scholar Scout
-      </span>
+      <ScholarScoutWordmark size={size} />
     </span>
   );
 }

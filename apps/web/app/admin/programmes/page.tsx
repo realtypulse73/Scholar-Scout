@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import StaffGate from '@/components/auth/StaffGate';
 import ProgrammeAdminManager from '@/components/admin/ProgrammeAdminManager';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import ShortlistCountLink from '@/components/shortlist/ShortlistCountLink';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 
@@ -22,8 +23,8 @@ export default async function AdminProgrammesPage() {
         className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         aria-label="Admin navigation"
       >
-        <Link href="/" className="text-lg font-semibold text-brand-700">
-          ScholarScout
+        <Link href="/">
+          <ScholarScoutWordmark size="full" />
         </Link>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link

@@ -30,6 +30,7 @@ import {
 import OnboardingSummary from './OnboardingSummary';
 import ProgressIndicator from './ProgressIndicator';
 import ScholarScoutBrandMark from '@/components/branding/ScholarScoutBrandMark';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 
 const ONBOARDING_DRAFT_STORAGE_KEY = 'scholarscout.onboarding-draft';
 
@@ -252,7 +253,7 @@ export default function OnboardingWizard() {
           ) : null}
 
           <p className="mt-6 rounded-card border border-brand-100 bg-brand-50 p-3 text-sm leading-6 text-brand-800">
-            You are not being screened out. These answers help ScholarScout rank
+            You are not being screened out. These answers help <ScholarScoutWordmark /> rank
             practical next steps and show what to verify.
           </p>
 
@@ -429,7 +430,7 @@ function StepFour({
         Your profile is ready to save.
       </h2>
       <p className="mt-2 text-sm leading-6 text-ink-600">
-        ScholarScout will use this profile to rank recommendations, explain why
+        <ScholarScoutWordmark /> will use this profile to rank recommendations, explain why
         they fit, and show what you should verify next.
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -524,7 +525,7 @@ function getInsightPreview(data: OnboardingData) {
       : 'A clearer path is starting to form',
     body: data.interests.length
       ? `We will look for ${cost} connected to ${primaryInterest.toLowerCase()} and compare them against ${pathway.toLowerCase()}.`
-      : 'Pick a few signals and ScholarScout will start shaping recommendations before you finish.',
+      : 'Pick a few signals and we will start shaping recommendations before you finish.',
     signals: [
       {
         label: 'Match focus',

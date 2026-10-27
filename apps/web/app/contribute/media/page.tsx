@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import ContributorMediaIntake from '@/components/contributor-media/ContributorMediaIntake';
 import { getContributorMediaPrivateIntakeState } from '@/lib/server/contributor-media';
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
@@ -24,7 +25,7 @@ export default async function ContributorMediaPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Private contributor pilot</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Share an original student perspective</h1>
         <p className="mt-4 text-ink-700">
-          This invitation-only material is for Scholar Scout&apos;s governed school-information workflow.
+          This invitation-only material is for <ScholarScoutWordmark />&apos;s governed school-information workflow.
           It is not an official Houston Tillotson University post, provider endorsement, attendance claim,
           placement claim, or promise of outcomes.
         </p>

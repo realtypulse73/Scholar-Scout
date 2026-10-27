@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 
@@ -31,7 +32,7 @@ export default function SharePanel({ targetType, targetId }: SharePanelProps) {
       <h2 className="text-base font-semibold text-ink-900">Share card</h2>
       <div className="mt-3 rounded-card border border-border bg-white p-4">
         <p className="text-xs font-semibold uppercase text-ink-500">
-          ScholarScout path
+          <ScholarScoutWordmark /> path
         </p>
         <p className="mt-2 text-lg font-semibold text-ink-900">{targetId}</p>
       </div>

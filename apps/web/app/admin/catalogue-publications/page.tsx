@@ -3,6 +3,7 @@ import CataloguePublicationManager from '@/components/admin/CataloguePublication
 import ContributorMediaReviewManager from '@/components/admin/ContributorMediaReviewManager';
 import PreviewOwnerMediaDemo from '@/components/admin/PreviewOwnerMediaDemo';
 import StaffGate from '@/components/auth/StaffGate';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 
 export const metadata = {
   title: 'Catalogue Publication | ScholarScout',
@@ -13,7 +14,7 @@ export default function CataloguePublicationsPage() {
   return (
     <main className="min-h-screen bg-ink-50 text-ink-900">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8" aria-label="Admin navigation">
-        <Link href="/" className="text-lg font-semibold text-brand-700">ScholarScout</Link>
+        <Link href="/"><ScholarScoutWordmark size="full" /></Link>
         <Link href="/admin/programmes" className="text-sm font-semibold text-ink-600 hover:text-brand-700">Programme admin</Link>
       </nav>
       <section className="mx-auto max-w-6xl px-5 pb-10 pt-4 sm:px-6 lg:px-8">

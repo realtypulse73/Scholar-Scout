@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import { Badge, Card } from '@/components/ui';
 import {
   ONBOARDING_PROFILE_STORAGE_KEY,
@@ -48,10 +49,10 @@ export default function ProfileDashboard() {
           Account
         </Badge>
         <h1 className="text-2xl font-semibold text-ink-900">
-          Sign in to see your saved ScholarScout workspace
+          Sign in to see your saved <ScholarScoutWordmark /> workspace
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-600">
-          Auth.js sign-in connects your account to saved ScholarScout data.
+          Auth.js sign-in connects your account to saved <ScholarScoutWordmark /> data.
         </p>
         <Link
           href="/auth/sign-in"
