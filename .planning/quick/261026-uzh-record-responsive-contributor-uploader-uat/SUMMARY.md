@@ -2,7 +2,7 @@
 quick_id: 261026-uzh
 status: complete
 description: Record the responsive Preview contributor-uploader UAT without overstating fresh-attestation evidence.
-commit: pending
+commit: 176ffda
 ---
 
 ## Completed
