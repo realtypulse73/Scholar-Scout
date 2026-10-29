@@ -22,6 +22,7 @@ import { commitConditionalMutation, type ConditionalMutationResult } from '@/lib
 import type { AccountStudentActor } from '@/lib/server/student-actor';
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
 import {
+  isPreviewOwnerMediaDemoAccount,
   isPreviewOwnerMediaDemoActor,
   isPreviewOwnerMediaDemoRuntime,
 } from '@/lib/server/preview-owner-media-demo';
@@ -167,10 +168,30 @@ export async function createContributorMediaDraft(input: {
     const invitation = getActiveContributorInvitation(state, input.actor.accountId, now);
     if (!invitation) return { status: 'forbidden' };
 
-    const existing = state.submissions.find((submission) => (
-      submission.accountId === input.actor.accountId && submission.status !== 'Removed'
-    )) ?? null;
+    const existing = findContributorSubmission(state, input.actor.accountId);
     if (existing) {
+      const account = data.users.find((user) => user.id === input.actor.accountId);
+      if (
+        existing.status === 'Approved for release'
+        && account
+        && isPreviewOwnerMediaDemoAccount(account)
+      ) {
+        const timestamp = now.toISOString();
+        const submission: ContributorMediaSubmission = {
+          id: randomUUID(),
+          accountId: input.actor.accountId,
+          status: 'Draft',
+          signerName: input.attestation.signerName,
+          creatorAuthority: true as const,
+          recognisablePeopleConsent: true as const,
+          attestedAt: timestamp,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          revision: 1,
+        };
+        state.submissions.push(submission);
+        return { status: 'created', submission: { status: 'Draft', revision: 1 } };
+      }
       const matches = existing.signerName === input.attestation.signerName
         && existing.creatorAuthority === input.attestation.creatorAuthority
         && existing.recognisablePeopleConsent === input.attestation.recognisablePeopleConsent;
@@ -210,7 +231,7 @@ export async function issueContributorMediaUpload(input: {
   return commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
     if (!getActiveContributorInvitation(state, input.actor.accountId, now)) return { status: 'forbidden' };
-    const submission = state.submissions.find((item) => item.accountId === input.actor.accountId);
+    const submission = findContributorSubmission(state, input.actor.accountId);
     const revision = submission?.revision ?? 1;
     if (!submission || revision !== parsed.value.expectedRevision) {
       return { status: 'conflict' };
@@ -267,7 +288,12 @@ export async function authorizeContributorMediaDirectUpload(input: {
   if (!state || !getActiveContributorInvitation(state, input.actor.accountId, input.now ?? new Date())) {
     return { status: 'denied' };
   }
-  const submission = state.submissions.find((item) => item.accountId === input.actor.accountId);
+  const submission = state.submissions.find((item) => (
+    item.accountId === input.actor.accountId
+    && item.status === 'Draft'
+    && (item.revision ?? 1) === input.expectedRevision
+    && item.mediaPackage?.id === input.uploadId
+  ));
   const revision = submission?.revision ?? 1;
   if (!submission || submission.status !== 'Draft' || revision !== input.expectedRevision
     || submission.mediaPackage?.id !== input.uploadId) {
@@ -322,7 +348,11 @@ export async function completeContributorMediaUpload(input: {
   return commitConditionalMutation((data) => {
     const state = ensureContributorMediaState(data);
     if (!getActiveContributorInvitation(state, input.actor.accountId, now)) return { status: 'forbidden' };
-    const submission = state.submissions.find((item) => item.accountId === input.actor.accountId);
+    const submission = state.submissions.find((item) => (
+      item.accountId === input.actor.accountId
+      && (item.revision ?? 1) === input.expectedRevision
+      && item.mediaPackage?.id === input.uploadId
+    ));
     if (!submission || (submission.revision ?? 1) !== input.expectedRevision || submission.mediaPackage?.id !== input.uploadId) {
       return { status: 'conflict' };
     }
@@ -384,13 +414,24 @@ export async function getContributorMediaPrivateStatus(
 export async function getContributorMediaPrivateIntakeState(
   actor: AccountStudentActor,
   now = new Date(),
+  input: { freshPreviewDraft?: boolean } = {},
 ): Promise<ContributorMediaPrivateIntakeState> {
   const { readScholarScoutData } = await import('@/lib/server/data-store');
-  const state = ensureContributorMediaState(await readScholarScoutData());
+  const data = await readScholarScoutData();
+  const state = ensureContributorMediaState(data);
   const invitation = getActiveContributorInvitation(state, actor.accountId, now);
   if (!invitation) return { status: 'unavailable' };
 
   const submission = findContributorSubmission(state, actor.accountId);
+  const account = data.users.find((user) => user.id === actor.accountId);
+  if (
+    input.freshPreviewDraft === true
+    && submission?.status === 'Approved for release'
+    && account
+    && isPreviewOwnerMediaDemoAccount(account)
+  ) {
+    return { status: 'attestation-required' };
+  }
   const privateStatus = getContributorPrivateStatus({
     accountId: actor.accountId,
     invitation,
@@ -576,9 +617,7 @@ export async function removeContributorMediaSubmission(input: {
   const now = input.now ?? new Date();
   const applyRemoval = (): Promise<ConditionalMutationResult<RemoveContributorMediaResult>> => commitConditionalMutation<RemoveContributorMediaResult>((data) => {
     const state = ensureContributorMediaState(data);
-    const submission = state.submissions.find((item) => (
-      item.accountId === input.actor.accountId && item.status !== 'Removed'
-    )) ?? state.submissions.find((item) => item.accountId === input.actor.accountId);
+    const submission = findContributorSubmission(state, input.actor.accountId);
     if (!submission) return { status: 'forbidden' } as RemoveContributorMediaResult;
     const revision = submission.revision ?? 1;
     if (submission.status === 'Removed') {
@@ -664,9 +703,14 @@ function findContributorSubmission(
   state: ContributorMediaState,
   accountId: string,
 ): ContributorMediaSubmission | null {
-  return state.submissions.find((submission) => (
-    submission.accountId === accountId && submission.status !== 'Removed'
-  )) ?? state.submissions.find((submission) => submission.accountId === accountId) ?? null;
+  const submissions = state.submissions
+    .filter((submission) => submission.accountId === accountId && submission.status !== 'Removed')
+    .reverse();
+  const removedSubmissions = state.submissions.filter((submission) => submission.accountId === accountId);
+  return submissions.find((submission) => submission.status !== 'Approved for release')
+    ?? submissions[0]
+    ?? removedSubmissions[removedSubmissions.length - 1]
+    ?? null;
 }
 
 async function inspectCurrentPrivatePackage(

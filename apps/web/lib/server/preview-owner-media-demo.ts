@@ -7,6 +7,11 @@ const REQUIRED_CAPABILITIES = ['editor', 'reviewer', 'administrator'] as const;
 
 export type PreviewOwnerMediaDemoEnvironment = Readonly<Record<string, string | undefined>>;
 
+export interface PreviewOwnerMediaDemoAccount {
+  id: string;
+  email?: string;
+}
+
 /** Returns true only for the exact server-only Preview runtime configuration. */
 export function isPreviewOwnerMediaDemoRuntime(
   environment: PreviewOwnerMediaDemoEnvironment = process.env,
@@ -27,22 +32,32 @@ export function isPreviewOwnerMediaDemoActor(
   environment: PreviewOwnerMediaDemoEnvironment = process.env,
 ): boolean {
   if (
-    !isPreviewOwnerMediaDemoRuntime(environment)
-    || !isStableActorId(actor.id)
-    || !(actor.capabilities instanceof Set)
+    !(actor.capabilities instanceof Set)
     || !REQUIRED_CAPABILITIES.every((capability) => actor.capabilities!.has(capability))
   ) {
+    return false;
+  }
+
+  return isPreviewOwnerMediaDemoAccount(actor, environment);
+}
+
+/** Matches the configured Preview owner to one trusted persisted account. */
+export function isPreviewOwnerMediaDemoAccount(
+  account: PreviewOwnerMediaDemoAccount,
+  environment: PreviewOwnerMediaDemoEnvironment = process.env,
+): boolean {
+  if (!isPreviewOwnerMediaDemoRuntime(environment) || !isStableActorId(account.id)) {
     return false;
   }
 
   const configuredOwnerEmail = normalizeSingleEmail(
     environment.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL,
   );
-  const trustedActorEmail = normalizeSingleEmail(actor.email);
+  const trustedAccountEmail = normalizeSingleEmail(account.email);
 
   return configuredOwnerEmail !== null
-    && trustedActorEmail !== null
-    && configuredOwnerEmail === trustedActorEmail;
+    && trustedAccountEmail !== null
+    && configuredOwnerEmail === trustedAccountEmail;
 }
 
 function normalizeSingleEmail(value: string | undefined): string | null {

@@ -121,10 +121,10 @@ export default function PreviewOwnerMediaDemo() {
       </p>
       {submissionState === 'ready' ? (
         <Link
-          href="/contribute/media"
+          href="/contribute/media?fresh=1"
           className="mt-3 inline-flex min-h-10 items-center rounded-md border border-brand-700 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
-          Continue to contributor media
+          Start a fresh private Preview draft
         </Link>
       ) : null}
       {reconciliation ? (

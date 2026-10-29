@@ -5,15 +5,20 @@ import { getContributorMediaPrivateIntakeState } from '@/lib/server/contributor-
 import { getGovernedProgrammes } from '@/lib/server/programme-records';
 import { resolveStudentActor } from '@/lib/server/student-actor';
 
+interface PageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
 export const metadata = {
   title: 'Contribute media | Scholar Scout',
   description: 'Private, invite-only contributor media intake.',
 };
 
-export default async function ContributorMediaPage() {
+export default async function ContributorMediaPage({ searchParams }: PageProps) {
   const actor = await resolveStudentActor({ allowGuest: false });
+  const freshPreviewDraft = (await searchParams)?.fresh === '1';
   const intakeState = actor?.kind === 'account'
-    ? await getContributorMediaPrivateIntakeState(actor)
+    ? await getContributorMediaPrivateIntakeState(actor, new Date(), { freshPreviewDraft })
     : null;
   const programmes = intakeState && intakeState.status !== 'unavailable'
     ? (await getGovernedProgrammes()).map((programme) => ({ id: programme.id, name: programme.name }))

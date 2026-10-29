@@ -1,6 +1,11 @@
 /** @jest-environment node */
 
 import {
+  getActiveContributorInvitation,
+} from '@/lib/contributor-media';
+import {
+  createContributorMediaDraft,
+  getContributorMediaPrivateIntakeState,
   getPreviewOwnerMediaReconciliation,
   getContributorMediaReviewQueue,
   issueContributorMediaUpload,
@@ -11,10 +16,16 @@ import {
   type ScholarScoutData,
   type ScholarScoutDataStore,
 } from '@/lib/server/data-store';
+import type { AccountStudentActor } from '@/lib/server/student-actor';
 const owner = {
   id: 'owner-1',
   email: 'owner@example.com',
   capabilities: new Set(['editor', 'reviewer', 'administrator'] as const),
+};
+const ownerStudent: AccountStudentActor = {
+  kind: 'account',
+  accountId: owner.id,
+  storageKey: `account:${owner.id}`,
 };
 
 class MemoryDataStore implements ScholarScoutDataStore {
@@ -157,6 +168,78 @@ describe('Preview contributor-media reconciliation', () => {
     expect(store.data.contributorMediaState?.submissions[0]?.mediaPackage).toMatchObject({
       programmeId: 'candidate-htu',
       candidateId: 'candidate-htu',
+    });
+  });
+
+  it('gives only the configured Preview owner a new Draft while preserving an approved package', async () => {
+    const approved = {
+      ...store.data.contributorMediaState!.submissions[0],
+      status: 'Approved for release' as const,
+      revision: 6,
+      approvalMode: 'preview-owner-demo' as const,
+      reviewerId: owner.id,
+      reviewedAt: '2026-10-19T12:30:00.000Z',
+      releaseCandidateId: 'candidate-htu',
+      releaseCandidateRevision: 2,
+      mediaPackage: {
+        ...store.data.contributorMediaState!.submissions[0].mediaPackage!,
+        candidateId: 'candidate-htu',
+        videoUploaded: true,
+        posterUploaded: true,
+      },
+    };
+    store.data.contributorMediaState!.submissions[0] = approved;
+    store.data.contributorMediaState!.invitations[0].expiresAt = '2030-11-02T12:00:00.000Z';
+    const approvedSnapshot = structuredClone(approved);
+    const now = new Date('2026-10-20T13:00:00.000Z');
+
+    expect(getActiveContributorInvitation(
+      store.data.contributorMediaState!,
+      ownerStudent.accountId,
+      now,
+    )).not.toBeNull();
+
+    await expect(getContributorMediaPrivateIntakeState(ownerStudent, now, {
+      freshPreviewDraft: true,
+    })).resolves.toEqual({ status: 'attestation-required' });
+
+    await expect(createContributorMediaDraft({
+      actor: ownerStudent,
+      attestation: {
+        signerName: 'Preview Owner',
+        adultAffirmed: true,
+        creatorAuthority: true,
+        recognisablePeopleConsent: true,
+      },
+      now,
+    })).resolves.toEqual({
+      status: 'applied',
+      value: { status: 'created', submission: { status: 'Draft', revision: 1 } },
+    });
+
+    await expect(issueContributorMediaUpload({
+      actor: ownerStudent,
+      request: {
+        programmeId: 'candidate-htu',
+        expectedRevision: 1,
+        files: [
+          { kind: 'video', contentType: 'video/mp4', size: 1024 },
+          { kind: 'poster', contentType: 'image/png', size: 1024 },
+        ],
+      },
+      now,
+    })).resolves.toEqual({
+      status: 'applied',
+      value: { status: 'issued', capability: expect.objectContaining({ status: 'Draft', revision: 1 }) },
+    });
+
+    expect(store.data.contributorMediaState!.submissions).toHaveLength(2);
+    expect(store.data.contributorMediaState!.submissions[0]).toEqual(approvedSnapshot);
+    expect(store.data.contributorMediaState!.submissions[1]).toMatchObject({
+      accountId: owner.id,
+      status: 'Draft',
+      revision: 1,
+      mediaPackage: { programmeId: 'candidate-htu', candidateId: 'candidate-htu' },
     });
   });
 });
