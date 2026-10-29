@@ -23,11 +23,12 @@ updated: "2026-10-28"
 
 root_cause: "The account-level submission lookup selected the approved package, and upload issuance correctly rejected that final status."
 change: "Allow only the exact configured Preview owner to begin a new Draft after re-attesting through the explicit fresh-draft route; selection now prefers an editable draft without changing the approved package."
-verification: "Focused contributor-media and UI tests pass; web lint and TypeScript checks pass."
-next_action: "Commit the verified Preview-only repair, then push it only with user authorization so Vercel can create a new Preview deployment."
+verification: "Focused contributor-media and UI tests pass; web lint and TypeScript checks pass. A final upload-form clarity repair is in progress after browser testing showed that native required-file validation concealed whether a selection was retained."
+next_action: "Expose selected file names and route missing-file feedback through the form's accessible custom status, then re-run the focused checks."
 
 ## Evidence
 
 - timestamp: "2026-10-28"; observation: "The owner selected an eligible Health Sciences programme, but upload preparation immediately returned because the active private status was Approved for release."
 - timestamp: "2026-10-28"; observation: "issueContributorMediaUpload rejects any submission whose status is not Draft or Action needed; the current account lookup selects the first submission."
 - timestamp: "2026-10-28"; observation: "A new regression test proves that the prior approved package stays unchanged while the new Preview-owner Draft receives the upload capability."
+- timestamp: "2026-10-28"; observation: "Firefox testing reproduced a silent missing-file state. The uploader needs visible selected-file confirmation and must not rely on browser-native required-file validation."

@@ -205,11 +205,31 @@ function ContributorMediaUploader({
       </select>
     </label>
     <label className="block text-sm font-semibold" htmlFor="contributor-video">Original MP4 video (up to 25 MiB)
-      <input id="contributor-video" className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600" type="file" accept="video/mp4" onChange={(event) => setVideo(event.target.files?.[0] ?? null)} required />
+      <input
+        id="contributor-video"
+        aria-describedby="contributor-video-selection"
+        className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        type="file"
+        accept="video/mp4"
+        onChange={(event) => setVideo(event.target.files?.[0] ?? null)}
+      />
     </label>
+    <p id="contributor-video-selection" className="text-sm text-ink-700" aria-live="polite">
+      {video ? `Video selected: ${video.name}` : 'No video selected yet.'}
+    </p>
     <label className="block text-sm font-semibold" htmlFor="contributor-poster">JPEG or PNG poster (up to 5 MiB)
-      <input id="contributor-poster" className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600" type="file" accept="image/jpeg,image/png" onChange={(event) => setPoster(event.target.files?.[0] ?? null)} required />
+      <input
+        id="contributor-poster"
+        aria-describedby="contributor-poster-selection"
+        className="mt-2 block w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        type="file"
+        accept="image/jpeg,image/png"
+        onChange={(event) => setPoster(event.target.files?.[0] ?? null)}
+      />
     </label>
+    <p id="contributor-poster-selection" className="text-sm text-ink-700" aria-live="polite">
+      {poster ? `Poster selected: ${poster.name}` : 'No poster selected yet.'}
+    </p>
     {status.status === 'Action needed' ? <button className="min-h-11 rounded-lg border border-brand-700 px-5 py-3 font-semibold text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={reinspectSubmission} type="button">{submitting ? 'Rechecking private package…' : 'Recheck existing private package'}</button> : null}
     <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Checking private package…' : 'Prepare private upload'}</button>
     <button className="min-h-11 rounded-lg border border-danger-600 px-5 py-3 font-semibold text-danger-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={removeSubmission} type="button">{submitting ? 'Removing submission…' : 'Remove my submission'}</button>

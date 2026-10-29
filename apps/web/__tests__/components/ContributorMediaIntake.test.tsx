@@ -13,6 +13,8 @@ describe('ContributorMediaIntake', () => {
     fireEvent.change(screen.getByLabelText('Programme'), { target: { value: 'programme-1' } });
     fireEvent.change(screen.getByLabelText(/Original MP4 video/), { target: { files: [new File(['x'], 'clip.mov', { type: 'video/quicktime' })] } });
     fireEvent.change(screen.getByLabelText(/JPEG or PNG poster/), { target: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] } });
+    expect(screen.getByText('Video selected: clip.mov')).toBeInTheDocument();
+    expect(screen.getByText('Poster selected: poster.png')).toBeInTheDocument();
     fireEvent.submit(screen.getByRole('button', { name: /prepare private upload/i }).closest('form')!);
     expect(await screen.findByText(/Action needed: use one MP4 video/i)).toBeInTheDocument();
     expect(window.localStorage.getItem('contributor-media')).toBeNull();
