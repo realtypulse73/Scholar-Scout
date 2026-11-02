@@ -1,5 +1,5 @@
 ---
-status: awaiting-preview-configuration
+status: resolved
 trigger: "The configured Preview owner still receives the temporary sign-in-unavailable message after the credential exchange bypass and signed cross-function grant were deployed."
 created: "2026-11-02"
 updated: "2026-11-02"
@@ -21,16 +21,19 @@ updated: "2026-11-02"
 - The focused regression test covers CSRF verification, the signed owner grant, and issue of the session cookie.
 - The live Preview failure therefore remains outside the application code path: its effective `NEXTAUTH_SECRET` value is missing, blank, or different from the value available to the function serving the sign-in callback.
 
-## Next Action
+## Resolution
 
-- Replace the Preview-only `NEXTAUTH_SECRET` with a new generated secret, redeploy the Preview build, and verify that the configured local account reaches its profile.
-- This invalidates Preview sessions only; it does not change Production.
+- Replaced the Preview-only `NEXTAUTH_SECRET` and set the Preview-only `NEXTAUTH_URL` to the current Phase 13 Preview domain.
+- Redeployed the Phase 13 Preview branch, then completed a clean sign-out and local sign-in.
+- The configured owner returned to the profile page, confirming session creation and the expected Preview callback target.
 
 ## Evidence
 
 - timestamp: "2026-11-02"; observation: "A controlled request using the configured owner email and an intentionally incorrect password returned the precise incorrect-password response, confirming the owner-email match and credential route boundary."
 - timestamp: "2026-11-02"; observation: "The deployed client shows a temporary-unavailable message only after the Auth.js credentials sign-in call returns an error."
 - timestamp: "2026-11-02"; observation: "Vercel Preview scope was confirmed for NEXTAUTH_SECRET, and redeployment did not change the failure."
+- timestamp: "2026-11-02"; observation: "Sign-out redirected to an older deployment, identifying a stale Preview NEXTAUTH_URL value after the owner-grant and Auth.js callback tests passed."
+- timestamp: "2026-11-02"; observation: "After the Preview-only NEXTAUTH_SECRET and NEXTAUTH_URL were corrected and the Phase 13 Preview branch redeployed, a clean sign-out and local sign-in reached the profile page."
 
 ## Eliminated
 
