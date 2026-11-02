@@ -290,10 +290,58 @@ body {
     linear-gradient(90deg, rgba(220, 38, 38, 0.04), transparent 42%);
 }
 
+.catalogue-visual-welcome {
+  isolation: isolate;
+  background-color: #eef3f6;
+  background-image:
+    radial-gradient(circle at 84% 8%, rgba(220, 38, 38, 0.15), transparent 20rem),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 249, 251, 0.94) 52%, rgba(226, 232, 240, 0.78) 100%),
+    repeating-linear-gradient(90deg, rgba(38, 54, 74, 0.055) 0 1px, transparent 1px 4.5rem);
+}
+
+.catalogue-visual-welcome::before,
+.catalogue-visual-welcome::after {
+  content: '';
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.catalogue-visual-welcome::before {
+  top: 1.25rem;
+  right: 1.5rem;
+  width: min(34%, 20rem);
+  height: calc(100% - 2.5rem);
+  border: 1px solid rgba(38, 54, 74, 0.12);
+  border-radius: 1.75rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(220, 38, 38, 0.045));
+  transform: skewY(-8deg);
+  z-index: 0;
+}
+
+.catalogue-visual-welcome::after {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 0.4rem;
+  background: linear-gradient(90deg, #26364a 0 18%, #dc2626 18% 30%, #dce5eb 30% 100%);
+  z-index: 2;
+}
+
 .catalogue-visual-welcome-decoration {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  z-index: 1;
+}
+
+.catalogue-visual-welcome > div:last-child {
+  z-index: 2;
+  border-color: rgba(38, 54, 74, 0.17);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+  box-shadow:
+    0 1.25rem 3rem rgba(38, 54, 74, 0.12),
+    0 0.25rem 0.75rem rgba(220, 38, 38, 0.05);
 }
 
 .catalogue-visual-welcome-plane,
@@ -303,9 +351,10 @@ body {
 }
 
 .catalogue-visual-welcome-plane {
-  border: 1px solid rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(220, 38, 38, 0.24);
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(226, 232, 240, 0.2));
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.16), rgba(226, 232, 240, 0.34));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .catalogue-visual-welcome-plane-primary {
@@ -327,8 +376,9 @@ body {
 .catalogue-visual-welcome-rule {
   right: 0;
   bottom: 1.25rem;
-  left: 54%;
-  border-top: 1px solid rgba(38, 54, 74, 0.14);
+  left: 47%;
+  border-top: 1px solid rgba(38, 54, 74, 0.24);
+  box-shadow: 0 0.45rem 0 rgba(220, 38, 38, 0.62);
 }
 
 .transition-story-decoration {
