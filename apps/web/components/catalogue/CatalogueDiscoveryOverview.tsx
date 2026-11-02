@@ -149,7 +149,7 @@ export default function CatalogueDiscoveryOverview({
       <CatalogueVisualWelcome regionLabel={region.label} />
       <div data-testid="catalogue-overview-layout" className="mx-auto grid w-full min-w-0 max-w-6xl gap-6 px-5 py-8 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
-          <form action="/programmes" className="space-y-5 rounded-card border border-ink-200 bg-white p-5 shadow-sm" aria-label="Catalogue filters">
+          <form id="catalogue-filters" action="/programmes" className="space-y-5 rounded-card border border-ink-200 bg-white p-5 shadow-sm" aria-label="Catalogue filters">
             <FilterSelect label="Metro area" name="metro" value={filters.metro}>{catalogueRegions.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}</FilterSelect>
             <FilterSelect label="Pathway type" name="pathway" value={filters.pathway}><option value="all">All pathway types</option>{CATALOGUE_PATHWAYS.map((pathway) => <option key={pathway} value={pathway}>{pathwayLabels[pathway]}</option>)}</FilterSelect>
             <FilterSelect label="Delivery" name="delivery" value={filters.delivery}><option value="all">Any delivery</option><option value="in-person">In person</option><option value="online">Online</option><option value="hybrid">Hybrid</option></FilterSelect>

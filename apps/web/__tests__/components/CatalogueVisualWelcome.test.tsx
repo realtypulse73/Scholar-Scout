@@ -2,14 +2,16 @@ import { render, screen } from '@testing-library/react';
 import CatalogueVisualWelcome from '@/components/catalogue/CatalogueVisualWelcome';
 
 describe('CatalogueVisualWelcome', () => {
-  it('renders a semantic, media-free welcome that leads to factual discovery', () => {
+  it('renders a semantic, media-free welcome with clear factual starting choices', () => {
     render(<CatalogueVisualWelcome regionLabel="Greater Houston" />);
 
     expect(screen.getByRole('heading', { name: /start with reviewed opportunities/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /choose a starting point/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /browse reviewed opportunities/i })).toHaveAttribute(
       'href',
       '#catalogue-results-heading',
     );
+    expect(screen.getByRole('link', { name: /choose filters/i })).toHaveAttribute('href', '#catalogue-filters');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.queryByRole('video')).not.toBeInTheDocument();
     expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
