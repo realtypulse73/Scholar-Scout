@@ -280,6 +280,7 @@ Last activity: 2026-10-26 — refined the shared chrome wordmark with balanced e
 | 261026-um8 | Move shared Scholar Scout wordmark accents to an outline around a bright chrome fill for Preview comparison. | 2026-10-26 | 7302d88 | [261026-um8-move-wordmark-accents-to-a-chrome-outline](./quick/261026-um8-move-wordmark-accents-to-a-chrome-outline/) |
 | 261026-uzh | Record the responsive Preview contributor-uploader UAT without overstating fresh-attestation evidence. | 2026-10-26 | 176ffda | [261026-uzh-record-responsive-contributor-uploader-uat](./quick/261026-uzh-record-responsive-contributor-uploader-uat/) |
 | 261026-v8q | Refine the shared Scholar Scout wordmark to a bright silver chrome fill with restrained red and blue edge accents, without altering motion, responsive layout, accessibility, or deployment scope. | 2026-10-26 | 0a23599 | [261026-v8q-refine-the-shared-scholar-scout-wordmark](./quick/261026-v8q-refine-the-shared-scholar-scout-wordmark/) |
+| 20 | Strengthen the static catalogue welcome visual hierarchy without adding motion or media. | 2026-11-02 | b24b92b | — |
 
 ## Deferred Items
 
