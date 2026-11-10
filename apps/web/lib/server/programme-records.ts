@@ -14,6 +14,7 @@ import {
 import { getConfiguredE2eFixtureId } from '@/lib/server/e2e-fixture-config';
 import { getPublishedCatalogueSnapshot as getStoredPublishedCatalogueSnapshot } from '@/lib/server/catalogue-publications';
 import { commitConditionalMutation } from '@/lib/server/persistence-operations';
+import { withPhase13PreviewIllustrationFixture } from '@/lib/server/phase13-preview-illustration-fixture';
 
 export class ProgrammeRevisionConflictError extends Error {
   constructor(
@@ -132,5 +133,5 @@ export function mergeProgrammes(seedProgrammes: Programme[], records: Programme[
  * Legacy programme surfaces continue using getGovernedProgrammes until Phase 11.
  */
 export async function getPublishedCatalogueSnapshot() {
-  return getStoredPublishedCatalogueSnapshot();
+  return withPhase13PreviewIllustrationFixture(await getStoredPublishedCatalogueSnapshot());
 }

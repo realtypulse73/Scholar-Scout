@@ -45,7 +45,8 @@ export type FactAuthority =
   | 'provider-official'
   | 'employer-official'
   | 'government-official'
-  | 'workforce-authority';
+  | 'workforce-authority'
+  | 'scholarscout-preview-fixture';
 
 export interface SourceMetadata {
   sourceLabel: string;
@@ -710,7 +711,8 @@ function isFactAuthority(value: unknown): value is FactAuthority {
   return value === 'provider-official'
     || value === 'employer-official'
     || value === 'government-official'
-    || value === 'workforce-authority';
+    || value === 'workforce-authority'
+    || value === 'scholarscout-preview-fixture';
 }
 
 function isEmploymentCommitmentState(value: unknown): value is EmploymentCommitmentState {
