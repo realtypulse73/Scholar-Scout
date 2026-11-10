@@ -220,14 +220,14 @@ Plans:
 **Goal:** Make `/programmes` visually compelling on arrival through an automatic media-free, code-native visual welcome and a truthful source-first factual path, while preserving user control, reduced-motion safety, and no student-data collection.
 **Requirements**: VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, VIS-06, VIS-07.
 **Depends on:** Phase 13
-**Plans:** 0/4 plans executed.
+**Plans:** 4/4 plans executed.
 
 Plans:
 
-- [ ] `13.1-01-PLAN.md` — Build the automatic code-native welcome while preserving factual controls and the inherited bounded card-media path.
-- [ ] `13.1-02-PLAN.md` — Extend the static catalogue-only visual shell to the detail surface without changing factual authority.
-- [ ] `13.1-03-PLAN.md` — Add held-out media-free, privacy, accessibility, and motion-boundary regression evidence.
-- [ ] `13.1-04-PLAN.md` — Validate browser usability and release scope without an asset, rights, or Phase 13-UAT dependency.
+- [x] `13.1-01-PLAN.md` — Build the automatic code-native welcome while preserving factual controls and the inherited bounded card-media path.
+- [x] `13.1-02-PLAN.md` — Extend the static catalogue-only visual shell to the detail surface without changing factual authority.
+- [x] `13.1-03-PLAN.md` — Add held-out media-free, privacy, accessibility, and motion-boundary regression evidence.
+- [x] `13.1-04-PLAN.md` — Validate browser usability and release scope without an asset, rights, or Phase 13-UAT dependency.
 
 **Risk:** The visual arrival must never become a remote, misleading, autoplaying, fact-obscuring, or student-data collection surface. The release uses no media asset or provenance path; reduced-motion behavior, source-first controls, and the independent Phase 13 verification boundary remain enforced.
 

@@ -4,11 +4,11 @@ milestone: v1.1
 milestone_name: Regional Opportunity Navigator
 current_phase: 13.1
 current_phase_name: Visual-First Discovery Experience
-status: awaiting_human_verification
-stopped_at: "13.1-04-PLAN.md Task 2: required browser UAT"
-last_updated: "2026-10-26T20:55:31.692Z"
-last_activity: 2026-10-26
-last_activity_desc: desktop, narrow-phone, and tablet Preview UAT passed; keyboard and reduced-motion checks remain pending
+status: complete
+stopped_at: "Phase 13.1 complete; independent Phase 13 media UAT and its later phases remain open"
+last_updated: "2026-11-10T00:00:00-05:00"
+last_activity: 2026-11-10
+last_activity_desc: owner approved the Preview recheck; both catalogue start choices reach their intended factual sections and the honest no-card state remains intact
 progress:
   total_phases: 10
   completed_phases: 7
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 ## Current Position
 
 Phase: 13.1 — Visual-First Discovery Experience
-Plan: 13.1-04 Task 2 — required browser UAT
-Status: Awaiting human verification
-Last activity: 2026-10-26 — refined the shared chrome wordmark with balanced edge accents; fresh-attestation and full private-media lifecycle UAT remain pending
+Plan: 13.1-04 — complete and verified
+Status: Complete
+Last activity: 2026-11-10 — owner approved the Preview recheck after verifying the catalogue welcome and its two factual starting choices
 
 ## Performance Metrics
 
