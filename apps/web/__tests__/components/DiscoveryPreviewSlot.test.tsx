@@ -36,13 +36,13 @@ describe('DiscoveryPreviewSlot', () => {
       assetPath: '/images/scholarscout-workshop.png',
       alt: 'A clearly illustrative workshop learning environment.',
       label: 'Scholar Scout illustration',
-      disclosure: 'AI-generated illustration — not an official campus photograph',
+      disclosure: 'AI-generated image — not an official campus photograph',
     };
     const { rerender } = render(<DiscoveryPreviewSlot media={illustration} />);
 
     expect(screen.getByRole('img', { name: /clearly illustrative workshop/i })).toBeInTheDocument();
     expect(screen.getByText('Scholar Scout illustration')).toBeInTheDocument();
-    expect(screen.getByText('AI-generated illustration — not an official campus photograph')).toBeInTheDocument();
+    expect(screen.getByText('AI-generated image — not an official campus photograph')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'About this media' })).not.toBeInTheDocument();
     expect(document.querySelector('iframe')).not.toBeInTheDocument();
 

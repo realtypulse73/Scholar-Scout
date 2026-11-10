@@ -24,11 +24,15 @@ describe('Phase 13 Preview illustration fixture', () => {
 
     expect(records).toHaveLength(2);
     expect(records.every((record) => record.title.startsWith('Preview test fixture'))).toBe(true);
+    expect(records.map((record) => record.renderableMedia?.assetPath)).toEqual([
+      '/images/fixtures/phase13-uat/applied-health-photoreal-v2.png',
+      '/images/fixtures/phase13-uat/welding-fabrication-photoreal-v2.png',
+    ]);
     expect(records.every((record) => record.renderableMedia?.kind === 'illustration')).toBe(true);
     expect(records.every((record) => {
       const media = record.renderableMedia;
       return media?.kind === 'illustration'
-        && media.disclosure === 'AI-generated illustration — not an official campus photograph';
+        && media.disclosure === 'AI-generated image — not an official campus photograph';
     })).toBe(true);
     expect(records.every((record) => record.claimBoundary.includes('not an institution'))).toBe(true);
     expect(records.every((record) => record.facts.location.evidence.authority === 'scholarscout-preview-fixture')).toBe(true);
@@ -60,8 +64,8 @@ describe('Phase 13 Preview illustration fixture', () => {
     });
     expect(result.records.map((record) => record.id)).toEqual([
       existing.id,
-      'preview-fixture:applied-health-illustration',
-      'preview-fixture:technology-systems-illustration',
+      'preview-fixture:applied-health-photoreal',
+      'preview-fixture:welding-fabrication-photoreal',
     ]);
   });
 });

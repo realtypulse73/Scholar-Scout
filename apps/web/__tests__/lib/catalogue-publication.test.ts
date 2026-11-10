@@ -169,7 +169,7 @@ describe('reviewed media projection', () => {
     illustration: {
       classification: 'original-generic-learning-environment',
       accessibleDescription: 'A Scholar Scout illustrative learning environment.',
-      disclosure: 'AI-generated illustration — not an official campus photograph',
+      disclosure: 'AI-generated image — not an official campus photograph',
       representation: 'generic-learning-environment',
       identityClaim: 'none',
       sourceCategory: 'original-scholarscout',
@@ -192,7 +192,7 @@ describe('reviewed media projection', () => {
         label: 'Scholar Scout illustration',
         assetPath: '/images/learning-environment.png',
         alt: 'A Scholar Scout illustrative learning environment.',
-        disclosure: 'AI-generated illustration — not an official campus photograph',
+        disclosure: 'AI-generated image — not an official campus photograph',
       },
       mediaFallback: false,
     });

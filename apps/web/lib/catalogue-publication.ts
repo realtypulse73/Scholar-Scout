@@ -61,7 +61,7 @@ export interface CatalogueMediaRights {
 export type CatalogueMediaCandidateKind = 'local-preview' | 'approved-embed' | 'illustration';
 
 export const SYNTHETIC_ILLUSTRATION_DISCLOSURE =
-  'AI-generated illustration — not an official campus photograph';
+  'AI-generated image — not an official campus photograph';
 
 /** Private review classification required before a generic illustration may reach learners. */
 export interface CatalogueIllustrationClassification {

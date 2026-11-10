@@ -38,16 +38,16 @@ export function isPhase13PreviewIllustrationFixtureEnabled(
 export function getPhase13PreviewIllustrationFixtureRecords(): CataloguePublishedRecord[] {
   return [
     createFixtureRecord({
-      id: 'preview-fixture:applied-health-illustration',
-      title: 'Preview test fixture — applied health learning setting',
-      assetPath: '/images/fixtures/phase13-uat/applied-health-illustration-v1.png',
-      alt: 'Original Scholar Scout illustration of two learners in a generic applied health practice lab.',
+      id: 'preview-fixture:applied-health-photoreal',
+      title: 'Preview test fixture — applied health practice setting',
+      assetPath: '/images/fixtures/phase13-uat/applied-health-photoreal-v2.png',
+      alt: 'Original photorealistic Scholar Scout image of two adult learners practicing skills with a training mannequin in a generic applied health lab.',
     }),
     createFixtureRecord({
-      id: 'preview-fixture:technology-systems-illustration',
-      title: 'Preview test fixture — technology systems learning setting',
-      assetPath: '/images/fixtures/phase13-uat/technology-systems-illustration-v1.png',
-      alt: 'Original Scholar Scout illustration of two learners in a generic technology systems workshop.',
+      id: 'preview-fixture:welding-fabrication-photoreal',
+      title: 'Preview test fixture — welding and fabrication practice setting',
+      assetPath: '/images/fixtures/phase13-uat/welding-fabrication-photoreal-v2.png',
+      alt: 'Original photorealistic Scholar Scout image of adult learners practicing welding and fabrication in a generic workshop.',
     }),
   ];
 }
