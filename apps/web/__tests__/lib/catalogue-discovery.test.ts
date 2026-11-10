@@ -61,7 +61,7 @@ describe('catalogue discovery model', () => {
       kind: 'illustration',
       assetPath: '/images/learning-environment.png',
       alt: 'A Scholar Scout illustrative learning environment.',
-      label: 'Scholar Scout illustration',
+      label: 'Scholar Scout image',
       disclosure: 'AI-generated image — not an official campus photograph',
     };
     (reviewed as typeof reviewed & { mediaCandidates: unknown[] }).mediaCandidates = [{ embedUrl: 'https://example.edu/embed' }];

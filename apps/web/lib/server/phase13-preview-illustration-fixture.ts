@@ -105,7 +105,7 @@ function createFixtureRecord({
       kind: 'illustration',
       assetPath,
       alt,
-      label: 'Scholar Scout illustration',
+      label: 'Scholar Scout image',
       disclosure: SYNTHETIC_ILLUSTRATION_DISCLOSURE,
     },
     mediaFallback: false,

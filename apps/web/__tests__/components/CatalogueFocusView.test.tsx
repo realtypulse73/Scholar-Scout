@@ -128,7 +128,7 @@ describe('CatalogueFocusView', () => {
           kind: 'illustration',
           assetPath: '/images/scholarscout-workshop.png',
           alt: 'A Scholar Scout illustrative workshop learning environment.',
-          label: 'Scholar Scout illustration',
+          label: 'Scholar Scout image',
           disclosure: 'AI-generated image — not an official campus photograph',
         },
       }}
@@ -140,7 +140,7 @@ describe('CatalogueFocusView', () => {
     const facts = screen.getByRole('region', { name: /facts and sources/i });
     expect(preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('img', { name: /scholar scout illustrative workshop/i })).toBeInTheDocument();
-    expect(preview).toHaveTextContent('Scholar Scout illustration');
+    expect(preview).toHaveTextContent('Scholar Scout image');
     expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /visit the official provider site/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('link', { name: 'Compare this option' })).toHaveAttribute('href', '/shortlist');

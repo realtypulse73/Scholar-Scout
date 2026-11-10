@@ -29,19 +29,19 @@ describe('DiscoveryPreviewSlot', () => {
     expect(document.querySelector('iframe')).not.toBeInTheDocument();
   });
 
-  it('shows a labelled Scholar Scout illustration or complete factual fallback without an embed surface', () => {
+  it('shows a labelled Scholar Scout image or complete factual fallback without an embed surface', () => {
     const illustration: CatalogueRenderableMedia = {
       ...localPreview,
       kind: 'illustration',
       assetPath: '/images/scholarscout-workshop.png',
       alt: 'A clearly illustrative workshop learning environment.',
-      label: 'Scholar Scout illustration',
+      label: 'Scholar Scout image',
       disclosure: 'AI-generated image — not an official campus photograph',
     };
     const { rerender } = render(<DiscoveryPreviewSlot media={illustration} />);
 
     expect(screen.getByRole('img', { name: /clearly illustrative workshop/i })).toBeInTheDocument();
-    expect(screen.getByText('Scholar Scout illustration')).toBeInTheDocument();
+    expect(screen.getByText('Scholar Scout image')).toBeInTheDocument();
     expect(screen.getByText('AI-generated image — not an official campus photograph')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'About this media' })).not.toBeInTheDocument();
     expect(document.querySelector('iframe')).not.toBeInTheDocument();

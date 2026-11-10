@@ -189,7 +189,7 @@ describe('reviewed media projection', () => {
     expect(result).toEqual({
       renderableMedia: {
         kind: 'illustration',
-        label: 'Scholar Scout illustration',
+        label: 'Scholar Scout image',
         assetPath: '/images/learning-environment.png',
         alt: 'A Scholar Scout illustrative learning environment.',
         disclosure: 'AI-generated image — not an official campus photograph',

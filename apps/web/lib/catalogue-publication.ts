@@ -108,7 +108,7 @@ export interface CatalogueIllustrationMedia {
   kind: 'illustration';
   assetPath: string;
   alt: string;
-  label: 'Scholar Scout illustration';
+  label: 'Scholar Scout image';
   disclosure: typeof SYNTHETIC_ILLUSTRATION_DISCLOSURE;
 }
 
@@ -692,7 +692,7 @@ function isRenderableMedia(value: unknown): value is CatalogueRenderableMedia {
     return false;
   }
   if (value.kind === 'illustration') {
-    return value.label === 'Scholar Scout illustration'
+    return value.label === 'Scholar Scout image'
       && value.disclosure === SYNTHETIC_ILLUSTRATION_DISCLOSURE
       && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'disclosure'].includes(key));
   }
@@ -898,7 +898,7 @@ function toRenderableMedia(candidate: CatalogueMediaCandidate): CatalogueRendera
       kind: 'illustration',
       assetPath: candidate.assetPath!,
       alt: candidate.alt,
-      label: 'Scholar Scout illustration',
+      label: 'Scholar Scout image',
       disclosure: SYNTHETIC_ILLUSTRATION_DISCLOSURE,
     };
   }
