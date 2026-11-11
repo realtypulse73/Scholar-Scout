@@ -149,13 +149,38 @@ describe('CatalogueFocusView', () => {
   it('keeps named focus actions and the non-media preview readable with reduced motion or a narrow viewport', () => {
     render(<CatalogueFocusView item={{ ...item, renderableMedia: undefined }} backHref="/programmes?metro=greater-new-orleans" previousHref="/programmes/previous?metro=greater-new-orleans" nextHref="/programmes/next?metro=greater-new-orleans" alternateHref="/programmes?metro=greater-new-orleans&pathway=university" />);
 
-    expect(screen.getByTestId('catalogue-focus-layout')).toHaveClass('catalogue-focus', 'min-w-0', 'max-w-full');
+    expect(screen.getByTestId('catalogue-focus-layout')).toHaveClass('catalogue-visual-shell', 'catalogue-focus', 'min-w-0', 'max-w-full');
     expect(screen.getByRole('navigation', { name: /opportunity detail navigation/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /facts and sources/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/does not display provider or learner media yet/i);
     expect(screen.getByRole('link', { name: /open source for training payer.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
     expect(screen.getByTestId('catalogue-focus-decoration')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByTestId('catalogue-focus-decoration')).toHaveClass('pointer-events-none');
+  });
+
+  it('keeps long reviewed copy and source-first actions in the readable detail plane', () => {
+    const longProviderTitle = 'Greater New Orleans Technical Learning and Career Pathways Collaborative';
+    render(<CatalogueFocusView
+      item={{
+        ...item,
+        providerTitle: longProviderTitle,
+        renderableMedia: undefined,
+        facts: {
+          ...item.facts,
+          skillTaught: fact('Industrial electrical systems, safety procedures, and documented workshop practice', 'current'),
+        },
+      }}
+      backHref="/programmes?metro=greater-new-orleans"
+      alternateHref="/programmes?metro=greater-new-orleans&pathway=university"
+    />);
+
+    expect(screen.getByText(longProviderTitle)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /facts and sources/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open source for skill taught/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /visit the official provider site/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Compare this option' })).toBeInTheDocument();
   });
 
   it('renders every factual reason with source evidence, state, date, and a direct verification path', () => {
