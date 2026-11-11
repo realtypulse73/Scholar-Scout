@@ -9,6 +9,7 @@ export default function CatalogueVisualWelcome({
   return (
     <section
       aria-label="Visual welcome"
+      data-testid="catalogue-visual-welcome"
       className="catalogue-visual-welcome mx-auto mt-6 w-full max-w-6xl min-w-0 px-5 sm:px-6 lg:px-8"
     >
       <div className="catalogue-visual-welcome-panel">
