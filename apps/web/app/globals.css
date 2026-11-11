@@ -56,6 +56,62 @@ body {
   pointer-events: none;
 }
 
+.catalogue-visual-shell {
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.04), transparent 34rem),
+    #f8fafc;
+}
+
+.catalogue-visual-welcome-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.5rem;
+  background: white;
+  padding: 1.5rem;
+}
+
+.catalogue-visual-welcome-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.catalogue-visual-welcome-plane {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.catalogue-visual-welcome-plane-primary {
+  top: -8rem;
+  right: -5rem;
+  width: 18rem;
+  height: 18rem;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.16), rgba(220, 38, 38, 0));
+}
+
+.catalogue-visual-welcome-plane-secondary {
+  right: 15%;
+  bottom: -6rem;
+  width: 15rem;
+  height: 10rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.42), rgba(255, 255, 255, 0));
+}
+
+.catalogue-visual-welcome-rule {
+  position: absolute;
+  top: 1.75rem;
+  right: 2rem;
+  width: min(32vw, 18rem);
+  border-top: 1px solid rgba(220, 38, 38, 0.24);
+  pointer-events: none;
+}
+
 .transition-story-decoration {
   animation: transition-story-glow 10s ease-in-out infinite;
 }

@@ -91,6 +91,63 @@ describe('CatalogueDiscoveryOverview', () => {
     expect(screen.getAllByText(/not yet verified/i)).not.toHaveLength(0);
   });
 
+  it('places one media-free Visual welcome before the factual filters and results', () => {
+    const model = buildCatalogueDiscoveryModel({
+      records: [publishedRecord],
+      searchParams: { metro: 'greater-houston' },
+    });
+
+    render(<CatalogueDiscoveryOverview model={model} />);
+
+    const welcome = screen.getByRole('region', { name: /visual welcome/i });
+    const filters = screen.getByRole('form', { name: /catalogue filters/i });
+    const results = screen.getByRole('heading', { name: /reviewed cards/i });
+
+    expect(screen.getAllByRole('region', { name: /visual welcome/i })).toHaveLength(1);
+    expect(welcome.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(welcome.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(welcome).getByRole('link', { name: /browse reviewed opportunities/i }))
+      .toHaveAttribute('href', '#catalogue-results-heading');
+    expect(within(welcome).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(welcome).queryByRole('video')).not.toBeInTheDocument();
+    expect(within(welcome).queryByRole('link', { name: /official|compare|save/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the same single welcome and factual recovery controls for media and empty models', () => {
+    const mediaModel = buildCatalogueDiscoveryModel({
+      records: [{
+        ...publishedRecord,
+        renderableMedia: {
+          kind: 'local-preview',
+          assetPath: '/media/welding-workshop.mp4',
+          alt: 'A welding workshop learning environment.',
+          label: 'Provider-approved media',
+          sourceLabel: 'Welding pathway media approval',
+          sourceUrl: 'https://example.edu/media-approval',
+          rightsBasis: 'provider-approved',
+          reviewedAt: '2026-09-20',
+        },
+      }],
+      searchParams: { metro: 'greater-houston' },
+    });
+    const emptyModel = buildCatalogueDiscoveryModel({
+      records: [],
+      searchParams: { metro: 'greater-houston' },
+    });
+    const { rerender } = render(<CatalogueDiscoveryOverview model={mediaModel} />);
+
+    expect(screen.getAllByRole('region', { name: /visual welcome/i })).toHaveLength(1);
+    expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /optional visual explorer/i })).toBeInTheDocument();
+
+    rerender(<CatalogueDiscoveryOverview model={emptyModel} />);
+
+    expect(screen.getAllByRole('region', { name: /visual welcome/i })).toHaveLength(1);
+    expect(screen.getByRole('form', { name: /catalogue filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /no reviewed cards to show/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /browse this metro.*reviewed snapshot/i })).toBeInTheDocument();
+  });
+
   it('announces active filters with labelled native controls and bounded result content', () => {
     const model = buildCatalogueDiscoveryModel({
       records: [publishedRecord],
