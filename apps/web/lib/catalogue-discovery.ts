@@ -62,7 +62,8 @@ export interface CatalogueDiscoveryItem {
   documentedSupport?: SourcedFact<string>;
   factState: FactStatus;
   source: { label: string; date: string | null; state: 'current' | 'needs-confirmation' | 'unknown' };
-  officialVerificationUrl: string;
+  officialVerificationUrl?: string;
+  fixtureNotice?: string;
   mediaState: 'reserved-for-rights-review';
   renderableMedia?: CatalogueRenderableMedia;
   contributorMedia?: ContributorMediaPublicProjection;
@@ -162,6 +163,7 @@ export function buildCatalogueDiscoveryModel({
 }
 
 function mapPublishedRecord(record: CataloguePublishedRecord, now: Date): CatalogueDiscoveryItem {
+  const fixtureNotice = getFixtureNotice(record);
   const place = mapFact(record.facts.location);
   const delivery = mapFact(record.facts.delivery);
   const facts = {
@@ -194,11 +196,22 @@ function mapPublishedRecord(record: CataloguePublishedRecord, now: Date): Catalo
       : { documentedSupport: record.documentedSupport }),
     factState: aggregateFactState([place.state, delivery.state, ...Object.values(facts).map((fact) => fact.state)]),
     source: mapSource(record.source, now),
-    officialVerificationUrl: record.source.sourceUrl,
+    ...(fixtureNotice === undefined
+      ? { officialVerificationUrl: record.source.sourceUrl }
+      : {}),
+    ...(fixtureNotice === undefined ? {} : { fixtureNotice }),
     mediaState: 'reserved-for-rights-review',
     ...(record.renderableMedia === undefined ? {} : { renderableMedia: record.renderableMedia }),
     ...(record.contributorMedia === undefined ? {} : { contributorMedia: record.contributorMedia }),
   };
+}
+
+function getFixtureNotice(record: CataloguePublishedRecord): string | undefined {
+  const sourceLooksLikeFixture = record.source.sourceLabel.toLocaleLowerCase().includes('fixture');
+  const boundaryLooksLikeFixture = record.claimBoundary.toLocaleLowerCase().includes('fixture');
+  if (!sourceLooksLikeFixture || !boundaryLooksLikeFixture) return undefined;
+
+  return 'Local interface test fixture — not a real provider or programme. No official provider link is available.';
 }
 
 function deriveReasonsToConsider({

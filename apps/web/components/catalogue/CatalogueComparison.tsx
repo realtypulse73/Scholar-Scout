@@ -124,6 +124,7 @@ function ComparisonCard({
   qualificationExplanation?: QualificationExplanationModel;
 }) {
   const pathway = item.pathway ? pathwayLabels[item.pathway] : 'Needs confirmation';
+  const isFixture = item.fixtureNotice !== undefined;
   const detailHref = buildCatalogueDetailHref(item.id, {
     metro: item.regionId,
     pathway: 'all',
@@ -137,35 +138,75 @@ function ComparisonCard({
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{item.regionLabel}</p>
       <h2 id={`choice-${item.id}`} className="mt-1 break-words text-xl font-semibold text-ink-900">{item.providerTitle}</h2>
       <dl className="mt-5 space-y-4">
-        <FactRow label="Pathway" fact={{ value: pathway, state: item.pathway ? 'current' : 'needs-confirmation', evidence: item.place.evidence }} />
-        <FactRow label="Place" fact={item.place} />
-        <FactRow label="Delivery" fact={item.delivery} />
-        <FactRow label="Skill taught" fact={item.facts.skillTaught} />
-        <FactRow label="Training payer" fact={item.facts.trainingPayer} />
-        <FactRow label="Cost or tuition" fact={item.facts.costOrTuition} />
-        <FactRow label="Duration" fact={item.facts.duration} />
+        <FactRow label="Pathway" fact={{ value: pathway, state: item.pathway ? 'current' : 'needs-confirmation', evidence: item.place.evidence }} sourceLinksDisabled={isFixture} />
+        <FactRow label="Place" fact={item.place} sourceLinksDisabled={isFixture} />
+        <FactRow label="Delivery" fact={item.delivery} sourceLinksDisabled={isFixture} />
+        <FactRow label="Skill taught" fact={item.facts.skillTaught} sourceLinksDisabled={isFixture} />
+        <FactRow label="Training payer" fact={item.facts.trainingPayer} sourceLinksDisabled={isFixture} />
+        <FactRow label="Cost or tuition" fact={item.facts.costOrTuition} sourceLinksDisabled={isFixture} />
+        <FactRow label="Duration" fact={item.facts.duration} sourceLinksDisabled={isFixture} />
       </dl>
-      {qualificationExplanation ? <QualificationExplanation explanation={qualificationExplanation} officialVerificationUrl={item.officialVerificationUrl} /> : null}
+      {item.fixtureNotice ? (
+        <p className="mt-4 rounded-card border border-warning-300 bg-warning-50 p-3 text-sm leading-6 text-ink-800" aria-label="Local test fixture notice">
+          <strong>Local test fixture.</strong> {item.fixtureNotice}
+        </p>
+      ) : null}
+      {qualificationExplanation ? (
+        <QualificationExplanation
+          explanation={qualificationExplanation}
+          officialVerificationUrl={item.officialVerificationUrl}
+          fixtureNotice={item.fixtureNotice}
+        />
+      ) : null}
       <section className="mt-5 border-t border-border pt-5" aria-label={`Factual reasons to consider for ${item.providerTitle}`}>
         <h3 className="text-sm font-semibold text-ink-900">Reasons to consider</h3>
         {item.reasonsToConsider.length === 0 ? (
           <p className="mt-2 text-sm text-ink-600">No reviewed factual reasons are currently listed.</p>
         ) : (
           <dl className="mt-3 space-y-4">
-            {item.reasonsToConsider.map((reason) => <FactRow key={reason.label} label={reason.label} fact={reason} />)}
+            {item.reasonsToConsider.map((reason) => (
+              <FactRow
+                key={reason.label}
+                label={reason.label}
+                fact={reason}
+                sourceLinksDisabled={isFixture}
+              />
+            ))}
           </dl>
         )}
       </section>
       <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-5">
         <Link href={detailHref} aria-label={`Details for ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Details and sources</Link>
-        <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" aria-label={`Official verification for ${item.providerTitle} (opens a new tab)`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Official verification</a>
+        {isFixture ? (
+          <p className="inline-flex min-h-touch items-center rounded-control border border-warning-300 bg-warning-50 px-3 text-sm font-semibold text-ink-800">
+            No official provider link for this local test fixture
+          </p>
+        ) : (
+          <a
+            href={item.officialVerificationUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open official provider source for ${item.providerTitle} (external link; opens a new tab)`}
+            className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            Open official provider source (external link; opens a new tab)
+          </a>
+        )}
         <button type="button" onClick={() => onRemove(item.id)} aria-label={`Remove ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:border-danger-600 hover:text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Remove</button>
       </div>
     </article>
   );
 }
 
-function FactRow<Value>({ label, fact }: { label: string; fact: CatalogueDiscoveryFact<Value> }) {
+function FactRow<Value>({
+  label,
+  fact,
+  sourceLinksDisabled,
+}: {
+  label: string;
+  fact: CatalogueDiscoveryFact<Value>;
+  sourceLinksDisabled: boolean;
+}) {
   const value = fact.value === null || fact.value === undefined ? 'Not available' : String(fact.value).replaceAll('-', ' ');
   const state = fact.state.replaceAll('-', ' ');
   const sourceDate = fact.evidence.sourceDate.state === 'documented' ? fact.evidence.sourceDate.value : 'Date unknown';
@@ -177,7 +218,13 @@ function FactRow<Value>({ label, fact }: { label: string; fact: CatalogueDiscove
       <dd className="mt-1 break-words text-xs text-ink-600"><span className="font-semibold">Source:</span> {fact.evidence.sourceLabel}</dd>
       <dd className="mt-1 text-xs text-ink-600"><span className="font-semibold">Source date:</span> {sourceDate}</dd>
       <dd className="mt-1 text-xs leading-5 text-ink-700">{fact.evidence.verificationAction}</dd>
-      <dd className="mt-2"><a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Verify this fact (opens a new tab)</a></dd>
+      <dd className="mt-2">
+        {sourceLinksDisabled ? (
+          <span className="text-xs text-ink-700">Fixture source is intentionally not linked.</span>
+        ) : (
+          <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Verify this fact (opens a new tab)</a>
+        )}
+      </dd>
     </div>
   );
 }

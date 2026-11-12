@@ -34,6 +34,7 @@ export default function CatalogueFocusView({
   alternateHref,
   qualificationExplanation,
 }: CatalogueFocusViewProps) {
+  const isFixture = item.fixtureNotice !== undefined;
   const facts = [
     ['Place', item.place],
     ['Delivery', item.delivery],
@@ -60,6 +61,11 @@ export default function CatalogueFocusView({
           <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">{item.providerTitle}</h1>
           <p className="mt-3 max-w-3xl text-base leading-7 text-ink-600">{item.regionLabel} · {item.place.value ?? 'Location needs confirmation'} · {formatValue(item.delivery.value) ?? 'Delivery needs confirmation'}</p>
           <p className="mt-4 text-sm font-semibold text-ink-700">Factual status: {formatState(item.factState)}</p>
+          {item.fixtureNotice ? (
+            <p className="mt-4 max-w-3xl rounded-card border border-warning-300 bg-warning-50 p-3 text-sm leading-6 text-ink-800" aria-label="Local test fixture notice">
+              <strong>Local test fixture.</strong> {item.fixtureNotice}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -76,12 +82,24 @@ export default function CatalogueFocusView({
                   <dd className="mt-1 text-base text-ink-700">{formatValue(fact.value) ?? 'Needs confirmation'}</dd>
                   <dd className="mt-2 text-sm text-ink-600">Status: {formatState(fact.state)} · Source: {fact.evidence.sourceLabel} · Reviewed: {fact.evidence.reviewedAt}</dd>
                   <dd className="mt-1 text-sm leading-6 text-ink-700">{fact.evidence.verificationAction}</dd>
-                  <dd className="mt-2"><a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open source for {label} (opens a new tab)</a></dd>
+                  <dd className="mt-2">
+                    {isFixture ? (
+                      <span className="text-sm text-ink-700">Fixture source is intentionally not linked.</span>
+                    ) : (
+                      <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open source for {label} (opens a new tab)</a>
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>
           </section>
-          {qualificationExplanation ? <QualificationExplanation explanation={qualificationExplanation} officialVerificationUrl={item.officialVerificationUrl} /> : null}
+          {qualificationExplanation ? (
+            <QualificationExplanation
+              explanation={qualificationExplanation}
+              officialVerificationUrl={item.officialVerificationUrl}
+              fixtureNotice={item.fixtureNotice}
+            />
+          ) : null}
           <section className="rounded-card border border-ink-200 bg-white p-5" aria-labelledby="reasons-heading">
             <h2 id="reasons-heading" className="text-xl font-semibold">Reasons to consider</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">These are reviewed factual details to verify, not a statement about your eligibility, outcome, or fit.</p>
@@ -95,7 +113,13 @@ export default function CatalogueFocusView({
                     <dd className="mt-1 text-base text-ink-700">{formatValue(reason.value)}</dd>
                     <dd className="mt-2 text-sm text-ink-600">Status: {formatState(reason.state)} · Source: {reason.evidence.sourceLabel} · Source date: {formatEvidenceDate(reason.evidence.sourceDate)}</dd>
                     <dd className="mt-1 text-sm leading-6 text-ink-700">{reason.evidence.verificationAction}</dd>
-                    <dd className="mt-2"><a href={reason.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open reason source for {reason.label} (opens a new tab)</a></dd>
+                    <dd className="mt-2">
+                      {isFixture ? (
+                        <span className="text-sm text-ink-700">Fixture source is intentionally not linked.</span>
+                      ) : (
+                        <a href={reason.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open reason source for {reason.label} (opens a new tab)</a>
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -107,7 +131,21 @@ export default function CatalogueFocusView({
           <section className="min-w-0 rounded-card border border-ink-200 bg-white p-5" aria-label="Official verification and student choices">
             <h2 className="text-lg font-semibold">Verify this opportunity</h2>
             <p className="mt-2 text-sm text-ink-600">Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {formatState(item.source.state)}</p>
-            <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" className={pairedChoiceActionClassName}>Visit the official provider site (opens a new tab)</a>
+            {isFixture ? (
+              <p className="mt-3 rounded-control border border-warning-300 bg-warning-50 p-3 text-sm leading-6 text-ink-800">
+                No official provider link is available for this local test fixture.
+              </p>
+            ) : (
+              <a
+                href={item.officialVerificationUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={pairedChoiceActionClassName}
+                aria-label={`Open official provider source for ${item.providerTitle} (external link; opens a new tab)`}
+              >
+                Open official provider source (external link; opens a new tab)
+              </a>
+            )}
             <div className="mt-3"><ShortlistButton programmeId={item.id} /></div>
             <Link href="/shortlist" className={pairedChoiceActionClassName}>Compare this option</Link>
           </section>

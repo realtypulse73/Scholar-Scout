@@ -55,6 +55,24 @@ describe('catalogue discovery model', () => {
     });
   });
 
+  it('labels an explicitly bounded local fixture without changing its local catalogue identity', () => {
+    const fixture = record('phase11-uat-community-pathway', 'Phase 11 UAT Community Pathway');
+    fixture.source.sourceLabel = 'Local Phase 11 UAT fixture — not a real provider record';
+    fixture.claimBoundary = 'This local fixture is for interface verification only and must be verified before any decision.';
+
+    const [item] = buildCatalogueDiscoveryModel({
+      records: [fixture],
+      searchParams: { metro: 'greater-houston' },
+    }).items;
+
+    expect(item).toMatchObject({
+      id: 'phase11-uat-community-pathway',
+      providerTitle: 'Phase 11 UAT Community Pathway',
+      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official provider link is available.',
+    });
+    expect(item.officialVerificationUrl).toBeUndefined();
+  });
+
   it('exposes only the selected safe media projection from a published record', () => {
     const reviewed = record('catalogue:media');
     reviewed.renderableMedia = {
