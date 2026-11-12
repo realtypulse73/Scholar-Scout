@@ -51,6 +51,7 @@ import {
   reconcileDraftCatalogueChecklists,
   type CataloguePublicationState,
 } from '@/lib/catalogue-publication';
+import { createInitialCataloguePublicationSeed } from '@/lib/catalogue-initial-seed';
 import {
   createEmptyContributorMediaState,
   isContributorMediaState,
@@ -326,7 +327,7 @@ const INITIAL_DATA: ScholarScoutData = {
   privilegedOperationAuditEvents: [],
   recoveryLifecycleEvents: [],
   recoveryPlanOutcomes: [],
-  cataloguePublicationState: createEmptyCataloguePublicationState(),
+  cataloguePublicationState: createInitialCataloguePublicationSeed(),
   contributorMediaState: createEmptyContributorMediaState(),
 };
 

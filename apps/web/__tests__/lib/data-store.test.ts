@@ -534,6 +534,48 @@ describe('ScholarScout data store adapter', () => {
     }
   });
 
+  it('seeds the versioned official catalogue only for a missing local data file', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-seeded-store-'));
+    const filePath = path.join(directory, 'data.json');
+
+    try {
+      const data = await new JsonScholarScoutDataStore(filePath).read();
+      const active = data.cataloguePublicationState?.snapshots?.find(
+        (snapshot) => snapshot.id === data.cataloguePublicationState?.activeSnapshotId,
+      );
+
+      expect(data.cataloguePublicationState?.activeSnapshotId).toBe('catalogue-snapshot-3');
+      expect(active?.records.map((record) => record.id)).toEqual([
+        'catalogue:federal-student-aid-options',
+        'catalogue:houston-city-college-programs',
+        'catalogue:lone-star-college-programs',
+        'catalogue:san-jacinto-college-areas-of-study',
+        'catalogue:usdol-apprenticeship-job-finder',
+        'phase11-uat-community-pathway',
+      ]);
+      await expect(access(filePath)).rejects.toThrow();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('does not merge the official catalogue seed into an existing local document', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-existing-store-'));
+    const filePath = path.join(directory, 'data.json');
+    const existing = cloneData(initialData);
+    await writeFile(filePath, JSON.stringify(existing), 'utf8');
+
+    try {
+      const data = await new JsonScholarScoutDataStore(filePath).read();
+
+      expect(data.cataloguePublicationState?.activeSnapshotId).toBeNull();
+      expect(data.cataloguePublicationState?.snapshots).toEqual([]);
+      expect(JSON.parse(await readFile(filePath, 'utf8'))).toEqual(existing);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('reconciles a stale derived checklist for a persisted draft without rewriting its source document', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'scholarscout-catalogue-checklist-'));
     const filePath = path.join(directory, 'data.json');

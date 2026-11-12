@@ -9,7 +9,6 @@ import {
   parseCatalogueCandidateImport,
   resolveRenderableMedia,
   type CatalogueCandidateInput,
-  type CataloguePublishedRecord,
 } from '@/lib/catalogue-publication';
 import {
   validateCatalogueRegion,
@@ -18,7 +17,11 @@ import {
   validateSourceMetadata,
   type FactEvidence,
 } from '@/lib/catalogue-contract';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  createInitialCataloguePublicationSeed,
+  PHASE11_UAT_COMMUNITY_PATHWAY_FIXTURE,
+} from '@/lib/catalogue-initial-seed';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const now = new Date('2026-09-22T12:00:00.000Z');
@@ -92,22 +95,11 @@ const validCandidate: CatalogueCandidateInput = {
 };
 
 describe('catalogue publication editorial checklist', () => {
-  it('keeps the five local official-source records in an append-only active snapshot without changing the Phase 11 fixture', () => {
-    const data = JSON.parse(readFileSync(
-      join(process.cwd(), 'data', 'scholarscout-data.json'),
-      'utf8',
-    )) as { cataloguePublicationState: unknown };
-    const state = data.cataloguePublicationState as {
-      activeSnapshotId: string;
-      snapshots: Array<{
-        id: string;
-        records: CataloguePublishedRecord[];
-        contentDigest: string;
-      }>;
-      manifests: Array<{ snapshotId: string; contentDigest: string }>;
-    };
-    const active = state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId);
-    const prior = state.snapshots.find((snapshot) => snapshot.id === 'phase11-uat-snapshot-2');
+  it('keeps the five local official-source records in a versioned empty-store seed without changing the Phase 11 fixture', () => {
+    const state = createInitialCataloguePublicationSeed();
+    const snapshots = state.snapshots ?? [];
+    const active = snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId);
+    const prior = snapshots.find((snapshot) => snapshot.id === 'phase11-uat-snapshot-2');
 
     expect(active?.id).toBe('catalogue-snapshot-3');
     expect(active?.records.map((record) => record.id)).toEqual([
@@ -120,6 +112,9 @@ describe('catalogue publication editorial checklist', () => {
     ]);
     expect(active?.records.find((record) => record.id === 'phase11-uat-community-pathway')).toEqual(
       prior?.records.find((record) => record.id === 'phase11-uat-community-pathway'),
+    );
+    expect(active?.records.find((record) => record.id === 'phase11-uat-community-pathway')).toEqual(
+      PHASE11_UAT_COMMUNITY_PATHWAY_FIXTURE,
     );
     expect(active?.records.filter((record) => record.id.startsWith('catalogue:')).map((record) => ({
       id: record.id,
@@ -182,8 +177,8 @@ describe('catalogue publication editorial checklist', () => {
       )).toEqual([]);
     }
     expect(active && getCatalogueSnapshotDigest(active.records)).toBe(active?.contentDigest);
-    expect(isCataloguePublicationState(data.cataloguePublicationState)).toBe(true);
-    expect(state.manifests.find((manifest) => manifest.snapshotId === active?.id)?.contentDigest)
+    expect(isCataloguePublicationState(state)).toBe(true);
+    expect((state.manifests ?? []).find((manifest) => manifest.snapshotId === active?.id)?.contentDigest)
       .toBe(active?.contentDigest);
   });
 
