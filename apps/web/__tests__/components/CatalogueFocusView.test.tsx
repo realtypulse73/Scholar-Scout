@@ -80,7 +80,7 @@ describe('CatalogueFocusView', () => {
     expect(explanation).toHaveTextContent('Needs verification');
     expect(explanation).toHaveTextContent('This programme lists career advising. Ask the programme if it is available to you.');
     expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent is required.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
-    expect(screen.getByRole('link', { name: /open official provider source/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open official external source for bayou skills academy/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(explanation.compareDocumentPosition(screen.getByRole('region', { name: /reasons to consider/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -98,7 +98,7 @@ describe('CatalogueFocusView', () => {
     expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/rights review/i);
     expect(screen.queryByRole('video')).not.toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(screen.getByRole('link', { name: /open official external source for bayou skills academy/i })).toHaveAttribute('href', 'https://example.edu/bayou');
   });
 
   it('presents a reviewed local preview with disclosure before the factual source region', async () => {
@@ -128,8 +128,8 @@ describe('CatalogueFocusView', () => {
           kind: 'illustration',
           assetPath: '/images/scholarscout-workshop.png',
           alt: 'A Scholar Scout illustrative workshop learning environment.',
-          label: 'Scholar Scout illustration',
-          disclosure: 'AI-generated illustration — not an official campus photograph',
+          label: 'Scholar Scout generated image',
+          disclosure: 'AI-generated contextual image — not an official provider or campus photograph',
         },
       }}
       backHref="/programmes?metro=greater-new-orleans"
@@ -140,9 +140,9 @@ describe('CatalogueFocusView', () => {
     const facts = screen.getByRole('region', { name: /facts and sources/i });
     expect(preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('img', { name: /scholar scout illustrative workshop/i })).toBeInTheDocument();
-    expect(preview).toHaveTextContent('Scholar Scout illustration');
+    expect(preview).toHaveTextContent('Scholar Scout generated image');
     expect(document.querySelector('iframe, embed, object')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /open official external source for bayou skills academy/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('link', { name: 'Compare this option' })).toHaveAttribute('href', '/shortlist');
   });
 
@@ -153,7 +153,7 @@ describe('CatalogueFocusView', () => {
     expect(screen.getByRole('navigation', { name: /opportunity detail navigation/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /facts and sources/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /media preview/i })).toHaveTextContent(/does not display provider or learner media yet/i);
-    expect(screen.getByRole('link', { name: /open source for training payer.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getAllByRole('link', { name: /open official external source for training payer.*opens a new tab/i })[0]).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
     expect(screen.getByTestId('catalogue-focus-decoration')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByTestId('catalogue-focus-decoration')).toHaveClass('pointer-events-none');
@@ -177,8 +177,8 @@ describe('CatalogueFocusView', () => {
 
     expect(screen.getByText(longProviderTitle)).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /facts and sources/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open source for skill taught/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /open official external source for skill taught/i })).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /open official external source for greater new orleans technical learning and career pathways collaborative/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Compare this option' })).toBeInTheDocument();
   });
@@ -191,8 +191,8 @@ describe('CatalogueFocusView', () => {
     expect(reasons).toHaveTextContent(/training payer.*student/i);
     expect(reasons).toHaveTextContent(/needs confirmation.*bayou official catalogue.*2026-09-20/i);
     expect(reasons).toHaveTextContent(/confirm this detail directly with bayou/i);
-    expect(screen.getByRole('link', { name: /open reason source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
-    expect(screen.getByRole('link', { name: /open reason source for training payer.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/bayou');
+    expect(screen.getAllByRole('link', { name: /open official external source for skill taught.*opens a new tab/i })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: /open official external source for training payer.*opens a new tab/i })).toHaveLength(2);
   });
 
   it('states when no reviewed factual reasons are available', () => {
@@ -206,7 +206,7 @@ describe('CatalogueFocusView', () => {
 
     const choices = screen.getByRole('region', { name: /official verification and student choices/i });
     const compare = within(choices).getByRole('link', { name: 'Compare this option' });
-    const official = within(choices).getByRole('link', { name: /open official provider source/i });
+    const official = within(choices).getByRole('link', { name: /open official external source for bayou skills academy/i });
 
     expect(compare).toHaveAttribute('href', '/shortlist');
     expect(official).toHaveAttribute('href', 'https://example.edu/bayou');
@@ -219,16 +219,16 @@ describe('CatalogueFocusView', () => {
     render(<CatalogueFocusView
       item={{
         ...item,
-        fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official provider link is available.',
+        fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official external source link is available.',
       }}
       backHref="/programmes?metro=greater-new-orleans"
       alternateHref="/programmes?metro=greater-new-orleans&pathway=university"
     />);
 
     expect(screen.getByLabelText('Local test fixture notice')).toHaveTextContent(/not a real provider or programme/i);
-    expect(screen.getByText(/no official provider link is available for this local test fixture/i)).toBeInTheDocument();
+    expect(screen.getByText(/no official external source link is available for this local test fixture/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Compare this option' })).toHaveAttribute('href', '/shortlist');
-    expect(screen.queryByRole('link', { name: /open official provider source|open source for|open reason source/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /official external source/i })).not.toBeInTheDocument();
     expect(document.querySelector('a[href="https://example.edu/bayou"]')).not.toBeInTheDocument();
   });
 });

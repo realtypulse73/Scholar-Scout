@@ -86,7 +86,7 @@ export default function CatalogueFocusView({
                     {isFixture ? (
                       <span className="text-sm text-ink-700">Fixture source is intentionally not linked.</span>
                     ) : (
-                      <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open source for {label} (opens a new tab)</a>
+                      <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open official external source for {label} (opens a new tab)</a>
                     )}
                   </dd>
                 </div>
@@ -117,7 +117,7 @@ export default function CatalogueFocusView({
                       {isFixture ? (
                         <span className="text-sm text-ink-700">Fixture source is intentionally not linked.</span>
                       ) : (
-                        <a href={reason.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open reason source for {reason.label} (opens a new tab)</a>
+                        <a href={reason.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open official external source for {reason.label} (opens a new tab)</a>
                       )}
                     </dd>
                   </div>
@@ -133,7 +133,7 @@ export default function CatalogueFocusView({
             <p className="mt-2 text-sm text-ink-600">Source: {item.source.label} · {item.source.date ?? 'date unavailable'} · {formatState(item.source.state)}</p>
             {isFixture ? (
               <p className="mt-3 rounded-control border border-warning-300 bg-warning-50 p-3 text-sm leading-6 text-ink-800">
-                No official provider link is available for this local test fixture.
+                No official external source link is available for this local test fixture.
               </p>
             ) : (
               <a
@@ -141,9 +141,9 @@ export default function CatalogueFocusView({
                 target="_blank"
                 rel="noreferrer"
                 className={pairedChoiceActionClassName}
-                aria-label={`Open official provider source for ${item.providerTitle} (external link; opens a new tab)`}
+                aria-label={`Open official external source for ${item.providerTitle} (opens a new tab)`}
               >
-                Open official provider source (external link; opens a new tab)
+                Open official external source (opens a new tab)
               </a>
             )}
             <div className="mt-3"><ShortlistButton programmeId={item.id} /></div>

@@ -72,8 +72,8 @@ export default function QualificationExplanation({
         <p className="mt-3 text-sm leading-6 text-ink-700">{fixtureNotice}</p>
       ) : null}
       {!hasConnection && !fixtureNotice && officialVerificationUrl ? (
-        <a href={officialVerificationUrl} target="_blank" rel="noreferrer" aria-label="Verify with the programme (opens a new tab)" className="mt-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
-          Verify with the programme (opens a new tab)
+        <a href={officialVerificationUrl} target="_blank" rel="noreferrer" aria-label="Open official external source (opens a new tab)" className="mt-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+          Open official external source (opens a new tab)
         </a>
       ) : null}
     </section>
@@ -96,8 +96,8 @@ function RequirementRow({
       <p className="text-sm font-semibold text-ink-900">{text}</p>
       <p className="mt-1 text-sm text-ink-700">Source: {evidence.sourceLabel} · Source date: {formatSourceDate(evidence.sourceDate)}</p>
       <p className="mt-1 text-sm leading-6 text-ink-700">{evidence.verificationAction}</p>
-      {sourceLinksDisabled ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`${actionLabel} (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
-        {actionLabel} (opens a new tab)
+      {sourceLinksDisabled ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`${actionLabel} with the official external source (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+        {actionLabel} with the official external source (opens a new tab)
       </a>}
     </div>
   );
@@ -109,8 +109,8 @@ function KeywordRow({ connection, sourceLinksDisabled }: { connection: Qualifica
       <p className="text-sm font-semibold text-ink-900">Keyword connection: {connection.keyword} appears in this reviewed text.</p>
       <p className="mt-1 text-sm text-ink-700">{connection.text}</p>
       <p className="mt-1 text-sm text-ink-700">Source: {connection.evidence.sourceLabel} · Source date: {formatSourceDate(connection.evidence.sourceDate)}</p>
-      {sourceLinksDisabled ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={connection.evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Verify keyword connection for ${connection.keyword} (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
-        Verify keyword connection (opens a new tab)
+      {sourceLinksDisabled ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={connection.evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Verify keyword connection for ${connection.keyword} with the official external source (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+        Verify keyword connection with the official external source (opens a new tab)
       </a>}
     </div>
   );
@@ -123,8 +123,8 @@ function VerificationRow({ row, sourceLinksDisabled }: { row: QualificationVerif
       <p className="mt-1 text-sm">{row.text}</p>
       <p className="mt-1 text-sm">Source: {row.evidence.sourceLabel} · Source date: {row.sourceDate ?? 'Source date unavailable'}</p>
       <p className="mt-1 text-sm leading-6">{row.evidence.verificationAction}</p>
-      {sourceLinksDisabled ? <p className="mt-2 text-sm">Fixture source is intentionally not linked.</p> : <a href={row.evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label="Verify this requirement (opens a new tab)" className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-blue-800 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
-        Verify this requirement (opens a new tab)
+      {sourceLinksDisabled ? <p className="mt-2 text-sm">Fixture source is intentionally not linked.</p> : <a href={row.evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label="Verify this requirement with the official external source (opens a new tab)" className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-blue-800 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+        Verify this requirement with the official external source (opens a new tab)
       </a>}
     </div>
   );

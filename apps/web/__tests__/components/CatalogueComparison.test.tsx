@@ -74,7 +74,7 @@ describe('CatalogueComparison', () => {
     expect(screen.getAllByText('Welding')).toHaveLength(2);
     expect(screen.getByText(/needs confirmation/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /details for welding pathway/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
-    expect(screen.getByRole('link', { name: /open official provider source for welding pathway/i })).toHaveAttribute('href', 'https://example.edu/programme');
+    expect(screen.getByRole('link', { name: /open official external source for welding pathway/i })).toHaveAttribute('href', 'https://example.edu/programme');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toBeInTheDocument();
     expect(screen.queryByText(/best|winner|eligible|fit/i)).not.toBeInTheDocument();
   });
@@ -136,7 +136,7 @@ describe('CatalogueComparison', () => {
     expect(screen.getByText('Prior work experience is listed in the reviewed programme requirement.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /verify a high school diploma or equivalent.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/programme');
     expect(screen.getByRole('link', { name: /details for welding pathway/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source for welding pathway/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open official external source for welding pathway/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toBeInTheDocument();
     expect(explanation.textContent?.toLocaleLowerCase()).not.toMatch(/eligible|admission|outcome|safe|salary|note|score/);
   });
@@ -179,7 +179,7 @@ describe('CatalogueComparison', () => {
     expect(screen.getByText((_, node) => node?.textContent === 'Status: unknown')).toBeInTheDocument();
     expect(screen.getByText((_, node) => node?.textContent === 'Status: conflicting')).toBeInTheDocument();
     expect(screen.getAllByText((_, node) => node?.textContent === 'Source date: 2026-09-20')).toHaveLength(8);
-    expect(screen.getAllByRole('link', { name: /verify this fact/i })).toHaveLength(8);
+    expect(screen.getAllByRole('link', { name: /verify with the official external source/i })).toHaveLength(8);
   });
 
   it('keeps current and unavailable choices in a labelled stacked comparison region with native actions', async () => {
@@ -191,9 +191,9 @@ describe('CatalogueComparison', () => {
     expect(screen.getByRole('region', { name: /saved opportunity comparison cards/i })).toHaveClass('grid', 'max-w-full', 'md:grid-cols-2');
     expect(screen.getByRole('article', { name: /welding pathway/i })).toHaveClass('min-w-0');
     expect(screen.getByRole('status', { name: /retired:one is unavailable/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source for welding pathway.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /open official external source for welding pathway.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /remove welding pathway/i })).toHaveAttribute('type', 'button');
-    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(8);
+    expect(screen.getAllByRole('link', { name: /verify with the official external source.*opens a new tab/i })).toHaveLength(8);
   });
 
   it('renders every saved factual reason with its complete evidence', async () => {
@@ -211,13 +211,13 @@ describe('CatalogueComparison', () => {
     expect(reasons).toHaveTextContent(/training payer.*student/i);
     expect(reasons).toHaveTextContent(/needs confirmation.*official programme source.*2026-09-20/i);
     expect(reasons).toHaveTextContent(/verify on the official programme page/i);
-    expect(screen.getAllByRole('link', { name: /verify this fact.*opens a new tab/i })).toHaveLength(9);
+    expect(screen.getAllByRole('link', { name: /verify with the official external source.*opens a new tab/i })).toHaveLength(9);
   });
 
   it('retains local detail access for a fixture while suppressing every placeholder external source', async () => {
     const fixture = {
       ...item(),
-      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official provider link is available.',
+      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official external source link is available.',
     };
     window.localStorage.setItem('scholarscout.shortlist', JSON.stringify(['catalogue:one']));
 
@@ -226,7 +226,7 @@ describe('CatalogueComparison', () => {
     await screen.findByRole('heading', { name: 'Welding pathway' });
     expect(screen.getByLabelText('Local test fixture notice')).toHaveTextContent(/not a real provider or programme/i);
     expect(screen.getByRole('link', { name: /details for welding pathway/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /open official provider source|verify this fact/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /official external source/i })).not.toBeInTheDocument();
     expect(document.querySelector('a[href="https://example.edu/programme"]')).not.toBeInTheDocument();
   });
 

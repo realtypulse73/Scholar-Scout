@@ -61,9 +61,9 @@ export interface CatalogueMediaRights {
 export type CatalogueMediaCandidateKind = 'local-preview' | 'approved-embed' | 'illustration';
 
 export const SYNTHETIC_ILLUSTRATION_DISCLOSURE =
-  'AI-generated illustration — not an official campus photograph';
+  'AI-generated contextual image — not an official provider or campus photograph';
 
-/** Private review classification required before a generic illustration may reach learners. */
+/** Private review classification required before a generic generated image may reach learners. */
 export interface CatalogueIllustrationClassification {
   classification: 'original-generic-learning-environment';
   accessibleDescription: string;
@@ -108,7 +108,7 @@ export interface CatalogueIllustrationMedia {
   kind: 'illustration';
   assetPath: string;
   alt: string;
-  label: 'Scholar Scout illustration';
+  label: 'Scholar Scout generated image';
   disclosure: typeof SYNTHETIC_ILLUSTRATION_DISCLOSURE;
 }
 
@@ -692,7 +692,7 @@ function isRenderableMedia(value: unknown): value is CatalogueRenderableMedia {
     return false;
   }
   if (value.kind === 'illustration') {
-    return value.label === 'Scholar Scout illustration'
+    return value.label === 'Scholar Scout generated image'
       && value.disclosure === SYNTHETIC_ILLUSTRATION_DISCLOSURE
       && Object.keys(value).every((key) => ['kind', 'assetPath', 'alt', 'label', 'disclosure'].includes(key));
   }
@@ -898,7 +898,7 @@ function toRenderableMedia(candidate: CatalogueMediaCandidate): CatalogueRendera
       kind: 'illustration',
       assetPath: candidate.assetPath!,
       alt: candidate.alt,
-      label: 'Scholar Scout illustration',
+      label: 'Scholar Scout generated image',
       disclosure: SYNTHETIC_ILLUSTRATION_DISCLOSURE,
     };
   }

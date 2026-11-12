@@ -55,7 +55,7 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('heading', { name: /northside welding institute/i })).toBeInTheDocument();
     expect(screen.getByText(/cost or tuition/i)).toBeInTheDocument();
     expect(screen.getByText(/northside official catalogue.*2026-09-20.*current/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open official provider source/i })).toHaveAttribute('href', 'https://example.edu/welding');
+    expect(screen.getByRole('link', { name: /open official external source for northside welding institute/i })).toHaveAttribute('href', 'https://example.edu/welding');
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByRole('region', { name: /facts to verify/i })).toHaveTextContent(/training payer/i);
     expect(screen.getByRole('link', { name: /alternate routes/i })).toHaveAttribute('href', expect.stringContaining('pathway=university'));
@@ -69,7 +69,7 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('article', { name: /northside welding institute/i })).toHaveClass('min-w-0', 'max-w-full');
     expect(screen.getByText(/facts: needs confirmation/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toHaveAttribute('type', 'button');
-    expect(screen.getByRole('link', { name: /open official provider source for northside welding institute.*opens a new tab/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /open official external source for northside welding institute.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('link', { name: /see all facts and sources for northside welding institute/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByTestId('catalogue-card-actions')).toHaveClass('flex-wrap');
   });
@@ -80,22 +80,22 @@ describe('CatalogueOpportunityCard', () => {
     expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/skill taught.*welding/i);
     expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/current.*northside official catalogue.*2026-09-20/i);
     expect(screen.getByRole('region', { name: /reason to consider/i })).toHaveTextContent(/confirm this detail directly with northside/i);
-    expect(screen.getByRole('link', { name: /open source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
+    expect(screen.getByRole('link', { name: /open official external source for skill taught.*opens a new tab/i })).toHaveAttribute('href', 'https://example.edu/welding');
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
   });
 
   it('discloses a local fixture while retaining its detail view and omitting placeholder outbound links', () => {
     const fixture = {
       ...item,
-      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official provider link is available.',
+      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official external source link is available.',
     };
 
     render(<CatalogueOpportunityCard item={fixture} filters={{ metro: 'greater-houston', pathway: 'all', delivery: 'all', status: 'all', q: '', page: 1 }} />);
 
     expect(screen.getByLabelText('Local test fixture notice')).toHaveTextContent(/not a real provider or programme/i);
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
-    expect(screen.queryByRole('link', { name: /official provider source|open source for skill taught/i })).not.toBeInTheDocument();
-    expect(screen.getByText('No official provider link for this local test fixture')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /official external source/i })).not.toBeInTheDocument();
+    expect(screen.getByText('No official external source link for this local test fixture')).toBeInTheDocument();
     expect(document.querySelector('a[href="https://example.edu/welding"]')).not.toBeInTheDocument();
   });
 
@@ -189,7 +189,7 @@ describe('CatalogueOpportunityCard', () => {
     const explanation = screen.getByRole('region', { name: /qualification details/i });
     expect(explanation).toHaveClass('min-w-0');
     expect(explanation).toHaveTextContent('Add qualifications to compare published requirements.');
-    expect(screen.getByRole('link', { name: 'Verify with the programme (opens a new tab)' })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /open official external source for northside welding institute.*opens a new tab/i })).toHaveAttribute('target', '_blank');
     expect(explanation.textContent?.toLocaleLowerCase()).not.toMatch(/eligible|admission|outcome|safe|salary/);
   });
 });

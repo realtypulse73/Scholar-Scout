@@ -114,7 +114,7 @@ export default function DiscoveryPreviewSlot({ media, contributorMedia, playback
         {contributorMedia?.nonEndorsement
           ?? 'Scholar Scout is not affiliated with or endorsed by the provider. Facts and sources below remain the record to verify.'}
       </p>
-      {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">This illustration is supporting context. Facts and official source actions below remain the record to verify.</p> : null}
+      {media?.kind === 'illustration' ? <p className="mt-2 text-sm leading-6 text-ink-700">This generated image is supporting context. Facts and official source actions below remain the record to verify.</p> : null}
       {isAboutOpen && localPreview && reviewedMonthYear && rightsBasis ? (
         <div role="dialog" aria-modal="true" aria-label="About this media" className="mt-4 rounded-control border border-ink-300 bg-white p-4 shadow-sm">
           <p className="font-semibold text-ink-900">About this media</p>

@@ -179,17 +179,17 @@ function ComparisonCard({
         <Link href={detailHref} aria-label={`Details for ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-brand-600 px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Details and sources</Link>
         {isFixture ? (
           <p className="inline-flex min-h-touch items-center rounded-control border border-warning-300 bg-warning-50 px-3 text-sm font-semibold text-ink-800">
-            No official provider link for this local test fixture
+            No official external source link for this local test fixture
           </p>
         ) : (
           <a
             href={item.officialVerificationUrl}
             target="_blank"
             rel="noreferrer"
-            aria-label={`Open official provider source for ${item.providerTitle} (external link; opens a new tab)`}
+            aria-label={`Open official external source for ${item.providerTitle} (opens a new tab)`}
             className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
-            Open official provider source (external link; opens a new tab)
+            Open official external source (opens a new tab)
           </a>
         )}
         <button type="button" onClick={() => onRemove(item.id)} aria-label={`Remove ${item.providerTitle}`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:border-danger-600 hover:text-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Remove</button>
@@ -222,7 +222,7 @@ function FactRow<Value>({
         {sourceLinksDisabled ? (
           <span className="text-xs text-ink-700">Fixture source is intentionally not linked.</span>
         ) : (
-          <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Verify this fact (opens a new tab)</a>
+          <a href={fact.evidence.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Verify with the official external source (opens a new tab)</a>
         )}
       </dd>
     </div>

@@ -89,7 +89,7 @@ export default function CatalogueOpportunityCard({
           <p className="mt-1 text-sm text-ink-800"><span className="font-semibold">{item.reasonsToConsider[0].label}:</span> {formatValue(item.reasonsToConsider[0].value)}</p>
           <p className="mt-1 text-sm text-ink-700">Status: {formatState(item.reasonsToConsider[0].state)} · Source: {item.reasonsToConsider[0].evidence.sourceLabel} · Source date: {formatEvidenceDate(item.reasonsToConsider[0].evidence.sourceDate)}</p>
           <p className="mt-1 text-sm leading-6 text-ink-700">{item.reasonsToConsider[0].evidence.verificationAction}</p>
-          {isFixture ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={item.reasonsToConsider[0].evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Open source for ${item.reasonsToConsider[0].label} (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open source (opens a new tab)</a>}
+          {isFixture ? <p className="mt-2 text-sm text-ink-700">Fixture source is intentionally not linked.</p> : <a href={item.reasonsToConsider[0].evidence.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Open official external source for ${item.reasonsToConsider[0].label} (opens a new tab)`} className="mt-2 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open official external source (opens a new tab)</a>}
         </section>
       ) : null}
 
@@ -115,7 +115,7 @@ export default function CatalogueOpportunityCard({
         <Link href={alternateHref} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">
           Alternate routes: {pathwayLabels[alternatePathway]}
         </Link>
-        {isFixture ? <p className="inline-flex min-h-touch items-center rounded-control border border-warning-300 bg-warning-50 px-4 text-sm font-semibold text-ink-800">No official provider link for this local test fixture</p> : <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" aria-label={`Open official provider source for ${item.providerTitle} (external link; opens a new tab)`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open official provider source (external link; opens a new tab)</a>}
+        {isFixture ? <p className="inline-flex min-h-touch items-center rounded-control border border-warning-300 bg-warning-50 px-4 text-sm font-semibold text-ink-800">No official external source link for this local test fixture</p> : <a href={item.officialVerificationUrl} target="_blank" rel="noreferrer" aria-label={`Open official external source for ${item.providerTitle} (opens a new tab)`} className="inline-flex min-h-touch items-center rounded-control border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open official external source (opens a new tab)</a>}
       </div>
     </article>
   );

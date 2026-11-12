@@ -84,7 +84,11 @@ describe('CatalogueDiscoveryOverview', () => {
     const model = buildCatalogueDiscoveryModel({ records: [publishedRecord], searchParams: { metro: 'greater-houston' } });
     render(<CatalogueDiscoveryOverview model={model} />);
     expect(screen.getByRole('heading', { name: /reviewed opportunities/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /official verification/i })).toHaveAttribute('href', 'https://example.edu/programme');
+    const officialSourceLinks = screen.getAllByRole('link', { name: /official external source/i });
+    expect(officialSourceLinks).toHaveLength(2);
+    expect(officialSourceLinks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: 'https://example.edu/programme' }),
+    ]));
     expect(screen.getByRole('link', { name: /see all facts and sources/i })).toHaveAttribute('href', '/programmes/catalogue%3Aone?metro=greater-houston');
     expect(screen.getByRole('button', { name: /save to shortlist/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open comparison/i })).toHaveAttribute('href', '/shortlist');

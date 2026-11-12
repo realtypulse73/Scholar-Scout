@@ -211,7 +211,7 @@ function getFixtureNotice(record: CataloguePublishedRecord): string | undefined 
   const boundaryLooksLikeFixture = record.claimBoundary.toLocaleLowerCase().includes('fixture');
   if (!sourceLooksLikeFixture || !boundaryLooksLikeFixture) return undefined;
 
-  return 'Local interface test fixture — not a real provider or programme. No official provider link is available.';
+  return 'Local interface test fixture — not a real provider or programme. No official external source link is available.';
 }
 
 function deriveReasonsToConsider({

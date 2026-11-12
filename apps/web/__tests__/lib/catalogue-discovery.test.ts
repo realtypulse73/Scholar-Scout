@@ -68,7 +68,7 @@ describe('catalogue discovery model', () => {
     expect(item).toMatchObject({
       id: 'phase11-uat-community-pathway',
       providerTitle: 'Phase 11 UAT Community Pathway',
-      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official provider link is available.',
+      fixtureNotice: 'Local interface test fixture — not a real provider or programme. No official external source link is available.',
     });
     expect(item.officialVerificationUrl).toBeUndefined();
   });
@@ -79,8 +79,8 @@ describe('catalogue discovery model', () => {
       kind: 'illustration',
       assetPath: '/images/learning-environment.png',
       alt: 'A Scholar Scout illustrative learning environment.',
-      label: 'Scholar Scout illustration',
-      disclosure: 'AI-generated illustration — not an official campus photograph',
+      label: 'Scholar Scout generated image',
+      disclosure: 'AI-generated contextual image — not an official provider or campus photograph',
     };
     (reviewed as typeof reviewed & { mediaCandidates: unknown[] }).mediaCandidates = [{ embedUrl: 'https://example.edu/embed' }];
 

@@ -9,8 +9,17 @@ import {
   parseCatalogueCandidateImport,
   resolveRenderableMedia,
   type CatalogueCandidateInput,
+  type CataloguePublishedRecord,
 } from '@/lib/catalogue-publication';
-import type { FactEvidence } from '@/lib/catalogue-contract';
+import {
+  validateCatalogueRegion,
+  validateCatalogueOpportunityCardFacts,
+  validateFactEvidence,
+  validateSourceMetadata,
+  type FactEvidence,
+} from '@/lib/catalogue-contract';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const now = new Date('2026-09-22T12:00:00.000Z');
 
@@ -83,6 +92,101 @@ const validCandidate: CatalogueCandidateInput = {
 };
 
 describe('catalogue publication editorial checklist', () => {
+  it('keeps the five local official-source records in an append-only active snapshot without changing the Phase 11 fixture', () => {
+    const data = JSON.parse(readFileSync(
+      join(process.cwd(), 'data', 'scholarscout-data.json'),
+      'utf8',
+    )) as { cataloguePublicationState: unknown };
+    const state = data.cataloguePublicationState as {
+      activeSnapshotId: string;
+      snapshots: Array<{
+        id: string;
+        records: CataloguePublishedRecord[];
+        contentDigest: string;
+      }>;
+      manifests: Array<{ snapshotId: string; contentDigest: string }>;
+    };
+    const active = state.snapshots.find((snapshot) => snapshot.id === state.activeSnapshotId);
+    const prior = state.snapshots.find((snapshot) => snapshot.id === 'phase11-uat-snapshot-2');
+
+    expect(active?.id).toBe('catalogue-snapshot-3');
+    expect(active?.records.map((record) => record.id)).toEqual([
+      'catalogue:federal-student-aid-options',
+      'catalogue:houston-city-college-programs',
+      'catalogue:lone-star-college-programs',
+      'catalogue:san-jacinto-college-areas-of-study',
+      'catalogue:usdol-apprenticeship-job-finder',
+      'phase11-uat-community-pathway',
+    ]);
+    expect(active?.records.find((record) => record.id === 'phase11-uat-community-pathway')).toEqual(
+      prior?.records.find((record) => record.id === 'phase11-uat-community-pathway'),
+    );
+    expect(active?.records.filter((record) => record.id.startsWith('catalogue:')).map((record) => ({
+      id: record.id,
+      assetPath: record.renderableMedia?.assetPath,
+      mediaFallback: record.mediaFallback,
+    }))).toEqual([
+      {
+        id: 'catalogue:federal-student-aid-options',
+        assetPath: '/images/catalogue/financial-aid-options.png',
+        mediaFallback: false,
+      },
+      {
+        id: 'catalogue:houston-city-college-programs',
+        assetPath: '/images/catalogue/houston-city-college-program-exploration.png',
+        mediaFallback: false,
+      },
+      {
+        id: 'catalogue:lone-star-college-programs',
+        assetPath: '/images/catalogue/lone-star-college-program-exploration.png',
+        mediaFallback: false,
+      },
+      {
+        id: 'catalogue:san-jacinto-college-areas-of-study',
+        assetPath: '/images/catalogue/san-jacinto-college-areas-of-study.png',
+        mediaFallback: false,
+      },
+      {
+        id: 'catalogue:usdol-apprenticeship-job-finder',
+        assetPath: '/images/catalogue/apprenticeship-discovery.png',
+        mediaFallback: false,
+      },
+    ]);
+    for (const record of active?.records.filter((item) => item.id.startsWith('catalogue:')) ?? []) {
+      expect(record.renderableMedia).toMatchObject({
+        kind: 'illustration',
+        label: 'Scholar Scout generated image',
+        disclosure: 'AI-generated contextual image — not an official provider or campus photograph',
+      });
+      expect(existsSync(join(process.cwd(), 'public', record.renderableMedia!.assetPath))).toBe(true);
+    }
+    expect(active?.records.filter((record) => record.id.startsWith('catalogue:')).map(
+      (record) => record.source.sourceUrl,
+    )).toEqual([
+      'https://studentaid.gov/understand-aid/types',
+      'https://www.hccs.edu/programs--courses/',
+      'https://www.lonestar.edu/programs-of-study/',
+      'https://www.sanjac.edu/programs/areas-of-study/',
+      'https://www.apprenticeship.gov/apprenticeship-job-finder',
+    ]);
+    for (const record of active?.records.filter((item) => item.id.startsWith('catalogue:')) ?? []) {
+      expect(validateSourceMetadata(record.source)).toEqual([]);
+      expect(validateCatalogueOpportunityCardFacts(
+        record.facts,
+        new Date('2026-11-11T12:00:00.000Z'),
+      )).toEqual([]);
+      expect(validateCatalogueRegion(record.region)).toEqual([]);
+      expect(record.reviewedDescription && validateFactEvidence(
+        record.reviewedDescription.evidence,
+        new Date('2026-11-11T12:00:00.000Z'),
+      )).toEqual([]);
+    }
+    expect(active && getCatalogueSnapshotDigest(active.records)).toBe(active?.contentDigest);
+    expect(isCataloguePublicationState(data.cataloguePublicationState)).toBe(true);
+    expect(state.manifests.find((manifest) => manifest.snapshotId === active?.id)?.contentDigest)
+      .toBe(active?.contentDigest);
+  });
+
   it('returns the ordered six-category completeness summary and disclosure', () => {
     const result = evaluateCatalogueChecklist(validCandidate, now);
 
@@ -162,14 +266,14 @@ describe('reviewed media projection', () => {
     assetPath: '/images/learning-environment.png',
     alt: 'A Scholar Scout illustrative learning environment.',
     label: 'Illustration',
-    sourceLabel: 'Scholar Scout illustration record',
+    sourceLabel: 'Scholar Scout generated image record',
     sourceUrl: 'https://example.edu/illustration-record',
     rights: { kind: 'scholarscout-owned', sourceUrl: 'https://example.edu/illustration-record', status: 'valid' },
     reviewedAt: '2026-09-20',
     illustration: {
       classification: 'original-generic-learning-environment',
       accessibleDescription: 'A Scholar Scout illustrative learning environment.',
-      disclosure: 'AI-generated illustration — not an official campus photograph',
+      disclosure: 'AI-generated contextual image — not an official provider or campus photograph',
       representation: 'generic-learning-environment',
       identityClaim: 'none',
       sourceCategory: 'original-scholarscout',
@@ -189,10 +293,10 @@ describe('reviewed media projection', () => {
     expect(result).toEqual({
       renderableMedia: {
         kind: 'illustration',
-        label: 'Scholar Scout illustration',
+        label: 'Scholar Scout generated image',
         assetPath: '/images/learning-environment.png',
         alt: 'A Scholar Scout illustrative learning environment.',
-        disclosure: 'AI-generated illustration — not an official campus photograph',
+        disclosure: 'AI-generated contextual image — not an official provider or campus photograph',
       },
       mediaFallback: false,
     });
