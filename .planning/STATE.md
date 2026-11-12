@@ -273,6 +273,7 @@ Last activity: 2026-11-11 — completed the Phase 13.1 browser UAT and release-s
 | 260924-ftn | Allow safe local development registration without weakening Vercel production registration controls — verified | 2026-09-24 | a126265 | [260924-ftn-allow-safe-local-development-registratio](./quick/260924-ftn-allow-safe-local-development-registratio/) |
 | 260924-gl9 | Allow the local development credential exchange used immediately after registration without weakening Vercel production or Preview sign-in controls — verified | 2026-09-24 | c44eb98 | [260924-gl9-allow-the-local-development-credential-e](./quick/260924-gl9-allow-the-local-development-credential-e/) |
 | 261014-x96 | Add an accessible Preview contributor workflow link after invitation success | 2026-10-14 | efbc2d2 | [261014-x96-add-an-accessible-preview-contributor-wo](./quick/261014-x96-add-an-accessible-preview-contributor-wo/) |
+| 261111-vcx | Add five official external catalogue sources with generated contextual imagery | 2026-11-11 | a872535 | [261111-vcx-add-five-first-party-official-external-c](./quick/261111-vcx-add-five-first-party-official-external-c/) |
 
 ## Deferred Items
 
