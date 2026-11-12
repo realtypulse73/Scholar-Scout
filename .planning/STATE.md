@@ -6,9 +6,9 @@ current_phase: 13
 current_phase_name: Provider Detail, Transition Stories, and Media Safety
 status: ready_to_verify
 stopped_at: Completed 13.1-04-PLAN.md; next gate is the independent Phase 13 human media UAT
-last_updated: "2026-11-11T18:44:00-05:00"
+last_updated: "2026-11-11T18:43:11-05:00"
 last_activity: 2026-11-11
-last_activity_desc: Phase 13.1 automated release checks and user-approved browser UAT passed; its next GSD gate is the independent Phase 13 human media UAT
+last_activity_desc: Added a version-controlled empty-store catalogue seed for the five reviewed official sources; Phase 13 human media UAT remains the next phase gate
 progress:
   total_phases: 9
   completed_phases: 6
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 Phase: 13 — Provider Detail, Transition Stories, and Media Safety
 Plan: implementation summaries present; human media UAT pending
 Status: Ready to verify — Phase 13.1 is complete but does not close this independent gate
-Last activity: 2026-11-11 — completed the Phase 13.1 browser UAT and release-scope verification
+Last activity: 2026-11-11 — added a safe, version-controlled empty-store catalogue seed; Phase 13 human media UAT remains pending
 
 ## Performance Metrics
 
@@ -274,6 +274,7 @@ Last activity: 2026-11-11 — completed the Phase 13.1 browser UAT and release-s
 | 260924-gl9 | Allow the local development credential exchange used immediately after registration without weakening Vercel production or Preview sign-in controls — verified | 2026-09-24 | c44eb98 | [260924-gl9-allow-the-local-development-credential-e](./quick/260924-gl9-allow-the-local-development-credential-e/) |
 | 261014-x96 | Add an accessible Preview contributor workflow link after invitation success | 2026-10-14 | efbc2d2 | [261014-x96-add-an-accessible-preview-contributor-wo](./quick/261014-x96-add-an-accessible-preview-contributor-wo/) |
 | 261111-vcx | Add five official external catalogue sources with generated contextual imagery | 2026-11-11 | a872535 | [261111-vcx-add-five-first-party-official-external-c](./quick/261111-vcx-add-five-first-party-official-external-c/) |
+| 261111-w9q | Version the official Greater Houston catalogue seed | 2026-11-11 | 813d641 | [261111-w9q-create-a-safe-versioned-seed-mechanism-f](./quick/261111-w9q-create-a-safe-versioned-seed-mechanism-f/) |
 
 ## Deferred Items
 
