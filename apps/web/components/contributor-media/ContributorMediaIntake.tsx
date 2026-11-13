@@ -102,7 +102,11 @@ function ContributorMediaUploader({
   const [video, setVideo] = useState<File | null>(null);
   const [poster, setPoster] = useState<File | null>(null);
   const [status, setStatus] = useState(initialStatus);
-  const [message, setMessage] = useState('Choose one MP4 video and one JPEG or PNG poster. Server inspection decides review readiness.');
+  const [message, setMessage] = useState(
+    programmes.length > 0
+      ? 'Choose one MP4 video and one JPEG or PNG poster. Server inspection decides review readiness.'
+      : 'Action needed: no current approved programme is available for private upload.',
+  );
   const [submitting, setSubmitting] = useState(false);
 
   async function removeSubmission() {
@@ -198,12 +202,14 @@ function ContributorMediaUploader({
   return <form className="mt-6 space-y-5" onSubmit={submit}>
     <p className="rounded-xl border border-border bg-ink-50 p-4 text-sm text-ink-700" aria-live="polite">Current private status: <strong>{status.status}</strong>. {message}</p>
     {status.status === 'Removed' ? null : <>
-    <label className="block text-sm font-semibold" htmlFor="contributor-programme">Programme
+    {programmes.length > 0 ? <label className="block text-sm font-semibold" htmlFor="contributor-programme">Programme
       <select id="contributor-programme" className="mt-2 w-full rounded-lg border border-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-600" value={programmeId} onChange={(event) => setProgrammeId(event.target.value)} required>
-        <option value="">Choose a current programme</option>
+        <option value="">Choose a current approved programme</option>
         {programmes.map((programme) => <option key={programme.id} value={programme.id}>{programme.name}</option>)}
       </select>
-    </label>
+    </label> : <p className="rounded-xl border border-warning-300 bg-warning-50 p-4 text-sm text-ink-700">
+      A staff reviewer must approve a programme before this Preview test can continue.
+    </p>}
     <label className="block text-sm font-semibold" htmlFor="contributor-video">Original MP4 video (up to 25 MiB)
       <input
         id="contributor-video"
@@ -231,7 +237,7 @@ function ContributorMediaUploader({
       {poster ? `Poster selected: ${poster.name}` : 'No poster selected yet.'}
     </p>
     {status.status === 'Action needed' ? <button className="min-h-11 rounded-lg border border-brand-700 px-5 py-3 font-semibold text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={reinspectSubmission} type="button">{submitting ? 'Rechecking private package…' : 'Recheck existing private package'}</button> : null}
-    <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} type="submit">{submitting ? 'Checking private package…' : 'Prepare private upload'}</button>
+    <button className="min-h-11 rounded-lg bg-brand-700 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting || programmes.length === 0} type="submit">{submitting ? 'Checking private package…' : 'Prepare private upload'}</button>
     <button className="min-h-11 rounded-lg border border-danger-600 px-5 py-3 font-semibold text-danger-700 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" disabled={submitting} onClick={removeSubmission} type="button">{submitting ? 'Removing submission…' : 'Remove my submission'}</button>
     </>}
   </form>;

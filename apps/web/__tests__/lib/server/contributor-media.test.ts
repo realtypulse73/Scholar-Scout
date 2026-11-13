@@ -2,6 +2,7 @@
 
 import {
   authorizeContributorMediaDirectUpload,
+  getContributorMediaEligibleProgrammes,
   getContributorMediaPrivateIntakeState,
 } from '@/lib/server/contributor-media';
 import {
@@ -147,5 +148,44 @@ describe('getContributorMediaPrivateIntakeState', () => {
     change(store.data);
 
     await expect(getContributorMediaPrivateIntakeState(owner, NOW)).resolves.toEqual({ status: 'unavailable' });
+  });
+});
+
+describe('getContributorMediaEligibleProgrammes', () => {
+  let store: MemoryDataStore;
+
+  beforeEach(() => {
+    store = new MemoryDataStore();
+    setScholarScoutDataStoreForTests(store);
+  });
+
+  afterEach(() => setScholarScoutDataStoreForTests(null));
+
+  it('returns only current approved catalogue candidates, never seed programme IDs', async () => {
+    store.data.cataloguePublicationState = {
+      schemaVersion: 1,
+      candidates: [
+        {
+          id: 'catalogue:approved-training',
+          title: 'Approved training',
+          lifecycle: 'approved',
+          revision: 2,
+          retirementIntent: false,
+          approval: { reviewerId: 'reviewer-1', reviewedAt: NOW.toISOString(), revision: 2 },
+        },
+        {
+          id: 'catalogue:draft-training',
+          title: 'Draft training',
+          lifecycle: 'draft',
+          revision: 1,
+          approval: null,
+        },
+      ],
+      auditEvents: [],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
+
+    await expect(getContributorMediaEligibleProgrammes()).resolves.toEqual([
+      { id: 'catalogue:approved-training', name: 'Approved training' },
+    ]);
   });
 });

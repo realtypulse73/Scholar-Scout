@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import ScholarScoutWordmark from '@/components/branding/ScholarScoutWordmark';
 import ContributorMediaIntake from '@/components/contributor-media/ContributorMediaIntake';
-import { getContributorMediaPrivateIntakeState } from '@/lib/server/contributor-media';
-import { getGovernedProgrammes } from '@/lib/server/programme-records';
+import {
+  getContributorMediaEligibleProgrammes,
+  getContributorMediaPrivateIntakeState,
+} from '@/lib/server/contributor-media';
 import { resolveStudentActor } from '@/lib/server/student-actor';
 
 interface PageProps {
@@ -21,7 +23,7 @@ export default async function ContributorMediaPage({ searchParams }: PageProps) 
     ? await getContributorMediaPrivateIntakeState(actor, new Date(), { freshPreviewDraft })
     : null;
   const programmes = intakeState && intakeState.status !== 'unavailable'
-    ? (await getGovernedProgrammes()).map((programme) => ({ id: programme.id, name: programme.name }))
+    ? await getContributorMediaEligibleProgrammes()
     : [];
 
   return (

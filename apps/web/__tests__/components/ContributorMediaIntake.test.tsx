@@ -27,6 +27,14 @@ describe('ContributorMediaIntake', () => {
     expect(window.localStorage.getItem('contributor-media')).toBeNull();
   });
 
+  it('does not offer upload submission when no current approved programme is available', () => {
+    render(<ContributorMediaIntake programmes={[]} initialStatus={{ status: 'Draft', revision: 2 }} />);
+
+    expect(screen.getByText(/no current approved programme is available/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Programme')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /prepare private upload/i })).toBeDisabled();
+  });
+
   it('replays the server-issued opaque revision for both private uploads and completion', async () => {
     const originalFetch = global.fetch;
     const fetchMock = jest.fn()

@@ -88,6 +88,21 @@ export interface ReleasedContributorMedia {
   contentType: 'video/mp4';
 }
 
+/**
+ * Projects only catalogue records that the private upload endpoint can accept.
+ * Seed programmes are intentionally excluded because they have not passed the
+ * governed candidate approval boundary required for contributor media.
+ */
+export async function getContributorMediaEligibleProgrammes(): Promise<Array<{ id: string; name: string }>> {
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const candidates = (await readScholarScoutData()).cataloguePublicationState?.candidates ?? [];
+
+  return candidates
+    .filter((candidate) => isCurrentCandidate([candidate], candidate.id))
+    .map((candidate) => ({ id: candidate.id, name: candidate.title }))
+    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+}
+
 /** Resolves a private video only after rechecking the active approved catalogue release and candidate link. */
 export async function getReleasedContributorMedia(publicId: string): Promise<ReleasedContributorMedia | null> {
   if (!/^media-[a-f0-9-]{36}$/i.test(publicId)) return null;
