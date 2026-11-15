@@ -88,9 +88,33 @@ async function handleDirectUpload(
       },
     });
     return NextResponse.json(response);
-  } catch {
-    return NextResponse.json({ error: 'Private upload could not be authorized.' }, { status: 400 });
+  } catch (error) {
+    const category = classifyPrivateUploadFailure(error);
+    console.warn('Private contributor upload presigning did not pass.', { category });
+    const unavailable = category === 'blob-credentials-unavailable' || category === 'blob-oidc-unavailable';
+    return NextResponse.json({
+      error: unavailable
+        ? 'Private Preview storage is temporarily unavailable. Your files were not uploaded.'
+        : 'Private upload could not be authorized.',
+      category,
+    }, { status: unavailable ? 503 : 400 });
   }
+}
+
+type PrivateUploadFailureCategory =
+  | 'blob-credentials-unavailable'
+  | 'blob-oidc-unavailable'
+  | 'upload-authorization-denied'
+  | 'blob-presign-unavailable';
+
+function classifyPrivateUploadFailure(error: unknown): PrivateUploadFailureCategory {
+  const message = error instanceof Error ? error.message : '';
+  if (message.includes('No blob credentials found')) return 'blob-credentials-unavailable';
+  if (message.includes('OIDC is enabled for this project')) return 'blob-oidc-unavailable';
+  if (message.includes('Unauthorized private upload request') || message.includes('Invalid private upload capability')) {
+    return 'upload-authorization-denied';
+  }
+  return 'blob-presign-unavailable';
 }
 
 function isBlobUploadBody(value: unknown): value is HandleUploadPresignedBody {

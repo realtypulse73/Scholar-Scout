@@ -346,7 +346,14 @@ describe('contributor media routes', () => {
     });
 
     const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
-      method: 'POST', body: JSON.stringify({ type: 'blob.generate-client-token' }),
+      method: 'POST', body: JSON.stringify({
+        type: 'blob.generate-presigned-url',
+        payload: {
+          pathname: `contributor-media/${uploadId}/video.mp4`,
+          clientPayload: JSON.stringify({ uploadId, kind: 'video', expectedRevision }),
+          multipart: false,
+        },
+      }),
     }));
 
     expect(response.status).toBe(expectedStatus);
@@ -355,6 +362,29 @@ describe('contributor media routes', () => {
       expect(handleUploadPresigned).toHaveBeenCalledTimes(1);
       expect(JSON.stringify(await response.json())).not.toMatch(/account|object|path|invite/i);
     }
+  });
+
+  it('reports a safe Preview storage category when Blob OIDC is unavailable', async () => {
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID = 'store-private';
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY = 'webhook-key';
+    const warning = jest.spyOn(console, 'warn').mockImplementation();
+    jest.mocked(handleUploadPresigned).mockRejectedValueOnce(
+      new Error("OIDC is enabled for this project, but not for this token's environment."),
+    );
+
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST', body: JSON.stringify({ type: 'blob.generate-presigned-url', payload: {} }),
+    }));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Private Preview storage is temporarily unavailable. Your files were not uploaded.',
+      category: 'blob-oidc-unavailable',
+    });
+    expect(warning).toHaveBeenCalledWith('Private contributor upload presigning did not pass.', {
+      category: 'blob-oidc-unavailable',
+    });
+    warning.mockRestore();
   });
 
   it('retries the current Action needed package with new private object keys and a new revision', async () => {
