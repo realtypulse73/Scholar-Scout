@@ -31,3 +31,8 @@ next_action: "Deploy the bounded failure classification, then use one Preview re
 - The direct-upload route now classifies known Blob credential and OIDC failures into bounded, non-secret categories and emits only that category to the server log.
 - The browser receives a clear Preview-storage message when no file has been transferred; authorization failures retain the generic safe response.
 - Focused coverage uses the current `blob.generate-presigned-url` request shape instead of the legacy client-token event.
+
+## Root-cause correction
+
+- Vercel makes the short-lived OIDC credential available on the function request at runtime. The signing route now passes that credential explicitly to the Blob SDK with the connected private-store ID.
+- No credential is persisted, returned to the browser, or logged.

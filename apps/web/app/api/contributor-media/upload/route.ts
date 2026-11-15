@@ -37,6 +37,7 @@ async function handleDirectUpload(
 ) {
   const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
   const webhookPublicKey = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY;
+  const oidcToken = request.headers.get('x-vercel-oidc-token') ?? undefined;
   if (!storeId || !webhookPublicKey) return NextResponse.json({ error: 'Private upload is not available right now.' }, { status: 503 });
   try {
     const response = await handleUploadPresigned({
@@ -58,6 +59,7 @@ async function handleDirectUpload(
         return {
           token: await issueSignedToken({
             storeId,
+            oidcToken,
             pathname,
             operations: ['put'],
             validUntil: Date.now() + 10 * 60 * 1_000,

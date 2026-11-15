@@ -346,7 +346,7 @@ describe('contributor media routes', () => {
     });
 
     const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
-      method: 'POST', body: JSON.stringify({
+      method: 'POST', headers: { 'x-vercel-oidc-token': 'runtime-oidc-token' }, body: JSON.stringify({
         type: 'blob.generate-presigned-url',
         payload: {
           pathname: `contributor-media/${uploadId}/video.mp4`,
@@ -360,6 +360,7 @@ describe('contributor media routes', () => {
     expect(issueSignedToken).toHaveBeenCalledTimes(signerCalls);
     if (expectedStatus === 200) {
       expect(handleUploadPresigned).toHaveBeenCalledTimes(1);
+      expect(issueSignedToken).toHaveBeenCalledWith(expect.objectContaining({ oidcToken: 'runtime-oidc-token' }));
       expect(JSON.stringify(await response.json())).not.toMatch(/account|object|path|invite/i);
     }
   });
