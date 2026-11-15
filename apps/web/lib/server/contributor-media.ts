@@ -19,6 +19,7 @@ import {
   type ContributorPrivateStatus,
 } from '@/lib/contributor-media';
 import { commitConditionalMutation, type ConditionalMutationResult } from '@/lib/server/persistence-operations';
+import { getPrivateMediaStoreId } from '@/lib/server/private-media-config';
 import type { AccountStudentActor } from '@/lib/server/student-actor';
 import type { ActiveStaffActor } from '@/lib/server/active-staff';
 import {
@@ -131,7 +132,7 @@ export async function getReleasedContributorMedia(publicId: string): Promise<Rel
     return null;
   }
 
-  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  const storeId = getPrivateMediaStoreId();
   if (!storeId) return null;
   try {
     const result = await get(submission.mediaPackage.videoObjectKey, {
@@ -746,7 +747,7 @@ async function inspectPrivateMediaPackage(
   videoObjectKey: string,
   posterObjectKey: string,
 ): Promise<PrivateMediaInspectionResult> {
-  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  const storeId = getPrivateMediaStoreId();
   if (!storeId) return { ok: false, category: 'configuration-unavailable' };
   let video: Awaited<ReturnType<typeof get>>;
   let poster: Awaited<ReturnType<typeof get>>;
@@ -795,7 +796,7 @@ async function inspectPrivateMediaPackage(
 }
 
 async function deletePrivateContributorMedia(objectKeys: string[]): Promise<void> {
-  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+  const storeId = getPrivateMediaStoreId();
   if (objectKeys.length === 0 || !storeId) return;
   try {
     await del(objectKeys, { storeId });

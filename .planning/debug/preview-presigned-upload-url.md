@@ -36,3 +36,8 @@ next_action: "Deploy the bounded failure classification, then use one Preview re
 
 - Vercel makes the short-lived OIDC credential available on the function request at runtime. The signing route now passes that credential explicitly to the Blob SDK with the connected private-store ID.
 - No credential is persisted, returned to the browser, or logged.
+
+## Vercel integration-name correction
+
+- A read-only Preview environment audit showed Vercel generated `SCHOLARSCOUT_PRIVATE_MEDIA__STORE_ID` and `SCHOLARSCOUT_PRIVATE_MEDIA__WEBHOOK_PUBLIC_KEY` (double underscore after the configured prefix).
+- The application previously read only single-underscore names, leaving the direct-upload route without the connected store. The configuration reader now accepts both forms without duplicating or changing any Vercel setting.

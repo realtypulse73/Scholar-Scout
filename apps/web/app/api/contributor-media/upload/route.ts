@@ -7,6 +7,10 @@ import {
   issueContributorMediaUpload,
   recordContributorMediaObject,
 } from '@/lib/server/contributor-media';
+import {
+  getPrivateMediaStoreId,
+  getPrivateMediaWebhookPublicKey,
+} from '@/lib/server/private-media-config';
 import { resolveStudentActor, type AccountStudentActor } from '@/lib/server/student-actor';
 
 const MAX_UPLOAD_REQUEST_BYTES = 4 * 1024;
@@ -35,8 +39,8 @@ async function handleDirectUpload(
   actor: AccountStudentActor | null,
   body: HandleUploadPresignedBody,
 ) {
-  const storeId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
-  const webhookPublicKey = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY;
+  const storeId = getPrivateMediaStoreId();
+  const webhookPublicKey = getPrivateMediaWebhookPublicKey();
   const oidcToken = request.headers.get('x-vercel-oidc-token') ?? undefined;
   if (!storeId || !webhookPublicKey) return NextResponse.json({ error: 'Private upload is not available right now.' }, { status: 503 });
   try {

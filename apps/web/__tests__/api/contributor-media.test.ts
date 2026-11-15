@@ -82,6 +82,8 @@ describe('contributor media routes', () => {
   const originalPreviewOwnerEmail = process.env.SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL;
   const originalPrivateMediaStoreId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
   const originalPrivateMediaWebhookKey = process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY;
+  const originalGeneratedPrivateMediaStoreId = process.env.SCHOLARSCOUT_PRIVATE_MEDIA__STORE_ID;
+  const originalGeneratedPrivateMediaWebhookKey = process.env.SCHOLARSCOUT_PRIVATE_MEDIA__WEBHOOK_PUBLIC_KEY;
   let store: MemoryDataStore;
 
   beforeEach(() => {
@@ -115,10 +117,59 @@ describe('contributor media routes', () => {
     restoreEnvironment('SCHOLARSCOUT_PREVIEW_OWNER_MEDIA_DEMO_OWNER_EMAIL', originalPreviewOwnerEmail);
     restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID', originalPrivateMediaStoreId);
     restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY', originalPrivateMediaWebhookKey);
+    restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA__STORE_ID', originalGeneratedPrivateMediaStoreId);
+    restoreEnvironment('SCHOLARSCOUT_PRIVATE_MEDIA__WEBHOOK_PUBLIC_KEY', originalGeneratedPrivateMediaWebhookKey);
     jest.mocked(handleUploadPresigned).mockReset();
     jest.mocked(issueSignedToken).mockReset();
     jest.mocked(get).mockReset();
     jest.mocked(mediaInfoFactory).mockReset();
+  });
+
+  it('accepts Vercel generated private-media variable names', async () => {
+    delete process.env.SCHOLARSCOUT_PRIVATE_MEDIA_STORE_ID;
+    delete process.env.SCHOLARSCOUT_PRIVATE_MEDIA_WEBHOOK_PUBLIC_KEY;
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA__STORE_ID = 'store-private';
+    process.env.SCHOLARSCOUT_PRIVATE_MEDIA__WEBHOOK_PUBLIC_KEY = 'webhook-key';
+    store.data.contributorMediaState = {
+      invitations: [{
+        id: 'invitation-1', accountId: 'student-1', createdByStaffId: 'editor-1',
+        status: 'active', createdAt: '2026-10-01T00:00:00.000Z', expiresAt: '2027-10-16T00:00:00.000Z',
+      }],
+      submissions: [{
+        id: 'submission-1', accountId: 'student-1', status: 'Draft', signerName: 'Student One',
+        creatorAuthority: true, recognisablePeopleConsent: true,
+        attestedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+        revision: 1,
+        mediaPackage: {
+          id: 'package-1', programmeId: 'programme-1',
+          videoObjectKey: 'contributor-media/package-1/video.mp4',
+          posterObjectKey: 'contributor-media/package-1/poster.png', videoUploaded: false, posterUploaded: false,
+        },
+      }],
+    } as ScholarScoutData['contributorMediaState'];
+    jest.mocked(issueSignedToken).mockResolvedValue('signed-token' as never);
+    jest.mocked(handleUploadPresigned).mockImplementation(async ({ getSignedToken }) => {
+      const result = await getSignedToken(
+        'contributor-media/package-1/video.mp4',
+        JSON.stringify({ uploadId: 'package-1', kind: 'video', expectedRevision: 1 }),
+        false,
+      );
+      return { clientToken: result.token } as never;
+    });
+
+    const response = await uploadMedia(new Request('http://localhost/api/contributor-media/upload', {
+      method: 'POST', headers: { 'x-vercel-oidc-token': 'runtime-oidc-token' }, body: JSON.stringify({
+        type: 'blob.generate-presigned-url',
+        payload: {
+          pathname: 'contributor-media/package-1/video.mp4',
+          clientPayload: JSON.stringify({ uploadId: 'package-1', kind: 'video', expectedRevision: 1 }),
+          multipart: false,
+        },
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(issueSignedToken).toHaveBeenCalledWith(expect.objectContaining({ storeId: 'store-private' }));
   });
 
   it('allows an editor to invite a known account using trusted staff authority', async () => {
