@@ -46,3 +46,8 @@ next_action: "Deploy the bounded failure classification, then use one Preview re
 
 - The fresh Preview rehearsal confirmed that Vercel Blob can report a normal compare-and-swap collision as a conditional-operation error instead of the SDK precondition error type.
 - The store now treats that bounded collision as a retryable conflict, preserving the document and allowing the audited invitation request to retry instead of presenting the generic unavailable state.
+
+## Staff-page burst correction
+
+- The owner control is loaded alongside other staff data requests, each of which records a privileged audit event. Three concurrent requests can require more than the previous two conditional-write attempts.
+- Privileged audit appends now retain their identity-safe, bounded retry behavior with four total attempts; all other operational mutation policies keep their existing limits.

@@ -11,10 +11,13 @@ import type { CampusNote } from '@/lib/campus-community';
 export interface OperationalMutationPolicy {
   name: string;
   retry: 'stable-id-append-once' | 'never';
+  maxAttempts?: number;
 }
 
 export const OPERATIONAL_MUTATION_POLICIES = {
-  privilegedAuditAppend: { name: 'privileged-audit-append', retry: 'stable-id-append-once' },
+  // One staff screen can authorize several independent requests at once. Keep all
+  // audit records, but allow enough bounded CAS attempts for that burst to settle.
+  privilegedAuditAppend: { name: 'privileged-audit-append', retry: 'stable-id-append-once', maxAttempts: 4 },
   recoveryLifecycleAppend: { name: 'recovery-lifecycle-append', retry: 'stable-id-append-once' },
   recoveryOutcomeAppend: { name: 'recovery-outcome-append', retry: 'stable-id-append-once' },
   feedInteractionAppend: { name: 'feed-interaction-append', retry: 'stable-id-append-once' },
@@ -130,7 +133,8 @@ export async function appendOperationalRecord<T extends { id: string }>(input: {
     });
   }
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  const attempts = input.policy.maxAttempts ?? 2;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     const snapshot = await readVersionedScholarScoutData();
     if (!appendUnique(snapshot.data, input.collection, input.record)) {
       return input.record;

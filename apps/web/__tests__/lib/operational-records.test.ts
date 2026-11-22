@@ -77,6 +77,26 @@ describe('bounded operational records', () => {
     ]);
   });
 
+  it('keeps a privileged audit append available through a bounded staff-page burst', async () => {
+    const store = new ConflictStore();
+    store.conflictsRemaining = 3;
+    setScholarScoutDataStoreForTests(store);
+
+    await appendOperationalRecord({
+      policy: OPERATIONAL_MUTATION_POLICIES.privilegedAuditAppend,
+      collection: 'privilegedOperationAuditEvents',
+      record: {
+        id: 'staff-page-burst', actorId: 'staff-1', action: 'view', route: '/admin',
+        outcome: 'allowed', createdAt: '2026-11-22T23:17:00.000Z',
+      },
+    });
+
+    expect(store.writes).toBe(4);
+    expect(store.data.privilegedOperationAuditEvents).toEqual([
+      expect.objectContaining({ id: 'staff-page-burst' }),
+    ]);
+  });
+
   it('keeps the retry allowlist explicit and all replacement families denylisted', () => {
     expect([
       OPERATIONAL_MUTATION_POLICIES.privilegedAuditAppend,
