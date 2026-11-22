@@ -594,7 +594,13 @@ class VercelBlobScholarScoutDataStore implements ScholarScoutDataStore {
     } catch (error) {
       if (
         error instanceof blobModule.BlobPreconditionFailedError ||
-        (error instanceof Error && /already exists/i.test(error.message))
+        (
+          error instanceof Error
+          && (
+            /already exists/i.test(error.message)
+            || /conditional request cannot succeed due to a conflicting operation/i.test(error.message)
+          )
+        )
       ) {
         return { status: 'conflict' };
       }

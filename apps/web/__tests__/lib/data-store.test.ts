@@ -754,6 +754,26 @@ describe('ScholarScout data store adapter', () => {
     });
   });
 
+  it('maps Blob conditional-operation conflicts to a no-write conflict', async () => {
+    process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
+    process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';
+    const getMock = jest.mocked(get);
+    const putMock = jest.mocked(put);
+    getMock.mockResolvedValue({
+      statusCode: 200,
+      stream: createTextStream(JSON.stringify(initialData)),
+      blob: { etag: 'stale-etag' },
+    } as unknown as GetBlobResult);
+    putMock.mockRejectedValue(new Error(
+      'Vercel Blob: The conditional request cannot succeed due to a conflicting operation against this resource.',
+    ));
+    const store = getScholarScoutDataStore();
+    const snapshot = await store.readVersioned!();
+    await expect(store.writeVersioned!(snapshot.data, snapshot.version)).resolves.toEqual({
+      status: 'conflict',
+    });
+  });
+
   it('creates an absent Blob without overwrite or an ifMatch token', async () => {
     process.env.SCHOLARSCOUT_DATA_ADAPTER = 'vercel-blob';
     process.env.SCHOLARSCOUT_BLOB_READ_WRITE_TOKEN = 'blob-token';

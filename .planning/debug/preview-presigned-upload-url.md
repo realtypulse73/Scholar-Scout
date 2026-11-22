@@ -41,3 +41,8 @@ next_action: "Deploy the bounded failure classification, then use one Preview re
 
 - A read-only Preview environment audit showed Vercel generated `SCHOLARSCOUT_PRIVATE_MEDIA__STORE_ID` and `SCHOLARSCOUT_PRIVATE_MEDIA__WEBHOOK_PUBLIC_KEY` (double underscore after the configured prefix).
 - The application previously read only single-underscore names, leaving the direct-upload route without the connected store. The configuration reader now accepts both forms without duplicating or changing any Vercel setting.
+
+## Invitation availability correction
+
+- The fresh Preview rehearsal confirmed that Vercel Blob can report a normal compare-and-swap collision as a conditional-operation error instead of the SDK precondition error type.
+- The store now treats that bounded collision as a retryable conflict, preserving the document and allowing the audited invitation request to retry instead of presenting the generic unavailable state.
