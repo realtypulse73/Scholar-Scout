@@ -5,6 +5,8 @@ import {
 } from '@/lib/contributor-media';
 import {
   createContributorMediaDraft,
+  ensurePreviewOwnerMediaCandidate,
+  getContributorMediaEligibleProgrammes,
   getContributorMediaPrivateIntakeState,
   getPreviewOwnerMediaReconciliation,
   getContributorMediaReviewQueue,
@@ -139,6 +141,26 @@ describe('Preview contributor-media reconciliation', () => {
     expect(store.data.auditEvents).toEqual([]);
     await expect(getContributorMediaReviewQueue()).resolves.toEqual([
       expect.objectContaining({ id: 'submission-1', programmeId: 'candidate-htu', revision: 4 }),
+    ]);
+  });
+
+  it('creates one approved, clearly labeled candidate only for the configured Preview owner', async () => {
+    store.data.cataloguePublicationState = {
+      schemaVersion: 1,
+      candidates: [],
+      snapshots: [],
+      auditEvents: [],
+    } as unknown as ScholarScoutData['cataloguePublicationState'];
+
+    await expect(ensurePreviewOwnerMediaCandidate({
+      actor: owner,
+      now: new Date('2026-11-22T12:00:00.000Z'),
+    })).resolves.toBe('created');
+    await expect(getContributorMediaEligibleProgrammes()).resolves.toEqual([
+      {
+        id: 'preview-owner-media-rehearsal',
+        name: 'Scholar Scout Preview test programme — Applied Health',
+      },
     ]);
   });
 

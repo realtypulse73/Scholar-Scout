@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireActiveStaff } from '@/lib/server/active-staff';
-import { grantContributorMediaInvitation } from '@/lib/server/contributor-media';
+import {
+  ensurePreviewOwnerMediaCandidate,
+  grantContributorMediaInvitation,
+} from '@/lib/server/contributor-media';
 import { isPreviewOwnerMediaDemoActor } from '@/lib/server/preview-owner-media-demo';
 
 const ROUTE = '/api/admin/contributor-media/preview-demo';
@@ -28,6 +31,13 @@ export async function POST(request: Request) {
   });
   if (!authorization.ok) return authorization.response;
   if (!isPreviewOwnerMediaDemoActor(authorization.actor)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const candidate = await ensurePreviewOwnerMediaCandidate({
+    actor: authorization.actor,
+  });
+  if (candidate === 'forbidden') {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   }
 

@@ -4,6 +4,7 @@ import { GET, POST } from '@/app/api/admin/contributor-media/preview-demo/route'
 import { GET as getLink, POST as postLink } from '@/app/api/admin/contributor-media/preview-demo/link/route';
 import { requireActiveStaff } from '@/lib/server/active-staff';
 import {
+  ensurePreviewOwnerMediaCandidate,
   getPreviewOwnerMediaReconciliation,
   grantContributorMediaInvitation,
   reconcilePreviewOwnerMedia,
@@ -12,6 +13,7 @@ import { isPreviewOwnerMediaDemoActor } from '@/lib/server/preview-owner-media-d
 
 jest.mock('@/lib/server/active-staff', () => ({ requireActiveStaff: jest.fn() }));
 jest.mock('@/lib/server/contributor-media', () => ({
+  ensurePreviewOwnerMediaCandidate: jest.fn(),
   grantContributorMediaInvitation: jest.fn(),
   getPreviewOwnerMediaReconciliation: jest.fn(),
   reconcilePreviewOwnerMedia: jest.fn(),
@@ -28,6 +30,7 @@ describe('Preview owner media demo route', () => {
   beforeEach(() => {
     jest.mocked(requireActiveStaff).mockResolvedValue({ ok: true, actor: owner } as never);
     jest.mocked(isPreviewOwnerMediaDemoActor).mockReturnValue(true);
+    jest.mocked(ensurePreviewOwnerMediaCandidate).mockResolvedValue('created' as never);
     jest.mocked(grantContributorMediaInvitation).mockResolvedValue({
       status: 'applied',
       value: { status: 'granted', invitation: { accountId: owner.id } },
@@ -61,6 +64,7 @@ describe('Preview owner media demo route', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ status: 'ready' });
+    expect(ensurePreviewOwnerMediaCandidate).toHaveBeenCalledWith({ actor: owner });
     expect(grantContributorMediaInvitation).toHaveBeenCalledWith({ accountId: owner.id, staffId: owner.id });
   });
 
@@ -70,6 +74,7 @@ describe('Preview owner media demo route', () => {
     const response = await POST(new Request('http://localhost/api/admin/contributor-media/preview-demo', { method: 'POST' }));
 
     expect(response.status).toBe(404);
+    expect(ensurePreviewOwnerMediaCandidate).not.toHaveBeenCalled();
     expect(grantContributorMediaInvitation).not.toHaveBeenCalled();
   });
 

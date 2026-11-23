@@ -27,10 +27,13 @@ import {
   isPreviewOwnerMediaDemoActor,
   isPreviewOwnerMediaDemoRuntime,
 } from '@/lib/server/preview-owner-media-demo';
+import type { CatalogueCandidateInput } from '@/lib/catalogue-publication';
 
 export type GrantInvitationResult =
   | { status: 'granted' | 'existing'; invitation: ContributorMediaInvitation }
-  | { status: 'unknown-account' }
+  | { status: 'unknown-account' };
+
+const PREVIEW_OWNER_MEDIA_CANDIDATE_ID = 'preview-owner-media-rehearsal';
 
 export type CreateContributorDraftResult =
   | { status: 'created' | 'existing'; submission: ContributorPrivateStatus }
@@ -171,6 +174,39 @@ export async function grantContributorMediaInvitation(input: {
     state.invitations.push(invitation);
     return { status: 'granted', invitation };
   });
+}
+
+/** Creates the one clearly disclosed, Preview-only rehearsal candidate for the configured owner. */
+export async function ensurePreviewOwnerMediaCandidate(input: {
+  actor: ActiveStaffActor;
+  now?: Date;
+}): Promise<'created' | 'existing' | 'forbidden'> {
+  if (!isPreviewOwnerMediaDemoActor(input.actor)) return 'forbidden';
+
+  const { readScholarScoutData } = await import('@/lib/server/data-store');
+  const data = await readScholarScoutData();
+  const existing = (data.cataloguePublicationState?.candidates ?? [])
+    .find((candidate) => candidate.id === PREVIEW_OWNER_MEDIA_CANDIDATE_ID);
+  if (existing?.lifecycle === 'approved' && isCurrentCandidate([existing], existing.id)) {
+    return 'existing';
+  }
+
+  const now = input.now ?? new Date();
+  const { stageCatalogueCandidate, reviewCatalogueCandidate } = await import(
+    '@/lib/server/catalogue-publications'
+  );
+  const candidate = existing ?? (await stageCatalogueCandidate({
+    actor: input.actor,
+    candidate: createPreviewOwnerMediaCandidate(now),
+    now,
+  })).candidate;
+  const reviewed = await reviewCatalogueCandidate({
+    actor: input.actor,
+    candidateId: candidate.id,
+    expectedRevision: candidate.revision,
+    now,
+  });
+  return reviewed.candidate.lifecycle === 'approved' ? 'created' : 'forbidden';
 }
 
 export async function createContributorMediaDraft(input: {
@@ -670,6 +706,71 @@ export async function removeContributorMediaSubmission(input: {
 
   await deletePrivateContributorMedia(result.value.objectKeys);
   return result;
+}
+
+function createPreviewOwnerMediaCandidate(now: Date): CatalogueCandidateInput {
+  const date = now.toISOString().slice(0, 10);
+  const source = {
+    sourceLabel: 'Scholar Scout Preview rehearsal fixture',
+    sourceUrl: 'https://example.com/scholar-scout-preview-rehearsal',
+    sourceDate: { state: 'documented' as const, value: date },
+    checkedAt: date,
+  };
+  const evidence = {
+    status: 'current' as const,
+    authority: 'scholarscout-preview-fixture' as const,
+    ...source,
+    reviewedAt: date,
+    verificationAction: 'Use only for the isolated Preview media rehearsal.',
+  };
+
+  return {
+    id: PREVIEW_OWNER_MEDIA_CANDIDATE_ID,
+    title: 'Scholar Scout Preview test programme — Applied Health',
+    regionId: 'greater-houston',
+    region: {
+      id: 'greater-houston',
+      label: 'Greater Houston',
+      officialBoundary: {
+        authority: 'us-census-omb-cbsa',
+        boundaryId: '26420',
+        boundaryVersion: '2023',
+        ...source,
+      },
+      localFocus: {
+        authority: 'City of Houston',
+        anchorLabel: 'Houston City Hall',
+        latitude: 29.7604,
+        longitude: -95.3698,
+        radiusMiles: 10,
+        ...source,
+      },
+    },
+    source,
+    facts: {
+      location: { value: 'Preview fixture only', evidence },
+      pathway: { value: 'community-college', evidence },
+      skillTaught: { value: 'Applied health fundamentals', evidence },
+      trainingPayer: { value: 'Preview fixture only', evidence },
+      costOrTuition: { value: 'Not a real tuition amount', evidence },
+      duration: { value: 'Preview rehearsal only', evidence },
+      delivery: { value: 'in-person', evidence },
+    },
+    claimBoundary: 'Synthetic Preview rehearsal record; it is not a provider, enrolment, or placement claim.',
+    publishedRequirements: [{
+      text: 'Preview rehearsal only; no participant requirement is asserted.',
+      qualificationKeys: ['diploma-credits'],
+      evidence,
+    }],
+    reviewedDescription: {
+      value: 'Synthetic programme record used only to exercise the private media workflow in Preview.',
+      evidence,
+    },
+    documentedSupport: {
+      value: 'No provider support claim is made by this Preview rehearsal record.',
+      evidence,
+    },
+  };
 }
 
 function ensureContributorMediaState(data: { contributorMediaState?: ContributorMediaState }): ContributorMediaState {
