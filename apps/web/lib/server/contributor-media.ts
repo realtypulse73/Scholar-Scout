@@ -309,7 +309,26 @@ export async function issueContributorMediaUpload(input: {
     }
     if (submission.status !== 'Draft') return { status: 'conflict' };
     const mediaPackage = submission.mediaPackage ?? createPrivateMediaPackage(programmeId, candidate.id);
-    if (mediaPackage.programmeId !== programmeId) return { status: 'conflict' };
+    if (mediaPackage.programmeId !== programmeId) {
+      const account = data.users.find((user) => user.id === input.actor.accountId);
+      const canReplaceEmptyPreviewPackage = account
+        && isPreviewOwnerMediaDemoAccount(account)
+        && !mediaPackage.videoUploaded
+        && !mediaPackage.posterUploaded;
+      if (!canReplaceEmptyPreviewPackage) return { status: 'conflict' };
+
+      // Preview rehearsal can correct a programme selected before any object is
+      // transferred. The old, empty object keys are never reused.
+      const replacement = createPrivateMediaPackage(programmeId, candidate.id);
+      const nextRevision = revision + 1;
+      submission.mediaPackage = replacement;
+      submission.revision = nextRevision;
+      submission.updatedAt = now.toISOString();
+      return {
+        status: 'issued',
+        capability: { uploadId: replacement.id, status: 'Draft', revision: nextRevision },
+      };
+    }
     if (mediaPackage.candidateId === undefined) mediaPackage.candidateId = candidate.id;
     if (mediaPackage.candidateId !== candidate.id) return { status: 'conflict' };
     submission.mediaPackage = mediaPackage;

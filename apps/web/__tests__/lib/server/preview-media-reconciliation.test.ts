@@ -193,6 +193,51 @@ describe('Preview contributor-media reconciliation', () => {
     });
   });
 
+  it('replaces only an empty Preview owner package after the programme choice changes', async () => {
+    store.data.contributorMediaState!.submissions[0] = {
+      ...store.data.contributorMediaState!.submissions[0],
+      status: 'Draft',
+      revision: 1,
+      mediaPackage: {
+        id: 'empty-legacy-package',
+        programmeId: 'candidate-htu',
+        candidateId: 'candidate-htu',
+        videoObjectKey: 'contributor-media/empty-legacy-package/video.mp4',
+        posterObjectKey: 'contributor-media/empty-legacy-package/poster.png',
+        videoUploaded: false,
+        posterUploaded: false,
+      },
+    };
+    await ensurePreviewOwnerMediaCandidate({
+      actor: owner,
+      now: new Date('2026-10-19T13:00:00.000Z'),
+    });
+
+    const result = await issueContributorMediaUpload({
+      actor: ownerStudent,
+      request: {
+        programmeId: 'preview-owner-media-rehearsal', expectedRevision: 1,
+        files: [
+          { kind: 'video', contentType: 'video/mp4', size: 1024 },
+          { kind: 'poster', contentType: 'image/png', size: 1024 },
+        ],
+      },
+      now: new Date('2026-10-19T13:00:00.000Z'),
+    });
+
+    expect(result).toEqual({
+      status: 'applied',
+      value: { status: 'issued', capability: expect.objectContaining({ status: 'Draft', revision: 2 }) },
+    });
+    expect(store.data.contributorMediaState!.submissions[0].mediaPackage).toMatchObject({
+      programmeId: 'preview-owner-media-rehearsal',
+      candidateId: 'preview-owner-media-rehearsal',
+      videoUploaded: false,
+      posterUploaded: false,
+    });
+    expect(store.data.contributorMediaState!.submissions[0].mediaPackage?.id).not.toBe('empty-legacy-package');
+  });
+
   it('gives only the configured Preview owner a new Draft while preserving an approved package', async () => {
     const approved = {
       ...store.data.contributorMediaState!.submissions[0],
