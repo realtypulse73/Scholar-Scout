@@ -15,6 +15,7 @@
 | [.planning/STATE.md](.planning/STATE.md) | Current progress, decisions, blockers, and quick-task history. | Every GSD task and before resuming work. |
 | [.planning/MILESTONES.md](.planning/MILESTONES.md) | Milestone history, active milestone charter, and archived-planning pointer. | Starting, completing, or auditing a milestone. |
 | [README.md](README.md) | Repository overview and developer entry point. | Onboarding or general setup. |
+| [docs/gsd-workflow-handoff.md](docs/gsd-workflow-handoff.md) | Dated desktop-project status handoff; later implementation is not present on this branch. | Reviewing the phases or preparing synchronization with the desktop project. |
 
 ## Architecture and engineering reference
 
